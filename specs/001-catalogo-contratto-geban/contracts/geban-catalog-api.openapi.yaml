@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: GEBAN GEMODO Catalogo Modelli API
+  version: 0.1.0
+  description: API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
+servers:
+  - url: /api/v1
+paths:
+  /catalogo/tipi-documento:
+    get:
+      summary: Elenco tipi documento disponibili
+      operationId: listTipiDocumento
+      responses:
+        "200":
+          description: Tipi documento disponibili
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TipoDocumentoListResponse"
+  /catalogo/tipi-documento/{codiceTipoDocumento}/categorie:
+    get:
+      summary: Elenco categorie per tipo documento
+      operationId: listCategorieDocumento
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      responses:
+        "200":
+          description: Categorie disponibili
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoriaDocumentoListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /catalogo/modelli:
+    get:
+      summary: Ricerca modelli pubblicati
+      operationId: searchModelli
+      parameters:
+        - name: tipo_documento
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: categoria
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: codice_tipologia
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: modalita
+          in: query
+          required: false
+          description: OPERATIVA restituisce modelli usabili; STORICO restituisce versioni archiviate o storiche.
+          schema:
+            type: string
+            enum: [OPERATIVA, STORICO]
+            default: OPERATIVA
+        - name: data_riferimento
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: pubblicato_da
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: pubblicato_a
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Modelli pubblicati filtrati
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloSearchResponse"
+  /catalogo/modelli/{modelloVersioneId}/campi-richiesti:
+    get:
+      summary: Contratto dati per versione modello pubblicata
+      operationId: getCampiRichiesti
+      parameters:
+        - $ref: "#/components/parameters/ModelloVersioneId"
+      responses:
+        "200":
+          description: Contratto dati della versione modello
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampiRichiestiResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /documenti/valida:
+    post:
+      summary: Valida payload contro contratto dati
+      operationId: validaPayload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidazioneRequest"
+      responses:
+        "200":
+          description: Esito validazione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidazioneResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  parameters:
+    CodiceTipoDocumento:
+      name: codiceTipoDocumento
+      in: path
+      required: true
+      schema:
+        type: string
+    ModelloVersioneId:
+      name: modelloVersioneId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    NotFound:
+      description: Risorsa non trovata
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Risorsa non utilizzabile nello stato corrente
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    TipoDocumentoListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TipoDocumento"
+    TipoDocumento:
+      type: object
+      required: [codice, descrizione]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+    CategoriaDocumentoListResponse:
+      type: object
+      required: [tipo_documento, categorie]
+      properties:
+        tipo_documento:
+          type: string
+        categorie:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaDocumento"
+    CategoriaDocumento:
+      type: object
+      required: [codice, descrizione]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+    ModelloSearchResponse:
+      type: object
+      required: [tipo_documento, modelli]
+      properties:
+        tipo_documento:
+          type: string
+        categoria:
+          type: string
+          nullable: true
+        codice_tipologia:
+          type: string
+          nullable: true
+        modalita:
+          type: string
+          enum: [OPERATIVA, STORICO]
+        modelli:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelloCatalogo"
+    ModelloCatalogo:
+      type: object
+      required: [modello_id, modello_versione_id, codice, descrizione, versione, stato]
+      properties:
+        modello_id:
+          type: integer
+          format: int64
+        modello_versione_id:
+          type: integer
+          format: int64
+        codice:
+          type: string
+        descrizione:
+          type: string
+        versione:
+          type: integer
+        stato:
+          type: string
+          enum: [PUBBLICATO]
+        data_inizio_validita:
+          type: string
+          format: date
+          nullable: true
+        data_fine_validita:
+          type: string
+          format: date
+          nullable: true
+        pubblicato_at:
+          type: string
+          format: date-time
+          nullable: true
+    CampiRichiestiResponse:
+      type: object
+      required: [modello_versione_id, campi, schema]
+      properties:
+        modello_versione_id:
+          type: integer
+          format: int64
+        tipo_documento:
+          type: string
+        categoria:
+          type: string
+        campi:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampoRichiesto"
+        schema:
+          type: object
+          additionalProperties: true
+    CampoRichiesto:
+      type: object
+      required: [codice, etichetta, tipo, obbligatorio, ordine]
+      properties:
+        codice:
+          type: string
+        etichetta:
+          type: string
+        tipo:
+          type: string
+          enum: [string, number, date, boolean, array, object]
+        obbligatorio:
+          type: boolean
+        ordine:
+          type: integer
+        descrizione:
+          type: string
+          nullable: true
+        validazione:
+          type: object
+          additionalProperties: true
+          nullable: true
+    ValidazioneRequest:
+      type: object
+      required: [sistema_richiedente, external_context_id, modello_versione_id, dati]
+      additionalProperties: false
+      properties:
+        sistema_richiedente:
+          type: string
+          example: GEBAN
+        external_context_id:
+          type: string
+        modello_versione_id:
+          type: integer
+          format: int64
+        data_riferimento:
+          type: string
+          format: date
+          nullable: true
+        dati:
+          type: object
+          additionalProperties: true
+    ValidazioneResponse:
+      type: object
+      required: [valido, errori]
+      properties:
+        valido:
+          type: boolean
+        errori:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErroreValidazione"
+    ErroreValidazione:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        campo:
+          type: string
+          nullable: true
+        codice:
+          type: string
+        messaggio:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice:
+          type: string
+        messaggio:
+          type: string

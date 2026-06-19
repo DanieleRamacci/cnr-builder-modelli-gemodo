@@ -1,0 +1,396 @@
+openapi: 3.0.3
+info:
+  title: GEBAN GEMODO Builder Modelli API
+  version: 0.1.0
+  description: API interne per configurare tipi documento, categorie, modelli, varianti e versioni.
+servers:
+  - url: /api/v1/builder
+paths:
+  /tipi-documento:
+    get:
+      summary: Lista tipi documento
+      operationId: listTipiDocumentoBuilder
+      responses:
+        "200":
+          description: Tipi documento configurati
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TipoDocumentoListResponse"
+    post:
+      summary: Crea tipo documento
+      operationId: createTipoDocumento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TipoDocumentoUpsertRequest"
+      responses:
+        "201":
+          description: Tipo documento creato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TipoDocumento"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /tipi-documento/{codice}/categorie:
+    get:
+      summary: Lista categorie per tipo documento
+      operationId: listCategorieBuilder
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      responses:
+        "200":
+          description: Categorie configurate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoriaDocumentoListResponse"
+    post:
+      summary: Crea categoria documento
+      operationId: createCategoriaDocumento
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaDocumentoUpsertRequest"
+      responses:
+        "201":
+          description: Categoria creata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoriaDocumento"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli:
+    get:
+      summary: Lista modelli builder
+      operationId: listModelliBuilder
+      parameters:
+        - name: tipo_documento
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: categoria
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: codice_tipologia
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Modelli configurati
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloListResponse"
+    post:
+      summary: Crea modello documento
+      operationId: createModelloDocumento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelloCreateRequest"
+      responses:
+        "201":
+          description: Modello creato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloDocumento"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni:
+    post:
+      summary: Crea nuova versione modello
+      operationId: createVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersioneCreateRequest"
+      responses:
+        "201":
+          description: Versione creata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+  /modelli/{modelloId}/versioni/{versioneId}:
+    put:
+      summary: Aggiorna versione modificabile
+      operationId: updateVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersioneUpdateRequest"
+      responses:
+        "200":
+          description: Versione aggiornata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/bozza-derivata:
+    post:
+      summary: Crea bozza derivata da versione pubblicata
+      operationId: createBozzaDerivata
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "201":
+          description: Bozza derivata creata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/pubblica:
+    post:
+      summary: Pubblica una versione approvata
+      operationId: pubblicaVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Versione pubblicata; precedente corrente archiviata se presente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PubblicazioneResponse"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/archivia:
+    post:
+      summary: Archivia versione pubblicata
+      operationId: archiviaVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Versione archiviata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  parameters:
+    CodiceTipoDocumento:
+      name: codice
+      in: path
+      required: true
+      schema:
+        type: string
+    ModelloId:
+      name: modelloId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    VersioneId:
+      name: versioneId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    Conflict:
+      description: Operazione non consentita nello stato corrente o per vincolo di unicita'
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    TipoDocumentoListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TipoDocumento"
+    TipoDocumento:
+      type: object
+      required: [codice, descrizione, attivo]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+        attivo:
+          type: boolean
+    TipoDocumentoUpsertRequest:
+      type: object
+      required: [codice, descrizione]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+        attivo:
+          type: boolean
+          default: true
+    CategoriaDocumentoListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaDocumento"
+    CategoriaDocumento:
+      type: object
+      required: [codice_tipo_documento, codice, descrizione, attiva]
+      properties:
+        codice_tipo_documento:
+          type: string
+        codice:
+          type: string
+        descrizione:
+          type: string
+        attiva:
+          type: boolean
+    CategoriaDocumentoUpsertRequest:
+      type: object
+      required: [codice, descrizione]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+        attiva:
+          type: boolean
+          default: true
+    ModelloListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelloDocumento"
+    ModelloDocumento:
+      type: object
+      required: [id, codice, descrizione, codice_tipo_documento, codice_categoria, variante, attivo]
+      properties:
+        id:
+          type: integer
+          format: int64
+        codice:
+          type: string
+        descrizione:
+          type: string
+        codice_tipo_documento:
+          type: string
+        codice_categoria:
+          type: string
+        codice_tipologia:
+          type: string
+        variante:
+          type: string
+          default: STANDARD
+        attivo:
+          type: boolean
+    ModelloCreateRequest:
+      type: object
+      required: [codice, descrizione, codice_tipo_documento, codice_categoria]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+        codice_tipo_documento:
+          type: string
+        codice_categoria:
+          type: string
+        codice_tipologia:
+          type: string
+        variante:
+          type: string
+          default: STANDARD
+    VersioneCreateRequest:
+      type: object
+      properties:
+        derivata_da_versione_id:
+          type: integer
+          format: int64
+        motivo_versione:
+          type: string
+    VersioneUpdateRequest:
+      type: object
+      properties:
+        data_inizio_validita:
+          type: string
+          format: date
+        data_fine_validita:
+          type: string
+          format: date
+        motivo_versione:
+          type: string
+    ModelloVersione:
+      type: object
+      required: [id, modello_documento_id, numero_versione, stato]
+      properties:
+        id:
+          type: integer
+          format: int64
+        modello_documento_id:
+          type: integer
+          format: int64
+        numero_versione:
+          type: integer
+        stato:
+          type: string
+          enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]
+        derivata_da_versione_id:
+          type: integer
+          format: int64
+        motivo_versione:
+          type: string
+    PubblicazioneResponse:
+      type: object
+      required: [pubblicata]
+      properties:
+        pubblicata:
+          $ref: "#/components/schemas/ModelloVersione"
+        archiviata_precedente:
+          $ref: "#/components/schemas/ModelloVersione"
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
