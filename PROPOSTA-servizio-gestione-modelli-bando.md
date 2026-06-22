@@ -1100,27 +1100,27 @@ Il backend valida:
 ### 12.1 Scelta Di Integrazione Autenticativa
 
 Per il flusso ordinario di generazione documenti viene adottata la propagazione
-dell'identita' dell'utente autenticato in GEBAN verso GEDOC tramite Keycloak.
+dell'identita' dell'utente autenticato in GEBAN verso GEMODO tramite Keycloak.
 
-La chiamata GEBAN -> GEDOC deve permettere a GEDOC di verificare:
+La chiamata GEBAN -> GEMODO deve permettere a GEMODO di verificare:
 
 - quale utente ha richiesto l'operazione;
 - che la chiamata arriva dal backend GEBAN;
-- che il token e' destinato alle API GEDOC;
+- che il token e' destinato alle API GEMODO;
 - che l'utente ha le autorizzazioni necessarie nel contesto GEBAN.
 
 La soluzione prevista e':
 
 ```text
-Utente -> GEBAN frontend -> GEBAN backend -> GEDOC backend
+Utente -> GEBAN frontend -> GEBAN backend -> GEMODO backend
                          token utente / token exchange Keycloak
 ```
 
-Il token ricevuto da GEDOC deve contenere o rendere verificabili:
+Il token ricevuto da GEMODO deve contenere o rendere verificabili:
 
 - identita' utente;
 - client chiamante GEBAN;
-- audience GEDOC;
+- audience GEMODO;
 - ruoli applicativi;
 - eventuale contesto autorizzativo GEBAN.
 
@@ -1131,7 +1131,7 @@ Esempio di token/claim attesi:
   "sub": "user-123",
   "preferred_username": "mario.rossi",
   "azp": "geban-backend",
-  "aud": ["gedoc-backend"],
+  "aud": ["gemodo-backend"],
   "realm_access": {
     "roles": ["DOCUMENTI_GENERATORE"]
   },
@@ -1151,13 +1151,13 @@ generazione documento viene mantenuta la tracciabilita' dell'utente reale.
 | Client | Tipo | Uso |
 |---|---|---|
 | `geban-frontend` | public client | Login utente su GEBAN |
-| `geban-backend` | confidential client | Backend GEBAN autorizzato a chiamare GEDOC e a propagare/scambiare token |
-| `gedoc-frontend` | public client | Login utenti che usano il builder modelli |
-| `gedoc-backend` | resource server/API | API GEDOC protette |
+| `geban-backend` | confidential client | Backend GEBAN autorizzato a chiamare GEMODO e a propagare/scambiare token |
+| `gemodo-frontend` | public client | Login utenti che usano il builder modelli |
+| `gemodo-backend` | resource server/API | API GEMODO protette |
 
 Regole:
 
-- `gedoc-backend` accetta token con audience corretta;
+- `gemodo-backend` accetta token con audience corretta;
 - `geban-backend` deve essere riconosciuto come client chiamante autorizzato;
 - il token utente propagato deve contenere ruoli o claim sufficienti alla generazione;
 - le chiamate tecniche senza utente usano client tecnico dedicato e ruolo `SYSTEM_GEBAN`.
@@ -1203,12 +1203,12 @@ Il frontend abilita o disabilita le azioni, ma la regola viene applicata dal ser
 
 ### 12.6 Autorizzazione Alla Generazione Documenti
 
-GEBAN puo' richiedere la generazione solo se il token ricevuto da GEDOC consente di
+GEBAN puo' richiedere la generazione solo se il token ricevuto da GEMODO consente di
 verificare:
 
 - identita' dell'utente richiedente;
 - client chiamante `geban-backend`;
-- audience `gedoc-backend`;
+- audience `gemodo-backend`;
 - ruolo applicativo `DOCUMENTI_GENERATORE` o claim contestuale equivalente;
 - autorizzazione dell'utente sul processo GEBAN specifico.
 
@@ -1219,7 +1219,7 @@ Esempio di claim contestuale:
   "sub": "mario.rossi",
   "preferred_username": "mario.rossi",
   "azp": "geban-backend",
-  "aud": ["gedoc-backend"],
+  "aud": ["gemodo-backend"],
   "roles": ["DOCUMENTI_GENERATORE"],
   "geban_context": {
     "external_context_id": "BANDO-12345",
@@ -1376,7 +1376,7 @@ Il **Model Context Protocol (MCP)** e' uno standard aperto per collegare applica
 a sistemi esterni, dati e strumenti. MCP segue un'architettura client-server e consente
 ai server di esporre strumenti, risorse e prompt riutilizzabili.
 
-Per GEDOC si puo' prevedere in futuro un server MCP interno che esponga in sola lettura:
+Per GEMODO si puo' prevedere in futuro un server MCP interno che esponga in sola lettura:
 
 - catalogo tipi documento;
 - categorie documento;
