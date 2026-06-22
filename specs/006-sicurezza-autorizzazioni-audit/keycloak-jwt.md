@@ -6,10 +6,14 @@ Keycloak. Serve come riferimento per chi configura GEBAN, GEMODO e Keycloak.
 ## Stato Decisione
 
 - **Riferimento**: `SEC-006-001`
-- **Stato**: scelta provvisoria da confermare con il team GEBAN/Keycloak
+- **Stato**: scelta provvisoria differita, da confermare con il team GEBAN/Keycloak prima
+  dell'implementazione
 - **Scelta corrente**: per le operazioni utente da GEBAN verso GEMODO, GEBAN usa un token
   delegato Keycloak con audience GEMODO. Il token deve permettere a GEMODO di identificare
   sia il client chiamante `geban-backend` sia l'utente reale.
+- **Regola di avanzamento**: la definizione puo' proseguire usando questa scelta corrente;
+  se il team conferma un modello diverso, questo documento e gli artefatti derivati devono
+  essere aggiornati prima dell'implementazione.
 
 ## Principio Di Base
 
@@ -53,10 +57,15 @@ Usati per il builder e l'amministrazione interna GEMODO.
 |---|---|
 | `GEMODO_ADMIN` | Puo' eseguire tutte le operazioni interne GEMODO |
 | `GEMODO_MODELLI_GESTORE` | Puo' creare, modificare, pubblicare e archiviare modelli nel builder |
+| `GEMODO_MODELLI_REVISORE` | Ruolo riservato per revisione separata delle versioni modello |
+| `GEMODO_MODELLI_APPROVATORE` | Ruolo riservato per approvazione, pubblicazione e archiviazione separate |
 | `GEMODO_MODELLI_VIEWER` | Puo' consultare modelli e configurazioni |
 
-Per ora non e' obbligatorio avere un ruolo separato di approvatore. Se il processo lo
-richiedera', si potra' introdurre un ruolo dedicato in una revisione successiva.
+Per ora non e' obbligatorio attivare ruoli separati di revisore e approvatore. Se il
+processo CNR richiede separazione dei compiti nella prima release, pubblicazione e
+archiviazione devono essere limitate a `GEMODO_ADMIN` e `GEMODO_MODELLI_APPROVATORE`;
+in caso contrario il flusso minimo resta coperto da `GEMODO_ADMIN` e
+`GEMODO_MODELLI_GESTORE`.
 
 ### Ruoli/Claim GEBAN
 
@@ -143,6 +152,11 @@ GEMODO deve validare:
 - ruolo `DOCUMENTI_GENERATORE` o claim equivalente;
 - coerenza del contesto GEBAN con la richiesta ricevuta.
 
+Il contesto/autorizzazione presente nel payload puo' arricchire audit e snapshot
+applicativo, ma non sostituisce il token. Se il token non contiene ruoli o claim
+verificabili coerenti con l'azione richiesta, GEMODO deve rifiutare la chiamata anche se il
+payload dichiara un contesto autorizzativo valido.
+
 ## Flusso 3 - Chiamata Tecnica O Batch
 
 ```text
@@ -168,8 +182,10 @@ Regole:
 
 - il ruolo `SYSTEM_GEBAN` e' ammesso solo su API tecniche esplicitamente censite;
 - non sostituisce il flusso utente ordinario;
-- ogni chiamata tecnica deve essere auditata con client, azione, timestamp e payload
-  minimo utile.
+- ogni chiamata tecnica deve essere auditata con client, azione, target, esito, timestamp
+  e payload minimo utile;
+- una chiamata tecnica non deve completare operazioni sensibili se l'audit obbligatorio
+  non viene registrato o non e' ricostruibile.
 
 ## Configurazione Attesa In Keycloak
 
@@ -184,6 +200,8 @@ Da confermare col team Keycloak, ma l'impostazione attesa e':
 3. Definire i ruoli applicativi sul client/realm secondo lo standard del team:
    - `GEMODO_ADMIN`
    - `GEMODO_MODELLI_GESTORE`
+   - `GEMODO_MODELLI_REVISORE`
+   - `GEMODO_MODELLI_APPROVATORE`
    - `GEMODO_MODELLI_VIEWER`
    - `DOCUMENTI_GENERATORE`
    - `DOCUMENTI_VIEWER`
@@ -213,7 +231,10 @@ GEMODO deve rifiutare la richiesta quando:
 - il client chiamante non e' quello atteso;
 - un ruolo GEBAN viene usato per azioni builder;
 - un ruolo GEMODO builder viene usato per generazione/download GEBAN;
-- il contesto GEBAN e' mancante o incoerente dove richiesto.
+- il contesto GEBAN e' mancante o incoerente dove richiesto;
+- il payload contiene un contesto autorizzativo non supportato da claim verificabili nel
+  token;
+- una chiamata tecnica usa `SYSTEM_GEBAN` su API non censita per uso batch/tecnico.
 
 ## Audit
 
@@ -238,7 +259,18 @@ Non salvare mai:
 - credenziali tecniche;
 - dati non necessari alla ricostruzione dell'evento.
 
-## Domanda Aperta Da Confermare
+## AI/MCP
+
+I tool AI/MCP che accedono a dati GEMODO devono usare lo stesso modello autorizzativo
+delle API ordinarie:
+
+- ruoli e claim vengono letti da token validi;
+- ogni azione viene auditata con attore, client, target, esito e timestamp;
+- pubblicazione modello, archiviazione, generazione PDF ufficiale e download documenti
+  richiedono conferma esplicita quando invocati tramite AI/MCP;
+- prompt, risposte e audit non devono contenere token, secret o credenziali.
+
+## Decisioni Differite Da Confermare
 
 ```text
 Rif. SEC-006-001
@@ -249,6 +281,18 @@ chiamante geban-backend sia l'identita' utente reale?
 
 In alternativa, preferite un modello con solo token tecnico GEBAN e utente reale passato
 nel payload/audit?
+```
+
+```text
+Rif. SEC-006-002
+
+La prima release deve separare effettivamente gestore, revisore e approvatore, oppure e'
+sufficiente il flusso minimo in cui GEMODO_MODELLI_GESTORE puo' anche pubblicare e
+archiviare modelli?
+
+Stato corrente: si prosegue assumendo il flusso minimo; se verra' richiesta separazione
+effettiva, pubblicazione e archiviazione saranno limitate a GEMODO_ADMIN e
+GEMODO_MODELLI_APPROVATORE.
 ```
 
 ## Riferimenti

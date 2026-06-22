@@ -1,0 +1,15 @@
+site_name: GEMODO CNR - Spec Kit
+site_description: Documentazione navigabile generata dagli artefatti Spec Kit.
+site_url: ""
+docs_dir: docs
+site_dir: site
+use_directory_urls: true
+theme:
+  name: readthedocs
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true

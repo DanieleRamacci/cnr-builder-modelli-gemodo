@@ -32,4 +32,10 @@
 ## Notes
 
 - Draft di copertura. Storage e idempotenza sono in spec separata.
-
+- Validazione aggiornata il 2026-06-22 dopo integrazione con spec catalogo/contratto
+  dati, sezioni/placeholder, storage/idempotenza e sicurezza/audit.
+- La spec non viene riscritta da zero: resta una draft esistente integrata con requisiti
+  su generazione deterministica, fallimenti sanificati, metadati, audit e confini di
+  responsabilita'.
+- Nessun marker `[NEEDS CLARIFICATION]` residuo; altri formati oltre PDF restano fuori
+  perimetro corrente salvo futura decisione dedicata.

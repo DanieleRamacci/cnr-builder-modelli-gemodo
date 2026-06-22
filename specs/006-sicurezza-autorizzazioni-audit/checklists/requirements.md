@@ -35,3 +35,12 @@
 - Documento operativo collegato: `keycloak-jwt.md`.
 - Decisione `SEC-006-001` segnata come provvisoria: token delegato GEBAN -> GEMODO da confermare col team GEBAN/Keycloak prima dell'implementazione.
 - Utenti, password e assegnazione ruoli restano in Keycloak; GEMODO consuma JWT e applica autorizzazioni backend.
+- Validazione aggiornata il 2026-06-22 dopo estensione requisiti su matrice ruoli, audit
+  minimo, API tecniche censite e AI/MCP.
+- Decisione `SEC-006-002` aggiunta: confermare prima della pianificazione se attivare
+  separazione effettiva tra gestore, revisore e approvatore nella prima release.
+- Decisioni `SEC-006-001` e `SEC-006-002` differite su indicazione utente: la definizione
+  puo' proseguire usando le assunzioni provvisorie documentate.
+- La feature puo' passare alla pianificazione con assunzioni provvisorie; eventuali
+  risposte diverse del team GEBAN/Keycloak dovranno aggiornare spec, piano e task prima
+  dell'implementazione.

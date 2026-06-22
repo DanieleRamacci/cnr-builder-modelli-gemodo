@@ -4,10 +4,10 @@ Before working on this project, read:
 1. `.specify/memory/constitution.md` for non-negotiable project principles.
 2. `docs/project-map.md` for proposal-section coverage and spec ownership.
 3. `.specify/feature.json` to identify the active feature for Spec Kit commands.
-4. `specs/006-sicurezza-autorizzazioni-audit/plan.md` for the current technical plan when present.
+4. The active feature's `plan.md` for the current technical plan when present.
 5. The active feature's `spec.md` before changing requirements.
 
-The current active feature is `specs/006-sicurezza-autorizzazioni-audit`.
+The current active feature is `specs/004-generazione-documenti-pdf`.
 
 Do not implement application code before the active feature has `tasks.md`.
 

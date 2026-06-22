@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: Draft - decisioni differite
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §12, §8.11 e §12.9.
 
@@ -16,6 +16,9 @@
 
 - Q SEC-006-001: Come deve arrivare l'identita' utente da GEBAN a GEMODO nelle chiamate operative? -> A: Scelta provvisoria da confermare col team: GEBAN chiama GEMODO con un token delegato emesso da Keycloak per audience GEMODO, contenente sia il client chiamante `geban-backend` sia l'identita' dell'utente reale. Questa scelta resta aperta fino a conferma tecnica del team GEBAN/Keycloak.
 - Q: Dove vengono gestiti utenti e ruoli applicativi? -> A: Utenti e assegnazione ruoli sono gestiti in Keycloak, non in GEMODO. GEMODO legge i ruoli dal JWT e applica autorizzazioni backend. Per il builder usa ruoli GEMODO; per chiamate da GEBAN usa ruoli/claim di generazione o consultazione.
+- Q: Come trattare revisione e approvazione modello rispetto ai ruoli builder? -> A: La prima versione deve supportare il flusso minimo con gestore abilitato anche alla pubblicazione; la specifica riserva pero' ruoli separati di revisore e approvatore, attivabili se il processo CNR richiede separazione dei compiti prima dell'implementazione.
+- Q: Il contesto autorizzativo nel payload puo' sostituire il JWT? -> A: No. Il payload puo' arricchire audit e contesto applicativo, ma autenticazione e autorizzazione derivano dal token e dai claim verificabili.
+- Q: Le decisioni `SEC-006-001` e `SEC-006-002` bloccano la prosecuzione della definizione? -> A: No. Si procede con le assunzioni provvisorie gia' documentate; le decisioni restano da riaprire quando arrivera' la risposta del team e comunque prima dell'implementazione.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -52,14 +55,16 @@ generare documenti.
 
 1. **Given** un gestore modelli, **When** modifica una bozza, **Then** l'azione e'
    consentita se il ruolo e' adeguato.
-2. **Given** un utente senza ruolo di approvazione, **When** tenta pubblicazione modello,
-   **Then** il servizio la impedisce.
+2. **Given** il processo richiede approvatore separato e un utente non ha ruolo di
+   approvazione, **When** tenta pubblicazione modello, **Then** il servizio la impedisce.
 3. **Given** GEBAN propaga un contesto utente autorizzato, **When** richiede generazione,
    **Then** il servizio puo' collegare richiesta, utente e contesto.
 4. **Given** GEBAN chiama GEMODO per un'operazione utente, **When** il token delegato viene
    validato, **Then** GEMODO identifica sia `geban-backend` sia l'utente reale.
 5. **Given** un utente accede al builder GEMODO, **When** il JWT contiene un ruolo GEMODO
    valido, **Then** GEMODO abilita solo le azioni previste da quel ruolo.
+6. **Given** il processo richiede approvatore separato, **When** un gestore tenta di
+   pubblicare una versione, **Then** il servizio richiede un ruolo approvativo distinto.
 
 ---
 
@@ -81,6 +86,9 @@ target e timestamp.
    **Then** viene registrato l'esito.
 3. **Given** un errore autorizzativo, **When** il servizio rifiuta la richiesta, **Then**
    l'evento viene auditato.
+4. **Given** un'azione ufficiale avviata tramite tool AI/MCP, **When** l'azione richiede
+   pubblicazione, archiviazione, generazione ufficiale o download, **Then** valgono gli
+   stessi ruoli, conferme e audit delle API ordinarie.
 
 ### Edge Cases
 
@@ -91,7 +99,10 @@ target e timestamp.
 - Token con ruolo GEBAN di generazione usato per accedere al builder GEMODO.
 - Token con ruolo GEMODO builder usato per generare documenti dal flusso GEBAN.
 - Contesto GEBAN non coerente con l'azione richiesta.
+- Contesto autorizzativo nel payload coerente con la richiesta ma non supportato da claim
+  verificabili nel token.
 - Audit fallito durante operazione sensibile.
+- Chiamata AI/MCP con ruolo valido ma senza conferma esplicita per azione ufficiale.
 
 ## Requirements *(mandatory)*
 
@@ -105,13 +116,19 @@ target e timestamp.
 - **FR-003c**: GEMODO MUST NOT gestire utenti, password o assegnazione ufficiale dei ruoli applicativi; tali responsabilita' restano in Keycloak o nel sistema identita' collegato.
 - **FR-003d**: GEMODO MUST leggere dal JWT i ruoli applicativi e applicare autorizzazioni lato backend in base al canale: ruoli GEMODO per builder, ruoli/claim GEBAN per generazione e consultazione documenti.
 - **FR-004**: Il servizio MUST applicare autorizzazioni lato backend.
-- **FR-005**: Il servizio MUST supportare almeno i ruoli `GEMODO_ADMIN`, `GEMODO_MODELLI_GESTORE`, `GEMODO_MODELLI_VIEWER`, `DOCUMENTI_GENERATORE`, `DOCUMENTI_VIEWER` e `SYSTEM_GEBAN`.
+- **FR-005**: Il servizio MUST supportare almeno i ruoli `GEMODO_ADMIN`, `GEMODO_MODELLI_GESTORE`, `GEMODO_MODELLI_VIEWER`, `DOCUMENTI_GENERATORE`, `DOCUMENTI_VIEWER` e `SYSTEM_GEBAN`; deve inoltre riservare i ruoli `GEMODO_MODELLI_REVISORE` e `GEMODO_MODELLI_APPROVATORE` per eventuale separazione di revisione e pubblicazione.
 - **FR-005a**: `GEMODO_ADMIN` MUST poter eseguire tutte le operazioni interne GEMODO.
 - **FR-005b**: `GEMODO_MODELLI_GESTORE` MUST poter creare, modificare, pubblicare e archiviare modelli nel builder, salvo futura introduzione di ruoli approvativi separati.
 - **FR-005c**: `DOCUMENTI_GENERATORE` MUST essere usato per richieste di generazione documenti provenienti dal flusso GEBAN; non abilita la gestione del builder GEMODO.
+- **FR-005d**: Se i ruoli approvativi separati vengono attivati, pubblicazione e archiviazione MUST essere consentite solo a `GEMODO_ADMIN` o `GEMODO_MODELLI_APPROVATORE`; la richiesta di revisione MUST restare consentita a `GEMODO_ADMIN`, `GEMODO_MODELLI_GESTORE` o `GEMODO_MODELLI_REVISORE` secondo il workflow definito.
 - **FR-006**: Il servizio MUST auditare creazione, modifica, revisione, pubblicazione e archiviazione modello.
 - **FR-007**: Il servizio MUST auditare validazioni fallite, generazioni, download ed errori autorizzativi.
 - **FR-008**: Nessun segreto, token o credenziale MUST essere esposto in log, audit o risposte applicative.
+- **FR-009**: Il contesto/autorizzazione trasmesso nel payload da GEBAN MUST essere usato solo come contesto applicativo e audit; non puo' sostituire un token valido con ruoli o claim verificabili.
+- **FR-010**: Le API accessibili tramite `SYSTEM_GEBAN` MUST essere esplicitamente censite e non possono includere operazioni utente ordinarie salvo decisione documentata.
+- **FR-011**: Ogni audit event MUST contenere almeno tipo aggregate, identificativo target, tipo evento, attore o client, esito, timestamp e payload minimo sanificato; per rifiuti autorizzativi deve includere il motivo applicativo del rifiuto senza esporre segreti.
+- **FR-012**: Un'operazione sensibile MUST NOT essere considerata completata con successo se l'audit obbligatorio non viene registrato o non e' ricostruibile.
+- **FR-013**: I tool AI/MCP che leggono o scrivono dati GEMODO MUST rispettare gli stessi ruoli, contesti e audit delle API ordinarie; pubblicazione, archiviazione, generazione ufficiale e download richiedono conferma esplicita quando invocati tramite AI/MCP.
 
 ### Key Entities
 
@@ -121,6 +138,12 @@ target e timestamp.
 - **Ruolo GEMODO**: ruolo applicativo letto dal JWT e valido per le funzionalita' interne GEMODO.
 - **Ruolo/Claim GEBAN**: ruolo o claim contestuale letto dal JWT delegato e valido per generazione, download o consultazione nel flusso GEBAN.
 - **Contesto GEBAN**: contesto operativo passato da GEBAN.
+- **Contesto Autorizzativo Payload**: dati di supporto inviati da GEBAN per audit e
+  coerenza applicativa, non sostitutivi del token.
+- **API Tecnica Censita**: operazione server-to-server esplicitamente autorizzata per
+  client tecnici o batch.
+- **Operazione Sensibile**: azione che modifica configurazioni, produce o espone documenti,
+  o rifiuta una richiesta per ragioni di sicurezza.
 - **Audit Event**: registrazione di operazione rilevante.
 
 ## Success Criteria *(mandatory)*
@@ -130,6 +153,10 @@ target e timestamp.
 - **SC-001**: Il 100% delle operazioni sensibili produce un audit event.
 - **SC-002**: Il 100% delle richieste prive di autorizzazione adeguata viene rifiutato.
 - **SC-003**: Il 100% delle generazioni autorizzate conserva attore o client tecnico responsabile.
+- **SC-004**: Il 100% degli audit event verificati non contiene JWT completi, refresh token,
+  client secret, password o credenziali tecniche.
+- **SC-005**: Il 100% delle chiamate tecniche accettate e' riconducibile a una API censita
+  per `SYSTEM_GEBAN` o client equivalente.
 
 ## Assumptions
 
@@ -138,11 +165,22 @@ target e timestamp.
   collegato; GEMODO consuma i ruoli presenti nel JWT.
 - Il ruolo approvatore separato per il builder non e' obbligatorio nella prima versione e
   potra' essere introdotto in seguito se il processo lo richiede.
+- I ruoli `GEMODO_MODELLI_REVISORE` e `GEMODO_MODELLI_APPROVATORE` sono riservati per
+  separazione dei compiti; se non vengono attivati, il flusso minimo resta coperto da
+  `GEMODO_ADMIN` e `GEMODO_MODELLI_GESTORE`.
 - La modalita' token delegato GEBAN -> GEMODO e' una scelta provvisoria da confermare con il team tecnico prima dell'implementazione.
+- La pianificazione puo' proseguire assumendo token delegato e flusso minimo senza
+  separazione obbligatoria gestore/revisore/approvatore; eventuali risposte diverse del
+  team dovranno aggiornare spec, piano e task prima dell'implementazione.
 - Eventuali integrazioni future non fanno parte del perimetro operativo di questa spec.
 
-## Open Decisions
+## Deferred Decisions
 
 - **SEC-006-001**: Confermare con il team GEBAN/Keycloak se le chiamate utente verso
   GEMODO useranno token delegato con audience GEMODO, client `geban-backend` e identita'
-  utente reale nello stesso JWT.
+  utente reale nello stesso JWT. Nel frattempo la definizione procede assumendo questa
+  modalita'.
+- **SEC-006-002**: Confermare prima della pianificazione se la prima release richiede
+  separazione effettiva tra gestore, revisore e approvatore oppure se basta il flusso
+  minimo con `GEMODO_MODELLI_GESTORE` abilitato alla pubblicazione. Nel frattempo la
+  definizione procede assumendo il flusso minimo.

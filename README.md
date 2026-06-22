@@ -55,5 +55,20 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/006-sicurezza-autorizzazioni-audit
+specs/004-generazione-documenti-pdf
 ```
+
+## Documentazione Navigabile
+
+La documentazione web viene generata automaticamente dagli artefatti Spec Kit. I file
+generati sotto `docs/spec-kit/` non vanno modificati a mano.
+
+Per generare e vedere il sito in locale:
+
+```bash
+python3 scripts/generate-spec-docs.py
+mkdocs serve
+```
+
+GitHub Pages esegue lo stesso script nel workflow `.github/workflows/pages.yml` prima di
+pubblicare il sito.
