@@ -8,6 +8,12 @@ theme:
   name: readthedocs
 plugins:
   - search
+nav:
+  - Home: index.md
+  - Proposta: spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md
+  - Spec Kit Index: spec-kit/index.md
+  - Project Map: project-map.md
+  - Costituzione: spec-kit/governance/constitution.md
 markdown_extensions:
   - admonition
   - tables

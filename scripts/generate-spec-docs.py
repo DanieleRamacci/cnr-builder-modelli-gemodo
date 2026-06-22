@@ -166,11 +166,25 @@ def write_index(specs: list[SpecInfo]) -> None:
         "",
         "_Pagina generata automaticamente da `scripts/generate-spec-docs.py`._",
         "",
+        "## Documento Sorgente",
+        "",
+        "La proposta e' il documento condivisibile con i colleghi e la base da cui derivano",
+        "le specifiche Spec Kit.",
+        "",
+    ]
+
+    if PROPOSAL.exists():
+        lines.append("- [PROPOSTA - Servizio Gestione Modelli Bando](source/PROPOSTA-servizio-gestione-modelli-bando.md)")
+        lines.append("")
+
+    lines.extend(
+        [
         "## Vista Sintetica",
         "",
         "| Spec | Area | Stato | Checklist | Tasks | Artefatti |",
         "|---|---|---|---:|---:|---|",
-    ]
+        ]
+    )
 
     for spec in specs:
         spec_link = OUT_DIR / "specs" / spec.slug / "spec.md"
@@ -223,11 +237,28 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
         "",
         "Questa documentazione pubblica gli artefatti Spec Kit in forma navigabile.",
         "",
+        "## Documento Da Condividere",
+        "",
+        "La proposta e' il documento principale da condividere con i colleghi. Le specifiche",
+        "sono il lavoro di dettaglio derivato da quel documento.",
+        "",
+    ]
+
+    if PROPOSAL.exists():
+        lines.extend(
+            [
+                "- [Apri la proposta](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
         "## Entrate Principali",
         "",
+        "- [Proposta sorgente](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
         "- [Spec Kit Index](spec-kit/index.md)",
         "- [Project Map](project-map.md)",
-        "- [Proposta sorgente](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
         "",
         "## Stato Generato",
         "",
@@ -243,7 +274,8 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
         "python3 scripts/generate-spec-docs.py",
         "mkdocs serve",
         "```",
-    ]
+        ]
+    )
     (DOCS_DIR / "index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
