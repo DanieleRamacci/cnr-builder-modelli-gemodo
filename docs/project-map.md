@@ -14,10 +14,10 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 |---|---|---|---|---|
 | `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Draft specificata | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; attiva in `.specify/feature.json` |
 | `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Draft di copertura | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi |
-| `003-sezioni-placeholder-versionamento` | Sezioni, placeholder, JSON schema e versionamento contenuti | Draft di copertura | §5.5, §6, §8.7-§8.9, §16.3 | Da chiarire formato contenuto e campi complessi |
+| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Tasks completati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento |
 | `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo |
-| `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | Draft di copertura | §12, §8.11, §15.3 | Spec dedicata per non diluire sicurezza nelle altre |
+| `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | In chiarimento | §12, §8.11, §12.9 | `keycloak-jwt.md`; SEC-006-001 token delegato GEBAN -> GEMODO da confermare col team |
 | `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft di copertura | §11, §16.6 | Dipende da API builder e generazioni |
 | `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft di copertura | §15 | Non prerequisito del primo rilascio |
 | `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test e qualita' | Draft di copertura | §16.1, §16.2, §16.7, §17 | Raccoglie setup e criteri cross-cutting |
@@ -59,4 +59,3 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 L'ordine mette prima il flusso GEBAN e il dominio configurabile, poi sicurezza e
 generazione, quindi frontend, test e predisposizione AI.
-

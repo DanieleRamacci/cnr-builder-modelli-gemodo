@@ -55,5 +55,5 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/002-builder-modelli
+specs/006-sicurezza-autorizzazioni-audit
 ```

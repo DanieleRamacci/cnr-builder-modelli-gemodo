@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: GEBAN GEMODO Sezioni e Placeholder API
+  version: 0.1.0
+  description: API interne builder per sezioni della versione modello, template, placeholder e schemi campi complessi.
+servers:
+  - url: /api/v1/builder
+paths:
+  /modelli/{modelloId}/versioni/{versioneId}/sezioni:
+    get:
+      summary: Lista sezioni della versione modello
+      operationId: listSezioniModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Sezioni della versione modello
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SezioneListResponse"
+    post:
+      summary: Aggiunge sezione alla versione modello
+      operationId: createSezioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SezioneUpsertRequest"
+      responses:
+        "201":
+          description: Sezione creata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SezioneModello"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/sezioni/{sezioneId}:
+    put:
+      summary: Aggiorna sezione modificabile
+      operationId: updateSezioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+        - $ref: "#/components/parameters/SezioneId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SezioneUpsertRequest"
+      responses:
+        "200":
+          description: Sezione aggiornata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SezioneModello"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/sezioni/valida:
+    post:
+      summary: Valida sezioni, placeholder e campi complessi prima della pubblicazione
+      operationId: validaSezioniPlaceholder
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Esito validazione sezioni
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidazioneSezioniResponse"
+  /template-sezioni:
+    get:
+      summary: Lista template sezione copiabili
+      operationId: listTemplateSezioni
+      responses:
+        "200":
+          description: Template disponibili
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateSezioneListResponse"
+    post:
+      summary: Crea template sezione copiabile
+      operationId: createTemplateSezione
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateSezioneUpsertRequest"
+      responses:
+        "201":
+          description: Template creato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateSezione"
+  /modelli/{modelloId}/versioni/{versioneId}/campi/{campoId}/schema-complesso:
+    put:
+      summary: Definisce schema per campo complesso
+      operationId: upsertCampoComplessoSchema
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+        - $ref: "#/components/parameters/CampoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampoComplessoSchema"
+      responses:
+        "200":
+          description: Schema campo complesso salvato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampoComplessoSchema"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  parameters:
+    ModelloId:
+      name: modelloId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    VersioneId:
+      name: versioneId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    SezioneId:
+      name: sezioneId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    CampoId:
+      name: campoId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    Conflict:
+      description: Operazione non consentita nello stato corrente o contenuto non valido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    SezioneListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SezioneModello"
+    SezioneModello:
+      type: object
+      required: [id, modello_versione_id, ordine, obbligatoria, contenuto]
+      properties:
+        id:
+          type: integer
+          format: int64
+        modello_versione_id:
+          type: integer
+          format: int64
+        ordine:
+          type: integer
+        titolo:
+          type: string
+        obbligatoria:
+          type: boolean
+        origine_template_id:
+          type: integer
+          format: int64
+        contenuto:
+          $ref: "#/components/schemas/ContenutoStrutturato"
+    SezioneUpsertRequest:
+      type: object
+      required: [ordine, obbligatoria, contenuto]
+      properties:
+        ordine:
+          type: integer
+        titolo:
+          type: string
+        obbligatoria:
+          type: boolean
+        origine_template_id:
+          type: integer
+          format: int64
+        contenuto:
+          $ref: "#/components/schemas/ContenutoStrutturato"
+    ContenutoStrutturato:
+      type: object
+      required: [blocchi]
+      properties:
+        blocchi:
+          type: array
+          items:
+            $ref: "#/components/schemas/BloccoContenuto"
+    BloccoContenuto:
+      type: object
+      required: [tipo]
+      properties:
+        tipo:
+          type: string
+          enum: [paragrafo, titolo, lista, tabella_semplice]
+        testo:
+          type: string
+        righe:
+          type: array
+          items:
+            type: object
+    ValidazioneSezioniResponse:
+      type: object
+      required: [valido, errori]
+      properties:
+        valido:
+          type: boolean
+        errori:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErroreValidazioneSezioni"
+    ErroreValidazioneSezioni:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice:
+          type: string
+          enum: [PLACEHOLDER_NON_DISPONIBILE, PLACEHOLDER_OBBLIGATORIO_MANCANTE, CONTENUTO_NON_AMMESSO, CAMPO_COMPLESSO_SENZA_SCHEMA, SOTTO_CAMPO_NON_AMMESSO]
+        messaggio:
+          type: string
+        riferimento:
+          type: string
+    TemplateSezioneListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateSezione"
+    TemplateSezione:
+      type: object
+      required: [id, codice, descrizione, contenuto, attivo]
+      properties:
+        id:
+          type: integer
+          format: int64
+        codice:
+          type: string
+        descrizione:
+          type: string
+        contenuto:
+          $ref: "#/components/schemas/ContenutoStrutturato"
+        attivo:
+          type: boolean
+    TemplateSezioneUpsertRequest:
+      type: object
+      required: [codice, descrizione, contenuto]
+      properties:
+        codice:
+          type: string
+        descrizione:
+          type: string
+        contenuto:
+          $ref: "#/components/schemas/ContenutoStrutturato"
+        attivo:
+          type: boolean
+          default: true
+    CampoComplessoSchema:
+      type: object
+      required: [tipo, sotto_campi]
+      properties:
+        tipo:
+          type: string
+          enum: [object, array, lista_oggetti, tabella, sezione_ripetibile]
+        sotto_campi:
+          type: array
+          items:
+            $ref: "#/components/schemas/SottoCampoSchema"
+    SottoCampoSchema:
+      type: object
+      required: [codice, etichetta, tipo_dato, obbligatorio, ordine]
+      properties:
+        codice:
+          type: string
+        etichetta:
+          type: string
+        tipo_dato:
+          type: string
+          enum: [string, number, date, boolean, array, object]
+        obbligatorio:
+          type: boolean
+        ordine:
+          type: integer
+        vincoli:
+          type: object
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

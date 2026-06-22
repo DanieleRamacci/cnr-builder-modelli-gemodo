@@ -32,4 +32,6 @@
 ## Notes
 
 - Draft di copertura. Keycloak/JWT e' un vincolo di costituzione/proposta, non una scelta nuova.
-
+- Documento operativo collegato: `keycloak-jwt.md`.
+- Decisione `SEC-006-001` segnata come provvisoria: token delegato GEBAN -> GEMODO da confermare col team GEBAN/Keycloak prima dell'implementazione.
+- Utenti, password e assegnazione ruoli restano in Keycloak; GEMODO consuma JWT e applica autorizzazioni backend.

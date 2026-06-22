@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Draft di copertura. Da approfondire con formati contenuto e campi complessi.
-
+- Chiarito: contenuto strutturato controllato, campi complessi con schema esplicito,
+  sezioni proprie della versione modello e nessun versionamento autonomo sezioni per ora.
