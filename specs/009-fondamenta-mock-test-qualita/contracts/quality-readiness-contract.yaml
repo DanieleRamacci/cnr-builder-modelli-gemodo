@@ -1,0 +1,102 @@
+contract: quality-readiness
+version: 1
+scope: specs/009-fondamenta-mock-test-qualita
+purpose: >
+  Definire il manifest minimo che deve esistere prima di considerare pronta una
+  feature per task implementativi o analisi cross-artifact.
+
+required_sections:
+  environment:
+    required: true
+    fields:
+      - profile
+      - services
+      - healthchecks
+      - setup_reference
+  seed_demo:
+    required: true
+    fields:
+      - id
+      - demo_marker
+      - spec_owner
+      - resettable
+      - contains_real_or_sensitive_data
+    rules:
+      - contains_real_or_sensitive_data must be false
+      - demo_marker must be present for every seed
+  contracts:
+    required: true
+    fields:
+      - contract_ref
+      - spec_owner
+      - success_examples
+      - error_examples
+    rules:
+      - every GEBAN-facing contract must have at least one success example
+      - every GEBAN-facing contract must have at least one functional error example
+  coverage:
+    required: true
+    fields:
+      - spec_owner
+      - requirement_id
+      - scenario_id
+      - contract_ref
+      - status
+    allowed_status:
+      - DA_COPRIRE
+      - COPERTO
+      - BLOCCATO
+  open_decisions:
+    required: true
+    fields:
+      - id
+      - title
+      - owner_spec
+      - impacted_specs
+      - status
+      - provisional_assumption
+      - blocking_phase
+    allowed_status:
+      - APERTA
+      - ASSUNTA_PROVVISORIA
+      - CONFERMATA
+      - SOSPESA
+
+minimum_quality_gates:
+  before_tasks:
+    - environment has documented setup and required healthchecks
+    - all critical open decisions have owner and blocking phase
+    - mock GEBAN scenarios are mapped to contracts
+    - seed demo contains no real or sensitive data
+  before_implementation:
+    - impacted critical decisions are confirmed or explicitly suspended
+    - e2e scenarios cover valid flow, validation error, idempotent retry, conflict, failure, unauthorized access
+    - audit expectations are documented for sensitive operations
+
+example:
+  environment:
+    profile: local-dev
+    services:
+      - backend
+      - frontend
+      - postgres
+      - keycloak
+      - documentale-mock
+      - mock-geban
+    setup_reference: specs/009-fondamenta-mock-test-qualita/quickstart.md
+  seed_demo:
+    - id: seed-bando-concorso-demo
+      demo_marker: DEMO
+      spec_owner: specs/001-catalogo-contratto-geban
+      resettable: true
+      contains_real_or_sensitive_data: false
+  open_decisions:
+    - id: SEC-006-001
+      title: Token delegato GEBAN verso GEMODO
+      owner_spec: specs/006-sicurezza-autorizzazioni-audit
+      impacted_specs:
+        - specs/005-storage-idempotenza-consultazione
+        - specs/009-fondamenta-mock-test-qualita
+      status: ASSUNTA_PROVVISORIA
+      provisional_assumption: token delegato Keycloak con audience GEMODO e identita utente reale
+      blocking_phase: IMPLEMENTAZIONE

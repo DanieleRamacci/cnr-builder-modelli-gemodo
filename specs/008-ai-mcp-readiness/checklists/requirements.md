@@ -31,5 +31,8 @@
 
 ## Notes
 
-- Draft di copertura. Non previsto come prerequisito MVP.
-
+- Integrata il 2026-06-22 come approfondimento di una spec esistente, non come creazione
+  da zero.
+- AI/MCP resta predisposizione futura e non prerequisito del primo rilascio.
+- Le capacita' candidate sono classificate per rischio e vincolate a ruoli, conferme,
+  audit e validazione deterministica secondo la spec sicurezza.

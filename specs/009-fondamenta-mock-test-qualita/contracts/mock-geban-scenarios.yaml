@@ -1,0 +1,93 @@
+contract: mock-geban-scenarios
+version: 1
+scope: specs/009-fondamenta-mock-test-qualita
+purpose: >
+  Definire gli scenari minimi che il mock GEBAN deve esercitare usando i contratti
+  pubblici, senza accesso diretto a dati interni GEMODO.
+
+actors:
+  - SYSTEM_GEBAN
+  - DOCUMENTI_GENERATORE
+  - DOCUMENTI_VIEWER
+
+shared_inputs:
+  sistema_richiedente: GEBAN
+  tipo_documento: BANDO_CONCORSO
+  categoria_documento: DEMO
+  variante_modello: STANDARD
+  demo_marker: DEMO
+
+scenarios:
+  - id: E2E-001
+    name: catalogo-campi-validazione-generazione-stato
+    type: VALIDO
+    required_contracts:
+      - catalogo modelli pubblicati
+      - campi richiesti/schema
+      - validazione payload
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - modello pubblicato demo trovato
+      - schema dati restituito
+      - payload valido accettato
+      - generazione tracciata
+      - stato consultabile
+
+  - id: E2E-002
+    name: payload-non-valido
+    type: ERRORE_VALIDAZIONE
+    required_contracts:
+      - campi richiesti/schema
+      - validazione payload
+    expected_outcome:
+      - payload rifiutato
+      - errore funzionale esplicito
+      - nessun documento ufficiale generato
+
+  - id: E2E-003
+    name: retry-idempotente
+    type: IDEMPOTENZA
+    required_contracts:
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - stessa chiave e stessi dati restituiscono la generazione esistente
+      - nessun duplicato creato
+
+  - id: E2E-004
+    name: conflitto-idempotente
+    type: CONFLITTO
+    required_contracts:
+      - generazione documento
+    expected_outcome:
+      - stessa chiave e dati divergenti producono conflitto
+      - conflitto auditabile
+
+  - id: E2E-005
+    name: generazione-fallita
+    type: FALLIMENTO
+    required_contracts:
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - stato fallito consultabile
+      - errore funzionale sanificato
+      - evento audit previsto
+
+  - id: E2E-006
+    name: consultazione-download-non-autorizzato
+    type: AUTORIZZAZIONE
+    required_contracts:
+      - stato generazione
+      - download documento
+    expected_outcome:
+      - accesso rifiutato
+      - nessun payload o file esposto
+      - evento autorizzativo auditabile
+
+coverage_requirements:
+  - every scenario must reference at least one public contract
+  - every scenario must be mapped to a spec owner and requirement before task generation
+  - unauthorized and failed scenarios are mandatory, not optional
+  - mock must not call internal builder or database interfaces directly

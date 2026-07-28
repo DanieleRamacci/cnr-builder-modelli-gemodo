@@ -31,5 +31,8 @@
 
 ## Notes
 
-- Draft di copertura. UI design e stack frontend verranno nel piano tecnico.
-
+- Integrata il 2026-06-22 come approfondimento di una spec esistente, non come creazione
+  da zero.
+- La spec resta technology-agnostic: UI design e stack frontend verranno nel piano tecnico.
+- Il confine GEBAN/GEMODO, le autorizzazioni, la consultazione generazioni e gli stati
+  modello sono allineati alle spec 002, 003, 005 e 006.

@@ -31,5 +31,15 @@
 
 ## Notes
 
-- Draft di copertura. Lo stack tecnico definitivo verra' deciso in planning.
-
+- Integrata il 2026-06-22 come approfondimento di una spec esistente, non come creazione
+  da zero.
+- Lo stack tecnico definitivo verra' deciso in planning; questa spec definisce criteri di
+  ripetibilita', mock, dati demo, copertura test e gestione decisioni aperte.
+- Le decisioni di §17 sono mappate a spec owner e assunzioni provvisorie per evitare
+  scelte implicite nei piani.
+- Il 2026-07-28 sono stati chiariti bando multiplo, ribando e direzione del bando
+  inglese come modello/output integrale tradotto.
+- Il documento GEBAN condiviso il 2026-07-28 chiarisce tipologie iniziali GEBAN/SOL,
+  campi comuni e bando inglese come secondo modello/output integrale tradotto.
+- La linea Keycloak proposta e' documentata come configurabile: utenti GEMODO via SSO,
+  chiamate GEBAN con token tecnico e contesto audit nel payload, in attesa di conferma.

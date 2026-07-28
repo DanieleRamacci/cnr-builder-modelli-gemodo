@@ -32,4 +32,10 @@
 ## Notes
 
 - Draft di copertura. Da chiarire storage definitivo e rigenerazione.
-
+- Validazione aggiornata il 2026-06-22 dopo integrazione con generazione PDF,
+  sicurezza/audit e proposta sorgente.
+- Lo storage fisico resta decisione di piano tecnico; la spec vincola il contratto a un
+  riferimento documentale stabile e nasconde il dettaglio storage a GEBAN.
+- La rigenerazione volontaria non sovrascrive una chiave idempotente esistente con dati
+  diversi: richiede nuova chiave funzionale o revisione esplicita.
+- Nessun marker `[NEEDS CLARIFICATION]` residuo; la feature puo' passare a planning.

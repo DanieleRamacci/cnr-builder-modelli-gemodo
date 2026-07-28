@@ -12,15 +12,15 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
-| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Draft specificata | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; attiva in `.specify/feature.json` |
+| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Draft specificata | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; da integrare tipologie GEBAN/SOL, campi comuni, profilo GEBAN versionato, mapping codici/modelli, API per profilo e configurazione/autorizzazioni; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28 |
 | `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Draft di copertura | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi |
 | `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Tasks completati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente |
-| `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento |
-| `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo |
-| `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | In chiarimento | §12, §8.11, §12.9 | `keycloak-jwt.md`; SEC-006-001 token delegato GEBAN -> GEMODO da confermare col team |
-| `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft di copertura | §11, §16.6 | Dipende da API builder e generazioni |
-| `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft di copertura | §15 | Non prerequisito del primo rilascio |
-| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test e qualita' | Draft di copertura | §16.1, §16.2, §16.7, §17 | Raccoglie setup e criteri cross-cutting |
+| `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
+| `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo; ribando chiarito in `009` come nuovo bando collegato al precedente; resta da chiarire nuova pubblicazione/riferimento documentale verso sistemi esterni |
+| `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | In chiarimento | §12, §8.11, §12.9 | `keycloak-jwt.md`; proposta corrente in `009`: utenti GEMODO via SSO, GEBAN -> GEMODO con token tecnico backend-to-backend e contesto audit nel payload; configurazione Keycloak da confermare |
+| `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft integrata | §11, §16.6 | Dipende da API builder e generazioni |
+| `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft integrata | §15 | Non prerequisito del primo rilascio |
+| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test e qualita' | Tasks generati | §16.1, §16.2, §16.7, §17 | Attiva; raccoglie setup, criteri cross-cutting e ownership decisioni |
 
 ## Coverage Per Sezione Proposta
 

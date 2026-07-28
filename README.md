@@ -55,7 +55,7 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/004-generazione-documenti-pdf
+specs/009-fondamenta-mock-test-qualita
 ```
 
 ## Documentazione Navigabile
