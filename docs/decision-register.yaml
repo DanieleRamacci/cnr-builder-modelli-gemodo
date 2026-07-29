@@ -1,0 +1,444 @@
+# Registro decisioni aperte - proposta PROPOSTA-servizio-gestione-modelli-bando.md §17
+# (spec 009, User Story 3; entita' DecisioneAperta in backend/app/quality/schemas.py,
+# regole in backend/app/quality/decision.py).
+#
+# Transcrizione 1:1 della sezione "Decision Ownership" di
+# specs/009-fondamenta-mock-test-qualita/spec.md, piu' le due decisioni sicurezza
+# SEC-006-001/SEC-006-002 gia' citate altrove nel repository con quell'identificativo.
+# Regola di aggiornamento: docs/decision-workflow.md.
+#
+# SC-002: il 100% delle decisioni di §17 deve avere owner qui.
+
+decisions:
+  - id: DEC-009-NOME-SERVIZIO
+    titolo: Nome definitivo del servizio
+    owner_spec: specs/009-fondamenta-mock-test-qualita
+    spec_interessate:
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: GEMODO
+    impatto: documentazione e naming pubblico
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-002-STATI-MODELLO
+    titolo: Stati definitivi di approvazione/pubblicazione modello
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: stati separati BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO
+    impatto: contratto dati modello/versione e transizioni di stato esposte alle API
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-001-TIPOLOGIE-SOL
+    titolo: Lista iniziale tipologie GEBAN/SOL
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      dominio SOL completo preimpostato in anagrafica GEBAN; perimetro iniziale ufficio
+      reclutamento centrale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB (gia'
+      recepito nel seed demo 009, infra/local/postgres/seed-demo-catalog.yaml)
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-28
+
+  - id: DEC-001-CATEGORIE-INIZIALI
+    titolo: Lista iniziale categorie per BANDO_CONCORSO
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: categorie demo minime
+    impatto: catalogo modelli e seed demo
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-005-IDEMPOTENZA-RIGENERAZIONE
+    titolo: Regole definitive di idempotenza e rigenerazione
+    owner_spec: specs/005-storage-idempotenza-consultazione
+    spec_interessate:
+      - specs/005-storage-idempotenza-consultazione
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: nuova chiave funzionale o revisione esplicita per rigenerazione volontaria
+    impatto: contratto generazione documento e chiave di idempotenza (gia' prototipata in backend/alembic/versions/0001_initial_schema.py)
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-005-STORAGE-PDF
+    titolo: Storage definitivo per PDF
+    owner_spec: specs/005-storage-idempotenza-consultazione
+    spec_interessate:
+      - specs/005-storage-idempotenza-consultazione
+      - specs/004-generazione-documenti-pdf
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: riferimento documentale stabile indipendente dal backend fisico
+    impatto: formato del riferimento documento e integrazione con il documentale mock
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-06-22
+
+  - id: SEC-006-001
+    titolo: Token tecnico GEBAN verso GEMODO
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/005-storage-idempotenza-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      token tecnico Keycloak (client credentials) geban-backend con ruolo
+      DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit.
+      Token exchange resta variante futura non richiesta per la prima release.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-07-29
+
+  - id: SEC-006-002
+    titolo: Separazione revisore/approvatore builder modelli
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      flusso minimo senza separazione obbligatoria, GEMODO_MODELLI_GESTORE abilitato
+      anche alla pubblicazione vale come approvazione; ruoli revisore/approvatore
+      riservati e inattivi.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-07-29
+
+  - id: DEC-006-CONFINE-KEYCLOAK-GEMODO
+    titolo: Confine Keycloak/GEMODO nelle autorizzazioni applicative
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+      - specs/007-frontend-builder-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      Keycloak autentica utenti/client, valida audience e fornisce ruoli/claim
+      generali; GEMODO decide l'accesso fine a profili di integrazione, tipi
+      documento, categorie, tipologie, modelli/versioni, contratti e operazioni (gia'
+      implementato come base in infra/local/keycloak/authorization-boundary.local.yaml
+      e backend/app/quality/integration_profile.py).
+    impatto: modello di autorizzazione applicativa e data model dei profili
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-PROFILO-GEBAN
+    titolo: Profilo GEBAN versionato e mappatura campi concordata
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/004-generazione-documenti-pdf
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      gestione ibrida: profilo GEBAN versionato in GEMODO che associa categorie,
+      sottocategorie, modelli richiamabili e placeholder/campi gia' concordati; le API
+      restano disponibili per esporre catalogo e campi richiesti (prototipato in
+      infra/local/integration-profiles.local.yaml).
+    impatto: contratto dati operativo, builder e autorizzazioni
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-CONFIG-PROFILO-GEBAN
+    titolo: Configurazione del profilo GEBAN
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/009-fondamenta-mock-test-qualita
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta nella proposta/spec; da definire se file versionato o
+      dati gestiti nel builder, stati del profilo, approvazione/pubblicazione,
+      archiviazione e propagazione ai modelli gia' pubblicati prima del PLAN di 001/002.
+    impatto: >
+      da definire se file versionato o dati gestiti nel builder, stati del profilo,
+      approvazione/pubblicazione, archiviazione e propagazione ai modelli gia'
+      pubblicati.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-IDENTIFICATIVI-MODELLO
+    titolo: Identificativi e mapping modello GEBAN-GEMODO
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      GEBAN riceve da GEMODO la lista dei modelli validi alla data, sceglie
+      modello/versione, conserva la versione scelta e la reinvia con i dati
+      obbligatori. Resta da formalizzare il nome tecnico dell'identificativo (coerente
+      con modello_versione_id) e il mapping con eventuali codici profilo/GEBAN; il
+      contratto OpenAPI 001 attuale lo tipizza come intero, i manifest demo 009 come
+      stringa (`demo-bando-concorso-standard-v1`) - divergenza da chiudere qui, non
+      silenziosamente in fase di implementazione.
+    impatto: contratto API della 001
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-RELAZIONE-PROFILO-CATALOGO
+    titolo: Relazione tra profilo GEBAN e catalogo GEMODO
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta; da definire la relazione esatta tra profilo, tipo
+      documento, categoria, sottocategoria, tipologia, variante, modello e versione
+      modello pubblicata prima del data model operativo di 001/002.
+    impatto: >
+      da definire la relazione esatta tra profilo, tipo documento, categoria,
+      sottocategoria, tipologia, variante, modello e versione modello pubblicata.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-API-PROFILO-GEBAN
+    titolo: API specifiche per profilo GEBAN
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta; da definire se bastano catalogo e campi esistenti o
+      se servono endpoint dedicati per recuperare modelli/campi filtrati dal profilo
+      GEBAN prima del contratto OpenAPI di 001.
+    impatto: >
+      da definire se bastano catalogo e campi esistenti o se servono endpoint dedicati
+      per recuperare modelli/campi filtrati dal profilo GEBAN.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN
+    titolo: Autorizzazioni del profilo GEBAN
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta; da definire ruoli, claim, audience e client che
+      autorizzano GEBAN a usare solo profili/modelli consentiti, impedendo l'uso da
+      chiamanti non GEBAN, prima dell'implementazione sicurezza/audit.
+    impatto: >
+      da definire ruoli, claim, audience e client che autorizzano GEBAN a usare solo
+      profili/modelli consentiti, impedendo l'uso da chiamanti non GEBAN.
+    fase_bloccante: IMPLEMENTAZIONE
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-VERSIONAMENTO-MAPPING-CAMPI
+    titolo: Versionamento mapping campi e versione modello
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta; da definire cosa succede quando cambia un campo
+      concordato o un placeholder: nuova versione profilo, nuova versione modello,
+      bozza derivata o entrambe, prima dei task di pubblicazione modello.
+    impatto: >
+      da definire cosa succede quando cambia un campo concordato o un placeholder:
+      nuova versione profilo, nuova versione modello, bozza derivata o entrambe.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-003-FORMATO-CAMPI-COMPLESSI
+    titolo: Formato dei campi complessi
+    owner_spec: specs/003-sezioni-placeholder-versionamento
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: schema strutturato con sotto-campi, tipi, obbligatorieta' e vincoli
+    impatto: contratto dati e validazione campo
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-003-FORMATO-VISUALE-MODELLO
+    titolo: Formato visuale del modello documentale
+    owner_spec: specs/003-sezioni-placeholder-versionamento
+    spec_interessate:
+      - specs/004-generazione-documenti-pdf
+      - specs/007-frontend-builder-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      builder come editor visuale controllato, non editor HTML; struttura salvata come
+      modello documentale versionato con blocchi ammessi, posizionamenti controllati,
+      asset versionati, stili consentiti e placeholder validati (prototipato in
+      infra/local/document-models/ e backend/app/quality/document_model.py).
+    impatto: builder visuale e rendering definitivo
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-009-DOCUMENTAZIONE-API
+    titolo: Documentazione API e Swagger/OpenAPI
+    owner_spec: specs/009-fondamenta-mock-test-qualita
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/004-generazione-documenti-pdf
+      - specs/005-storage-idempotenza-consultazione
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/007-frontend-builder-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      ogni API pubblica o di integrazione deve avere OpenAPI versionato, esempi JSON,
+      catalogo errori e documentazione interattiva locale/test dalla stessa sorgente
+      (gia' operativo per 001 in backend/app/quality/openapi_docs.py); resta da
+      applicare per ogni nuovo endpoint prima della sua implementazione runtime.
+    fase_bloccante: IMPLEMENTAZIONE
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-009-READINESS-OPEN-SOURCE
+    titolo: Readiness open source e riuso PA
+    owner_spec: specs/009-fondamenta-mock-test-qualita
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/004-generazione-documenti-pdf
+      - specs/005-storage-idempotenza-consultazione
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/007-frontend-builder-consultazione
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      documentazione testuale navigabile per setup, sviluppo, produzione,
+      architettura, configurazione, sicurezza, contributi, segnalazione
+      vulnerabilita', test, release (docs/open-source-pa-readiness.md); licenza ancora
+      DA_CONFERMARE.
+    impatto: pubblicazione pubblica del repository
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-07-07
+
+  - id: DEC-001-LINGUA-IT-EN
+    titolo: Gestione lingua italiano/inglese del bando
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/004-generazione-documenti-pdf
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      modello inglese integrale tradotto; GEBAN invia `Bando Inglese` Si/No e, se Si, i
+      campi inglesi compilati a video; GEMODO usa la stessa tipologia modello e
+      restituisce due output/modelli, italiano e inglese (FR-022, prototipato negli
+      scenari mock E2E-001, mock-geban/scenarios/expected-outcomes.yaml).
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-28
+
+  - id: DEC-001-CAMPI-COMUNI-GEBAN
+    titolo: Campi comuni GEBAN per generazione
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/004-generazione-documenti-pdf
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      payload comune: codice bando, numero posti, bando multiplo/riferimento, titolo e
+      descrizione ridotta IT/EN, sedi e strutture IT/EN, profilo/livello, tipo
+      selezione, medaglione IT/EN, ribando/riferimento, PTA, flag inPA/Gazzetta e
+      progetto di riferimento per TD/TDPNRR; `Data inizio` non va gestita (FR-029,
+      FR-030; prototipato in mock-geban/payloads/bando-concorso-valid.json).
+    impatto: contratto dati della 001 e scenari mock
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-28
+
+  - id: DEC-006-CLIENT-KEYCLOAK
+    titolo: Client Keycloak GEMODO e GEBAN
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      due client separati gemodo-frontend/gemodo-backend, piu' geban-backend (e
+      placeholder geban-frontend) creati come client di test dal team GEMODO nel realm
+      Keycloak CNR di test cnr (sso.test.si.cnr.it), con accesso amministratore
+      concesso al team; produzione da richiedere al referente infrastruttura Keycloak
+      CNR. Resta da verificare se geban-frontend/geban-backend esistono gia' a cura del
+      team GEBAN.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-07-29
+
+  - id: DEC-001-BANDO-MULTIPLO
+    titolo: Bando multiplo
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/004-generazione-documenti-pdf
+      - specs/005-storage-idempotenza-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      un unico documento/PDF da firmare, riferito al padre, che contiene nell'articolo
+      dei requisiti tutti i requisiti e i dati dei figli; tra figli possono cambiare
+      sedi, requisiti e numero di posti (FR-024).
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-28
+
+  - id: DEC-001-RIBANDO
+    titolo: Ribando
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/004-generazione-documenti-pdf
+      - specs/005-storage-idempotenza-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      nuovo bando con nuovo documento, nuovo protocollo, nuovo numero bando e
+      riferimenti nei visti al bando originario e alla motivazione del ribando; nessun
+      riuso dello stesso documento SOL con nuovo codice; storico/tracciabilita' tra
+      originario e ribando mantenuta anche nella procedura informatizzata (FR-025,
+      FR-026).
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-07-28
+
+  - id: DEC-004-STAMPA-PUBBLICAZIONE-SOL
+    titolo: Stampa, pubblicazione SOL e responsabilita' post-generazione
+    owner_spec: specs/004-generazione-documenti-pdf
+    spec_interessate:
+      - specs/005-storage-idempotenza-consultazione
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione proposta; da definire se GEMODO deve solo generare e
+      restituire PDF/riferimento oppure supportare passaggi ulteriori verso SOL,
+      stampa, nuova pubblicazione o recupero per moduli downstream, prima del PLAN di
+      004/005.
+    impatto: >
+      da definire se GEMODO deve solo generare e restituire PDF/riferimento oppure
+      supportare passaggi ulteriori verso SOL, stampa, nuova pubblicazione o recupero
+      per moduli downstream.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-004-FORMATO-OUTPUT
+    titolo: Necessita' di generare solo PDF o anche altri formati
+    owner_spec: specs/004-generazione-documenti-pdf
+    spec_interessate:
+      - specs/005-storage-idempotenza-consultazione
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: PDF come output prioritario, tipo output esplicito nei contratti
+    impatto: contratto generazione e riferimento documento
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-06-22
+
+  - id: DEC-008-PRIORITA-AI-MCP
+    titolo: Priorita' futura di integrazione AI/MCP
+    owner_spec: specs/008-ai-mcp-readiness
+    spec_interessate:
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: non prerequisito del primo rilascio
+    impatto: pianificazione delle release successive alla prima
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-06-22

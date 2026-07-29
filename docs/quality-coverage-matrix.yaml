@@ -1,0 +1,355 @@
+# Matrice di copertura - collega requisiti, scenari e contratti a una spec owner
+# (spec 009, User Story 3, FR-016; entita' MatriceCopertura in
+# backend/app/quality/schemas.py, regole in backend/app/quality/coverage.py).
+#
+# scenario_id usa gli id degli scenari end-to-end minimi (E2E-001..E2E-006,
+# specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml) oppure,
+# per i requisiti trasversali non legati a un flusso GEBAN, gli scenari di readiness
+# gia' numerati in specs/009-fondamenta-mock-test-qualita/quickstart.md
+# (SCENARIO-1..SCENARIO-10).
+#
+# stato: DA_COPRIRE | COPERTO | BLOCCATO (allowed_status del contratto readiness).
+# COPERTO significa verificato da un test o da un manifest reale in questa sessione;
+# DA_COPRIRE significa che l'implementazione runtime appartiene a una spec che non ha
+# ancora tasks.md proprio (vedi AGENTS.md).
+
+coverage:
+  # --- Fondamenta ambiente / migrations / seed (FR-001, FR-008..FR-011) ---
+  - id: COV-001
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-001
+    scenario_id: SCENARIO-1
+    contract_ref: backend/app/quality/environment.py
+    stato: COPERTO
+    note: ambiente_locale_default() copre backend/frontend/postgres/keycloak/documentale-mock/mock-geban
+
+  - id: COV-002
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-008
+    scenario_id: SCENARIO-1
+    contract_ref: backend/app/quality/environment_verifier.py
+    stato: COPERTO
+    note: verifica_ambiente distingue prerequisito_mancante da errore_applicativo (test_environment_verification.py)
+
+  - id: COV-003
+    spec_owner: specs/002-builder-modelli
+    requirement_id: FR-009
+    scenario_id: SCENARIO-2
+    contract_ref: backend/alembic/versions/0001_initial_schema.py
+    stato: COPERTO
+    note: baseline provvisoria applicata e testata su PostgreSQL reale; contratto dati definitivo resta owner 002/003
+
+  - id: COV-004
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-010
+    scenario_id: SCENARIO-2
+    contract_ref: infra/local/postgres/seed-demo-catalog.yaml
+    stato: COPERTO
+    note: validate_seed_catalog (test_seed_demo_validation.py)
+
+  - id: COV-005
+    spec_owner: specs/002-builder-modelli
+    requirement_id: FR-011
+    scenario_id: SCENARIO-2
+    contract_ref: infra/local/postgres/seed-demo-catalog.yaml
+    stato: COPERTO
+    note: un modello pubblicato + un caso non pubblicabile, verificato in test_seed_demo_validation.py
+
+  # --- Mock GEBAN e scenari e2e (FR-004, FR-005, FR-012..FR-014, FR-020..FR-022) ---
+  - id: COV-006
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-004
+    scenario_id: E2E-001
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    stato: COPERTO
+    note: piano scenario risolto e test_mock_geban_valid_flow.py
+
+  - id: COV-007
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-005
+    scenario_id: E2E-001
+    contract_ref: mock-geban/scenarios/minimum-e2e.yaml
+    stato: COPERTO
+
+  - id: COV-008
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-012
+    scenario_id: E2E-001
+    contract_ref: backend/app/quality/mock_contract_guard.py
+    stato: COPERTO
+    note: solo operazioni pubbliche ammesse, guard testato
+
+  - id: COV-009
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-013
+    scenario_id: E2E-002
+    contract_ref: mock-geban/scenarios/minimum-e2e.yaml
+    stato: COPERTO
+    note: sei tipi di scenario minimo coperti (VALIDO/ERRORE_VALIDAZIONE/IDEMPOTENZA/CONFLITTO/FALLIMENTO/AUTORIZZAZIONE)
+
+  - id: COV-010
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-014
+    scenario_id: E2E-006
+    contract_ref: infra/local/audit-expectations.yaml
+    stato: DA_COPRIRE
+    note: aspettative documentate; evento audit reale richiede endpoint runtime (006)
+
+  - id: COV-011
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-020
+    scenario_id: E2E-001
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+
+  - id: COV-012
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-021
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml#DEC-001-PROFILO-GEBAN
+    stato: COPERTO
+    note: tracciata come decisione aperta ASSUNTA_PROVVISORIA, fase_bloccante TASKS
+
+  - id: COV-013
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-022
+    scenario_id: E2E-001
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+    note: due output IT/EN verificati in test_e2e_001_english_flag_produces_two_outputs_it_and_en
+
+  - id: COV-013b
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-013
+    scenario_id: E2E-003
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+    note: retry idempotente (riutilizzato=true, nessun duplicato) in test_e2e_003_identical_retry_returns_the_existing_generation_not_a_duplicate
+
+  - id: COV-013c
+    spec_owner: specs/005-storage-idempotenza-consultazione
+    requirement_id: FR-028
+    scenario_id: E2E-004
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+    note: conflitto su stessa chiave/dati divergenti (GENERAZIONE_CONFLITTO_IDEMPOTENTE) in test_e2e_004_same_key_with_divergent_data_raises_conflict
+
+  - id: COV-013d
+    spec_owner: specs/004-generazione-documenti-pdf
+    requirement_id: FR-013
+    scenario_id: E2E-005
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+    note: generazione fallita con stato consultabile in test_e2e_005_failed_generation_is_reported_and_status_stays_queryable
+
+  # --- Governo decisioni aperte (FR-006, FR-007, FR-017, FR-018, FR-023) ---
+  - id: COV-014
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-006
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml
+    stato: COPERTO
+
+  - id: COV-015
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-007
+    scenario_id: SCENARIO-6
+    contract_ref: backend/app/quality/decision.py
+    stato: COPERTO
+    note: validate_decisione impedisce assunzioni silenziose (owner+assunzione o confermata)
+
+  - id: COV-016
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-017
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml
+    stato: COPERTO
+    note: 28/28 decisioni con owner, impatto, assunzione o stato confermato, fase bloccante
+
+  - id: COV-017
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-018
+    scenario_id: SCENARIO-6
+    contract_ref: backend/app/quality/readiness_gate.py
+    stato: COPERTO
+    note: readiness_gate fallisce se una decisione critica per la fase richiesta non e' CONFERMATA/SOSPESA esplicita
+
+  - id: COV-018
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-023
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml
+    stato: COPERTO
+    note: punti GEBAN-GEMODO tracciati come decisioni con owner e fase bloccante (es. DEC-001-CONFIG-PROFILO-GEBAN)
+
+  # --- Bando multiplo / ribando (FR-024..FR-026) ---
+  - id: COV-019
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-024
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml#DEC-001-BANDO-MULTIPLO
+    stato: DA_COPRIRE
+    note: decisione CONFERMATA; generazione PDF unico del padre resta da implementare (004/005)
+
+  - id: COV-020
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-025
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml#DEC-001-RIBANDO
+    stato: DA_COPRIRE
+    note: decisione CONFERMATA; generazione nuovo documento/protocollo resta da implementare (004/005)
+
+  - id: COV-021
+    spec_owner: specs/005-storage-idempotenza-consultazione
+    requirement_id: FR-026
+    scenario_id: SCENARIO-6
+    contract_ref: docs/decision-register.yaml#DEC-001-RIBANDO
+    stato: DA_COPRIRE
+    note: tracciabilita' bando/ribando richiede modello dati e API della 005
+
+  # --- Sicurezza / profili integrazione (FR-027, FR-029..FR-035) ---
+  - id: COV-022
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-027
+    scenario_id: SCENARIO-2
+    contract_ref: infra/local/postgres/seed-demo-catalog.yaml
+    stato: COPERTO
+    note: dieci tipologie GEBAN/SOL con codice SOL, verificate in test_real_seed_catalog_typologies_cover_the_ten_geban_sol_codes
+
+  - id: COV-023
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-028
+    scenario_id: E2E-001
+    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    stato: COPERTO
+    note: chiave idempotenza (sistema, external_context_id, modello_versione_id, tipo_output) esercitata in E2E-003/E2E-004
+
+  - id: COV-024
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-029
+    scenario_id: E2E-001
+    contract_ref: mock-geban/payloads/bando-concorso-valid.json
+    stato: COPERTO
+
+  - id: COV-025
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-030
+    scenario_id: E2E-001
+    contract_ref: mock-geban/payloads/bando-concorso-valid.json
+    stato: COPERTO
+    note: payload demo non include 'Data inizio'
+
+  - id: COV-026
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-031
+    scenario_id: SCENARIO-7
+    contract_ref: infra/local/keycloak/authorization-boundary.local.yaml
+    stato: COPERTO
+
+  - id: COV-027
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-032
+    scenario_id: SCENARIO-7
+    contract_ref: docs/decision-register.yaml#SEC-006-001
+    stato: COPERTO
+
+  - id: COV-028
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-033
+    scenario_id: SCENARIO-7
+    contract_ref: infra/local/integration-profiles.local.yaml
+    stato: COPERTO
+
+  - id: COV-029
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-034
+    scenario_id: E2E-006
+    contract_ref: backend/app/quality/integration_profile.py
+    stato: COPERTO
+    note: is_operazione_autorizzata testato con client valido ma profilo non attivo
+
+  - id: COV-030
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    requirement_id: FR-035
+    scenario_id: E2E-006
+    contract_ref: backend/tests/support/integration_profiles.py
+    stato: COPERTO
+
+  # --- Modello documentale controllato (FR-036..FR-038) ---
+  - id: COV-031
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-036
+    scenario_id: SCENARIO-8
+    contract_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+    stato: COPERTO
+    note: contiene_html_libero/css_libero/script tutti false, validati da document_model.py
+
+  - id: COV-032
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-037
+    scenario_id: SCENARIO-8
+    contract_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+    stato: COPERTO
+    note: intestazione, logo, titolo, paragrafo, tabella, colonne, firma, footer, interruzione pagina tutti presenti nel seed demo
+
+  - id: COV-033
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-038
+    scenario_id: SCENARIO-8
+    contract_ref: infra/local/document-models/README.md
+    stato: COPERTO
+
+  # --- Documentazione API / riuso (FR-039..FR-045) ---
+  - id: COV-034
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-039
+    scenario_id: SCENARIO-9
+    contract_ref: infra/openapi/README.md
+    stato: COPERTO
+    note: regola trasversale applicata gia' a 001 (geban-catalog-api.openapi.yaml)
+
+  - id: COV-035
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-040
+    scenario_id: SCENARIO-9
+    contract_ref: specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
+    stato: COPERTO
+
+  - id: COV-036
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-041
+    scenario_id: SCENARIO-9
+    contract_ref: backend/app/quality/openapi_docs.py
+    stato: COPERTO
+    note: GET /docs/geban-catalog e /redoc/geban-catalog verificati con uvicorn e curl
+
+  - id: COV-037
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-042
+    scenario_id: SCENARIO-9
+    contract_ref: infra/openapi/examples/
+    stato: DA_COPRIRE
+    note: cartella esempi JSON pubblicabili prevista dal Polish (T061), non ancora creata
+
+  - id: COV-038
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-043
+    scenario_id: SCENARIO-10
+    contract_ref: docs/project-map.md
+    stato: COPERTO
+
+  - id: COV-039
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-044
+    scenario_id: SCENARIO-10
+    contract_ref: docs/open-source-pa-readiness.md
+    stato: COPERTO
+    note: licenza ancora DA_CONFERMARE, tracciata come tale (non blocca readiness)
+
+  - id: COV-040
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-045
+    scenario_id: SCENARIO-10
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/quality-readiness-contract.yaml
+    stato: COPERTO
+    note: contains_secrets/contains_real_personal_data verificati come regole vere nel manifest locale

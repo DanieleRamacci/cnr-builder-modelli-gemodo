@@ -20,14 +20,16 @@ testing of each story.
 
 ## Stato Implementazione (2026-07-29)
 
-Phase 1, Phase 2, Phase 3 and Phase 4 (T001-T049) are implemented and verified:
-`uv run pytest` in `backend/` passes 53/53 real tests (contract + integration + e2e,
-no mocked business logic), the Alembic baseline migration was applied and rolled back
-against a real local PostgreSQL, `uv run gemodo-quality verifica-ambiente` runs real
-healthchecks (including a live check against the CNR test Keycloak realm), and
-`mock-geban/scenario_runner.py` resolves real scenario plans and runs them end-to-end
-against an injectable `ClienteGemodo`. Phase 5 (US3 - decisioni aperte) and Phase 6
-(Polish) are **not started**.
+Phase 1 through Phase 5 (T001-T058) are implemented and verified: `uv run pytest` in
+`backend/` passes 109/109 real tests (contract + integration + e2e, no mocked business
+logic), the Alembic baseline migration was applied and rolled back against a real
+local PostgreSQL, `uv run gemodo-quality verifica-ambiente` runs real healthchecks
+(including a live check against the CNR test Keycloak realm), `mock-geban/
+scenario_runner.py` resolves real scenario plans and runs them end-to-end against an
+injectable `ClienteGemodo`, and `docs/decision-register.yaml` tracks all 28 decisions
+from proposal §17 (plus SEC-006-002) validated against `backend/app/quality/decision.py`
+and gated by `backend/app/quality/readiness_gate.py`. Phase 6 (Polish) is **not
+started**.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -158,18 +160,24 @@ decision has owner, impacted specs, status and blocking phase.
 
 ### Tests for User Story 3
 
-- [ ] T050 [P] [US3] Create contract test for decision register required fields and statuses in `backend/tests/contract/test_open_decisions_contract.py`
-- [ ] T051 [P] [US3] Create integration test for blocking critical decisions before implementation readiness in `backend/tests/integration/test_open_decision_gates.py`
-- [ ] T052 [P] [US3] Create integration test for coverage matrix mapping scenarios to requirements and contracts in `backend/tests/integration/test_coverage_matrix.py`
+- [x] T050 [P] [US3] Create contract test for decision register required fields and statuses in `backend/tests/contract/test_open_decisions_contract.py`
+- [x] T051 [P] [US3] Create integration test for blocking critical decisions before implementation readiness in `backend/tests/integration/test_open_decision_gates.py`
+- [x] T052 [P] [US3] Create integration test for coverage matrix mapping scenarios to requirements and contracts in `backend/tests/integration/test_coverage_matrix.py`
 
 ### Implementation for User Story 3
 
-- [ ] T053 [P] [US3] Implement DecisioneAperta schema and state transition validation in `backend/app/quality/decision.py`
-- [ ] T054 [P] [US3] Implement MatriceCopertura schema and coverage status validation in `backend/app/quality/coverage.py`
-- [ ] T055 [US3] Create initial open decisions register for proposal section 17 in `docs/decision-register.yaml`
-- [ ] T056 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-045, and spec owners in `docs/quality-coverage-matrix.yaml`
-- [ ] T057 [US3] Implement readiness gate that fails on silent critical assumptions in `backend/app/quality/readiness_gate.py`
-- [ ] T058 [US3] Document decision update workflow and propagation to spec owners in `docs/decision-workflow.md`
+- [x] T053 [P] [US3] Implement DecisioneAperta schema and state transition validation in `backend/app/quality/decision.py`
+- [x] T054 [P] [US3] Implement MatriceCopertura schema and coverage status validation in `backend/app/quality/coverage.py`
+- [x] T055 [US3] Create initial open decisions register for proposal section 17 in `docs/decision-register.yaml`
+- [x] T056 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-045, and spec owners in `docs/quality-coverage-matrix.yaml`
+- [x] T057 [US3] Implement readiness gate that fails on silent critical assumptions in `backend/app/quality/readiness_gate.py`
+- [x] T058 [US3] Document decision update workflow and propagation to spec owners in `docs/decision-workflow.md`
+
+**Nota implementativa**: il registro reale espone gia' esiti utili — `readiness_gate`
+mostra oggi che `TASKS` per `specs/001-catalogo-contratto-geban` non e' pronto (10
+decisioni ancora non `CONFERMATA`/`SOSPESA` esplicita bloccano quella fase). Questo e'
+lo stato reale del progetto, non un difetto del gate: e' esattamente cio' che FR-018
+deve rendere visibile prima di generare task implementativi su quelle parti.
 
 **Checkpoint**: User Story 3 can be validated independently by checking decision register,
 coverage matrix and readiness gate outcomes.
