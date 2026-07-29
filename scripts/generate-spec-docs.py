@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +18,7 @@ PROJECT_MAP = DOCS_DIR / "project-map.md"
 CONSTITUTION = ROOT / ".specify" / "memory" / "constitution.md"
 README = ROOT / "README.md"
 PROPOSAL = ROOT / "PROPOSTA-servizio-gestione-modelli-bando.md"
+FEATURE_JSON = ROOT / ".specify" / "feature.json"
 
 KNOWN_ARTIFACTS = [
     ("spec.md", "Spec"),
@@ -27,6 +29,9 @@ KNOWN_ARTIFACTS = [
     ("research.md", "Research"),
     ("quickstart.md", "Quickstart"),
     ("keycloak-jwt.md", "Keycloak JWT"),
+    ("contracts/geban-catalog-api.openapi.yaml", "OpenAPI catalogo"),
+    ("contracts/quality-readiness-contract.yaml", "Quality contract"),
+    ("contracts/mock-geban-scenarios.yaml", "Mock scenarios"),
 ]
 
 
@@ -110,6 +115,17 @@ def discover_specs() -> list[SpecInfo]:
     return specs
 
 
+def active_feature_slug() -> str:
+    if not FEATURE_JSON.exists():
+        return ""
+    try:
+        data = json.loads(read_text(FEATURE_JSON))
+    except json.JSONDecodeError:
+        return ""
+    feature_dir = data.get("feature_directory", "")
+    return Path(feature_dir).name if feature_dir else ""
+
+
 def generated_rel_from_docs(path: Path) -> str:
     return path.relative_to(DOCS_DIR).as_posix()
 
@@ -158,6 +174,221 @@ def progress(done_total: tuple[int, int]) -> str:
     if total == 0:
         return "-"
     return f"{done}/{total}"
+
+
+def openapi_files(spec: SpecInfo) -> list[Path]:
+    return [
+        path
+        for path in spec.files
+        if path.suffix in {".yaml", ".yml", ".json"} and "openapi" in path.name.lower()
+    ]
+
+
+def write_active_feature(specs: list[SpecInfo]) -> None:
+    active_slug = active_feature_slug()
+    active = next((spec for spec in specs if spec.slug == active_slug), None)
+
+    lines = [
+        "# Feature Attiva",
+        "",
+        "_Pagina generata automaticamente da `scripts/generate-spec-docs.py`._",
+        "",
+    ]
+
+    if active is None:
+        lines.extend(
+            [
+                "Nessuna feature attiva rilevata in `.specify/feature.json`.",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                f"Feature attiva: **{active.slug}**",
+                "",
+                f"Area: {active.area}",
+                "",
+                f"Stato checklist: **{progress(active.checklist_done)}**",
+                "",
+                f"Stato tasks: **{progress(active.tasks_done)}**",
+                "",
+                "## Artefatti Principali",
+                "",
+                f"- [Spec](specs/{active.slug}/spec.md)",
+                f"- [Plan](specs/{active.slug}/plan.md)",
+                f"- [Tasks](specs/{active.slug}/tasks.md)",
+                f"- [Data model](specs/{active.slug}/data-model.md)",
+                f"- [Research](specs/{active.slug}/research.md)",
+                f"- [Quickstart](specs/{active.slug}/quickstart.md)",
+                f"- [Quality contract](specs/{active.slug}/contracts/quality-readiness-contract.yaml)",
+                f"- [Mock scenarios](specs/{active.slug}/contracts/mock-geban-scenarios.yaml)",
+                "",
+                "## Blocco Di Partenza",
+                "",
+                "Per la feature `009` lo sviluppo parte dalle task di setup e fondazione:",
+                "",
+                "- `T001-T008`: skeleton backend, frontend, infra e mock.",
+                "- `T009-T025`: manifest qualita', loader, profili integrazione, confine",
+                "  Keycloak/GEMODO, modello documentale controllato, readiness API e readiness",
+                "  open source/PA.",
+                "",
+                "Dopo questo blocco si puo' procedere con `US1` (`T026-T037`) per ambiente",
+                "locale, seed, migration baseline e verifica prerequisiti.",
+            ]
+        )
+
+    (OUT_DIR / "active-feature.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_api_readiness(specs: list[SpecInfo]) -> None:
+    lines = [
+        "# API Readiness",
+        "",
+        "_Pagina generata automaticamente da `scripts/generate-spec-docs.py`._",
+        "",
+        "Questa pagina mostra se le API sono coperte da contratti leggibili prima",
+        "dell'implementazione runtime.",
+        "",
+        "## Regola",
+        "",
+        "- Ogni API pubblica o di integrazione deve avere OpenAPI versionato.",
+        "- Swagger UI e ReDoc, o equivalenti, devono derivare dalla stessa sorgente OpenAPI.",
+        "- Ogni flusso rilevante deve avere esempi JSON pubblicabili di successo ed errore.",
+        "- Esempi e documentazione non devono contenere token, secret, dati reali o URL",
+        "  ambientali sensibili.",
+        "",
+        "## Copertura Attuale",
+        "",
+        "| Spec | Area | OpenAPI versionato | Note |",
+        "|---|---|---|---|",
+    ]
+
+    for spec in specs:
+        files = openapi_files(spec)
+        if files:
+            links = " · ".join(
+                f"[{path.name}]({generated_rel_from_spec_index(OUT_DIR / path.relative_to(ROOT))})"
+                for path in files
+            )
+            note = "Contratto presente"
+        else:
+            links = "-"
+            if spec.slug.startswith(("004-", "005-")):
+                note = "Da completare prima di implementare generazione, stato o download"
+            elif spec.slug.startswith(("006-", "007-")):
+                note = "Da definire quando la spec produce API operative"
+            else:
+                note = "Nessun OpenAPI rilevato"
+        lines.append(f"| {spec.slug} | {spec.area} | {links} | {note} |")
+
+    lines.extend(
+        [
+            "",
+            "## API MVP Da Coprire Prima Dello Sviluppo Runtime",
+            "",
+            "- `POST /documenti/genera`: richiesta generazione bozza/ufficiale, idempotenza,",
+            "  output italiano/inglese quando previsto, errori validazione/autorizzazione/rendering.",
+            "- `GET /documenti/generazioni/{id}/stato`: stato pubblico, riferimento, errori",
+            "  funzionali e autorizzazione.",
+            "- `GET /documenti/generazioni/{id}/download` o riferimento equivalente:",
+            "  recupero file secondo stato e autorizzazione.",
+            "",
+            "Questi endpoint appartengono alle spec `004-generazione-documenti-pdf` e",
+            "`005-storage-idempotenza-consultazione`, che devono completare plan/tasks/OpenAPI",
+            "prima dell'implementazione.",
+        ]
+    )
+
+    (OUT_DIR / "api-readiness.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_roadmap(specs: list[SpecInfo]) -> None:
+    lines = [
+        "# Roadmap Spec Kit",
+        "",
+        "_Pagina generata automaticamente da `scripts/generate-spec-docs.py`._",
+        "",
+        "## Lettura Per Blocchi",
+        "",
+        "1. Catalogo e contratto dati: `001`.",
+        "2. Dominio configurabile e builder backend: `002` e `003`.",
+        "3. Sicurezza, autorizzazioni e audit: `006`.",
+        "4. Generazione PDF, stato, download e idempotenza: `004` e `005`.",
+        "5. Frontend builder e consultazione: `007`.",
+        "6. Fondamenta, mock, test, documentazione API e readiness PA: `009`.",
+        "7. Predisposizione AI/MCP: `008`.",
+        "",
+        "## Stato Artefatti",
+        "",
+        "| Spec | Plan | Tasks | Checklist |",
+        "|---|---:|---:|---:|",
+    ]
+
+    for spec in specs:
+        plan = "si" if (spec.directory / "plan.md").exists() else "no"
+        tasks = progress(spec.tasks_done)
+        checklist = progress(spec.checklist_done)
+        lines.append(f"| {spec.slug} | {plan} | {tasks} | {checklist} |")
+
+    lines.extend(
+        [
+            "",
+            "## Blocco Prima Dell'MVP API + PDF",
+            "",
+            "- Completare `009` almeno fino a `T025` per fondamenta e readiness.",
+            "- Completare Spec Kit operativo di `004/005`: plan, data model, OpenAPI, quickstart",
+            "  e tasks per generazione, stato, download e idempotenza.",
+            "- Solo dopo implementare gli endpoint runtime e il renderer PDF minimo.",
+        ]
+    )
+
+    (OUT_DIR / "roadmap.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_decisions_and_vincoli() -> None:
+    lines = [
+        "# Decisioni E Vincoli",
+        "",
+        "_Pagina generata automaticamente da `scripts/generate-spec-docs.py`._",
+        "",
+        "## Vincoli Non Negoziabili",
+        "",
+        "- GEMODO non legge ne' scrive il database GEBAN.",
+        "- Le integrazioni passano da contratti espliciti.",
+        "- I documenti operativi usano solo versioni modello pubblicate.",
+        "- Generazione, stato, download e fallimenti devono essere tracciabili e auditabili.",
+        "- Keycloak gestisce identita', client, audience e ruoli/claim generali.",
+        "- GEMODO gestisce autorizzazioni fini su profili, modelli, contratti e operazioni.",
+        "- Il builder visuale futuro non consente HTML/CSS/script liberi inseriti dall'utente.",
+        "- Le API devono avere OpenAPI, esempi e documentazione interattiva prima dello sviluppo runtime.",
+        "- La documentazione pubblicabile non deve contenere segreti, token o dati reali.",
+        "",
+        "## Decisioni Gia' Chiarite In `009`",
+        "",
+        "- Bando multiplo: PDF unico sul bando padre con dati rilevanti dei figli.",
+        "- Ribando: nuovo bando, nuovo documento, nuovi riferimenti e tracciabilita' del precedente.",
+        "- Bando inglese: modello/output integrale tradotto quando richiesto.",
+        "- Client proposti: `gemodo-frontend`, `gemodo-backend`, `geban-backend`.",
+        "- Profili integrazione: autorizzazioni fini dentro GEMODO, non in Keycloak.",
+        "- Modello documento: struttura controllata e versionata, non HTML libero.",
+        "",
+        "## Decisioni Da Confermare Prima Delle Parti Impattate",
+        "",
+        "- Configurazione definitiva Keycloak/OIDC: client, audience, ruoli e claim path.",
+        "- Storage definitivo o riferimento documentale esterno.",
+        "- Confine con stampa, pubblicazione SOL e moduli downstream.",
+        "- Licenza open source definitiva prima della pubblicazione pubblica.",
+        "",
+        "## Link Utili",
+        "",
+        "- [Costituzione](governance/constitution.md)",
+        "- [Project map](../project-map.md)",
+        "- [Feature attiva](active-feature.md)",
+        "- [API readiness](api-readiness.md)",
+    ]
+
+    (OUT_DIR / "decisions-and-vincoli.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def write_index(specs: list[SpecInfo]) -> None:
@@ -212,6 +443,13 @@ def write_index(specs: list[SpecInfo]) -> None:
             "mkdocs serve",
             "```",
             "",
+            "## Pagine Di Sintesi",
+            "",
+            "- [Feature attiva](active-feature.md)",
+            "- [Roadmap Spec Kit](roadmap.md)",
+            "- [API readiness](api-readiness.md)",
+            "- [Decisioni e vincoli](decisions-and-vincoli.md)",
+            "",
             "## Governance",
             "",
         ]
@@ -258,6 +496,11 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
         "",
         "- [Proposta sorgente](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
         "- [Spec Kit Index](spec-kit/index.md)",
+        "- [Feature attiva](spec-kit/active-feature.md)",
+        "- [Roadmap Spec Kit](spec-kit/roadmap.md)",
+        "- [API readiness](spec-kit/api-readiness.md)",
+        "- [Decisioni e vincoli](spec-kit/decisions-and-vincoli.md)",
+        "- [Readiness open source/PA](open-source-pa-readiness.md)",
         "- [Project Map](project-map.md)",
         "",
         "## Stato Generato",
@@ -282,6 +525,10 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
 def main() -> None:
     specs = discover_specs()
     mirror_markdown_files(specs)
+    write_active_feature(specs)
+    write_api_readiness(specs)
+    write_roadmap(specs)
+    write_decisions_and_vincoli()
     write_index(specs)
     write_docs_home(specs)
 

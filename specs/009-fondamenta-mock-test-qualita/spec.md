@@ -36,6 +36,7 @@
 - Q: Keycloak deve decidere direttamente quali tipologie, categorie o modelli un utente o sistema puo' usare? -> A: No. Keycloak resta sorgente di identita', autenticazione, client tecnici e ruoli/claim generali; GEMODO mantiene l'autorizzazione applicativa fine tramite sistemi richiedenti e profili di integrazione versionati, associando client, stato, tipi documento, categorie, tipologie, modelli/versioni, contratti dati e permessi operativi.
 - Q: Come si separano operatori umani GEMODO e applicazioni chiamanti come GEBAN, GRADUATORIE o CHECKIN? -> A: Gli operatori umani entrano in GEMODO con token SSO e ruoli/claim che abilitano admin, builder o consultazione per uno o piu' profili applicativi; le applicazioni chiamanti usano client tecnici autorizzati e sono registrate in GEMODO come sistemi richiedenti con profili di integrazione. GEMODO non gestisce password o credenziali, ma governa quali profili, modelli e operazioni sono disponibili.
 - Q: Come deve essere salvata la struttura visuale del documento senza builder nella prima fase e con builder in futuro? -> A: Il modello deve usare una sorgente documentale strutturata e versionata, composta da pagina, margini, regioni, blocchi ammessi, posizionamenti controllati, stili consentiti, asset, tabelle, firme e placeholder. L'utente del builder futuro non scrive HTML o CSS libero: lavora in un editor visuale limitato tipo word processor controllato; GEMODO salva e valida la struttura, poi il renderer produce internamente il formato necessario al PDF.
+- Q: Il progetto deve prevedere Swagger/OpenAPI e documentazione navigabile per API e riuso open source/PA? -> A: Si. Ogni API pubblica o di integrazione deve avere contratto OpenAPI versionato, esempi JSON di successo/errore, catalogo errori, note di autenticazione/autorizzazione e documentazione interattiva locale/test tramite Swagger UI e ReDoc o equivalente. Il repository deve inoltre avere documentazione testuale navigabile per setup, sviluppo, produzione, architettura, sicurezza, contributi, segnalazione vulnerabilita' e riuso da parte di altre PA.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -141,6 +142,11 @@ bloccare la copertura ma impedire scelte implicite.
 - Template demo che posiziona logo, intestazione, firme, tabelle o colonne senza struttura controllata e validabile.
 - Asset grafico usato nel modello senza riferimento versionato, hash o autorizzazione.
 - Firma o blocco posizionato in modo non supportato dal formato controllato.
+- Endpoint implementato senza contratto OpenAPI versionato o senza esempi JSON pubblicabili.
+- Swagger/ReDoc generati da una sorgente diversa dal contratto OpenAPI versionato.
+- Documentazione API che espone token, secret, dati personali reali o URL ambientali non pubblicabili.
+- Cambiamento di stato, campo o codice errore non riportato in OpenAPI, esempi e catalogo errori.
+- Repository pubblicato senza README navigabile, licenza definita, guida installazione, guida sviluppo, guida produzione, guida sicurezza o indicazioni di contributo.
 
 ## Requirements *(mandatory)*
 
@@ -184,6 +190,13 @@ bloccare la copertura ma impedire scelte implicite.
 - **FR-036**: I seed demo e i contratti di qualita' MUST rappresentare la struttura visuale del documento come modello documentale controllato e versionato, non come HTML/CSS libero inserito dall'utente.
 - **FR-037**: Il modello documentale controllato MUST supportare almeno pagina e margini, intestazione, logo/asset, titolo, paragrafi, tabelle semplici, colonne controllate, firme posizionabili, footer, interruzioni pagina, stili ammessi e placeholder selezionabili.
 - **FR-038**: Gli scenari di qualita' MUST verificare che il builder futuro sia assunto come editor visuale limitato che manipola la struttura controllata del modello e che il renderer PDF possa usare un formato tecnico generato internamente senza esporre HTML libero all'utente.
+- **FR-039**: Ogni API pubblica o di integrazione MUST avere contratto OpenAPI versionato prima dell'implementazione runtime dell'endpoint.
+- **FR-040**: I contratti OpenAPI MUST includere endpoint, parametri, request, response, stati pubblici, codici errore funzionali, requisiti di autenticazione, note di autorizzazione e riferimenti agli esempi JSON.
+- **FR-041**: Il progetto MUST esporre in locale/test documentazione API interattiva generata dalla stessa sorgente OpenAPI, tramite Swagger UI e ReDoc o equivalente.
+- **FR-042**: Ogni API esposta a GEBAN, mock GEBAN o client builder MUST avere esempi JSON pubblicabili di successo e almeno un errore funzionale per flusso rilevante.
+- **FR-043**: La documentazione navigabile del repository MUST permettere di leggere proposta, costituzione, project map, stato delle spec, feature attiva, fasi, blocchi, decisioni, vincoli, contratti API e quickstart senza conoscenza implicita.
+- **FR-044**: Il progetto MUST mantenere una sezione di readiness open source/PA con licenza da confermare, guida setup, guida sviluppo, guida produzione, architettura, configurazione, sicurezza, contributi, segnalazione vulnerabilita', test e release.
+- **FR-045**: La documentazione pubblicabile MUST usare solo dati demo e non deve contenere token, secret, password, dati personali reali o riferimenti ambientali sensibili.
 
 ### Key Entities
 
@@ -213,6 +226,11 @@ bloccare la copertura ma impedire scelte implicite.
 - **Blocco Documento**: elemento visuale ammesso nel modello, ad esempio intestazione, logo, titolo, paragrafo, tabella, colonna, firma, footer o interruzione pagina.
 - **Asset Documento**: logo, immagine o risorsa grafica referenziata dal modello con identificativo, versione e hash quando disponibile.
 - **Renderer PDF**: componente che trasforma modello documentale controllato e dati validati in PDF server-side, usando eventuali formati tecnici intermedi non modificabili liberamente dall'utente.
+- **Contratto OpenAPI**: specifica versionata delle API GEMODO con operazioni, schemi, stati, errori, autenticazione, autorizzazione ed esempi.
+- **Esempio API Pubblicabile**: payload o risposta dimostrativa basata solo su dati demo, utilizzabile in documentazione e test.
+- **Catalogo Errori Funzionali**: elenco stabile di codici errore, significato, HTTP status, condizioni e azioni suggerite per integratori.
+- **Portale Documentazione**: documentazione MkDocs generata dal repository che collega artefatti Spec Kit, contratti API, decisioni, vincoli e guide operative.
+- **Readiness Open Source/PA**: insieme di documenti e metadati necessari a pubblicazione, ispezione, integrazione e riuso del progetto da parte di altre amministrazioni.
 
 ### Decision Ownership
 
@@ -233,6 +251,8 @@ bloccare la copertura ma impedire scelte implicite.
 - **Versionamento mapping campi e versione modello**: owner `001`, `002` e `003`; da definire cosa succede quando cambia un campo concordato o un placeholder: nuova versione profilo, nuova versione modello, bozza derivata o entrambe. Fase bloccante: pubblicazione modello e validazione placeholder.
 - **Formato dei campi complessi**: owner `003` con supporto `001`; assunzione corrente schema strutturato con sotto-campi, tipi, obbligatorieta' e vincoli.
 - **Formato visuale del modello documentale**: owner `003` con supporto `004`, `007` e `009`; decisione di comportamento attesa: il builder deve essere un editor visuale controllato, non un editor HTML. La struttura salvata deve essere un modello documentale versionato con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati. Fase bloccante: `PLAN`/`TASKS` della `003`, `004` e `007` prima di implementare builder visuale e rendering definitivo.
+- **Documentazione API e Swagger/OpenAPI**: owner `009` per le regole trasversali, con owner operativi `001`, `004`, `005`, `006`, `007` per le API specifiche; decisione confermata: ogni API pubblica o di integrazione deve avere OpenAPI versionato, esempi JSON, catalogo errori e documentazione interattiva locale/test da stessa sorgente. Fase bloccante: prima dell'implementazione runtime degli endpoint esposti.
+- **Readiness open source e riuso PA**: owner `009` con supporto di tutte le spec; decisione confermata come vincolo di progetto: il repository deve avere documentazione testuale navigabile e pubblicabile per setup, sviluppo, produzione, architettura, configurazione, sicurezza, contributi, segnalazione vulnerabilita', test, release e licenza. La licenza definitiva resta da confermare con il project owner prima della pubblicazione pubblica.
 - **Gestione lingua italiano/inglese del bando**: owner `001` e `004` con supporto `003`; decisione confermata: nel nuovo flusso va previsto il modello inglese integrale tradotto. GEBAN invia il flag `Bando Inglese` Si/No e, se Si, i campi inglesi compilati a video; GEMODO usa la stessa tipologia modello e restituisce due output/modelli, italiano e inglese. Fase bloccante: contratto dati, validazione campi IT/EN e generazione documento.
 - **Campi comuni GEBAN per generazione**: owner `001` con supporto `003`, `004` e `009`; decisione parzialmente chiarita dal documento GEBAN: il payload comune deve coprire codice bando, numero posti, bando multiplo/riferimento, titolo e descrizione ridotta IT/EN, sedi e strutture IT/EN, profilo/livello, tipo selezione, medaglione IT/EN, ribando/riferimento, PTA, flag inPA/Gazzetta e progetto di riferimento per TD/TDPNRR; `Data inizio` non va gestita. Fase bloccante: contratto dati della `001` e scenari mock.
 - **Client Keycloak GEMODO e GEBAN**: owner `006` con supporto `009`; decisione proposta in attesa di conferma: configurare accesso utenti GEMODO con client/ruoli GEMODO e chiamate GEBAN-GEMODO con token tecnico server-to-server. Da confermare se CNR preferisce due client `gemodo-frontend`/`gemodo-backend` o un unico client GEMODO, se esiste gia' `geban-backend`, audience attesa, ruoli tecnici e dati audit disponibili nel payload. Fase bloccante: implementazione sicurezza reale, non Phase 1/2 della `009`.
@@ -255,6 +275,9 @@ bloccare la copertura ma impedire scelte implicite.
 - **SC-007**: Il 100% delle decisioni critiche aperte indica fase bloccata o assunzione provvisoria prima della generazione dei task implementativi.
 - **SC-008**: Gli scenari minimi coprono almeno un caso autorizzato e un caso non autorizzato per consultazione o download.
 - **SC-009**: Il 100% dei modelli demo usati per generazione ha struttura documentale controllata, versionata e priva di HTML/CSS libero o script inseriti dall'utente.
+- **SC-010**: Il 100% delle API pianificate per implementazione operativa ha OpenAPI versionato, esempi JSON pubblicabili e documentazione interattiva locale/test prima dello sviluppo runtime dell'endpoint.
+- **SC-011**: La documentazione navigabile permette di individuare in massimo tre passaggi proposta, costituzione, feature attiva, stato delle spec, blocchi, decisioni, contratti API e quickstart.
+- **SC-012**: Prima della pubblicazione open source, il 100% dei documenti pubblicabili e degli esempi viene verificato per assenza di secret, token, credenziali, dati personali reali e riferimenti ambientali sensibili.
 
 ## Assumptions
 
@@ -272,6 +295,10 @@ bloccare la copertura ma impedire scelte implicite.
 - Il builder visuale futuro non consentira' all'utente di scrivere HTML/CSS libero; la
   prima fase usera' seed/configurazioni per lo stesso modello documentale controllato che
   il builder manipolera' in seguito.
+- Le API vengono considerate pronte per implementazione solo quando il relativo contratto
+  OpenAPI, gli esempi pubblicabili e la documentazione interattiva sono tracciati.
+- La documentazione di riuso PA seguira' le linee guida AgID/Developers Italia; la licenza
+  definitiva viene confermata prima della pubblicazione pubblica.
 - Le risposte raccolte il 2026-07-28 chiudono il trattamento di bando multiplo, ribando,
   lingua inglese integrale e tipologie iniziali GEBAN/SOL come input per le spec owner
   `001`, `002`, `003`, `004` e `005`.

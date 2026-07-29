@@ -35,6 +35,8 @@ description: "Task list template for feature implementation"
   - Feature requirements from plan.md
   - Entities from data-model.md
   - Endpoints from contracts/
+  - OpenAPI, Swagger/ReDoc, JSON examples, error catalog, and reuse documentation
+    required by the constitution for API-bearing features
 
   Tasks MUST be organized by user story so each story can be:
   - Implemented independently
@@ -66,6 +68,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T004 Setup database schema and migrations framework
 - [ ] T005 [P] Implement authentication/authorization framework
 - [ ] T006 [P] Setup API routing and middleware structure
+- [ ] TXXX [P] Create versioned OpenAPI contract and generated API documentation placeholders
 - [ ] T007 Create base models/entities that all stories depend on
 - [ ] T008 Configure error handling and logging infrastructure
 - [ ] T009 Setup environment configuration management
@@ -152,6 +155,8 @@ Examples of foundational tasks (adjust based on your project):
 **Purpose**: Improvements that affect multiple user stories
 
 - [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX [P] Update Swagger/ReDoc/OpenAPI publication notes and API examples
+- [ ] TXXX [P] Update reuse/open-source documentation, license notes, contribution guidance, or security reporting guidance if impacted
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/

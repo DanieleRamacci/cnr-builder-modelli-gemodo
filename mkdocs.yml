@@ -11,8 +11,15 @@ plugins:
 nav:
   - Home: index.md
   - Proposta: spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md
-  - Spec Kit Index: spec-kit/index.md
+  - Spec Kit:
+      - Index: spec-kit/index.md
+      - Feature Attiva: spec-kit/active-feature.md
+      - Roadmap: spec-kit/roadmap.md
+      - API Readiness: spec-kit/api-readiness.md
+      - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
   - Project Map: project-map.md
+  - API Documentation: api-documentation.md
+  - Riuso PA: open-source-pa-readiness.md
   - Costituzione: spec-kit/governance/constitution.md
 markdown_extensions:
   - admonition

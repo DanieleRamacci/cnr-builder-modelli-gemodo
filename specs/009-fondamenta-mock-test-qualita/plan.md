@@ -9,7 +9,8 @@
 Definire le fondamenta verificabili del progetto GEMODO: ambiente locale ripetibile,
 migrations e seed demo coerenti con le spec, mock GEBAN contract-first, scenari
 end-to-end minimi, matrice di copertura, profili applicativi di integrazione, modello
-documentale controllato e registro delle decisioni aperte.
+documentale controllato, documentazione API navigabile, readiness open source/PA e
+registro delle decisioni aperte.
 
 L'approccio tecnico e' trattare questa feature come layer trasversale: prepara struttura,
 contratti di qualita' e criteri di validazione che i task successivi useranno per
@@ -26,6 +27,11 @@ documento tramite blocchi e posizionamenti ammessi, senza scrivere HTML/CSS libe
 prima fase deve quindi seedare un modello documentale controllato e versionato, usabile dal
 renderer PDF e riusabile dal builder come sorgente dati.
 
+Il piano recepisce infine il vincolo di pubblicazione e riuso: ogni API pubblica o di
+integrazione deve avere OpenAPI versionato, esempi JSON, catalogo errori e documentazione
+interattiva locale/test da stessa sorgente; il repository deve esporre una documentazione
+navigabile per comprendere fasi Spec Kit, blocchi, decisioni, vincoli e guide operative.
+
 ## Technical Context
 
 **Language/Version**: Python 3.12+ per backend, TypeScript moderno per frontend, YAML/JSON
@@ -33,6 +39,10 @@ per contratti e manifest di qualita'
 
 **Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, Angular, OpenAPI
 tooling, Keycloak locale, strumenti di orchestrazione ambiente locale
+
+**API Documentation**: OpenAPI YAML versionati in `infra/openapi/`, esempi JSON
+pubblicabili, catalogo errori, Swagger UI e ReDoc generati dalla stessa sorgente in
+locale/test
 
 **Storage**: PostgreSQL per dati applicativi; documentale locale/mock nascosto dietro
 riferimento documentale stabile; file YAML/JSON versionati per manifest qualita'
@@ -53,12 +63,20 @@ al carico
 GEBAN allineato ai contratti pubblici; decisioni aperte critiche non possono entrare in
 tasks implementativi come assunzioni silenziose; sicurezza e audit seguono la spec 006;
 Keycloak non diventa sorgente delle abilitazioni fini su modelli e contratti GEMODO;
-il builder non espone HTML/CSS libero e usa una struttura documentale controllata
+il builder non espone HTML/CSS libero e usa una struttura documentale controllata;
+endpoint pubblici o di integrazione non entrano in implementazione runtime senza OpenAPI,
+esempi, catalogo errori e documentazione API navigabile; esempi e documentazione pubblica
+non devono contenere segreti o dati reali
 
 **Scale/Scope**: primo incremento trasversale per struttura di progetto, ambiente locale,
 mock GEBAN, seed demo, contratti di qualita', scenari minimi, profili di integrazione,
-modello documentale controllato e registro decisioni; fuori scope implementare tutte le
-feature applicative finali
+modello documentale controllato, documentazione API, readiness open source/PA e registro
+decisioni; fuori scope implementare tutte le feature applicative finali
+
+**Reuse/Public Documentation**: README come punto di ingresso, MkDocs generato da
+`scripts/generate-spec-docs.py`, pagine per roadmap Spec Kit, feature attiva, readiness
+API, decisioni/vincoli e checklist open source/PA; licenza definitiva da confermare prima
+della pubblicazione pubblica
 
 ## Constitution Check
 
@@ -71,6 +89,7 @@ feature applicative finali
 | Configurable Document Models | Seed e migrations devono riflettere modelli configurabili, non logica hard-coded. | PASS |
 | Versioning, Traceability, Reproducibility | Seed, scenari e matrice copertura tracciano versioni modello, generazioni, audit e idempotenza. | PASS |
 | Security, Audit, Controlled AI | Il piano include Keycloak locale, principal mock, profili applicativi GEMODO, scenari autorizzativi, audit e decisioni AI/MCP non bloccanti. | PASS |
+| Public Documentation and Reuse Readiness | Il piano include OpenAPI, Swagger/ReDoc, esempi pubblicabili, portale MkDocs e readiness open source/PA. | PASS |
 
 ## Project Structure
 
@@ -131,14 +150,27 @@ infra/
 │   ├── postgres/
 │   └── documentale-mock/
 └── openapi/
+    ├── README.md
+    ├── errors.md
+    └── examples/
+
+docs/
+├── index.md
+├── project-map.md
+├── api-documentation.md
+├── open-source-pa-readiness.md
+└── spec-kit/
+    ├── index.md
+    ├── active-feature.md
+    ├── api-readiness.md
+    ├── roadmap.md
+    └── decisions-and-vincoli.md
 
 mock-geban/
 ├── README.md
 ├── scenarios/
 └── payloads/
 
-docs/
-└── project-map.md
 ```
 
 **Structure Decision**: la `009` stabilisce la struttura target e i contratti trasversali
@@ -165,6 +197,8 @@ Decisioni chiave:
   fini gestite da GEMODO tramite profili applicativi versionati;
 - modello documentale controllato come sorgente versionata che il builder visuale futuro
   manipolera' senza HTML/CSS libero;
+- documentazione API contract-first con OpenAPI, esempi JSON, catalogo errori e Swagger/ReDoc;
+- readiness open source/PA come documentazione testuale navigabile e pubblicabile;
 - registro decisioni aperte con owner, impatto, assunzione e fase bloccata;
 - matrice copertura come ponte tra spec, scenari, contratti e task futuri.
 
@@ -186,3 +220,4 @@ Output:
 | Configurable Document Models | Seed demo e coverage richiedono tipi, categorie, modelli e versioni configurabili. | PASS |
 | Versioning, Traceability, Reproducibility | Scenari minimi coprono versione modello, idempotenza, stato, riferimento e audit. | PASS |
 | Security, Audit, Controlled AI | Scenari includono autorizzato/non autorizzato, distinzione token/ruoli Keycloak e autorizzazioni fini GEMODO; decisioni 006 e AI/MCP restano tracciate. | PASS |
+| Public Documentation and Reuse Readiness | Contratti e task richiedono documentazione API navigabile, esempi demo sicuri e pagine di riuso PA. | PASS |

@@ -34,6 +34,50 @@ required_sections:
     rules:
       - every GEBAN-facing contract must have at least one success example
       - every GEBAN-facing contract must have at least one functional error example
+  api_documentation:
+    required: true
+    fields:
+      - openapi_ref
+      - api_scope
+      - spec_owner
+      - endpoints
+      - auth_scheme
+      - authorization_notes
+      - success_examples
+      - error_examples
+      - error_catalog_ref
+      - swagger_enabled
+      - redoc_enabled
+      - generated_from_same_openapi_source
+    rules:
+      - every public or integration API must have a versioned OpenAPI contract before runtime implementation
+      - swagger_enabled or redoc_enabled must be true in local/test environments
+      - generated_from_same_openapi_source must be true
+      - success_examples and error_examples must contain only publishable demo data
+      - public endpoint names, fields, states and error codes must match the OpenAPI source
+  open_source_reuse:
+    required: true
+    fields:
+      - readme
+      - license
+      - setup
+      - development
+      - production
+      - architecture
+      - configuration
+      - security
+      - contributing
+      - vulnerability_reporting
+      - tests
+      - releases
+      - contains_secrets
+      - contains_real_personal_data
+    rules:
+      - contains_secrets must be false
+      - contains_real_personal_data must be false
+      - license may be DA_CONFERMARE before public release but must be tracked
+      - documentation must be textual and versionable
+      - README must link the generated documentation portal
   integration_profiles:
     required: true
     fields:
@@ -111,12 +155,16 @@ minimum_quality_gates:
     - seed demo contains no real or sensitive data
     - integration profiles declare system, client, roles or claims and GEMODO fine-grained permissions
     - document model seeds declare controlled blocks, assets, styles and placeholders without free HTML or CSS
+    - API-bearing features declare OpenAPI, examples, error catalog and interactive docs
+    - open source and PA reuse documentation has an owner and no publishability blockers hidden
   before_implementation:
     - impacted critical decisions are confirmed or explicitly suspended
     - e2e scenarios cover valid flow, validation error, idempotent retry, conflict, failure, unauthorized access
     - audit expectations are documented for sensitive operations
     - authorized and unauthorized scenarios cover both Keycloak coarse authorization and GEMODO profile authorization
     - document model validation rejects unsupported blocks, free HTML, free CSS, scripts and unavailable placeholders
+    - runtime endpoints are not implemented before their OpenAPI contract and publishable examples exist
+    - documentation examples contain no tokens, secrets, real personal data or sensitive environment URLs
 
 example:
   environment:
@@ -135,6 +183,41 @@ example:
       spec_owner: specs/001-catalogo-contratto-geban
       resettable: true
       contains_real_or_sensitive_data: false
+  api_documentation:
+    - openapi_ref: infra/openapi/geban-catalog-api.openapi.yaml
+      api_scope: GEBAN
+      spec_owner: specs/001-catalogo-contratto-geban
+      endpoints:
+        - GET /catalogo/tipi-documento
+        - GET /catalogo/tipi-documento/{codiceTipoDocumento}/categorie
+        - GET /catalogo/modelli
+        - GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti
+        - POST /documenti/valida
+      auth_scheme: bearer-jwt
+      authorization_notes: Keycloak validates identity and audience; GEMODO validates integration profile permissions
+      success_examples:
+        - infra/openapi/examples/catalog-success.json
+      error_examples:
+        - infra/openapi/examples/validation-error.json
+      error_catalog_ref: infra/openapi/errors.md
+      swagger_enabled: true
+      redoc_enabled: true
+      generated_from_same_openapi_source: true
+  open_source_reuse:
+    readme: README.md
+    license: DA_CONFERMARE
+    setup: docs/open-source-pa-readiness.md
+    development: docs/open-source-pa-readiness.md
+    production: docs/open-source-pa-readiness.md
+    architecture: docs/open-source-pa-readiness.md
+    configuration: docs/open-source-pa-readiness.md
+    security: docs/open-source-pa-readiness.md
+    contributing: docs/open-source-pa-readiness.md
+    vulnerability_reporting: docs/open-source-pa-readiness.md
+    tests: docs/open-source-pa-readiness.md
+    releases: docs/open-source-pa-readiness.md
+    contains_secrets: false
+    contains_real_personal_data: false
   integration_profiles:
     - system_code: GEBAN
       client_id: geban-backend

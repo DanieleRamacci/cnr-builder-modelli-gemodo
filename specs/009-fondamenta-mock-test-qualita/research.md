@@ -111,6 +111,42 @@ prodotti dal renderer.
 - Solo sezioni testuali ordinate: scartato perche' non copre logo, firme posizionate,
   tabelle, colonne e layout amministrativi reali.
 
+## Decision: documentazione API contract-first con OpenAPI, Swagger e ReDoc
+
+**Rationale**: GEBAN e gli altri sistemi chiamanti devono poter leggere, testare e
+integrare le API senza dipendere dal codice sorgente o da conoscenza implicita del team.
+La documentazione interattiva riduce ambiguita' su request, response, JWT, audience,
+autorizzazioni, stati e codici errore. Per questo ogni API pubblica o di integrazione deve
+avere OpenAPI versionato prima dello sviluppo runtime dell'endpoint; la stessa sorgente
+deve alimentare Swagger UI, ReDoc o documentazione equivalente in locale/test.
+
+**Alternatives considered**:
+
+- Documentazione solo nel README: scartata perche' non valida automaticamente schemi,
+  esempi e contratti.
+- Swagger generato solo dal codice runtime: scartato come unica fonte perche' invertirebbe
+  il principio contract-first.
+- Esempi informali non versionati: scartati perche' rischiano drift rispetto agli endpoint.
+
+## Decision: readiness open source e riuso PA
+
+**Rationale**: Il progetto e' destinato a essere open source e riusabile da altre
+pubbliche amministrazioni. La documentazione deve permettere a un soggetto esterno di
+capire scelte, vincoli, API e modalita' operative senza accedere a documenti privati o
+chiedere conoscenza orale al team. Il repository deve quindi avere documentazione testuale,
+navigabile e pubblicabile per setup da zero, sviluppo locale, produzione, architettura,
+configurazione, sicurezza, contributi, segnalazione vulnerabilita', test, release e
+licenza. La licenza definitiva resta da confermare con il project owner prima della
+pubblicazione pubblica.
+
+**Alternatives considered**:
+
+- Rinviare la documentazione open source a fine progetto: scartato perche' renderebbe
+  difficile verificare da subito pubblicabilita' di esempi, assenza di segreti e chiarezza
+  delle decisioni.
+- Pubblicare solo codice e Spec Kit: scartato perche' non basta per installazione,
+  integrazione, sicurezza e manutenzione da parte di terzi.
+
 ## Decision: sicurezza locale realistica ma non bloccata dalle decisioni differite
 
 **Rationale**: la spec 006 contiene decisioni provvisorie su token delegato e separazione

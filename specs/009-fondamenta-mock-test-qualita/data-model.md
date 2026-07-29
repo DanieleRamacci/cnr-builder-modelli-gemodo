@@ -96,6 +96,122 @@ Validation:
 - deve usare contratti pubblici, non API interne o accesso diretto ai dati.
 - deve coprire catalogo, campi/schema, validazione, generazione, stato e download.
 
+### ContrattoOpenAPI
+
+Specifica versionata di una API pubblica, di integrazione o interna rilevante.
+
+Fields:
+
+- `id`
+- `nome`
+- `versione`
+- `file_ref`: percorso del file OpenAPI versionato.
+- `api_scope`: `GEBAN`, `BUILDER`, `ADMIN`, `INTERNO`.
+- `endpoint_coperti`
+- `schemi_coperti`
+- `autenticazione`: requisiti JWT/OIDC o `N/A`.
+- `autorizzazioni`: ruoli, claim o profili GEMODO richiesti.
+- `esempi`: elenco di `EsempioAPI`.
+- `catalogo_errori_ref`
+- `documentazione_interattiva`: Swagger UI, ReDoc o equivalente.
+- `spec_owner`
+
+Validation:
+
+- ogni endpoint pubblico o di integrazione deve essere presente in almeno un contratto.
+- il contratto deve essere creato prima dell'implementazione runtime dell'endpoint.
+- Swagger/ReDoc devono essere generati dalla stessa sorgente OpenAPI versionata.
+- stati, campi e codici errore pubblici devono essere coerenti con esempi e catalogo errori.
+
+### EsempioAPI
+
+Payload o risposta dimostrativa pubblicabile.
+
+Fields:
+
+- `id`
+- `contratto_openapi`
+- `scenario`: successo, errore validazione, non autorizzato, conflitto, fallimento.
+- `request_ref`
+- `response_ref`
+- `dati_demo`: deve essere `true`.
+- `contiene_segreti`: deve essere `false`.
+- `contiene_dati_reali`: deve essere `false`.
+
+Validation:
+
+- ogni esempio deve usare solo dati demo.
+- nessun esempio puo' contenere token, secret, password, dati personali reali o URL
+  ambientali sensibili.
+- ogni flusso rilevante deve avere almeno un esempio di successo e un errore funzionale.
+
+### CatalogoErroriFunzionali
+
+Elenco stabile degli errori pubblici esposti da API e scenari.
+
+Fields:
+
+- `id`
+- `api_scope`
+- `codice`
+- `http_status`
+- `messaggio_pubblico`
+- `condizione`
+- `azione_suggerita`
+- `audit_richiesto`: boolean.
+
+Validation:
+
+- ogni errore pubblico deve avere codice stabile e messaggio sanificato.
+- errori legati a sicurezza, audit, idempotenza e storage devono essere tracciabili alla
+  spec owner.
+- i messaggi pubblici non devono esporre stack trace, segreti o dettagli tecnici interni.
+
+### PortaleDocumentazione
+
+Documentazione navigabile generata dal repository.
+
+Fields:
+
+- `id`
+- `generator_ref`: script o comando di generazione.
+- `pagine`: home, roadmap, feature attiva, API readiness, decisioni/vincoli, riuso PA.
+- `fonti`: README, Spec Kit, costituzione, project map, contratti, quickstart.
+- `verifica_build`: comando di build o validazione.
+
+Validation:
+
+- deve essere raggiungibile dal README.
+- deve permettere di trovare proposta, costituzione, feature attiva, stato spec, blocchi,
+  decisioni, vincoli, contratti API e quickstart.
+- le pagine generate devono essere rigenerabili senza modifiche manuali.
+
+### ReadinessOpenSourcePA
+
+Checklist e metadati necessari a pubblicazione e riuso.
+
+Fields:
+
+- `id`
+- `licenza`: `DA_CONFERMARE` finche' non decisa.
+- `readme_ref`
+- `setup_ref`
+- `sviluppo_ref`
+- `produzione_ref`
+- `architettura_ref`
+- `sicurezza_ref`
+- `contributing_ref`
+- `security_policy_ref`
+- `changelog_ref`
+- `rilasci_ref`
+
+Validation:
+
+- prima della pubblicazione pubblica la licenza deve essere confermata.
+- i documenti devono essere in formato testuale versionabile.
+- la checklist deve verificare assenza di segreti, credenziali, dati reali e riferimenti
+  ambientali sensibili.
+
 ### SistemaRichiedente
 
 Applicazione esterna o modulo autorizzato a consumare contratti e generazione documenti
@@ -331,6 +447,11 @@ AmbienteLocale 1--N VerificaAmbiente
 MigrationSet 1--N MatriceCopertura
 SeedDemo N--N ScenarioEndToEnd
 MockGEBAN 1--N ScenarioEndToEnd
+ContrattoOpenAPI 1--N EsempioAPI
+ContrattoOpenAPI 1--N CatalogoErroriFunzionali
+ContrattoOpenAPI N--N ScenarioEndToEnd
+PortaleDocumentazione N--N ContrattoOpenAPI
+ReadinessOpenSourcePA 1--N PortaleDocumentazione
 SistemaRichiedente 1--N ProfiloDiIntegrazione
 SistemaRichiedente 1--N ClientApplicativo
 ClientApplicativo N--N ProfiloDiIntegrazione

@@ -22,6 +22,8 @@
 
 **Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
 
+**API Documentation**: [OpenAPI/Swagger/ReDoc outputs, example payloads, error catalog, or N/A]
+
 **Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 **Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
@@ -35,6 +37,8 @@
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
 
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+
+**Reuse/Public Documentation**: [README, setup, deployment, architecture, security, contribution/reuse docs impacted by this feature, or N/A]
 
 ## Constitution Check
 
@@ -53,6 +57,8 @@ specs/[###-feature]/
 ├── data-model.md        # Phase 1 output (/speckit-plan command)
 ├── quickstart.md        # Phase 1 output (/speckit-plan command)
 ├── contracts/           # Phase 1 output (/speckit-plan command)
+├── openapi/             # API contracts and generated documentation inputs, if applicable
+├── docs/                # Reuse, integration, or operator documentation updates, if applicable
 └── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
 ```
 

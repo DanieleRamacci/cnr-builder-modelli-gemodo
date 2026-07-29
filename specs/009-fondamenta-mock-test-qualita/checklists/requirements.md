@@ -49,3 +49,9 @@
 - Chiarito che il builder futuro e' un editor visuale controllato, non un editor HTML:
   il modello viene salvato come struttura versionata con blocchi, layout, asset, stili
   ammessi e placeholder validati.
+- Chiarito che ogni API pubblica o di integrazione deve avere OpenAPI versionato,
+  esempi JSON pubblicabili, catalogo errori e Swagger/ReDoc locale/test prima dello
+  sviluppo runtime dell'endpoint.
+- Chiarito che il repository deve essere predisposto per pubblicazione open source e
+  riuso PA con documentazione navigabile, testuale, versionabile e priva di segreti o dati
+  reali.

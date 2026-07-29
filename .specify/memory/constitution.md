@@ -1,26 +1,26 @@
 <!--
 Sync Impact Report
-Version change: template -> 1.0.0
+Version change: 1.0.0 -> 1.1.0
 Modified principles:
-- Placeholder principle 1 -> I. Boundary Ownership
-- Placeholder principle 2 -> II. Contract-First Integration
-- Placeholder principle 3 -> III. Configurable Document Models
-- Placeholder principle 4 -> IV. Versioning, Traceability, and Reproducibility
-- Placeholder principle 5 -> V. Security, Audit, and Controlled AI
+- I. Boundary Ownership: unchanged
+- II. Contract-First Integration: expanded with API documentation gates
+- III. Configurable Document Models: unchanged
+- IV. Versioning, Traceability, and Reproducibility: unchanged
+- V. Security, Audit, and Controlled AI: unchanged
+- Added VI. Public Documentation and Reuse Readiness
 Added sections:
-- Domain Constraints
-- Development Workflow and Quality Gates
+- Public Documentation and Reuse Readiness principle
 Removed sections:
 - None
 Templates requiring updates:
-- .specify/templates/plan-template.md: reviewed, no change required
+- .specify/templates/plan-template.md: updated
 - .specify/templates/spec-template.md: reviewed, no change required
-- .specify/templates/tasks-template.md: reviewed, no change required
+- .specify/templates/tasks-template.md: updated
 Runtime guidance:
-- README.md: updated to reflect the installed Spec Kit workflow
+- README.md: updated
 - AGENTS.md: reviewed, no change required
 Follow-up TODOs:
-- None
+- Confirm definitive open source license with project owner before public release
 -->
 
 # CNR GEBAN Builder Modelli Constitution
@@ -53,6 +53,13 @@ contract before producing a document.
 Contracts MUST define identity of the requesting system, external context id,
 model version id, data payload, validation result, generated-document reference,
 and conflict behavior for idempotent requests.
+
+Every public or integration API MUST have a versioned OpenAPI contract, success
+examples, functional error examples, authentication requirements, authorization
+notes, and stable public names for endpoints, fields, states, and error codes
+before runtime implementation starts. Local and test environments MUST expose
+interactive API documentation suitable for validation by integrators, such as
+Swagger UI and ReDoc generated from the same OpenAPI source.
 
 Rationale: GEBAN builds dynamic screens and workflows from these contracts, so
 ambiguous contracts create implementation risk in both systems.
@@ -106,6 +113,31 @@ model as ordinary APIs.
 Rationale: the service handles official administrative documents and must keep
 responsibility, authorization, and audit explicit.
 
+### VI. Public Documentation and Reuse Readiness
+
+The project MUST be maintained as software that can be inspected, reused, and
+integrated by other public administrations. The repository MUST provide
+versioned textual documentation for setup from zero, local development,
+production deployment, architecture, configuration, API usage, security model,
+data contracts, operational states, error catalog, testing, contribution,
+security reporting, and release notes.
+
+Documentation MUST be navigable from the repository README and the generated
+documentation site. Generated documentation MUST be reproducible from repository
+sources and MUST NOT require private knowledge, private documents, or local
+machine state to understand the implemented behavior. Public examples MUST use
+demo data only and MUST NOT contain secrets, credentials, real personal data, or
+environment-specific tokens.
+
+Before public release or registration for reuse, the repository MUST include a
+license decision, contribution and security reporting guidance, installation and
+deployment documentation, and enough API documentation for another
+administration or integrator to call the service without reading the source
+code.
+
+Rationale: the service is intended for reuse and collaboration, so integration
+and operational knowledge must be explicit, versioned, and safe to publish.
+
 ## Domain Constraints
 
 - The service MUST return document references suitable for GEBAN and downstream
@@ -118,8 +150,10 @@ responsibility, authorization, and audit explicit.
   anagrafiche.
 - Public API names, field names, states, and error codes MUST be documented
   before implementation.
-- OpenAPI, JSON examples, and model data contracts SHOULD be kept current for
+- OpenAPI, JSON examples, and model data contracts MUST be kept current for
   every API exposed to GEBAN or internal builder clients.
+- Swagger UI, ReDoc, or equivalent generated API reference MUST be available in
+  local/test environments from the versioned OpenAPI contracts.
 
 ## Development Workflow and Quality Gates
 
@@ -131,6 +165,8 @@ responsibility, authorization, and audit explicit.
 - Planning MUST identify integration contracts, data model, state transitions,
   idempotency behavior, security requirements, and audit events before tasks are
   implemented.
+- Planning MUST identify OpenAPI outputs, example payloads, generated API
+  documentation, and public reuse documentation for every API-bearing feature.
 - Tasks MUST be traceable to user stories, requirements, contracts, or
   constitution principles.
 - Implementation MUST NOT proceed when the plan violates a MUST principle unless
@@ -155,6 +191,6 @@ Versioning follows semantic versioning:
 
 Before implementation, plans MUST pass the Constitution Check. Before delivery,
 the feature artifacts SHOULD be analyzed for alignment across specification,
-plan, tasks, contracts, and these principles.
+plan, tasks, contracts, documentation, and these principles.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-19 | **Last Amended**: 2026-06-19
+**Version**: 1.1.0 | **Ratified**: 2026-06-19 | **Last Amended**: 2026-07-29

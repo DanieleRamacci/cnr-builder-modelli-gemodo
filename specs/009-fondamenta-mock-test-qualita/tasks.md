@@ -38,18 +38,19 @@ foundation feature.
 
 **Purpose**: Define shared quality contracts, configuration loaders and validation helpers
 that block all user stories, including the Keycloak/GEMODO authorization boundary and
-integration profile manifests and controlled document model seeds.
+integration profile manifests, controlled document model seeds, API documentation readiness
+and open source/PA reuse documentation.
 
 **CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta, VerificaAmbiente, SistemaRichiedente, ClientApplicativo, ProfiloDiIntegrazione, ModelloDocumentaleControllato, BloccoDocumento and AssetDocumento in `backend/app/quality/schemas.py`
+- [ ] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta, VerificaAmbiente, SistemaRichiedente, ClientApplicativo, ProfiloDiIntegrazione, ModelloDocumentaleControllato, BloccoDocumento, AssetDocumento, ContrattoOpenAPI, EsempioAPI, CatalogoErroriFunzionali, PortaleDocumentazione and ReadinessOpenSourcePA in `backend/app/quality/schemas.py`
 - [ ] T010 Create YAML manifest loading utility with validation errors in `backend/app/quality/manifest_loader.py`
 - [ ] T011 Create shared quality error types for prerequisito mancante, contratto non valido, seed sensibile and decisione bloccante in `backend/app/quality/errors.py`
 - [ ] T012 Create local quality manifest seed from `quality-readiness-contract.yaml` in `infra/local/quality-readiness.local.yaml`
 - [ ] T013 Create mock scenario manifest seed from `mock-geban-scenarios.yaml` in `mock-geban/scenarios/minimum-e2e.yaml`
 - [ ] T014 [P] Create pytest configuration for backend contract, integration and e2e markers in `backend/pytest.ini`
 - [ ] T015 [P] Create backend test fixtures for loading quality manifests and mock scenarios in `backend/tests/support/quality_fixtures.py`
-- [ ] T016 [P] Create OpenAPI aggregation placeholder for future GEBAN-facing contracts in `infra/openapi/README.md`
+- [ ] T016 [P] Create OpenAPI aggregation, Swagger/ReDoc publication and error catalog placeholders for future API contracts in `infra/openapi/README.md`, `infra/openapi/errors.md`, `docs/api-documentation.md`
 - [ ] T017 Document the blocking rule for open decisions before implementation in `docs/project-map.md`
 - [ ] T018 Create local integration profile manifest for GEBAN, client `geban-backend`, profile `GEBAN_RECLUTAMENTO_V1`, allowed models and operations in `infra/local/integration-profiles.local.yaml`
 - [ ] T019 Create Keycloak/GEMODO authorization boundary manifest with configurable audience, roles/claims and no credential storage in `infra/local/keycloak/authorization-boundary.local.yaml`
@@ -58,7 +59,7 @@ integration profile manifests and controlled document model seeds.
 - [ ] T022 Create controlled document model seed contract with allowed page, region, block, style, asset, signature and placeholder structures in `infra/local/document-models/bando-concorso-standard-v1.yaml`
 - [ ] T023 Create controlled document model validation helper rejecting free HTML, free CSS, scripts, unsupported blocks and unavailable placeholders in `backend/app/quality/document_model.py`
 - [ ] T024 [P] Create backend test support data for controlled document models and assets in `backend/tests/support/document_models.py`
-- [ ] T025 [P] Create documentation note for visual builder as controlled editor, not HTML editor, in `infra/local/document-models/README.md`
+- [ ] T025 [P] Create documentation note for visual builder as controlled editor, not HTML editor, and create open source/PA readiness note in `infra/local/document-models/README.md`, `docs/open-source-pa-readiness.md`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel.
 
@@ -146,7 +147,7 @@ decision has owner, impacted specs, status and blocking phase.
 - [ ] T053 [P] [US3] Implement DecisioneAperta schema and state transition validation in `backend/app/quality/decision.py`
 - [ ] T054 [P] [US3] Implement MatriceCopertura schema and coverage status validation in `backend/app/quality/coverage.py`
 - [ ] T055 [US3] Create initial open decisions register for proposal section 17 in `docs/decision-register.yaml`
-- [ ] T056 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-038, and spec owners in `docs/quality-coverage-matrix.yaml`
+- [ ] T056 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-045, and spec owners in `docs/quality-coverage-matrix.yaml`
 - [ ] T057 [US3] Implement readiness gate that fails on silent critical assumptions in `backend/app/quality/readiness_gate.py`
 - [ ] T058 [US3] Document decision update workflow and propagation to spec owners in `docs/decision-workflow.md`
 
@@ -160,10 +161,10 @@ coverage matrix and readiness gate outcomes.
 **Purpose**: Final verification and documentation updates across the foundation feature.
 
 - [ ] T059 [P] Update project map status for `009-fondamenta-mock-test-qualita` after selected implementation scope is completed in `docs/project-map.md`
-- [ ] T060 [P] Add generated documentation notes for quality manifests and mock GEBAN in `README.md`
-- [ ] T061 [P] Add concrete success and functional error examples for mock-facing contracts in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`
+- [ ] T060 [P] Add generated documentation notes for quality manifests, mock GEBAN, Spec Kit navigation and open source/PA readiness in `README.md`
+- [ ] T061 [P] Add concrete success and functional error examples for mock-facing contracts and document Swagger/ReDoc publication in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`, `docs/api-documentation.md`
 - [ ] T062 Run Python syntax and YAML validation for `backend/app/quality/`, `infra/local/`, `mock-geban/` and `docs/*.yaml`
-- [ ] T063 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`
+- [ ] T063 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`, verifying generated navigation for feature active, roadmap, API readiness, decisions and reuse PA pages
 - [ ] T064 Review `specs/009-fondamenta-mock-test-qualita/quickstart.md` against implemented task outputs and update expected outcomes
 
 ---
@@ -233,7 +234,7 @@ Task: "Create initial open decisions register for proposal section 17 in docs/de
 ### MVP First (User Story 1 Only)
 
 1. Complete Phase 1 setup.
-2. Complete Phase 2 foundational schemas, manifests, integration profiles, controlled document model seeds and fixtures.
+2. Complete Phase 2 foundational schemas, manifests, integration profiles, controlled document model seeds, API documentation readiness, open source/PA readiness and fixtures.
 3. Complete Phase 3 User Story 1.
 4. Stop and validate environment readiness, migrations/seed demo and prerequisiti.
 

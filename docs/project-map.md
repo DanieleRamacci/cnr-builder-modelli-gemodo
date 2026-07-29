@@ -20,7 +20,7 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 | `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | In chiarimento | §12, §8.11, §12.9 | `keycloak-jwt.md`; proposta corrente in `009`: utenti GEMODO via SSO, GEBAN -> GEMODO con token tecnico backend-to-backend e contesto audit nel payload; Keycloak gestisce identita'/client/ruoli generali, GEMODO gestisce autorizzazioni fini su profili, modelli, contratti e operazioni; configurazione Keycloak da confermare |
 | `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft integrata | §11, §16.6 | Dipende da API builder e generazioni |
 | `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft integrata | §15 | Non prerequisito del primo rilascio |
-| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test e qualita' | Tasks generati | §16.1, §16.2, §16.7, §17 | Attiva; raccoglie setup, criteri cross-cutting e ownership decisioni |
+| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test, qualita', documentazione API e readiness riuso PA | Tasks generati | §16.1, §16.2, §16.7, §17 | Attiva; raccoglie setup, criteri cross-cutting, ownership decisioni, OpenAPI/Swagger/ReDoc, portale documentazione e vincoli open source/PA |
 
 ## Coverage Per Sezione Proposta
 
@@ -41,9 +41,23 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 | §12 Sicurezza, Autenticazione E Autorizzazione | 006 | Coperta | Spec dedicata |
 | §13 Storage PDF | 004, 005 | Coperta | Generazione + conservazione/riferimento |
 | §14 Idempotenza | 005 | Coperta | Chiave, retry, conflict |
-| §15 Predisposizione Per AI, Documentazione Assistita E MCP | 008, 006 | Coperta | AI/MCP e sicurezza AI |
-| §16 Piano Di Sviluppo | 009 + tutte | Coperta | Usato come input per plan/tasks successivi |
+| §15 Predisposizione Per AI, Documentazione Assistita E MCP | 008, 006, 009 | Coperta | AI/MCP, sicurezza AI e documentazione pubblicabile |
+| §16 Piano Di Sviluppo | 009 + tutte | Coperta | Usato come input per plan/tasks successivi; `009` governa anche navigazione documentale, API readiness e riuso PA |
 | §17 Decisioni Da Confermare | 009 + spec collegate | Coperta | Decisioni distribuite come open decisions |
+
+## Gate Trasversali Documentazione E Riuso
+
+- Ogni API pubblica o di integrazione deve avere OpenAPI versionato prima
+  dell'implementazione runtime.
+- Swagger UI e ReDoc, o equivalenti, devono essere disponibili in locale/test dalla stessa
+  sorgente OpenAPI.
+- Ogni API deve avere esempi JSON pubblicabili di successo e di errore funzionale, senza
+  token, secret, dati personali reali o URL ambientali sensibili.
+- La documentazione navigabile deve permettere di raggiungere proposta, costituzione,
+  feature attiva, stato spec, blocchi, decisioni, vincoli, contratti API e quickstart.
+- Prima della pubblicazione open source/PA devono essere tracciati licenza, setup,
+  sviluppo, produzione, architettura, configurazione, sicurezza, contributi, segnalazione
+  vulnerabilita', test, release e changelog.
 
 ## Ordine Suggerito Di Approfondimento
 
