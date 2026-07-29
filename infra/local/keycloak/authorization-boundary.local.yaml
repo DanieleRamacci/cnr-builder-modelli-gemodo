@@ -1,0 +1,62 @@
+# Confine Keycloak / GEMODO nelle autorizzazioni applicative (spec 009, FR-031..FR-035;
+# decisione confermata SEC-006-001, spec 006, 2026-07-29).
+#
+# Keycloak fornisce identita', autenticazione, client tecnici, audience e ruoli/claim
+# generali. GEMODO applica le autorizzazioni fini su sistemi richiedenti, profili di
+# integrazione, tipi documento, categorie, tipologie, modelli/versioni, contratti dati e
+# operazioni (vedi infra/local/integration-profiles.local.yaml). Nessun valore qui e'
+# hardcodato: ogni voce e' configurabile tramite variabile d'ambiente e resta identica
+# in struttura tra ambiente di test reale e produzione.
+
+boundary: keycloak-gemodo-authorization
+
+identity_provider:
+  description: >
+    Realm Keycloak CNR di test reale, usato di default per sviluppo e test (fallback
+    containerizzato opzionale per sviluppo offline, vedi infra/local/keycloak/README.md).
+  issuer_url_env: KEYCLOAK_ISSUER_URL
+  issuer_url_default: https://sso.test.si.cnr.it/auth/realms/cnr
+  audience_env: KEYCLOAK_AUDIENCE
+  audience_default: gemodo-backend
+
+clients:
+  - client_id: gemodo-frontend
+    tipo: PUBBLICO
+    uso: login SSO utenti umani GEMODO (admin, builder, consultazione)
+    client_id_env: KEYCLOAK_FRONTEND_CLIENT_ID
+  - client_id: gemodo-backend
+    tipo: CONFIDENZIALE
+    uso: audience delle API GEMODO; valida token in ingresso
+    client_id_env: KEYCLOAK_CLIENT_ID
+    client_secret_env: KEYCLOAK_CLIENT_SECRET
+  - client_id: geban-backend
+    tipo: CONFIDENZIALE_SERVER_TO_SERVER
+    uso: chiamata operativa GEBAN -> GEMODO con token tecnico (client credentials)
+    ruoli_claim_generali_attesi:
+      - DOCUMENTI_GENERATORE
+  - client_id: geban-frontend
+    tipo: DA_CONFERMARE
+    uso: placeholder, da verificare se gia' gestito dal team GEBAN
+
+principal_locale_mock:
+  description: >
+    In assenza di rete verso il Keycloak CNR di test, backend e test possono usare un
+    principal mock locale con la stessa forma di claim (sub, ruoli/claim generali,
+    client_id, azp) usata dal realm reale, per non introdurre un secondo modello.
+  abilitato_env: GEMODO_USE_MOCK_PRINCIPAL
+  default: false
+
+rules:
+  - keycloak_provides: [identity, authentication, technical_clients, audience, coarse_roles_or_claims]
+  - gemodo_provides: [integration_profiles, document_types, categories, typologies, model_versions, data_contracts, operations]
+  - manages_credentials: false
+  - description: >
+      Un token Keycloak valido con ruolo/claim generale coerente non basta da solo:
+      l'operazione richiesta deve anche essere abilitata dal profilo di integrazione
+      GEMODO attivo associato al client/sistema richiedente
+      (infra/local/integration-profiles.local.yaml).
+  - description: >
+      GEBAN chiama GEMODO con token tecnico geban-backend (client credentials);
+      l'utente reale e il contesto bando viaggiano nel payload applicativo per audit,
+      tracciabilita' e idempotenza, non nel token (nessun token exchange/on-behalf-of
+      nella prima release).

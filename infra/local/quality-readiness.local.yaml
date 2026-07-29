@@ -1,0 +1,280 @@
+# Manifest locale di readiness qualita' (spec 009, T012), conforme a
+# specs/009-fondamenta-mock-test-qualita/contracts/quality-readiness-contract.yaml.
+#
+# Riflette lo stato REALE del progetto: le liste di esempio (success_examples,
+# error_examples) restano vuote finche' i file corrispondenti non esistono davvero
+# (payload demo: User Story 2 T042/T043; esempi OpenAPI: Polish T061). Questo file va
+# aggiornato quando quei task vengono completati, non anticipato con riferimenti a file
+# non ancora creati.
+#
+# Validato da backend/app/quality/manifest_loader.py
+# (validate_manifest_against_contract) e dal contract test
+# backend/tests/contract/test_quality_readiness_contract.py.
+
+environment:
+  profile: local-dev
+  services:
+    - backend
+    - frontend
+    - postgres
+    - keycloak
+    - documentale-mock
+    - mock-geban
+  healthchecks:
+    backend: "GET /health (backend/app/main.py)"
+    frontend: "GET http://localhost:4200/ (placeholder T005/T006; healthcheck reale con la spec 007)"
+    postgres: "pg_isready -U ${POSTGRES_USER} (infra/local/postgres/README.md)"
+    keycloak: "GET ${KEYCLOAK_ISSUER_URL}/.well-known/openid-configuration (realm CNR di test reale, fallback offline-keycloak in infra/local/compose.yaml)"
+    documentale-mock: "GET http://localhost:9000/health (infra/local/documentale-mock/README.md)"
+    mock-geban: "python mock-geban/scenario_runner.py --scenario E2E-001 (mock-geban/README.md)"
+  setup_reference: specs/009-fondamenta-mock-test-qualita/quickstart.md
+
+seed_demo:
+  - id: seed-tipi-documento-geban-demo
+    demo_marker: DEMO
+    spec_owner: specs/001-catalogo-contratto-geban
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-categoria-bando-concorso-demo
+    demo_marker: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-modello-bando-concorso-pubblicato-demo
+    demo_marker: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-modello-bando-concorso-non-pubblicabile-demo
+    demo_marker: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-payload-bando-concorso-valido-demo
+    demo_marker: DEMO
+    spec_owner: specs/001-catalogo-contratto-geban
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-payload-bando-concorso-invalido-demo
+    demo_marker: DEMO
+    spec_owner: specs/001-catalogo-contratto-geban
+    resettable: true
+    contains_real_or_sensitive_data: false
+  - id: seed-utenti-ruoli-demo
+    demo_marker: DEMO
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    resettable: true
+    contains_real_or_sensitive_data: false
+
+contracts:
+  - contract_ref: specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
+    spec_owner: specs/001-catalogo-contratto-geban
+    success_examples: []
+    error_examples: []
+  - contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    spec_owner: specs/009-fondamenta-mock-test-qualita
+    success_examples: []
+    error_examples: []
+
+api_documentation:
+  - openapi_ref: specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
+    api_scope: GEBAN
+    spec_owner: specs/001-catalogo-contratto-geban
+    endpoints:
+      - GET /catalogo/tipi-documento
+      - GET /catalogo/tipi-documento/{codiceTipoDocumento}/categorie
+      - GET /catalogo/modelli
+      - GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti
+      - POST /documenti/valida
+    auth_scheme: bearer-jwt
+    authorization_notes: >
+      Keycloak valida identita', firma, issuer, audience e ruoli/claim generali del
+      token (SEC-006-001: token tecnico geban-backend con ruolo DOCUMENTI_GENERATORE
+      per le chiamate GEBAN); GEMODO valida in aggiunta il profilo di integrazione
+      GEBAN_RECLUTAMENTO_V1 su tipo documento, categoria e modello richiesti
+      (infra/local/integration-profiles.local.yaml).
+    success_examples: []
+    error_examples: []
+    error_catalog_ref: infra/openapi/errors.md
+    swagger_enabled: true
+    redoc_enabled: true
+    generated_from_same_openapi_source: true
+
+open_source_reuse:
+  readme: README.md
+  license: DA_CONFERMARE
+  setup: docs/open-source-pa-readiness.md
+  development: docs/open-source-pa-readiness.md
+  production: docs/open-source-pa-readiness.md
+  architecture: docs/open-source-pa-readiness.md
+  configuration: docs/open-source-pa-readiness.md
+  security: docs/open-source-pa-readiness.md
+  contributing: docs/open-source-pa-readiness.md
+  vulnerability_reporting: docs/open-source-pa-readiness.md
+  tests: docs/open-source-pa-readiness.md
+  releases: docs/open-source-pa-readiness.md
+  contains_secrets: false
+  contains_real_personal_data: false
+
+integration_profiles:
+  - system_code: GEBAN
+    client_id: geban-backend
+    expected_audience: gemodo-backend
+    required_roles_or_claims:
+      - DOCUMENTI_GENERATORE
+    profile_code: GEBAN_RECLUTAMENTO_V1
+    profile_status: ATTIVO
+    allowed_document_types:
+      - BANDO_CONCORSO
+    allowed_categories:
+      - DEMO
+    allowed_model_versions:
+      - demo-bando-concorso-standard-v1
+    allowed_operations:
+      - catalogo
+      - validazione
+      - generazione_bozza
+      - generazione_ufficiale
+      - stato
+      - download
+    manages_credentials: false
+
+document_models:
+  - model_version_ref: demo-bando-concorso-standard-v1
+    controlled_format: GEMODO_DOCUMENT_V1
+    page:
+      size: A4
+      margins: standard-cnr
+    regions:
+      - header
+      - body
+      - footer
+      - signature_area
+    allowed_blocks:
+      - INTESTAZIONE
+      - LOGO
+      - TITOLO
+      - PARAGRAFO
+      - TABELLA
+      - COLONNE
+      - FIRMA
+      - FOOTER
+      - INTERRUZIONE_PAGINA
+    blocks:
+      - id: header-logo
+        type: LOGO
+        position: TOP
+        asset_ref: logo-cnr-demo
+      - id: titolo-bando
+        type: TITOLO
+        position: BODY
+        placeholders:
+          - codice_bando
+          - titolo_it
+      - id: firma-direttore
+        type: FIRMA
+        position: BOTTOM_RIGHT
+    assets:
+      - id: logo-cnr-demo
+        version: 1
+        hash_file: DEMO_HASH_LOGO_CNR_V1
+    allowed_styles:
+      - title
+      - body
+      - table
+      - signature
+      - footer
+    placeholders:
+      - codice_bando
+      - titolo_it
+      - descrizione_ridotta_it
+      - sede_prescelta_it
+      - numero_posti
+    contains_free_html: false
+    contains_free_css: false
+    contains_scripts: false
+
+# La matrice di copertura completa e autorevole (owner per requisito, note) e' prodotta
+# dalla User Story 3 in docs/quality-coverage-matrix.yaml (T056). Queste righe sono un
+# riepilogo minimo, honestamente DA_COPRIRE finche' gli scenari non sono eseguibili
+# (User Story 2).
+coverage:
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-004
+    scenario_id: E2E-001
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-012
+    scenario_id: E2E-002
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-013
+    scenario_id: E2E-003
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-013
+    scenario_id: E2E-004
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-014
+    scenario_id: E2E-005
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+  - spec_owner: specs/009-fondamenta-mock-test-qualita
+    requirement_id: FR-035
+    scenario_id: E2E-006
+    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    status: DA_COPRIRE
+
+open_decisions:
+  - id: SEC-006-001
+    title: Token tecnico GEBAN verso GEMODO
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    impacted_specs:
+      - specs/005-storage-idempotenza-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+    status: CONFERMATA
+    provisional_assumption: >
+      token tecnico Keycloak (client credentials) geban-backend con ruolo
+      DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit,
+      risolta 2026-07-29
+    blocking_phase: NESSUNA
+  - id: SEC-006-002
+    title: Separazione revisore/approvatore builder modelli
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    impacted_specs:
+      - specs/002-builder-modelli
+      - specs/009-fondamenta-mock-test-qualita
+    status: CONFERMATA
+    provisional_assumption: >
+      flusso minimo senza separazione obbligatoria, GEMODO_MODELLI_GESTORE abilitato
+      anche alla pubblicazione vale come approvazione; ruoli revisore/approvatore
+      riservati e inattivi, risolta 2026-07-29
+    blocking_phase: NESSUNA
+  - id: DEC-009-NOME-SERVIZIO
+    title: Nome definitivo del servizio
+    owner_spec: specs/009-fondamenta-mock-test-qualita
+    impacted_specs:
+      - specs/009-fondamenta-mock-test-qualita
+    status: ASSUNTA_PROVVISORIA
+    provisional_assumption: "GEMODO, usato in documentazione e naming pubblico"
+    blocking_phase: NESSUNA
+  - id: DEC-001-PROFILO-GEBAN
+    title: Profilo GEBAN versionato e mappatura campi concordata
+    owner_spec: specs/001-catalogo-contratto-geban
+    impacted_specs:
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/004-generazione-documenti-pdf
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/009-fondamenta-mock-test-qualita
+    status: ASSUNTA_PROVVISORIA
+    provisional_assumption: >
+      gestione ibrida: profilo GEBAN versionato in GEMODO che associa categorie,
+      sottocategorie, modelli richiamabili e placeholder/campi gia' concordati; le API
+      restano disponibili per esporre catalogo e campi richiesti
+    blocking_phase: TASKS

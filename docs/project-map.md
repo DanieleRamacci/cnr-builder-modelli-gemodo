@@ -45,6 +45,28 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 | §16 Piano Di Sviluppo | 009 + tutte | Coperta | Usato come input per plan/tasks successivi; `009` governa anche navigazione documentale, API readiness e riuso PA |
 | §17 Decisioni Da Confermare | 009 + spec collegate | Coperta | Decisioni distribuite come open decisions |
 
+## Regola Di Blocco Delle Decisioni Aperte
+
+Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md`
+(sezione "Decision Ownership") e, quando popolato dalla User Story 3 della `009`, in
+`docs/decision-register.yaml`, seguono una regola di blocco esplicita (FR-007, FR-018,
+`quality-readiness-contract.yaml` sezione `open_decisions` e gate
+`minimum_quality_gates.before_implementation`):
+
+- ogni decisione aperta deve avere `owner_spec`, `impacted_specs`, `status` e
+  `blocking_phase` (o `fase_bloccante`); non puo' restare senza owner o senza fase.
+- una decisione in stato `APERTA` o `ASSUNTA_PROVVISORIA` con `fase_bloccante` diversa
+  da `NESSUNA` **non puo'** entrare come assunzione silenziosa nei task implementativi
+  della parte impattata: il piano/i task devono esplicitare l'assunzione provvisoria
+  oppure rinviare (sospendere) le attivita' bloccate finche' la decisione non e'
+  `CONFERMATA` o `SOSPESA` con rischio tracciato.
+- quando una decisione passa a `CONFERMATA`, le spec elencate in `impacted_specs`
+  devono essere aggiornate di conseguenza (non basta chiuderla nella spec che la
+  possiede).
+- `SEC-006-001` (token tecnico `geban-backend` verso `gemodo-backend`) e
+  `SEC-006-002` (nessuna separazione revisore/approvatore nella prima release) sono
+  gia' `CONFERMATA` (2026-07-29, spec `006`) e non bloccano piu' alcuna fase.
+
 ## Gate Trasversali Documentazione E Riuso
 
 - Ogni API pubblica o di integrazione deve avere OpenAPI versionato prima

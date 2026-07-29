@@ -1,0 +1,126 @@
+# Modello documentale controllato demo per BANDO_CONCORSO (spec 009 FR-036..FR-038;
+# entita' ModelloDocumentaleControllato/BloccoDocumento/AssetDocumento in
+# backend/app/quality/schemas.py, validate da backend/app/quality/document_model.py).
+#
+# Struttura versionata a blocchi/regioni/asset/placeholder: nessun HTML, CSS o script
+# libero. Il builder visuale futuro (spec 007) manipolera' questa stessa struttura; il
+# renderer PDF (spec 004) la trasforma internamente senza esporre HTML/CSS all'utente.
+
+id: modello-demo-bando-concorso-standard-v1
+modello_versione_id: demo-bando-concorso-standard-v1
+formato: GEMODO_DOCUMENT_V1
+spec_owner: specs/003-sezioni-placeholder-versionamento
+
+pagina:
+  size: A4
+  orientamento: PORTRAIT
+  margini: standard-cnr
+
+regioni:
+  - header
+  - body
+  - footer
+  - signature_area
+
+blocchi:
+  - id: header-logo
+    tipo: LOGO
+    posizionamento: TOP
+    ordine: 1
+    asset_ref: logo-cnr-demo
+
+  - id: intestazione-ente
+    tipo: INTESTAZIONE
+    posizionamento: TOP
+    ordine: 2
+    contenuto: "Consiglio Nazionale delle Ricerche"
+    stile: title
+
+  - id: titolo-bando
+    tipo: TITOLO
+    posizionamento: BODY
+    ordine: 3
+    stile: title
+    placeholder_usati:
+      - codice_bando
+      - titolo_it
+
+  - id: paragrafo-descrizione
+    tipo: PARAGRAFO
+    posizionamento: BODY
+    ordine: 4
+    stile: body
+    placeholder_usati:
+      - descrizione_ridotta_it
+
+  - id: tabella-requisiti
+    tipo: TABELLA
+    posizionamento: BODY
+    ordine: 5
+    stile: table
+    colonne:
+      - Sede
+      - Requisiti
+      - Posti
+    placeholder_usati:
+      - sede_prescelta_it
+      - numero_posti
+
+  - id: colonne-italiano-inglese
+    tipo: COLONNE
+    posizionamento: BODY
+    ordine: 6
+    stile: body
+    colonne:
+      - sinistra
+      - destra
+    regole_layout:
+      sinistra: contenuto_it
+      destra: contenuto_en_se_bando_inglese
+
+  - id: interruzione-prima-firme
+    tipo: INTERRUZIONE_PAGINA
+    posizionamento: BODY
+    ordine: 7
+
+  - id: firma-direttore
+    tipo: FIRMA
+    posizionamento: BOTTOM_RIGHT
+    ordine: 8
+    stile: signature
+
+  - id: footer-riferimenti
+    tipo: FOOTER
+    posizionamento: BOTTOM_CENTER
+    ordine: 9
+    stile: footer
+    placeholder_usati:
+      - codice_bando
+
+asset:
+  - id: logo-cnr-demo
+    tipo: LOGO
+    nome: Logo CNR (demo)
+    versione: 1
+    storage_ref: documentale-mock://assets/logo-cnr-demo-v1.png
+    hash_file: DEMO_HASH_LOGO_CNR_V1
+    dimensioni_consentite: 200x60
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+
+stili_ammessi:
+  - title
+  - body
+  - table
+  - signature
+  - footer
+
+placeholder_usati:
+  - codice_bando
+  - titolo_it
+  - descrizione_ridotta_it
+  - sede_prescelta_it
+  - numero_posti
+
+contiene_html_libero: false
+contiene_css_libero: false
+contiene_script: false

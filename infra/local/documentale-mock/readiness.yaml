@@ -1,0 +1,42 @@
+# Readiness del documentale mock (spec 009, User Story 1; servizio STORAGE
+# dell'ambiente locale, vedi backend/app/quality/environment.py).
+#
+# Il documentale mock simula lo storage documentale dietro un riferimento stabile,
+# indipendente dal backend fisico definitivo (decisione owner 005/004, ancora aperta -
+# vedi spec.md "Decision Ownership", "Storage definitivo per PDF").
+
+servizio: documentale-mock
+categoria: STORAGE
+spec_owner: specs/005-storage-idempotenza-consultazione
+
+healthcheck:
+  metodo: GET
+  path: /health
+  url_env: DOCUMENTALE_MOCK_URL
+  url_default: http://localhost:9000
+
+capacita:
+  - upload_asset
+  - upload_documento_generato
+  - download_per_riferimento
+  - riferimento_stabile_indipendente_dal_backend
+
+formato_riferimento:
+  schema: "documentale-mock://<categoria>/<identificativo>"
+  esempi:
+    - documentale-mock://assets/logo-cnr-demo-v1.png
+    - documentale-mock://generazioni/{generazione_id}/bando-concorso-it.pdf
+    - documentale-mock://generazioni/{generazione_id}/bando-concorso-en.pdf
+
+vincoli:
+  - nessun dato reale o sensibile negli asset/demo caricati (FR-010).
+  - il riferimento documentale restituito da GEMODO deve restare stabile anche se lo
+    storage fisico definitivo cambia (vedi vincoli di dominio della costituzione).
+  - bozza e ufficiale devono restare distinguibili nel riferimento/metadati quando la
+    spec 004/005 implementa la generazione reale.
+
+stato: PIANIFICATO
+note: >
+  Implementazione runtime del servizio (container, endpoint /health e upload/download)
+  prevista con le spec 004/005; questo file definisce solo il contratto di readiness
+  che la User Story 1 della 009 usa per la verifica ambiente.

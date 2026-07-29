@@ -1,0 +1,16 @@
+{
+  "name": "gemodo-frontend",
+  "version": "0.1.0",
+  "description": "GEMODO - frontend amministrativo per builder modelli e consultazione generazioni (feature 007). Placeholder di planning allineato allo stack Angular indicato nella proposta; gli script reali vengono introdotti quando la 007 avvia i task implementativi.",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "echo \"placeholder: ng serve verra' introdotto dai task della spec 007-frontend-builder-consultazione\" && exit 1",
+    "build": "echo \"placeholder: ng build verra' introdotto dai task della spec 007-frontend-builder-consultazione\" && exit 1",
+    "test": "echo \"placeholder: test frontend verranno introdotti dai task della spec 007-frontend-builder-consultazione\" && exit 1"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,0 +1,102 @@
+# Ambiente locale GEMODO (feature 009-fondamenta-mock-test-qualita).
+#
+# Servizi minimi di default: backend, frontend, postgres, documentale-mock, mock-geban.
+# Keycloak non e' containerizzato di default: backend e frontend puntano al realm Keycloak
+# CNR di test reale (sso.test.si.cnr.it, realm cnr) tramite variabili d'ambiente
+# (KEYCLOAK_ISSUER_URL, KEYCLOAK_AUDIENCE, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET).
+# Un Keycloak containerizzato resta disponibile come fallback opzionale per sviluppo offline
+# o CI senza rete verso il Keycloak CNR: avviarlo con `--profile offline-keycloak`.
+#
+# Vedi infra/local/keycloak/README.md per dettagli sulla configurazione dei due percorsi.
+
+name: gemodo-local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gemodo}
+      POSTGRES_USER: ${POSTGRES_USER:-gemodo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gemodo}
+    ports:
+      - "5432:5432"
+    volumes:
+      - gemodo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gemodo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  documentale-mock:
+    build:
+      context: ./documentale-mock
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ../../backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-gemodo}:${POSTGRES_PASSWORD:-gemodo}@postgres:5432/${POSTGRES_DB:-gemodo}
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-gemodo-backend}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-gemodo-backend}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      DOCUMENTALE_MOCK_URL: http://documentale-mock:9000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      documentale-mock:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: ../../frontend
+    environment:
+      GEMODO_API_BASE_URL: http://localhost:8000
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_FRONTEND_CLIENT_ID:-gemodo-frontend}
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
+
+  mock-geban:
+    build:
+      context: ../../mock-geban
+    environment:
+      GEMODO_API_BASE_URL: http://backend:8000
+      GEBAN_CLIENT_ID: geban-backend
+    depends_on:
+      - backend
+
+  # Fallback opzionale: Keycloak containerizzato per sviluppo offline o CI senza rete verso
+  # sso.test.si.cnr.it. Non fa parte dei servizi minimi di default.
+  keycloak-local:
+    image: quay.io/keycloak/keycloak:25.0
+    profiles:
+      - offline-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../local/keycloak/realm-gemodo.local.json:/opt/keycloak/data/import/realm-gemodo.local.json:ro
+
+volumes:
+  gemodo-postgres-data:

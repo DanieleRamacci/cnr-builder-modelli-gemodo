@@ -18,19 +18,29 @@ testing of each story.
 - **[Story]**: User story label from `spec.md`.
 - Every task includes an exact target file path.
 
+## Stato Implementazione (2026-07-29)
+
+Phase 1, Phase 2 and Phase 3 (T001-T037) are implemented and verified: `uv run pytest`
+in `backend/` passes 33/33 real tests (no mocked business logic), the Alembic baseline
+migration was applied and rolled back against a real local PostgreSQL, and
+`uv run gemodo-quality verifica-ambiente` runs real healthchecks (including a live
+check against the CNR test Keycloak realm). This is the MVP checkpoint from
+"Implementation Strategy" below. Phase 4 (US2 - mock GEBAN), Phase 5 (US3 - decisioni
+aperte) and Phase 6 (Polish) are **not started**.
+
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Create the repository structure and baseline configuration required by the
 foundation feature.
 
-- [ ] T001 Create backend, frontend, infra and mock directory skeletons in `backend/`, `frontend/`, `infra/local/`, `infra/openapi/`, `mock-geban/`
-- [ ] T002 Create backend project manifest with FastAPI, Pydantic, SQLAlchemy, Alembic and pytest dependencies in `backend/pyproject.toml`
-- [ ] T003 Create backend application entrypoint and package markers in `backend/app/main.py`, `backend/app/__init__.py`, `backend/app/core/__init__.py`, `backend/app/db/__init__.py`, `backend/app/quality/__init__.py`
-- [ ] T004 Create backend test package structure in `backend/tests/contract/__init__.py`, `backend/tests/integration/__init__.py`, `backend/tests/e2e/__init__.py`, `backend/tests/support/__init__.py`
-- [ ] T005 [P] Create frontend project manifest placeholder aligned to Angular planning in `frontend/package.json`
-- [ ] T006 [P] Create frontend source placeholders for builder and generazioni features in `frontend/src/app/.gitkeep`, `frontend/src/features/builder/.gitkeep`, `frontend/src/features/generazioni/.gitkeep`, `frontend/src/shared/.gitkeep`
-- [ ] T007 [P] Create local infrastructure placeholder files and service healthcheck notes in `infra/local/compose.yaml`, `infra/local/frontend/README.md`, `infra/local/keycloak/README.md`, `infra/local/postgres/README.md`, `infra/local/documentale-mock/README.md`
-- [ ] T008 [P] Create mock GEBAN baseline documentation and folders in `mock-geban/README.md`, `mock-geban/scenarios/.gitkeep`, `mock-geban/payloads/.gitkeep`
+- [x] T001 Create backend, frontend, infra and mock directory skeletons in `backend/`, `frontend/`, `infra/local/`, `infra/openapi/`, `mock-geban/`
+- [x] T002 Create backend project manifest with FastAPI, Pydantic, SQLAlchemy, Alembic and pytest dependencies in `backend/pyproject.toml`
+- [x] T003 Create backend application entrypoint and package markers in `backend/app/main.py`, `backend/app/__init__.py`, `backend/app/core/__init__.py`, `backend/app/db/__init__.py`, `backend/app/quality/__init__.py`
+- [x] T004 Create backend test package structure in `backend/tests/contract/__init__.py`, `backend/tests/integration/__init__.py`, `backend/tests/e2e/__init__.py`, `backend/tests/support/__init__.py`
+- [x] T005 [P] Create frontend project manifest placeholder aligned to Angular planning in `frontend/package.json`
+- [x] T006 [P] Create frontend source placeholders for builder and generazioni features in `frontend/src/app/.gitkeep`, `frontend/src/features/builder/.gitkeep`, `frontend/src/features/generazioni/.gitkeep`, `frontend/src/shared/.gitkeep`
+- [x] T007 [P] Create local infrastructure placeholder files and service healthcheck notes in `infra/local/compose.yaml`, `infra/local/frontend/README.md`, `infra/local/keycloak/README.md`, `infra/local/postgres/README.md`, `infra/local/documentale-mock/README.md`
+- [x] T008 [P] Create mock GEBAN baseline documentation and folders in `mock-geban/README.md`, `mock-geban/scenarios/.gitkeep`, `mock-geban/payloads/.gitkeep`
 
 ---
 
@@ -43,23 +53,23 @@ and open source/PA reuse documentation.
 
 **CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta, VerificaAmbiente, SistemaRichiedente, ClientApplicativo, ProfiloDiIntegrazione, ModelloDocumentaleControllato, BloccoDocumento, AssetDocumento, ContrattoOpenAPI, EsempioAPI, CatalogoErroriFunzionali, PortaleDocumentazione and ReadinessOpenSourcePA in `backend/app/quality/schemas.py`
-- [ ] T010 Create YAML manifest loading utility with validation errors in `backend/app/quality/manifest_loader.py`
-- [ ] T011 Create shared quality error types for prerequisito mancante, contratto non valido, seed sensibile and decisione bloccante in `backend/app/quality/errors.py`
-- [ ] T012 Create local quality manifest seed from `quality-readiness-contract.yaml` in `infra/local/quality-readiness.local.yaml`
-- [ ] T013 Create mock scenario manifest seed from `mock-geban-scenarios.yaml` in `mock-geban/scenarios/minimum-e2e.yaml`
-- [ ] T014 [P] Create pytest configuration for backend contract, integration and e2e markers in `backend/pytest.ini`
-- [ ] T015 [P] Create backend test fixtures for loading quality manifests and mock scenarios in `backend/tests/support/quality_fixtures.py`
-- [ ] T016 [P] Create OpenAPI aggregation, Swagger/ReDoc publication and error catalog placeholders for future API contracts in `infra/openapi/README.md`, `infra/openapi/errors.md`, `docs/api-documentation.md`
-- [ ] T017 Document the blocking rule for open decisions before implementation in `docs/project-map.md`
-- [ ] T018 Create local integration profile manifest for GEBAN, client `geban-backend`, profile `GEBAN_RECLUTAMENTO_V1`, allowed models and operations in `infra/local/integration-profiles.local.yaml`
-- [ ] T019 Create Keycloak/GEMODO authorization boundary manifest with configurable audience, roles/claims and no credential storage in `infra/local/keycloak/authorization-boundary.local.yaml`
-- [ ] T020 [P] Create integration profile validation helper for systems, clients, profiles and fine-grained permissions in `backend/app/quality/integration_profile.py`
-- [ ] T021 [P] Create backend test support data for systems, clients and profiles in `backend/tests/support/integration_profiles.py`
-- [ ] T022 Create controlled document model seed contract with allowed page, region, block, style, asset, signature and placeholder structures in `infra/local/document-models/bando-concorso-standard-v1.yaml`
-- [ ] T023 Create controlled document model validation helper rejecting free HTML, free CSS, scripts, unsupported blocks and unavailable placeholders in `backend/app/quality/document_model.py`
-- [ ] T024 [P] Create backend test support data for controlled document models and assets in `backend/tests/support/document_models.py`
-- [ ] T025 [P] Create documentation note for visual builder as controlled editor, not HTML editor, and create open source/PA readiness note in `infra/local/document-models/README.md`, `docs/open-source-pa-readiness.md`
+- [x] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta, VerificaAmbiente, SistemaRichiedente, ClientApplicativo, ProfiloDiIntegrazione, ModelloDocumentaleControllato, BloccoDocumento, AssetDocumento, ContrattoOpenAPI, EsempioAPI, CatalogoErroriFunzionali, PortaleDocumentazione and ReadinessOpenSourcePA in `backend/app/quality/schemas.py`
+- [x] T010 Create YAML manifest loading utility with validation errors in `backend/app/quality/manifest_loader.py`
+- [x] T011 Create shared quality error types for prerequisito mancante, contratto non valido, seed sensibile and decisione bloccante in `backend/app/quality/errors.py`
+- [x] T012 Create local quality manifest seed from `quality-readiness-contract.yaml` in `infra/local/quality-readiness.local.yaml`
+- [x] T013 Create mock scenario manifest seed from `mock-geban-scenarios.yaml` in `mock-geban/scenarios/minimum-e2e.yaml`
+- [x] T014 [P] Create pytest configuration for backend contract, integration and e2e markers in `backend/pytest.ini`
+- [x] T015 [P] Create backend test fixtures for loading quality manifests and mock scenarios in `backend/tests/support/quality_fixtures.py`
+- [x] T016 [P] Create OpenAPI aggregation, Swagger/ReDoc publication and error catalog placeholders for future API contracts in `infra/openapi/README.md`, `infra/openapi/errors.md`, `docs/api-documentation.md`
+- [x] T017 Document the blocking rule for open decisions before implementation in `docs/project-map.md`
+- [x] T018 Create local integration profile manifest for GEBAN, client `geban-backend`, profile `GEBAN_RECLUTAMENTO_V1`, allowed models and operations in `infra/local/integration-profiles.local.yaml`
+- [x] T019 Create Keycloak/GEMODO authorization boundary manifest with configurable audience, roles/claims and no credential storage in `infra/local/keycloak/authorization-boundary.local.yaml`
+- [x] T020 [P] Create integration profile validation helper for systems, clients, profiles and fine-grained permissions in `backend/app/quality/integration_profile.py`
+- [x] T021 [P] Create backend test support data for systems, clients and profiles in `backend/tests/support/integration_profiles.py`
+- [x] T022 Create controlled document model seed contract with allowed page, region, block, style, asset, signature and placeholder structures in `infra/local/document-models/bando-concorso-standard-v1.yaml`
+- [x] T023 Create controlled document model validation helper rejecting free HTML, free CSS, scripts, unsupported blocks and unavailable placeholders in `backend/app/quality/document_model.py`
+- [x] T024 [P] Create backend test support data for controlled document models and assets in `backend/tests/support/document_models.py`
+- [x] T025 [P] Create documentation note for visual builder as controlled editor, not HTML editor, and create open source/PA readiness note in `infra/local/document-models/README.md`, `docs/open-source-pa-readiness.md`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel.
 
@@ -76,21 +86,21 @@ they are not.
 
 ### Tests for User Story 1
 
-- [ ] T026 [P] [US1] Create contract test for quality readiness manifest required sections in `backend/tests/contract/test_quality_readiness_contract.py`
-- [ ] T027 [P] [US1] Create integration test for local environment verification PASS/PARTIAL/FAIL outcomes, including frontend healthcheck, in `backend/tests/integration/test_environment_verification.py`
-- [ ] T028 [P] [US1] Create integration test that rejects seed demo entries with real or sensitive data in `backend/tests/integration/test_seed_demo_validation.py`
+- [x] T026 [P] [US1] Create contract test for quality readiness manifest required sections in `backend/tests/contract/test_quality_readiness_contract.py`
+- [x] T027 [P] [US1] Create integration test for local environment verification PASS/PARTIAL/FAIL outcomes, including frontend healthcheck, in `backend/tests/integration/test_environment_verification.py`
+- [x] T028 [P] [US1] Create integration test that rejects seed demo entries with real or sensitive data in `backend/tests/integration/test_seed_demo_validation.py`
 
 ### Implementation for User Story 1
 
-- [ ] T029 [P] [US1] Implement AmbienteLocale and ServizioLocale validation logic in `backend/app/quality/environment.py`
-- [ ] T030 [P] [US1] Implement SeedDemo validation logic with mandatory demo marker and sensitive-data guard in `backend/app/quality/seed_demo.py`
-- [ ] T031 [US1] Implement VerificaAmbiente service that evaluates backend, frontend, database, identity, storage and mock service healthchecks in `backend/app/quality/environment_verifier.py`
-- [ ] T032 [US1] Implement CLI entrypoint for local environment verification in `backend/app/quality/cli.py`
-- [ ] T033 [US1] Create initial schema baseline migration and migration ownership documentation in `backend/alembic/versions/0001_initial_schema.py`, `backend/alembic/README.md`
-- [ ] T034 [US1] Create demo seed catalog manifest for highlighted GEBAN/SOL typologies TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP and MOB, including SOL codes and demo categories, in `infra/local/postgres/seed-demo-catalog.yaml`
-- [ ] T035 [US1] Create Keycloak local realm planning manifest with configurable GEMODO user roles, GEBAN technical client placeholder and mock principal notes in `infra/local/keycloak/realm-gemodo.local.json`
-- [ ] T036 [US1] Create documentale mock readiness manifest in `infra/local/documentale-mock/readiness.yaml`
-- [ ] T037 [US1] Update setup validation steps for services, migrations and seed demo in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
+- [x] T029 [P] [US1] Implement AmbienteLocale and ServizioLocale validation logic in `backend/app/quality/environment.py`
+- [x] T030 [P] [US1] Implement SeedDemo validation logic with mandatory demo marker and sensitive-data guard in `backend/app/quality/seed_demo.py`
+- [x] T031 [US1] Implement VerificaAmbiente service that evaluates backend, frontend, database, identity, storage and mock service healthchecks in `backend/app/quality/environment_verifier.py`
+- [x] T032 [US1] Implement CLI entrypoint for local environment verification in `backend/app/quality/cli.py`
+- [x] T033 [US1] Create initial schema baseline migration and migration ownership documentation in `backend/alembic/versions/0001_initial_schema.py`, `backend/alembic/README.md`
+- [x] T034 [US1] Create demo seed catalog manifest for highlighted GEBAN/SOL typologies TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP and MOB, including SOL codes and demo categories, in `infra/local/postgres/seed-demo-catalog.yaml`
+- [x] T035 [US1] Create Keycloak local realm planning manifest with configurable GEMODO user roles, GEBAN technical client placeholder and mock principal notes in `infra/local/keycloak/realm-gemodo.local.json`
+- [x] T036 [US1] Create documentale mock readiness manifest in `infra/local/documentale-mock/readiness.yaml`
+- [x] T037 [US1] Update setup validation steps for services, migrations and seed demo in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
 
 **Checkpoint**: User Story 1 can be validated independently with environment readiness,
 migrations/seed checks and no dependency on GEBAN reale.

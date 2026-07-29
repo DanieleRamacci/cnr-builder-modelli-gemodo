@@ -1,0 +1,138 @@
+# Manifest locale degli scenari end-to-end minimi del mock GEBAN.
+#
+# Copia operativa, per l'ambiente locale, del contratto versionato
+# specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml.
+# Il contratto resta la sorgente di verita'; questo file e' cio' che
+# backend/app/quality/scenario.py carica e valida (T038: contract test che confronta
+# questo manifest con il contratto).
+
+source_contract: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+contract: mock-geban-scenarios
+version: 1
+
+actors:
+  - SYSTEM_GEBAN
+  - DOCUMENTI_GENERATORE
+  - DOCUMENTI_VIEWER
+
+shared_inputs:
+  sistema_richiedente: GEBAN
+  client_id: geban-backend
+  profilo_integrazione: GEBAN_RECLUTAMENTO_V1
+  model_template_format: GEMODO_DOCUMENT_V1
+  tipo_documento: BANDO_CONCORSO
+  categoria_documento: DEMO
+  variante_modello: STANDARD
+  demo_marker: DEMO
+
+scenarios:
+  - id: E2E-001
+    name: catalogo-campi-validazione-generazione-stato
+    type: VALIDO
+    priorita: P1
+    requisiti_coperti:
+      - FR-004
+      - FR-005
+      - FR-012
+      - FR-013
+      - FR-020
+    required_contracts:
+      - catalogo modelli pubblicati
+      - campi richiesti/schema
+      - validazione payload
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - modello pubblicato demo trovato
+      - sistema richiedente e profilo integrazione autorizzati
+      - modello documentale controllato senza HTML/CSS libero disponibile
+      - schema dati restituito
+      - payload valido accettato
+      - generazione tracciata
+      - stato consultabile
+
+  - id: E2E-002
+    name: payload-non-valido
+    type: ERRORE_VALIDAZIONE
+    priorita: P1
+    requisiti_coperti:
+      - FR-012
+      - FR-013
+    required_contracts:
+      - campi richiesti/schema
+      - validazione payload
+    expected_outcome:
+      - payload rifiutato
+      - errore funzionale esplicito
+      - nessun documento ufficiale generato
+
+  - id: E2E-003
+    name: retry-idempotente
+    type: IDEMPOTENZA
+    priorita: P1
+    requisiti_coperti:
+      - FR-013
+      - FR-020
+    required_contracts:
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - stessa chiave e stessi dati restituiscono la generazione esistente
+      - nessun duplicato creato
+
+  - id: E2E-004
+    name: conflitto-idempotente
+    type: CONFLITTO
+    priorita: P1
+    requisiti_coperti:
+      - FR-013
+      - FR-014
+      - FR-020
+    required_contracts:
+      - generazione documento
+    expected_outcome:
+      - stessa chiave e dati divergenti producono conflitto
+      - conflitto auditabile
+
+  - id: E2E-005
+    name: generazione-fallita
+    type: FALLIMENTO
+    priorita: P1
+    requisiti_coperti:
+      - FR-013
+      - FR-014
+      - FR-020
+    required_contracts:
+      - generazione documento
+      - stato generazione
+    expected_outcome:
+      - stato fallito consultabile
+      - errore funzionale sanificato
+      - evento audit previsto
+
+  - id: E2E-006
+    name: consultazione-download-non-autorizzato
+    type: AUTORIZZAZIONE
+    priorita: P1
+    requisiti_coperti:
+      - FR-013
+      - FR-014
+      - FR-020
+      - FR-034
+      - FR-035
+    required_contracts:
+      - stato generazione
+      - download documento
+    expected_outcome:
+      - accesso rifiutato
+      - nessun payload o file esposto
+      - evento autorizzativo auditabile
+
+coverage_requirements:
+  - every scenario must reference at least one public contract
+  - every scenario must be mapped to a spec owner and requirement before task generation
+  - unauthorized and failed scenarios are mandatory, not optional
+  - mock must not call internal builder or database interfaces directly
+  - a valid Keycloak-like client identity is not sufficient without a matching GEMODO integration profile
+  - scenarios must distinguish coarse roles or claims from fine-grained GEMODO profile permissions
+  - generated documents must come from a controlled document model, not free HTML or CSS authored by users

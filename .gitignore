@@ -18,3 +18,13 @@ docs/spec-kit/
 
 # Logs
 *.log
+
+# Python (backend/)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Node (frontend/)
+node_modules/

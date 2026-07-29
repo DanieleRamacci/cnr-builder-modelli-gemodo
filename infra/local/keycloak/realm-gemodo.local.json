@@ -1,0 +1,74 @@
+{
+  "realm": "gemodo-local",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "attributes": {
+    "gemodo_purpose": "Realm di fallback per sviluppo offline/CI senza rete verso sso.test.si.cnr.it (vedi infra/local/keycloak/README.md). Non e' l'ambiente di test reale.",
+    "gemodo_mock_principal_note": "In alternativa a questo realm, backend e test possono usare un principal mock applicativo (GEMODO_USE_MOCK_PRINCIPAL=true, vedi infra/local/keycloak/authorization-boundary.local.yaml) che non passa da Keycloak: stessa forma di claim (sub, ruoli/claim generali, client_id, azp), nessuna password o credenziale reale coinvolta."
+  },
+  "clients": [
+    {
+      "clientId": "gemodo-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "description": "Login SSO utenti umani GEMODO (admin, builder, consultazione)"
+    },
+    {
+      "clientId": "gemodo-backend",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "description": "Audience delle API GEMODO; nessun login diretto, solo validazione token"
+    },
+    {
+      "clientId": "geban-backend",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "description": "Client tecnico server-to-server GEBAN -> GEMODO (client credentials, decisione SEC-006-001); utente reale e contesto bando viaggiano nel payload applicativo, non nel token"
+    },
+    {
+      "clientId": "geban-frontend",
+      "enabled": false,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "description": "Placeholder: da verificare se gia' gestito dal team GEBAN (vedi spec.md, sessione 2026-07-28)"
+    }
+  ],
+  "roles": {
+    "client": {
+      "gemodo-backend": [
+        {
+          "name": "GEMODO_ADMIN",
+          "description": "Amministrazione applicativa: sistemi richiedenti, profili di integrazione, stati"
+        },
+        {
+          "name": "GEMODO_MODELLI_GESTORE",
+          "description": "Gestione e pubblicazione modelli documentali; la pubblicazione vale come approvazione (decisione SEC-006-002, nessuna separazione revisore/approvatore nella prima release)"
+        },
+        {
+          "name": "GEMODO_CONSULTAZIONE",
+          "description": "Consultazione generazioni, stato e download (soggetta comunque al profilo di integrazione GEMODO applicabile)"
+        },
+        {
+          "name": "DOCUMENTI_GENERATORE",
+          "description": "Ruolo/claim generale richiesto al client tecnico geban-backend per le chiamate operative (catalogo, validazione, generazione, stato, download)"
+        }
+      ]
+    }
+  }
+}

@@ -18,29 +18,58 @@ Non sostituisce i test automatici e non richiede accesso a GEBAN reale.
 
 ## Scenario 1 - Verifica ambiente locale
 
-1. Avviare l'ambiente locale seguendo la documentazione di setup.
-2. Eseguire la verifica ambiente.
-3. Controllare che tutti i servizi obbligatori risultino disponibili.
+1. Avviare l'ambiente locale (`docker compose -f infra/local/compose.yaml up`, o solo i
+   servizi necessari) seguendo `infra/local/*/README.md`.
+2. Eseguire la verifica ambiente:
+
+   ```bash
+   cd backend
+   uv sync
+   uv run gemodo-quality verifica-ambiente
+   ```
+
+3. Controllare l'esito (`PASS`/`PARTIAL`/`FAIL`, exit code `0`/`1`/`2`) e il dettaglio
+   per servizio stampato dal comando.
 
 Expected:
 
-- backend, frontend, PostgreSQL, Keycloak, documentale mock e mock GEBAN sono raggiungibili;
-- eventuali servizi mancanti sono segnalati come prerequisiti non soddisfatti;
-- nessun test richiede accesso al DB GEBAN.
+- backend, PostgreSQL, Keycloak e documentale mock (obbligatori) determinano `PASS`
+  quando tutti raggiungibili; frontend e mock-GEBAN sono verificati ma non obbligatori
+  finche' le spec `007`/User Story 2 non li implementano, quindi una loro assenza porta
+  al piu' a `PARTIAL`, mai a un falso `PASS` silenzioso ne' a un `FAIL` bloccante;
+- ogni servizio mancante e' segnalato con `tipo: prerequisito_mancante`, distinto da un
+  eventuale `errore_applicativo` (FR-008);
+- nessun controllo richiede accesso al DB GEBAN.
 
 ## Scenario 2 - Migrations e seed demo
 
-1. Applicare le migrations su database locale pulito.
-2. Caricare i seed demo.
-3. Verificare presenza di tipo documento, categoria, modello pubblicato demo, payload
-   valido e payload non valido.
+1. Applicare le migrations su database locale pulito:
+
+   ```bash
+   cd backend
+   DATABASE_URL=postgresql+psycopg://gemodo:gemodo@localhost:5432/gemodo uv run alembic upgrade head
+   ```
+
+2. Consultare il catalogo seed demo in
+   `infra/local/postgres/seed-demo-catalog.yaml` (`seeds` + `catalogo`); il caricamento
+   effettivo nel database e' compito delle spec proprietarie (`001`/`002`) quando
+   generano i propri task implementativi - la `009` garantisce solo che schema e
+   manifest siano coerenti e privi di dati reali.
+3. Verificare presenza di tipo documento (`BANDO_CONCORSO`), categoria (`DEMO`),
+   tipologie GEBAN/SOL (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB), modello
+   pubblicato demo (`demo-bando-concorso-standard-v1`) e un caso non pubblicabile
+   (`demo-bando-concorso-html-libero-non-valido`).
 
 Expected:
 
-- le entita' principali richieste dalle spec sono create;
-- tutti i seed sono marcati come demo;
-- nessun seed contiene dati reali o sensibili;
-- esiste almeno un modello pubblicato utilizzabile dal mock GEBAN.
+- le tabelle baseline (`tipo_documento`, `categoria_documento`, `tipologia_bando`,
+  `modello_documento`, `modello_versione`, `campo_modello`, `sezione_modello`,
+  `generazione_documento`, `evento_audit`) sono create, vedi `backend/alembic/README.md`
+  per l'ownership di ciascuna;
+- tutti i seed dichiarati in `seed-demo-catalog.yaml` hanno `marcatura_demo: DEMO` e
+  `dati_sensibili: false`;
+- esiste almeno un modello pubblicato utilizzabile dal mock GEBAN e almeno un caso non
+  pubblicabile/non valido (FR-011).
 
 ## Scenario 3 - Mock GEBAN flusso valido
 

@@ -32,8 +32,19 @@ Prima di implementare il flusso API + PDF devono essere documentati almeno:
 Per ciascuno devono essere presenti request, response, stati, errori funzionali,
 autenticazione JWT/OIDC, autorizzazioni GEMODO, esempi e comportamento idempotente.
 
+## Documentazione Interattiva Locale/Test
+
+Swagger UI e ReDoc vengono pubblicati dal backend a partire dagli stessi file OpenAPI
+versionati elencati sotto ogni spec proprietaria, senza copie manuali (vedi
+`infra/openapi/README.md` per il meccanismo `GET /openapi/{spec}.yaml` +
+`GET /docs/{spec}` + `GET /redoc/{spec}`). L'inventario aggiornato dei contratti
+presenti e mancanti vive in `infra/openapi/README.md`; il catalogo errori funzionali
+condiviso vive in `infra/openapi/errors.md`.
+
 ## Link
 
 - [API readiness generata](spec-kit/api-readiness.md)
+- [Inventario contratti OpenAPI e pubblicazione Swagger/ReDoc](../infra/openapi/README.md)
+- [Catalogo errori funzionali](../infra/openapi/errors.md)
 - [Catalogo OpenAPI 001](spec-kit/specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml)
 - [Project map](project-map.md)

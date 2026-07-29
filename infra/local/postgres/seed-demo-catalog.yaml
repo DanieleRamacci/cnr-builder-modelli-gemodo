@@ -1,0 +1,108 @@
+# Catalogo seed demo (spec 009, FR-003, FR-010, FR-011, FR-027).
+#
+# `seeds` elenca le entita' SeedDemo (backend/app/quality/schemas.py) usate da
+# backend/app/quality/seed_demo.py per la validazione (marcatura demo obbligatoria,
+# nessun dato reale o sensibile). `catalogo` contiene i dati demo veri e propri:
+# tipologie GEBAN/SOL, categoria demo e i due modelli richiesti da FR-011 (uno
+# pubblicato e utilizzabile dal mock GEBAN, uno non pubblicabile per verificare gli
+# errori funzionali).
+#
+# Nessun valore qui rappresenta un bando, un utente o un dato reale.
+
+seeds:
+  - id: seed-tipi-documento-geban-demo
+    nome: Tipo documento BANDO_CONCORSO (demo)
+    tipo: CATALOGO
+    marcatura_demo: DEMO
+    spec_owner: specs/001-catalogo-contratto-geban
+    resettable: true
+    dati_sensibili: false
+  - id: seed-categoria-bando-concorso-demo
+    nome: Categoria DEMO per BANDO_CONCORSO
+    tipo: CATALOGO
+    marcatura_demo: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    dati_sensibili: false
+  - id: seed-tipologie-sol-geban-demo
+    nome: Tipologie GEBAN/SOL iniziali (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB)
+    tipo: CATALOGO
+    marcatura_demo: DEMO
+    spec_owner: specs/001-catalogo-contratto-geban
+    resettable: true
+    dati_sensibili: false
+  - id: seed-modello-bando-concorso-pubblicato-demo
+    nome: Modello BANDO_CONCORSO standard pubblicato (demo)
+    tipo: MODELLO
+    marcatura_demo: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    dati_sensibili: false
+  - id: seed-modello-bando-concorso-non-pubblicabile-demo
+    nome: Modello BANDO_CONCORSO con HTML libero (demo, caso non valido)
+    tipo: MODELLO
+    marcatura_demo: DEMO
+    spec_owner: specs/002-builder-modelli
+    resettable: true
+    dati_sensibili: false
+
+catalogo:
+  tipi_documento:
+    - codice: BANDO_CONCORSO
+      nome: Bando di concorso
+      spec_owner: specs/001-catalogo-contratto-geban
+
+  categorie:
+    - codice: DEMO
+      tipo_documento: BANDO_CONCORSO
+      nome: Categoria demo
+      spec_owner: specs/002-builder-modelli
+
+  # Perimetro iniziale GEBAN per l'ufficio reclutamento centrale (spec.md, sessione
+  # 2026-07-28); il dominio SOL completo resta in anagrafica GEBAN.
+  tipologie_sol:
+    - codice: TDPNRR
+      codice_sol: "F:jconon_call_tdet_pnrr:folder"
+      nome: Tempo determinato PNRR
+    - codice: CD
+      codice_sol: "F:jconon_call_comandi_distacchi:folder"
+      nome: Comandi e distacchi
+    - codice: DIR
+      codice_sol: "F:jconon_call_director:folder"
+      nome: Dirigenza
+    - codice: TD
+      codice_sol: "F:jconon_call_tdet:folder"
+      nome: Tempo determinato
+    - codice: CP
+      codice_sol: "F:jconon_call_tind:folder_concorsi_pubblici"
+      nome: Concorsi pubblici
+    - codice: RS
+      codice_sol: "F:jconon_call_tind:folder_reclutamento_speciale"
+      nome: Reclutamento speciale
+    - codice: CATP
+      codice_sol: "F:jconon_call_tind:folder_categorie_protette"
+      nome: Categorie protette
+    - codice: TI
+      codice_sol: "F:jconon_call_tind:folder"
+      nome: Tempo indeterminato
+    - codice: SDIP
+      codice_sol: "F:jconon_call_employees:folder"
+      nome: Personale dipendente
+    - codice: MOB
+      codice_sol: "F:jconon_call_mobility:folder"
+      nome: Mobilita'
+
+  modelli:
+    - modello_versione_id: demo-bando-concorso-standard-v1
+      tipo_documento: BANDO_CONCORSO
+      categoria: DEMO
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-html-libero-non-valido
+      tipo_documento: BANDO_CONCORSO
+      categoria: DEMO
+      stato: BOZZA
+      formato_documentale_ref: null
+      utilizzabile_da_mock_geban: false
+      motivo_non_pubblicabile: contiene HTML libero, rifiutato da backend/app/quality/document_model.py
