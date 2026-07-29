@@ -4,7 +4,7 @@
   "errori": [
     {
       "campo": "dati.numero_posti",
-      "codice": "CAMPO_OBBLIGATORIO_MANCANTE",
+      "codice": "CAMPO_OBBLIGATORIO",
       "messaggio": "Campo obbligatorio mancante nel payload"
     },
     {
@@ -14,8 +14,8 @@
     },
     {
       "campo": "dati.titolo_en",
-      "codice": "CAMPI_INGLESI_MANCANTI",
-      "messaggio": "Campi inglesi mancanti per bando in lingua inglese"
+      "codice": "CAMPO_INGLESE_MANCANTE",
+      "messaggio": "Campo inglese obbligatorio mancante"
     }
   ]
 }

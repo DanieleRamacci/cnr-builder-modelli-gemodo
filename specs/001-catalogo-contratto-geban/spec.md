@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: Draft - aggiornata 2026-07-29 con le decisioni propagate da `009-fondamenta-mock-test-qualita`
 
 **Input**: User description: "Partendo da PROPOSTA-servizio-gestione-modelli-bando.md, crea la prima specifica solo per Catalogo modelli e contratto dati verso GEBAN. Includi attori, flusso GEBAN, modelli pubblicati, campi richiesti, validazione payload, errori e acceptance criteria. Escludi builder frontend, generazione PDF dettagliata e sicurezza dettagliata."
 
@@ -17,6 +17,59 @@
 - Q: Come deve funzionare il filtro temporale dei modelli? -> A: Il catalogo distingue modalita' operativa per modelli correnti/validi e modalita' storico per tutti i pubblicati filtrabili per data pubblicazione.
 - Q: Possono esistere piu' versioni pubblicate equivalenti per lo stesso contesto? -> A: No, per stessa combinazione tipo documento, categoria, tipologia e variante esiste una sola versione pubblicata corrente; modelli simili coesistono come varianti distinte.
 - Q: Come si evita ambiguita' quando esistono piu' modelli pubblicati nello stesso contesto? -> A: Il catalogo restituisce varianti distinte e le chiamate operative successive devono indicare obbligatoriamente il `modello_versione_id` scelto.
+
+### Session 2026-07-29 (propagazione decisioni da `009`)
+
+Questa sessione recepisce le decisioni chiarite o confermate nella spec trasversale
+`009-fondamenta-mock-test-qualita` tra il 2026-06-22 e il 2026-07-29 (vedi
+`docs/decision-register.yaml` per il registro completo con owner, stato e fase
+bloccante di ciascuna). `plan.md`, `research.md`, `data-model.md`, il contratto
+OpenAPI, `quickstart.md` e `tasks.md` di questa feature vengono aggiornati di
+conseguenza nella stessa sessione.
+
+- Q: Il catalogo deve validare la tipologia di processo (`codice_tipologia`) contro un
+  elenco noto? -> A: Si (`DEC-001-TIPOLOGIE-SOL`, confermata). Il perimetro iniziale
+  copre le tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP e MOB,
+  ciascuna con codice SOL associato (vedi `infra/local/postgres/seed-demo-catalog.yaml`
+  della `009`). Una tipologia non tra queste e' un errore funzionale, non un filtro
+  vuoto silenzioso.
+- Q: Il contratto dati deve gestire il flag `Bando Inglese` e i campi in lingua
+  inglese? -> A: Si (`DEC-001-LINGUA-IT-EN`, confermata). Il payload di validazione
+  include un campo booleano di contesto (`bando_inglese`); i campi del contratto dati
+  marcati per la lingua inglese diventano obbligatori solo quando quel flag e' `true`.
+  Il servizio non genera qui il documento in due lingue (compito della `004`): valida
+  solo che i dati necessari siano presenti quando richiesti.
+- Q: I campi comuni GEBAN (codice bando, numero posti, sedi, medaglione, PTA, flag
+  inPA/Gazzetta, ecc., FR-029 di `009`) richiedono un meccanismo nuovo nel contratto
+  dati? -> A: No. Sono dati di seed/configurazione del contratto dati dinamico gia'
+  previsto da questa spec (`ModelloCampoRichiesto`), non un nuovo meccanismo. `Data
+  inizio` resta volutamente esclusa dai campi gestiti (`DEC-001-CAMPI-COMUNI-GEBAN`).
+- Q: Bando multiplo (padre/figli) e ribando richiedono un nuovo meccanismo di
+  validazione? -> A: No, non per questa feature. Restano rappresentati come dati
+  strutturati dentro il contratto dati dinamico esistente (`DEC-001-BANDO-MULTIPLO`,
+  `DEC-001-RIBANDO`, entrambe confermate); la generazione del documento unico sul
+  padre e la gestione di protocollo/numero del ribando sono responsabilita' della
+  `004`/`005`.
+- Q: Il catalogo deve gia' filtrare i modelli in base a un profilo GEBAN versionato
+  (categorie, modelli e placeholder concordati)? -> A: Non ancora. Il profilo GEBAN
+  versionato resta una decisione parzialmente aperta (`DEC-001-PROFILO-GEBAN`,
+  `DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-RELAZIONE-PROFILO-CATALOGO`,
+  `DEC-001-API-PROFILO-GEBAN`): questa feature continua a esporre catalogo e campi
+  richiesti in base allo stato di pubblicazione; l'autorizzazione fine per sistema
+  richiedente/profilo di integrazione (`GEBAN_RECLUTAMENTO_V1`, vedi
+  `infra/local/integration-profiles.local.yaml` della `009`) resta responsabilita'
+  della `006` e non e' ancora un filtro del catalogo.
+- Q: `modello_versione_id` resta un intero o diventa una stringa come negli
+  identificativi demo della `009` (es. `demo-bando-concorso-standard-v1`)? -> A:
+  Resta intero (int64), coerente con il contratto OpenAPI gia' pubblicato da questa
+  feature (`DEC-001-IDENTIFICATIVI-MODELLO`, ancora `ASSUNTA_PROVVISORIA`: la
+  conferma definitiva richiede allineamento con GEBAN prima dell'implementazione). Gli
+  identificativi stringa nei manifest demo della `009` restano solo etichette
+  leggibili nei manifest di qualita', non il formato dell'API.
+- Q: La sicurezza delle chiamate operative cambia per questa feature? -> A: No.
+  `SEC-006-001` (confermata dalla `006`) conferma che GEBAN chiama con token tecnico
+  `geban-backend`; questa feature continua ad assumere che il chiamante sia gia'
+  autorizzato (FR-017/Assumptions), senza validare qui token o ruoli.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -144,6 +197,11 @@ non pubblicati, payload errati e richieste incoerenti.
 - La versione modello viene archiviata dopo essere stata proposta a GEBAN ma prima della
   validazione del payload: la validazione deve fallire e richiedere a GEBAN di ricaricare
   il catalogo.
+- `codice_tipologia` non corrisponde a nessuna tipologia GEBAN/SOL configurata.
+- Il payload ha `bando_inglese: true` ma uno o piu' campi obbligatori in lingua
+  inglese sono assenti o vuoti.
+- Il payload ha `bando_inglese: false` (o assente) e valorizza comunque campi in
+  lingua inglese: restano ammessi come facoltativi, non generano errore da soli.
 
 ## Requirements *(mandatory)*
 
@@ -205,6 +263,23 @@ non pubblicati, payload errati e richieste incoerenti.
   completare catalogo, contratto dati o validazione payload.
 - **FR-019**: La specifica di questa feature MUST NOT includere builder frontend,
   generazione PDF dettagliata, firma, protocollo o pubblicazione.
+- **FR-020**: Quando la richiesta di catalogo o validazione indica `codice_tipologia`,
+  il servizio MUST verificare che corrisponda a una tipologia GEBAN/SOL configurata
+  (perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB) e MUST
+  restituire un errore funzionale distinto quando non corrisponde, invece di un
+  risultato vuoto silenzioso.
+- **FR-021**: Il contratto dati di un campo MUST poter dichiarare una lingua (`IT` o
+  `EN`); un campo in lingua `EN` MUST essere obbligatorio solo quando il payload
+  contiene un flag di contesto `bando_inglese` con valore `true`, e facoltativo
+  altrimenti.
+- **FR-022**: La validazione payload MUST verificare la presenza dei campi obbligatori
+  in lingua inglese quando `bando_inglese` e' `true`, e MUST restituire un errore
+  funzionale distinto per ciascun campo inglese mancante.
+- **FR-023**: Il servizio MUST continuare a esporre catalogo e contratto dati in base
+  allo stato di pubblicazione della versione modello; l'autorizzazione fine per
+  sistema richiedente e profilo di integrazione (es. profilo GEBAN versionato) resta
+  fuori scope di questa feature e appartiene alla `006` finche' `DEC-001-PROFILO-GEBAN`
+  non viene chiusa.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -227,6 +302,29 @@ non pubblicati, payload errati e richieste incoerenti.
   contratto della versione modello selezionata.
 - **Errore Di Validazione**: errore funzionale associato a un campo o alla richiesta,
   composto da codice e messaggio comprensibile.
+- **Tipologia Bando SOL**: tipologia di processo condivisa con GEBAN (`codice_tipologia`),
+  con codice SOL associato per l'integrazione GEBAN-SOL; perimetro iniziale TDPNRR, CD,
+  DIR, TD, CP, RS, CATP, TI, SDIP, MOB.
+
+## Decisioni Aperte Collegate
+
+Le decisioni che riguardano questa feature vivono nel registro centrale
+`docs/decision-register.yaml` (owner `009`), non duplicate qui, per evitare che le due
+copie divergano nel tempo. Voci con `owner_spec: specs/001-catalogo-contratto-geban` o
+`specs/001-catalogo-contratto-geban` in `spec_interessate`:
+
+`DEC-001-TIPOLOGIE-SOL` (confermata), `DEC-001-CATEGORIE-INIZIALI`,
+`DEC-006-CONFINE-KEYCLOAK-GEMODO`, `DEC-001-PROFILO-GEBAN`,
+`DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-IDENTIFICATIVI-MODELLO`,
+`DEC-001-RELAZIONE-PROFILO-CATALOGO`, `DEC-001-API-PROFILO-GEBAN`,
+`DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN`, `DEC-001-VERSIONAMENTO-MAPPING-CAMPI`,
+`DEC-003-FORMATO-CAMPI-COMPLESSI`, `DEC-001-LINGUA-IT-EN` (confermata),
+`DEC-001-CAMPI-COMUNI-GEBAN`, `DEC-001-BANDO-MULTIPLO` (confermata),
+`DEC-001-RIBANDO` (confermata).
+
+Prima di generare nuovi task implementativi su una parte impattata da una decisione
+non confermata, verificare `backend/app/quality/readiness_gate.py` (vedi
+`docs/decision-workflow.md`).
 
 ## Success Criteria *(mandatory)*
 
@@ -265,3 +363,12 @@ non pubblicati, payload errati e richieste incoerenti.
   questa feature.
 - La data di riferimento non obbliga ogni modello ad avere una scadenza: serve a
   selezionare la versione corrente quando sono definite finestre temporali.
+- `modello_versione_id` resta un identificativo intero (int64); il formato
+  definitivo e' tracciato come decisione aperta (`DEC-001-IDENTIFICATIVI-MODELLO`),
+  non bloccante per questo incremento.
+- Il profilo GEBAN versionato e l'autorizzazione fine per sistema richiedente
+  restano fuori scope: il catalogo filtra solo per stato di pubblicazione, non ancora
+  per profilo di integrazione (`DEC-001-PROFILO-GEBAN`).
+- I campi comuni GEBAN, la gestione di bando multiplo e ribando sono dati del
+  contratto dati dinamico esistente, non richiedono nuove entita' di dominio in
+  questa feature.

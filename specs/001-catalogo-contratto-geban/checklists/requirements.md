@@ -33,3 +33,8 @@
 
 - Initial validation passed. The specification intentionally excludes builder frontend,
   detailed PDF generation, signature, protocol, publication, and detailed security design.
+- 2026-07-29: spec.md updated with FR-020..FR-023 (tipologia GEBAN/SOL validation,
+  conditional English fields, explicit deferral of GEBAN integration-profile
+  filtering) propagated from `009-fondamenta-mock-test-qualita`. Re-checked against
+  this checklist: still no [NEEDS CLARIFICATION] markers, all new requirements are
+  testable and have acceptance scenarios/edge cases in spec.md.

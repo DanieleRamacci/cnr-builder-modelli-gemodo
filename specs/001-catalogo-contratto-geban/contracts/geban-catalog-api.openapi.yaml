@@ -1,8 +1,12 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.1.0
-  description: API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
+  version: 0.2.0
+  description: >
+    API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
+    Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
+    campi con lingua condizionata (bando_inglese) - vedi
+    docs/decision-register.yaml, DEC-001-TIPOLOGIE-SOL e DEC-001-LINGUA-IT-EN.
 servers:
   - url: /api/v1
 paths:
@@ -50,6 +54,11 @@ paths:
         - name: codice_tipologia
           in: query
           required: false
+          description: >
+            Se presente, deve corrispondere a una tipologia GEBAN/SOL configurata
+            (perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB);
+            un valore non riconosciuto produce errore TIPOLOGIA_SOL_NON_VALIDA, non un
+            elenco vuoto.
           schema:
             type: string
         - name: modalita
@@ -265,6 +274,14 @@ components:
         tipo:
           type: string
           enum: [string, number, date, boolean, array, object]
+        lingua:
+          type: string
+          enum: [IT, EN]
+          default: IT
+          description: >
+            Quando EN, il campo e' obbligatorio in validazione solo se il payload
+            ha bando_inglese=true; altrimenti resta facoltativo indipendentemente da
+            'obbligatorio' (DEC-001-LINGUA-IT-EN).
         obbligatorio:
           type: boolean
         ordine:
@@ -293,6 +310,13 @@ components:
           type: string
           format: date
           nullable: true
+        bando_inglese:
+          type: boolean
+          default: false
+          description: >
+            Quando true, i campi del contratto dati con lingua=EN e
+            obbligatorio=true diventano obbligatori in validazione
+            (DEC-001-LINGUA-IT-EN).
         dati:
           type: object
           additionalProperties: true

@@ -97,7 +97,7 @@ class FakeGemodoClient:
     def _genera_documento(self, payload: dict[str, Any]) -> dict[str, Any]:
         validazione = self._valida_payload(payload)
         if not validazione["valido"]:
-            raise GemodoErroreFunzionale("CAMPO_OBBLIGATORIO_MANCANTE", "payload non valido")
+            raise GemodoErroreFunzionale("CAMPO_OBBLIGATORIO", "payload non valido")
 
         chiave = self._chiave(payload)
         esistente = self._generazioni.get(chiave)

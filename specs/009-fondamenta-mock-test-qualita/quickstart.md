@@ -120,7 +120,7 @@ uv run pytest tests/e2e/test_mock_geban_error_flows.py -v -k "e2e_002 or e2e_003
 Expected:
 
 - il payload non valido produce gli errori funzionali attesi
-  (`CAMPO_OBBLIGATORIO_MANCANTE`, `TIPOLOGIA_SOL_NON_VALIDA`, `CAMPI_INGLESI_MANCANTI`,
+  (`CAMPO_OBBLIGATORIO`, `TIPOLOGIA_SOL_NON_VALIDA`, `CAMPO_INGLESE_MANCANTE`,
   vedi `infra/openapi/errors.md`);
 - il retry identico restituisce la generazione esistente (`riutilizzato: true`), senza
   duplicati;

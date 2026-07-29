@@ -5,13 +5,17 @@ l'implementazione. I comandi concreti saranno definiti quando il progetto backen
 
 ## Prerequisiti
 
-- Backend avviato in ambiente locale.
-- Database migrato.
+- Backend avviato in ambiente locale (scheletro FastAPI/Alembic gia' creato dalla
+  `009` in `backend/`, vedi `specs/009-fondamenta-mock-test-qualita/quickstart.md`).
+- Database migrato (baseline `009` + migration proprie di questa feature).
 - Seed demo con:
   - tipo documento `BANDO_CONCORSO`;
   - categoria `CTER`;
+  - tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB con codice SOL
+    (`infra/local/postgres/seed-demo-catalog.yaml` della `009`);
   - almeno due varianti modello pubblicate;
-  - campi richiesti demo `PROFILO`, `LIVELLO`, `NUM_POSTI`, `SEDI`.
+  - campi richiesti demo `PROFILO`, `LIVELLO`, `NUM_POSTI`, `SEDI`, piu' almeno un
+    campo `lingua: EN` obbligatorio (es. `TITOLO_EN`) per lo Scenario 8.
 - Autenticazione configurata secondo la spec sicurezza o disabilitata solo nel profilo di
   test locale.
 
@@ -105,3 +109,54 @@ Risultato atteso:
 
 - validazione non consentita;
 - errore funzionale `MODELLO_VERSIONE_NON_PUBBLICATO` o equivalente.
+
+## Scenario 7 - Tipologia GEBAN/SOL non valida (FR-020)
+
+Richiesta:
+
+```http
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=CTER&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
+```
+
+Risultato atteso:
+
+- risposta di errore funzionale, non un elenco vuoto;
+- codice errore `TIPOLOGIA_SOL_NON_VALIDA`;
+- le tipologie ammesse nel perimetro iniziale sono TDPNRR, CD, DIR, TD, CP, RS, CATP,
+  TI, SDIP, MOB (vedi `infra/local/postgres/seed-demo-catalog.yaml` della `009`).
+
+## Scenario 8 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
+
+Richiesta:
+
+```http
+POST /api/v1/documenti/valida
+Content-Type: application/json
+```
+
+```json
+{
+  "sistema_richiedente": "GEBAN",
+  "external_context_id": "BANDO-12345",
+  "modello_versione_id": 27,
+  "bando_inglese": true,
+  "dati": {
+    "PROFILO": "Collaboratore Tecnico Enti di Ricerca",
+    "LIVELLO": "VI",
+    "NUM_POSTI": 2,
+    "SEDI": []
+  }
+}
+```
+
+Il modello demo dichiara almeno un campo con `lingua: EN` e `obbligatorio: true` (es.
+`TITOLO_EN`), assente dal payload sopra.
+
+Risultato atteso:
+
+- `valido` = `false`;
+- un errore per ciascun campo inglese obbligatorio mancante, con codice
+  `CAMPO_INGLESE_MANCANTE`;
+- ripetendo la stessa richiesta con `bando_inglese: false` (o assente) e senza i
+  campi inglesi, la validazione MUST considerare quei campi facoltativi e non
+  generare `CAMPO_INGLESE_MANCANTE`.

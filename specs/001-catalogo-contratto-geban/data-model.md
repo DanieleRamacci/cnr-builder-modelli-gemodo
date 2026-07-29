@@ -60,6 +60,28 @@ Validation:
 - `variante` non puo' essere vuota; se manca viene assegnata `STANDARD`.
 - la combinazione `codice_tipo_documento + codice_categoria + codice_tipologia + variante`
   identifica una variante funzionale nel catalogo.
+- se presente, `codice_tipologia` deve corrispondere a una `TipologiaBandoSOL`
+  configurata (FR-020).
+
+### TipologiaBandoSOL
+
+Tipologia di processo GEBAN/SOL, condivisa con il dominio SOL (`DEC-001-TIPOLOGIE-SOL`).
+
+Fields:
+
+- `codice`: identificativo funzionale usato come `codice_tipologia`, ad esempio `TD`.
+- `codice_sol`: codice atteso dall'integrazione GEBAN-SOL, ad esempio
+  `F:jconon_call_tdet:folder`.
+- `descrizione`
+- `attiva`
+- `created_at`
+
+Validation:
+
+- `codice` obbligatorio e univoco.
+- perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB (seed demo in
+  `infra/local/postgres/seed-demo-catalog.yaml` della `009`); il dominio SOL completo
+  puo' estendere l'elenco in seguito senza cambiare il contratto API.
 
 ### ModelloDocumentoVersione
 
@@ -102,6 +124,7 @@ Fields:
 - `etichetta`
 - `descrizione`
 - `tipo_dato`: `string`, `number`, `date`, `boolean`, `array`, `object`.
+- `lingua`: `IT` o `EN`, default `IT` (FR-021, `DEC-001-LINGUA-IT-EN`).
 - `obbligatorio`
 - `ordine`
 - `formato`: opzionale.
@@ -116,6 +139,9 @@ Validation:
 - chiave logica: `modello_documento_versione_id + codice`.
 - `ordine` univoco per versione modello.
 - campi extra nel payload sono errore.
+- un campo con `lingua = EN` e `obbligatorio = true` e' richiesto in validazione solo
+  quando il payload contiene `bando_inglese = true`; altrimenti resta facoltativo
+  (FR-021, FR-022). Campi con `lingua = IT` seguono `obbligatorio` senza condizioni.
 
 ### ValidazionePayload
 
@@ -127,6 +153,8 @@ Fields:
 - `valido`: boolean.
 - `errori`: lista di `ErroreValidazione`.
 - `modello_versione_id`
+- `bando_inglese`: boolean opzionale nel payload, default `false`; quando `true`
+  attiva l'obbligatorieta' dei campi con `lingua = EN` (FR-021, FR-022).
 
 ### ErroreValidazione
 
@@ -146,6 +174,14 @@ Common error codes:
 - `MODELLO_VERSIONE_NON_PUBBLICATO`
 - `MODELLO_VERSIONE_NON_TROVATO`
 - `CONTESTO_NON_VALIDO`
+- `TIPOLOGIA_SOL_NON_VALIDA` (FR-020): `codice_tipologia` non corrisponde a una
+  `TipologiaBandoSOL` configurata.
+- `CAMPO_INGLESE_MANCANTE` (FR-022): campo con `lingua = EN` obbligatorio assente
+  quando `bando_inglese = true`.
+
+Questi codici sono coerenti con `infra/openapi/errors.md` (catalogo errori
+trasversale della `009`); eventuali nuovi codici funzionali di questa feature vanno
+aggiunti in entrambi i posti.
 
 ## Relationships
 
@@ -153,6 +189,7 @@ Common error codes:
 TipoDocumento 1--N CategoriaDocumento
 TipoDocumento 1--N ModelloDocumento
 CategoriaDocumento 1--N ModelloDocumento
+TipologiaBandoSOL 1--N ModelloDocumento
 ModelloDocumento 1--N ModelloDocumentoVersione
 ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)

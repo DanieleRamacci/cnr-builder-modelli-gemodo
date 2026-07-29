@@ -174,18 +174,23 @@ decisions:
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/001-catalogo-contratto-geban
-    stato: ASSUNTA_PROVVISORIA
+    stato: SOSPESA
     assunzione_provvisoria: >
       GEBAN riceve da GEMODO la lista dei modelli validi alla data, sceglie
       modello/versione, conserva la versione scelta e la reinvia con i dati
-      obbligatori. Resta da formalizzare il nome tecnico dell'identificativo (coerente
-      con modello_versione_id) e il mapping con eventuali codici profilo/GEBAN; il
-      contratto OpenAPI 001 attuale lo tipizza come intero, i manifest demo 009 come
-      stringa (`demo-bando-concorso-standard-v1`) - divergenza da chiudere qui, non
-      silenziosamente in fase di implementazione.
-    impatto: contratto API della 001
+      obbligatori. Il piano 001 (aggiornato 2026-07-29) procede con
+      modello_versione_id come intero (int64), coerente col contratto OpenAPI gia'
+      pubblicato: nessun requisito esplicito richiede oggi un cambio breaking verso un
+      identificativo stringa. Gli identificativi stringa nei manifest demo 009 (es.
+      demo-bando-concorso-standard-v1) restano etichette leggibili nei manifest di
+      qualita', non il formato dell'API.
+    impatto: >
+      contratto API della 001 (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml,
+      v0.2.0); rischio residuo: se GEBAN richiedera' un identificativo stringa, sara'
+      un cambio breaking sul contratto pubblicato, da coordinare come nuova versione
+      major dell'OpenAPI, non una modifica silenziosa.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-29
 
   - id: DEC-001-RELAZIONE-PROFILO-CATALOGO
     titolo: Relazione tra profilo GEBAN e catalogo GEMODO

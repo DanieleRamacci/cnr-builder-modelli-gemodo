@@ -36,7 +36,7 @@
   "atteso_errori": [
     {
       "campo": "dati.numero_posti",
-      "codice": "CAMPO_OBBLIGATORIO_MANCANTE",
+      "codice": "CAMPO_OBBLIGATORIO",
       "motivo": "numero_posti non presente nel payload"
     },
     {
@@ -46,17 +46,17 @@
     },
     {
       "campo": "dati.titolo_en",
-      "codice": "CAMPI_INGLESI_MANCANTI",
+      "codice": "CAMPO_INGLESE_MANCANTE",
       "motivo": "bando_inglese=true ma titolo_en non presente"
     },
     {
       "campo": "dati.descrizione_ridotta_en",
-      "codice": "CAMPI_INGLESI_MANCANTI",
+      "codice": "CAMPO_INGLESE_MANCANTE",
       "motivo": "bando_inglese=true ma descrizione_ridotta_en non presente"
     },
     {
       "campo": "dati.sede_prescelta_en",
-      "codice": "CAMPI_INGLESI_MANCANTI",
+      "codice": "CAMPO_INGLESE_MANCANTE",
       "motivo": "bando_inglese=true ma sede_prescelta_en non presente"
     }
   ]

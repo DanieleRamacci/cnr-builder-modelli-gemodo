@@ -28,9 +28,9 @@ scenario_outcomes:
     stato_atteso: RIFIUTATO
     output_attesi: []
     errori_attesi:
-      - CAMPO_OBBLIGATORIO_MANCANTE
+      - CAMPO_OBBLIGATORIO
       - TIPOLOGIA_SOL_NON_VALIDA
-      - CAMPI_INGLESI_MANCANTI
+      - CAMPO_INGLESE_MANCANTE
 
   - scenario_id: E2E-003
     payload_demo: bando-concorso-valid.json
