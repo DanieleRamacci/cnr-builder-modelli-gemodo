@@ -12,6 +12,24 @@ verifiche ripetibili su contratti, seed e scenari end-to-end.
 - Solo test in memoria: scartato perche' non copre migrations, Keycloak, PostgreSQL e
   documentale mock.
 
+## Decision: Keycloak CNR di test reale invece di solo container locale
+
+**Rationale**: il team GEMODO ha ottenuto un'utenza amministratore sul realm Keycloak CNR di
+test (`sso.test.si.cnr.it`, realm `cnr`, dominio applicativo `*.test.si.cnr.it`). Sviluppo e
+test si configurano direttamente contro questo Keycloak reale tramite variabili d'ambiente
+(issuer URL, client id/secret, audience), invece di dipendere solo da un Keycloak
+containerizzato locale. Il passaggio in produzione richiede solo la stessa configurazione
+richiesta al referente infrastruttura Keycloak CNR e lo swap delle variabili d'ambiente, senza
+cambi di modello applicativo.
+
+**Alternatives considered**:
+
+- Solo Keycloak containerizzato locale: scartato come unica opzione perche' introduce un
+  secondo modello di configurazione da mantenere allineato a quello reale, senza reale
+  beneficio ora che l'accesso al Keycloak di test e' disponibile self-service.
+- Keycloak containerizzato resta comunque un'opzione di fallback per sviluppo offline o CI
+  senza accesso di rete al Keycloak CNR, ma non e' piu' il percorso primario.
+
 ## Decision: stack della proposta come baseline di planning
 
 **Rationale**: la proposta indica FastAPI, Angular, PostgreSQL, Keycloak locale,
@@ -147,15 +165,18 @@ pubblicazione pubblica.
 - Pubblicare solo codice e Spec Kit: scartato perche' non basta per installazione,
   integrazione, sicurezza e manutenzione da parte di terzi.
 
-## Decision: sicurezza locale realistica ma non bloccata dalle decisioni differite
+## Decision: sicurezza realistica basata su decisioni ormai risolte
 
-**Rationale**: la spec 006 contiene decisioni provvisorie su token delegato e separazione
-ruoli. La `009` deve preparare Keycloak locale e scenari autorizzativi usando le assunzioni
-documentate, marcando i punti da riaprire prima dell'implementazione delle parti impattate.
+**Rationale**: la spec 006 ha risolto sia `SEC-006-001` (token tecnico `geban-backend` +
+contesto utente nel payload, non token delegato) sia `SEC-006-002` (nessuna separazione
+gestore/revisore/approvatore nella prima release, pubblicazione del gestore vale come
+approvazione), entrambe il 2026-07-29. La `009` deve preparare gli scenari autorizzativi
+contro il Keycloak CNR di test reale usando direttamente il modello risolto, senza piu'
+assunzioni provvisorie da marcare come bloccanti.
 
 **Alternatives considered**:
 
 - Rimandare ogni scenario sicurezza: scartato perche' audit e autorizzazioni sono
   requisiti costituzionali.
 - Stabilire qui la soluzione definitiva Keycloak/GEBAN: scartato perche' owner della
-  decisione e' la spec 006 con il team GEBAN/Keycloak.
+  decisione resta la spec 006.

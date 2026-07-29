@@ -161,3 +161,9 @@ lo stato e le autorizzazioni lo consentono.
 - La produzione deterministica del PDF e' approfondita nella spec generazione.
 - Il riferimento documentale deve restare adatto a GEBAN e ai moduli downstream
   autorizzati, senza rendere GEMODO fonte autoritativa dei dati GEBAN.
+- GEMODO MUST comunque disporre di uno storage/copia di lavoro propria per il documento
+  appena generato (anche minima, es. filesystem locale in sviluppo/test), indipendentemente
+  dall'esito della decisione su stampa/pubblicazione SOL: serve per idempotenza, hash di
+  audit e per servire stato/download nell'intervallo tra generazione ed eventuale
+  pubblicazione su un sistema downstream. Questa necessita' e' distinta e non bloccata dalla
+  decisione aperta su confine con stampa/pubblicazione SOL (vedi `decisions-and-vincoli`).

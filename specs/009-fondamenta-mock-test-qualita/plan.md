@@ -38,7 +38,9 @@ navigabile per comprendere fasi Spec Kit, blocchi, decisioni, vincoli e guide op
 per contratti e manifest di qualita'
 
 **Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, Angular, OpenAPI
-tooling, Keycloak locale, strumenti di orchestrazione ambiente locale
+tooling, Keycloak CNR di test reale (`sso.test.si.cnr.it`, realm `cnr`) via variabili
+d'ambiente, con Keycloak containerizzato come fallback opzionale per sviluppo offline,
+strumenti di orchestrazione ambiente locale
 
 **API Documentation**: OpenAPI YAML versionati in `infra/openapi/`, esempi JSON
 pubblicabili, catalogo errori, Swagger UI e ReDoc generati dalla stessa sorgente in
@@ -88,7 +90,7 @@ della pubblicazione pubblica
 | Contract-First Integration | I contratti di qualita' e mock richiedono OpenAPI/esempi prima dei task implementativi. | PASS |
 | Configurable Document Models | Seed e migrations devono riflettere modelli configurabili, non logica hard-coded. | PASS |
 | Versioning, Traceability, Reproducibility | Seed, scenari e matrice copertura tracciano versioni modello, generazioni, audit e idempotenza. | PASS |
-| Security, Audit, Controlled AI | Il piano include Keycloak locale, principal mock, profili applicativi GEMODO, scenari autorizzativi, audit e decisioni AI/MCP non bloccanti. | PASS |
+| Security, Audit, Controlled AI | Il piano include Keycloak CNR di test reale (fallback locale opzionale), principal mock, profili applicativi GEMODO, scenari autorizzativi, audit e decisioni AI/MCP non bloccanti. | PASS |
 | Public Documentation and Reuse Readiness | Il piano include OpenAPI, Swagger/ReDoc, esempi pubblicabili, portale MkDocs e readiness open source/PA. | PASS |
 
 ## Project Structure

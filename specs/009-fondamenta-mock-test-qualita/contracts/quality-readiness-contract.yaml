@@ -290,11 +290,20 @@ example:
       contains_scripts: false
   open_decisions:
     - id: SEC-006-001
-      title: Token delegato GEBAN verso GEMODO
+      title: Token tecnico GEBAN verso GEMODO
       owner_spec: specs/006-sicurezza-autorizzazioni-audit
       impacted_specs:
         - specs/005-storage-idempotenza-consultazione
         - specs/009-fondamenta-mock-test-qualita
-      status: ASSUNTA_PROVVISORIA
-      provisional_assumption: token delegato Keycloak con audience GEMODO e identita utente reale
-      blocking_phase: IMPLEMENTAZIONE
+      status: CONFERMATA
+      provisional_assumption: token tecnico Keycloak (client credentials) geban-backend con ruolo DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit, risolta 2026-07-29
+      blocking_phase: NESSUNA
+    - id: SEC-006-002
+      title: Separazione revisore/approvatore builder modelli
+      owner_spec: specs/006-sicurezza-autorizzazioni-audit
+      impacted_specs:
+        - specs/002-builder-modelli
+        - specs/009-fondamenta-mock-test-qualita
+      status: CONFERMATA
+      provisional_assumption: flusso minimo senza separazione obbligatoria, GEMODO_MODELLI_GESTORE abilitato anche alla pubblicazione vale come approvazione; ruoli revisore/approvatore riservati e inattivi, risolta 2026-07-29
+      blocking_phase: NESSUNA

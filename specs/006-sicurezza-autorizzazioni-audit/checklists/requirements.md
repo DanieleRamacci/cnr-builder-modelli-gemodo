@@ -33,14 +33,13 @@
 
 - Draft di copertura. Keycloak/JWT e' un vincolo di costituzione/proposta, non una scelta nuova.
 - Documento operativo collegato: `keycloak-jwt.md`.
-- Decisione `SEC-006-001` segnata come provvisoria: token delegato GEBAN -> GEMODO da confermare col team GEBAN/Keycloak prima dell'implementazione.
+- Decisione `SEC-006-001` **risolta il 2026-07-29**: token tecnico Keycloak (client credentials) `geban-backend` con ruolo `DOCUMENTI_GENERATORE`; utente reale e contesto GEBAN nel payload solo per audit, mai nel token.
 - Utenti, password e assegnazione ruoli restano in Keycloak; GEMODO consuma JWT e applica autorizzazioni backend.
 - Validazione aggiornata il 2026-06-22 dopo estensione requisiti su matrice ruoli, audit
   minimo, API tecniche censite e AI/MCP.
-- Decisione `SEC-006-002` aggiunta: confermare prima della pianificazione se attivare
-  separazione effettiva tra gestore, revisore e approvatore nella prima release.
-- Decisioni `SEC-006-001` e `SEC-006-002` differite su indicazione utente: la definizione
-  puo' proseguire usando le assunzioni provvisorie documentate.
-- La feature puo' passare alla pianificazione con assunzioni provvisorie; eventuali
-  risposte diverse del team GEBAN/Keycloak dovranno aggiornare spec, piano e task prima
-  dell'implementazione.
+- Decisione `SEC-006-002` **risolta il 2026-07-29**: nessuna separazione effettiva tra
+  gestore, revisore e approvatore nella prima release; la pubblicazione fatta da
+  `GEMODO_MODELLI_GESTORE` vale come approvazione. Ruoli revisore/approvatore restano
+  riservati e inattivi per un'eventuale attivazione futura.
+- Nessuna decisione bloccante differita al momento; la feature puo' passare alla
+  pianificazione.
