@@ -43,3 +43,9 @@
   campi comuni e bando inglese come secondo modello/output integrale tradotto.
 - La linea Keycloak proposta e' documentata come configurabile: utenti GEMODO via SSO,
   chiamate GEBAN con token tecnico e contesto audit nel payload, in attesa di conferma.
+- Chiarito che Keycloak gestisce identita', client e ruoli/claim generali, mentre GEMODO
+  gestisce autorizzazioni fini su sistemi richiedenti, profili, modelli, contratti e
+  operazioni senza conservare password o credenziali.
+- Chiarito che il builder futuro e' un editor visuale controllato, non un editor HTML:
+  il modello viene salvato come struttura versionata con blocchi, layout, asset, stili
+  ammessi e placeholder validati.

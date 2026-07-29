@@ -92,3 +92,38 @@ Expected:
 - gli scenari minimi coprono valido, payload non valido, retry idempotente, conflitto,
   fallimento e accesso non autorizzato;
 - le parti bloccate da decisioni aperte sono esplicite.
+
+## Scenario 7 - Profili integrazione e confine Keycloak/GEMODO
+
+1. Aprire il manifest locale dei profili di integrazione.
+2. Verificare che `GEBAN` sia registrato come sistema richiedente con client tecnico,
+   audience attesa, ruoli/claim generali e profilo applicativo.
+3. Verificare che il profilo indichi tipi documento, categorie, modelli/versioni,
+   contratti e operazioni abilitate.
+4. Simulare un client con token valido ma profilo GEMODO mancante o non coerente.
+
+Expected:
+
+- GEMODO non conserva password, segreti o credenziali dei client;
+- Keycloak fornisce identita', client, audience e ruoli/claim generali;
+- GEMODO applica autorizzazioni fini su profilo, modello, contratto e operazione;
+- un token valido ma non associato a un profilo GEMODO coerente non abilita generazione,
+  download o modifica dei modelli.
+
+## Scenario 8 - Modello documentale controllato
+
+1. Aprire il seed demo del modello documentale controllato.
+2. Verificare che dichiari pagina, margini, regioni, blocchi ammessi, stili, asset,
+   placeholder e posizionamenti controllati.
+3. Verificare che siano presenti esempi per intestazione/logo, titolo, paragrafo, tabella o
+   colonne e firma posizionata.
+4. Verificare che non siano presenti HTML libero, CSS libero o script.
+
+Expected:
+
+- il modello demo usa una struttura controllata e versionata;
+- logo e asset sono referenziati tramite identificativo e versione;
+- placeholder e campi sono coerenti con il contratto dati;
+- il builder futuro potra' manipolare la stessa struttura tramite editor visuale limitato;
+- il renderer PDF usa eventuali formati tecnici intermedi senza esporre HTML/CSS libero
+  all'utente.

@@ -34,6 +34,47 @@ required_sections:
     rules:
       - every GEBAN-facing contract must have at least one success example
       - every GEBAN-facing contract must have at least one functional error example
+  integration_profiles:
+    required: true
+    fields:
+      - system_code
+      - client_id
+      - expected_audience
+      - required_roles_or_claims
+      - profile_code
+      - profile_status
+      - allowed_document_types
+      - allowed_categories
+      - allowed_model_versions
+      - allowed_operations
+      - manages_credentials
+    rules:
+      - manages_credentials must be false
+      - Keycloak provides identity, client, audience and coarse roles or claims
+      - GEMODO applies fine-grained authorization on profiles, models, contracts and operations
+      - active profiles must declare at least one allowed operation
+  document_models:
+    required: true
+    fields:
+      - model_version_ref
+      - controlled_format
+      - page
+      - regions
+      - allowed_blocks
+      - blocks
+      - assets
+      - allowed_styles
+      - placeholders
+      - contains_free_html
+      - contains_free_css
+      - contains_scripts
+    rules:
+      - contains_free_html must be false
+      - contains_free_css must be false
+      - contains_scripts must be false
+      - blocks must use only allowed block types and positions
+      - placeholders must match the model data contract
+      - assets must be referenced by id, version and hash when available
   coverage:
     required: true
     fields:
@@ -68,10 +109,14 @@ minimum_quality_gates:
     - all critical open decisions have owner and blocking phase
     - mock GEBAN scenarios are mapped to contracts
     - seed demo contains no real or sensitive data
+    - integration profiles declare system, client, roles or claims and GEMODO fine-grained permissions
+    - document model seeds declare controlled blocks, assets, styles and placeholders without free HTML or CSS
   before_implementation:
     - impacted critical decisions are confirmed or explicitly suspended
     - e2e scenarios cover valid flow, validation error, idempotent retry, conflict, failure, unauthorized access
     - audit expectations are documented for sensitive operations
+    - authorized and unauthorized scenarios cover both Keycloak coarse authorization and GEMODO profile authorization
+    - document model validation rejects unsupported blocks, free HTML, free CSS, scripts and unavailable placeholders
 
 example:
   environment:
@@ -90,6 +135,76 @@ example:
       spec_owner: specs/001-catalogo-contratto-geban
       resettable: true
       contains_real_or_sensitive_data: false
+  integration_profiles:
+    - system_code: GEBAN
+      client_id: geban-backend
+      expected_audience: gemodo-backend
+      required_roles_or_claims:
+        - DOCUMENTI_GENERATORE
+      profile_code: GEBAN_RECLUTAMENTO_V1
+      profile_status: ATTIVO
+      allowed_document_types:
+        - BANDO_CONCORSO
+      allowed_categories:
+        - DEMO
+      allowed_model_versions:
+        - demo-bando-concorso-standard-v1
+      allowed_operations:
+        - catalogo
+        - validazione
+        - generazione_bozza
+        - generazione_ufficiale
+        - stato
+        - download
+      manages_credentials: false
+  document_models:
+    - model_version_ref: demo-bando-concorso-standard-v1
+      controlled_format: GEMODO_DOCUMENT_V1
+      page:
+        size: A4
+        margins: standard-cnr
+      regions:
+        - header
+        - body
+        - footer
+        - signature_area
+      allowed_blocks:
+        - INTESTAZIONE
+        - LOGO
+        - TITOLO
+        - PARAGRAFO
+        - TABELLA
+        - COLONNE
+        - FIRMA
+        - FOOTER
+        - INTERRUZIONE_PAGINA
+      blocks:
+        - id: header-logo
+          type: LOGO
+          position: TOP
+          asset_ref: logo-cnr-demo
+        - id: titolo-bando
+          type: TITOLO
+          position: BODY
+          placeholders:
+            - codice_bando
+        - id: firma-direttore
+          type: FIRMA
+          position: BOTTOM_RIGHT
+      assets:
+        - id: logo-cnr-demo
+          version: 1
+          hash_file: DEMO_HASH
+      allowed_styles:
+        - title
+        - body
+        - signature
+      placeholders:
+        - codice_bando
+        - numero_posti
+      contains_free_html: false
+      contains_free_css: false
+      contains_scripts: false
   open_decisions:
     - id: SEC-006-001
       title: Token delegato GEBAN verso GEMODO

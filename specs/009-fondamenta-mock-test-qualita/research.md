@@ -76,6 +76,41 @@ end-to-end copra requisiti e spec owner, e diventera' input per `/speckit-tasks`
   requisito o decisione coprono.
 - Annotazioni libere nei README: scartato perche' difficili da validare e mantenere.
 
+## Decision: Keycloak per identita' e GEMODO per autorizzazioni fini
+
+**Rationale**: Keycloak deve restare il sistema di identita', autenticazione, client
+tecnici, audience e ruoli/claim generali. Le abilitazioni fini su sistemi richiedenti,
+profili di integrazione, tipi documento, categorie, tipologie, modelli/versioni, contratti
+dati e operazioni appartengono invece a GEMODO, perche' sono dominio documentale e devono
+seguire versionamento, pubblicazione e audit del servizio.
+
+**Alternatives considered**:
+
+- Mettere in Keycloak la lista di modelli, categorie e contratti: scartato perche' rende
+  fragile il versionamento e sposta fuori da GEMODO decisioni di dominio documentale.
+- Gestire utenti, password o segreti in GEMODO: scartato perche' duplica il sistema di
+  identita' e viola il confine con SSO/Keycloak.
+- Usare solo ruoli generici senza profili applicativi GEMODO: scartato perche' non basta a
+  distinguere GEBAN, GRADUATORIE, CHECKIN e futuri chiamanti sui rispettivi modelli.
+
+## Decision: modello documentale controllato per builder visuale e PDF
+
+**Rationale**: il builder deve offrire un'esperienza visuale simile a un word processor
+limitato, con intestazioni, loghi, titoli, paragrafi, tabelle, colonne, firme, footer,
+interruzioni pagina, stili ammessi e placeholder. Per mantenere validazione, sicurezza e
+riproducibilita', la sorgente salvata deve essere una struttura documentale controllata e
+versionata. L'utente non scrive HTML/CSS libero; eventuali formati tecnici intermedi sono
+prodotti dal renderer.
+
+**Alternatives considered**:
+
+- HTML/CSS libero salvato dall'utente: scartato per rischi di sicurezza, layout non
+  validabile e bassa riproducibilita'.
+- File office binario come sorgente primaria: scartato perche' rende difficile validare
+  placeholder, versionare semanticamente e controllare le regole di pubblicazione.
+- Solo sezioni testuali ordinate: scartato perche' non copre logo, firme posizionate,
+  tabelle, colonne e layout amministrativi reali.
+
 ## Decision: sicurezza locale realistica ma non bloccata dalle decisioni differite
 
 **Rationale**: la spec 006 contiene decisioni provvisorie su token delegato e separazione

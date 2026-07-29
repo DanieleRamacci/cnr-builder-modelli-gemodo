@@ -1,6 +1,6 @@
 # Implementation Plan: Fondamenta Mock Test E Qualita
 
-**Branch**: `main` | **Date**: 2026-06-22 | **Spec**: [spec.md](./spec.md)
+**Branch**: `test` | **Date**: 2026-06-22 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/009-fondamenta-mock-test-qualita/spec.md`
 
@@ -8,12 +8,23 @@
 
 Definire le fondamenta verificabili del progetto GEMODO: ambiente locale ripetibile,
 migrations e seed demo coerenti con le spec, mock GEBAN contract-first, scenari
-end-to-end minimi, matrice di copertura e registro delle decisioni aperte.
+end-to-end minimi, matrice di copertura, profili applicativi di integrazione, modello
+documentale controllato e registro delle decisioni aperte.
 
 L'approccio tecnico e' trattare questa feature come layer trasversale: prepara struttura,
 contratti di qualita' e criteri di validazione che i task successivi useranno per
 implementare backend, frontend, mock, dati demo, audit e test senza introdurre assunzioni
 implicite.
+
+Il piano recepisce inoltre il confine atteso tra Keycloak e GEMODO: Keycloak autentica
+utenti e client tecnici e fornisce ruoli/claim generali; GEMODO mantiene le autorizzazioni
+applicative fini su sistemi richiedenti, profili di integrazione, tipi documento,
+categorie, modelli/versioni, contratti dati e operazioni.
+
+Il piano recepisce anche il confine del builder visuale futuro: l'utente comporra' il
+documento tramite blocchi e posizionamenti ammessi, senza scrivere HTML/CSS libero. La
+prima fase deve quindi seedare un modello documentale controllato e versionato, usabile dal
+renderer PDF e riusabile dal builder come sorgente dati.
 
 ## Technical Context
 
@@ -40,11 +51,14 @@ al carico
 
 **Constraints**: nessuna dipendenza dal DB GEBAN; nessun dato reale nei seed demo; mock
 GEBAN allineato ai contratti pubblici; decisioni aperte critiche non possono entrare in
-tasks implementativi come assunzioni silenziose; sicurezza e audit seguono la spec 006
+tasks implementativi come assunzioni silenziose; sicurezza e audit seguono la spec 006;
+Keycloak non diventa sorgente delle abilitazioni fini su modelli e contratti GEMODO;
+il builder non espone HTML/CSS libero e usa una struttura documentale controllata
 
 **Scale/Scope**: primo incremento trasversale per struttura di progetto, ambiente locale,
-mock GEBAN, seed demo, contratti di qualita', scenari minimi e registro decisioni; fuori
-scope implementare tutte le feature applicative finali
+mock GEBAN, seed demo, contratti di qualita', scenari minimi, profili di integrazione,
+modello documentale controllato e registro decisioni; fuori scope implementare tutte le
+feature applicative finali
 
 ## Constitution Check
 
@@ -56,7 +70,7 @@ scope implementare tutte le feature applicative finali
 | Contract-First Integration | I contratti di qualita' e mock richiedono OpenAPI/esempi prima dei task implementativi. | PASS |
 | Configurable Document Models | Seed e migrations devono riflettere modelli configurabili, non logica hard-coded. | PASS |
 | Versioning, Traceability, Reproducibility | Seed, scenari e matrice copertura tracciano versioni modello, generazioni, audit e idempotenza. | PASS |
-| Security, Audit, Controlled AI | Il piano include Keycloak locale, scenari autorizzativi, audit e decisioni AI/MCP non bloccanti. | PASS |
+| Security, Audit, Controlled AI | Il piano include Keycloak locale, principal mock, profili applicativi GEMODO, scenari autorizzativi, audit e decisioni AI/MCP non bloccanti. | PASS |
 
 ## Project Structure
 
@@ -111,6 +125,8 @@ frontend/
 infra/
 ├── local/
 │   ├── compose.yaml
+│   ├── integration-profiles.local.yaml
+│   ├── document-models/
 │   ├── keycloak/
 │   ├── postgres/
 │   └── documentale-mock/
@@ -145,6 +161,10 @@ Decisioni chiave:
   documentale mock e OpenAPI;
 - mock GEBAN guidato dai contratti pubblici e non da scorciatoie interne;
 - seed demo marcati e privi di dati reali;
+- Keycloak come sorgente di identita', client e ruoli/claim generali, con autorizzazioni
+  fini gestite da GEMODO tramite profili applicativi versionati;
+- modello documentale controllato come sorgente versionata che il builder visuale futuro
+  manipolera' senza HTML/CSS libero;
 - registro decisioni aperte con owner, impatto, assunzione e fase bloccata;
 - matrice copertura come ponte tra spec, scenari, contratti e task futuri.
 
@@ -165,4 +185,4 @@ Output:
 | Contract-First Integration | Contratti YAML definiscono readiness, scenari mock, esempi richiesti e copertura. | PASS |
 | Configurable Document Models | Seed demo e coverage richiedono tipi, categorie, modelli e versioni configurabili. | PASS |
 | Versioning, Traceability, Reproducibility | Scenari minimi coprono versione modello, idempotenza, stato, riferimento e audit. | PASS |
-| Security, Audit, Controlled AI | Scenari includono autorizzato/non autorizzato; decisioni 006 e AI/MCP restano tracciate. | PASS |
+| Security, Audit, Controlled AI | Scenari includono autorizzato/non autorizzato, distinzione token/ruoli Keycloak e autorizzazioni fini GEMODO; decisioni 006 e AI/MCP restano tracciate. | PASS |

@@ -1,8 +1,9 @@
 # Data Model - Fondamenta Mock Test E Qualita
 
 Questa feature non introduce dominio amministrativo finale; definisce artefatti di
-supporto per ambiente, mock, seed, copertura e decisioni aperte. Le entita' sotto sono
-persistibili o versionabili come configurazioni/manifest di qualita'.
+supporto per ambiente, mock, seed, copertura, profili di integrazione, modelli documentali
+controllati e decisioni aperte. Le entita' sotto sono persistibili o versionabili come
+configurazioni/manifest di qualita'.
 
 ## Entities
 
@@ -95,6 +96,153 @@ Validation:
 - deve usare contratti pubblici, non API interne o accesso diretto ai dati.
 - deve coprire catalogo, campi/schema, validazione, generazione, stato e download.
 
+### SistemaRichiedente
+
+Applicazione esterna o modulo autorizzato a consumare contratti e generazione documenti
+GEMODO, ad esempio GEBAN, GRADUATORIE o CHECKIN.
+
+Fields:
+
+- `codice`: identificativo funzionale stabile, ad esempio `GEBAN`.
+- `nome`: descrizione leggibile del sistema.
+- `stato`: `ATTIVO`, `SOSPESO`, `ARCHIVIATO`.
+- `client_applicativi`: elenco di `ClientApplicativo` associati.
+- `profili_integrazione`: elenco di `ProfiloDiIntegrazione` disponibili.
+- `spec_owner`: spec responsabile del contratto applicativo.
+
+Validation:
+
+- ogni sistema richiedente deve avere almeno un client applicativo o una decisione aperta
+  che ne blocca la configurazione.
+- un sistema sospeso o archiviato non puo' usare scenari operativi di generazione.
+- il codice del sistema richiedente usato nei payload deve corrispondere a un profilo
+  applicativo GEMODO attivo o esplicitamente mockato in locale/test.
+
+### ClientApplicativo
+
+Identita' tecnica riconosciuta da Keycloak e associata in GEMODO a uno o piu' sistemi
+richiedenti.
+
+Fields:
+
+- `client_id`: identificativo del client tecnico o applicativo, ad esempio `geban-backend`.
+- `audience_attesa`: audience prevista per chiamare GEMODO.
+- `ruoli_claim_richiesti`: ruoli o claim generali richiesti dal token.
+- `sistemi_abilitati`: sistemi richiedenti associati.
+- `stato`: `ATTIVO`, `SOSPESO`, `DA_CONFERMARE`.
+- `gestisce_credenziali`: deve essere `false` in GEMODO.
+
+Validation:
+
+- GEMODO non conserva password, segreti o credenziali del client.
+- un token valido in Keycloak non basta per usare un modello se il client non e' associato
+  a un profilo di integrazione GEMODO coerente.
+- i client reali restano configurabili finche' la spec sicurezza non chiude client,
+  audience e ruoli definitivi.
+
+### ProfiloDiIntegrazione
+
+Configurazione applicativa versionata, non credenziale, che collega sistema richiedente,
+client, stato, tipi documento, categorie, tipologie, modelli/versioni, contratti dati e
+permessi operativi.
+
+Fields:
+
+- `codice`: identificativo del profilo, ad esempio `GEBAN_RECLUTAMENTO_V1`.
+- `sistema_richiedente`: riferimento a `SistemaRichiedente`.
+- `versione`: numero o codice versione del profilo.
+- `stato`: `BOZZA`, `ATTIVO`, `SOSPESO`, `ARCHIVIATO`.
+- `client_ammessi`: client applicativi autorizzati.
+- `tipi_documento_ammessi`
+- `categorie_ammessi`
+- `tipologie_ammessi`
+- `modelli_versioni_ammessi`
+- `contratti_dati_ammessi`
+- `permessi_operativi`: catalogo, validazione, generazione bozza, generazione ufficiale,
+  stato, download.
+
+Validation:
+
+- un profilo attivo deve avere sistema richiedente, client ammessi e almeno un permesso
+  operativo esplicito.
+- le autorizzazioni fini su modelli, categorie, contratti e operazioni appartengono a
+  GEMODO, non a Keycloak.
+- un operatore builder puo' vedere o modificare modelli del profilo solo se il token ha
+  ruolo/claim generale coerente e GEMODO ha una regola applicativa che lo abilita.
+- ogni modifica a un profilo attivo deve essere tracciabile e collegata alle spec owner.
+
+### ModelloDocumentaleControllato
+
+Sorgente strutturata e versionata del layout e del contenuto documentale che il builder
+visuale manipolera' senza HTML/CSS libero.
+
+Fields:
+
+- `id`
+- `modello_versione_id`
+- `formato`: identificativo del formato controllato, ad esempio `GEMODO_DOCUMENT_V1`.
+- `pagina`: dimensione, orientamento e margini.
+- `regioni`: aree ammesse come intestazione, corpo, footer e area firme.
+- `blocchi`: elenco ordinato di `BloccoDocumento`.
+- `asset`: elenco di `AssetDocumento` referenziati.
+- `stili_ammessi`: stili riusabili controllati.
+- `placeholder_usati`
+- `spec_owner`
+
+Validation:
+
+- non deve contenere HTML, CSS o script liberi inseriti dall'utente.
+- deve usare solo blocchi, regioni, posizionamenti e stili ammessi.
+- ogni placeholder usato deve essere presente nel contratto dati o in una regola esplicita
+  del modello.
+- ogni asset referenziato deve avere identificativo, versione e hash quando disponibile.
+- una versione pubblicata deve congelare la struttura per garantire riproducibilita'.
+
+### BloccoDocumento
+
+Elemento visuale ammesso nel modello documentale.
+
+Fields:
+
+- `id`
+- `tipo`: `INTESTAZIONE`, `LOGO`, `TITOLO`, `PARAGRAFO`, `TABELLA`, `COLONNE`, `FIRMA`,
+  `FOOTER`, `INTERRUZIONE_PAGINA`.
+- `contenuto`: testo strutturato o riferimento a dati/asset.
+- `posizionamento`: `TOP`, `BODY`, `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `BOTTOM_CENTER`,
+  `INLINE`, `COLUMN_LEFT`, `COLUMN_RIGHT`.
+- `ordine`
+- `stile`
+- `placeholder_usati`
+- `regole_layout`
+
+Validation:
+
+- il tipo blocco deve essere tra quelli ammessi.
+- il posizionamento deve essere compatibile con tipo blocco e regione.
+- le tabelle devono dichiarare colonne e fonte dati strutturata.
+- le firme devono usare posizioni controllate e non coordinate arbitrarie libere.
+
+### AssetDocumento
+
+Logo, immagine o risorsa grafica referenziata dal modello.
+
+Fields:
+
+- `id`
+- `tipo`: `LOGO`, `IMMAGINE`, `TIMBRO`, `ALTRO`.
+- `nome`
+- `versione`
+- `storage_ref`
+- `hash_file`
+- `dimensioni_consentite`
+- `spec_owner`
+
+Validation:
+
+- l'asset deve essere referenziato tramite identificativo, non copiato come contenuto libero.
+- l'uso dell'asset deve rispettare dimensioni e posizionamenti consentiti.
+- asset usati in modelli pubblicati devono restare recuperabili o storicizzati.
+
 ### ScenarioEndToEnd
 
 Flusso verificabile che attraversa piu' feature.
@@ -183,6 +331,14 @@ AmbienteLocale 1--N VerificaAmbiente
 MigrationSet 1--N MatriceCopertura
 SeedDemo N--N ScenarioEndToEnd
 MockGEBAN 1--N ScenarioEndToEnd
+SistemaRichiedente 1--N ProfiloDiIntegrazione
+SistemaRichiedente 1--N ClientApplicativo
+ClientApplicativo N--N ProfiloDiIntegrazione
+ProfiloDiIntegrazione N--N ScenarioEndToEnd
+ProfiloDiIntegrazione N--N MatriceCopertura
+ModelloDocumentaleControllato 1--N BloccoDocumento
+ModelloDocumentaleControllato N--N AssetDocumento
+ModelloDocumentaleControllato N--N MatriceCopertura
 ScenarioEndToEnd 1--N MatriceCopertura
 DecisioneAperta N--N MatriceCopertura
 DecisioneAperta N--N Spec
@@ -220,3 +376,24 @@ Rules:
 - `PASS` richiede tutti i servizi obbligatori disponibili.
 - `PARTIAL` non abilita scenari end-to-end completi.
 - `FAIL` deve indicare prerequisiti mancanti o servizi non raggiungibili.
+
+### SistemaRichiedente e ProfiloDiIntegrazione
+
+```text
+SistemaRichiedente: ATTIVO -> SOSPESO
+SistemaRichiedente: SOSPESO -> ATTIVO
+SistemaRichiedente: ATTIVO -> ARCHIVIATO
+
+ProfiloDiIntegrazione: BOZZA -> ATTIVO
+ProfiloDiIntegrazione: ATTIVO -> SOSPESO
+ProfiloDiIntegrazione: SOSPESO -> ATTIVO
+ProfiloDiIntegrazione: ATTIVO -> ARCHIVIATO
+```
+
+Rules:
+
+- `ATTIVO` richiede client, ruoli/claim generali attesi, permessi operativi e contratto
+  applicativo documentati.
+- `SOSPESO` impedisce nuove generazioni operative ma mantiene consultazione/audit secondo
+  autorizzazione.
+- `ARCHIVIATO` non e' utilizzabile per nuovi scenari operativi.

@@ -12,6 +12,9 @@ actors:
 
 shared_inputs:
   sistema_richiedente: GEBAN
+  client_id: geban-backend
+  profilo_integrazione: GEBAN_RECLUTAMENTO_V1
+  model_template_format: GEMODO_DOCUMENT_V1
   tipo_documento: BANDO_CONCORSO
   categoria_documento: DEMO
   variante_modello: STANDARD
@@ -29,6 +32,8 @@ scenarios:
       - stato generazione
     expected_outcome:
       - modello pubblicato demo trovato
+      - sistema richiedente e profilo integrazione autorizzati
+      - modello documentale controllato senza HTML/CSS libero disponibile
       - schema dati restituito
       - payload valido accettato
       - generazione tracciata
@@ -91,3 +96,6 @@ coverage_requirements:
   - every scenario must be mapped to a spec owner and requirement before task generation
   - unauthorized and failed scenarios are mandatory, not optional
   - mock must not call internal builder or database interfaces directly
+  - a valid Keycloak-like client identity is not sufficient without a matching GEMODO integration profile
+  - scenarios must distinguish coarse roles or claims from fine-grained GEMODO profile permissions
+  - generated documents must come from a controlled document model, not free HTML or CSS authored by users

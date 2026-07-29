@@ -37,11 +37,12 @@ foundation feature.
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Define shared quality contracts, configuration loaders and validation helpers
-that block all user stories.
+that block all user stories, including the Keycloak/GEMODO authorization boundary and
+integration profile manifests and controlled document model seeds.
 
 **CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta and VerificaAmbiente in `backend/app/quality/schemas.py`
+- [ ] T009 Create quality manifest schema models for AmbienteLocale, ServizioLocale, SeedDemo, ScenarioEndToEnd, MatriceCopertura, DecisioneAperta, VerificaAmbiente, SistemaRichiedente, ClientApplicativo, ProfiloDiIntegrazione, ModelloDocumentaleControllato, BloccoDocumento and AssetDocumento in `backend/app/quality/schemas.py`
 - [ ] T010 Create YAML manifest loading utility with validation errors in `backend/app/quality/manifest_loader.py`
 - [ ] T011 Create shared quality error types for prerequisito mancante, contratto non valido, seed sensibile and decisione bloccante in `backend/app/quality/errors.py`
 - [ ] T012 Create local quality manifest seed from `quality-readiness-contract.yaml` in `infra/local/quality-readiness.local.yaml`
@@ -50,6 +51,14 @@ that block all user stories.
 - [ ] T015 [P] Create backend test fixtures for loading quality manifests and mock scenarios in `backend/tests/support/quality_fixtures.py`
 - [ ] T016 [P] Create OpenAPI aggregation placeholder for future GEBAN-facing contracts in `infra/openapi/README.md`
 - [ ] T017 Document the blocking rule for open decisions before implementation in `docs/project-map.md`
+- [ ] T018 Create local integration profile manifest for GEBAN, client `geban-backend`, profile `GEBAN_RECLUTAMENTO_V1`, allowed models and operations in `infra/local/integration-profiles.local.yaml`
+- [ ] T019 Create Keycloak/GEMODO authorization boundary manifest with configurable audience, roles/claims and no credential storage in `infra/local/keycloak/authorization-boundary.local.yaml`
+- [ ] T020 [P] Create integration profile validation helper for systems, clients, profiles and fine-grained permissions in `backend/app/quality/integration_profile.py`
+- [ ] T021 [P] Create backend test support data for systems, clients and profiles in `backend/tests/support/integration_profiles.py`
+- [ ] T022 Create controlled document model seed contract with allowed page, region, block, style, asset, signature and placeholder structures in `infra/local/document-models/bando-concorso-standard-v1.yaml`
+- [ ] T023 Create controlled document model validation helper rejecting free HTML, free CSS, scripts, unsupported blocks and unavailable placeholders in `backend/app/quality/document_model.py`
+- [ ] T024 [P] Create backend test support data for controlled document models and assets in `backend/tests/support/document_models.py`
+- [ ] T025 [P] Create documentation note for visual builder as controlled editor, not HTML editor, in `infra/local/document-models/README.md`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel.
 
@@ -66,21 +75,21 @@ they are not.
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Create contract test for quality readiness manifest required sections in `backend/tests/contract/test_quality_readiness_contract.py`
-- [ ] T019 [P] [US1] Create integration test for local environment verification PASS/PARTIAL/FAIL outcomes, including frontend healthcheck, in `backend/tests/integration/test_environment_verification.py`
-- [ ] T020 [P] [US1] Create integration test that rejects seed demo entries with real or sensitive data in `backend/tests/integration/test_seed_demo_validation.py`
+- [ ] T026 [P] [US1] Create contract test for quality readiness manifest required sections in `backend/tests/contract/test_quality_readiness_contract.py`
+- [ ] T027 [P] [US1] Create integration test for local environment verification PASS/PARTIAL/FAIL outcomes, including frontend healthcheck, in `backend/tests/integration/test_environment_verification.py`
+- [ ] T028 [P] [US1] Create integration test that rejects seed demo entries with real or sensitive data in `backend/tests/integration/test_seed_demo_validation.py`
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Implement AmbienteLocale and ServizioLocale validation logic in `backend/app/quality/environment.py`
-- [ ] T022 [P] [US1] Implement SeedDemo validation logic with mandatory demo marker and sensitive-data guard in `backend/app/quality/seed_demo.py`
-- [ ] T023 [US1] Implement VerificaAmbiente service that evaluates backend, frontend, database, identity, storage and mock service healthchecks in `backend/app/quality/environment_verifier.py`
-- [ ] T024 [US1] Implement CLI entrypoint for local environment verification in `backend/app/quality/cli.py`
-- [ ] T025 [US1] Create initial schema baseline migration and migration ownership documentation in `backend/alembic/versions/0001_initial_schema.py`, `backend/alembic/README.md`
-- [ ] T026 [US1] Create demo seed catalog manifest for highlighted GEBAN/SOL typologies TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP and MOB, including SOL codes and demo categories, in `infra/local/postgres/seed-demo-catalog.yaml`
-- [ ] T027 [US1] Create Keycloak local realm planning manifest with configurable GEMODO user roles, GEBAN technical client placeholder and mock principal notes in `infra/local/keycloak/realm-gemodo.local.json`
-- [ ] T028 [US1] Create documentale mock readiness manifest in `infra/local/documentale-mock/readiness.yaml`
-- [ ] T029 [US1] Update setup validation steps for services, migrations and seed demo in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
+- [ ] T029 [P] [US1] Implement AmbienteLocale and ServizioLocale validation logic in `backend/app/quality/environment.py`
+- [ ] T030 [P] [US1] Implement SeedDemo validation logic with mandatory demo marker and sensitive-data guard in `backend/app/quality/seed_demo.py`
+- [ ] T031 [US1] Implement VerificaAmbiente service that evaluates backend, frontend, database, identity, storage and mock service healthchecks in `backend/app/quality/environment_verifier.py`
+- [ ] T032 [US1] Implement CLI entrypoint for local environment verification in `backend/app/quality/cli.py`
+- [ ] T033 [US1] Create initial schema baseline migration and migration ownership documentation in `backend/alembic/versions/0001_initial_schema.py`, `backend/alembic/README.md`
+- [ ] T034 [US1] Create demo seed catalog manifest for highlighted GEBAN/SOL typologies TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP and MOB, including SOL codes and demo categories, in `infra/local/postgres/seed-demo-catalog.yaml`
+- [ ] T035 [US1] Create Keycloak local realm planning manifest with configurable GEMODO user roles, GEBAN technical client placeholder and mock principal notes in `infra/local/keycloak/realm-gemodo.local.json`
+- [ ] T036 [US1] Create documentale mock readiness manifest in `infra/local/documentale-mock/readiness.yaml`
+- [ ] T037 [US1] Update setup validation steps for services, migrations and seed demo in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
 
 **Checkpoint**: User Story 1 can be validated independently with environment readiness,
 migrations/seed checks and no dependency on GEBAN reale.
@@ -97,21 +106,21 @@ are mapped to contracts and expected outcomes.
 
 ### Tests for User Story 2
 
-- [ ] T030 [P] [US2] Create contract test validating `mock-geban/scenarios/minimum-e2e.yaml` against `specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml` in `backend/tests/contract/test_mock_geban_scenarios_contract.py`
-- [ ] T031 [P] [US2] Create integration test for mock GEBAN valid flow catalog-to-status in `backend/tests/e2e/test_mock_geban_valid_flow.py`
-- [ ] T032 [P] [US2] Create integration test for payload invalid, idempotent retry, idempotent conflict, failed generation and unauthorized access scenarios in `backend/tests/e2e/test_mock_geban_error_flows.py`
+- [ ] T038 [P] [US2] Create contract test validating `mock-geban/scenarios/minimum-e2e.yaml` against `specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml` in `backend/tests/contract/test_mock_geban_scenarios_contract.py`
+- [ ] T039 [P] [US2] Create integration test for mock GEBAN valid flow catalog-to-status in `backend/tests/e2e/test_mock_geban_valid_flow.py`
+- [ ] T040 [P] [US2] Create integration test for payload invalid, idempotent retry, idempotent conflict, failed generation and unauthorized access scenarios in `backend/tests/e2e/test_mock_geban_error_flows.py`
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Implement ScenarioEndToEnd schema parsing and validation in `backend/app/quality/scenario.py`
-- [ ] T034 [P] [US2] Create mock GEBAN payload for valid BANDO_CONCORSO generation with common fields, selected model version and optional `Bando Inglese` data in `mock-geban/payloads/bando-concorso-valid.json`
-- [ ] T035 [P] [US2] Create mock GEBAN payload for invalid BANDO_CONCORSO validation covering missing required fields, invalid SOL typology and missing English fields when `Bando Inglese` is true in `mock-geban/payloads/bando-concorso-invalid.json`
-- [ ] T036 [US2] Implement mock GEBAN scenario runner skeleton using public contract names in `mock-geban/scenario_runner.py`
-- [ ] T037 [US2] Implement guard that rejects mock scenarios using internal API or database shortcuts in `backend/app/quality/mock_contract_guard.py`
-- [ ] T038 [US2] Create expected outcomes manifest for E2E-001 through E2E-006, including two outputs for English-enabled generation, in `mock-geban/scenarios/expected-outcomes.yaml`
-- [ ] T039 [US2] Create audit expectations manifest for generation, download, conflict and authorization denial in `infra/local/audit-expectations.yaml`
-- [ ] T040 [US2] Add mock GEBAN usage and scenario execution notes in `mock-geban/README.md`
-- [ ] T041 [US2] Update quickstart scenarios for valid flow, error flow, idempotency and unauthorized access in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
+- [ ] T041 [P] [US2] Implement ScenarioEndToEnd schema parsing and validation in `backend/app/quality/scenario.py`
+- [ ] T042 [P] [US2] Create mock GEBAN payload for valid BANDO_CONCORSO generation with common fields, selected model version and optional `Bando Inglese` data in `mock-geban/payloads/bando-concorso-valid.json`
+- [ ] T043 [P] [US2] Create mock GEBAN payload for invalid BANDO_CONCORSO validation covering missing required fields, invalid SOL typology and missing English fields when `Bando Inglese` is true in `mock-geban/payloads/bando-concorso-invalid.json`
+- [ ] T044 [US2] Implement mock GEBAN scenario runner skeleton using public contract names in `mock-geban/scenario_runner.py`
+- [ ] T045 [US2] Implement guard that rejects mock scenarios using internal API or database shortcuts in `backend/app/quality/mock_contract_guard.py`
+- [ ] T046 [US2] Create expected outcomes manifest for E2E-001 through E2E-006, including two outputs for English-enabled generation, in `mock-geban/scenarios/expected-outcomes.yaml`
+- [ ] T047 [US2] Create audit expectations manifest for generation, download, conflict and authorization denial in `infra/local/audit-expectations.yaml`
+- [ ] T048 [US2] Add mock GEBAN usage and scenario execution notes in `mock-geban/README.md`
+- [ ] T049 [US2] Update quickstart scenarios for valid flow, error flow, idempotency and unauthorized access in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
 
 **Checkpoint**: User Story 2 can be validated independently through mock GEBAN scenario
 manifests and e2e tests against public contracts.
@@ -128,18 +137,18 @@ decision has owner, impacted specs, status and blocking phase.
 
 ### Tests for User Story 3
 
-- [ ] T042 [P] [US3] Create contract test for decision register required fields and statuses in `backend/tests/contract/test_open_decisions_contract.py`
-- [ ] T043 [P] [US3] Create integration test for blocking critical decisions before implementation readiness in `backend/tests/integration/test_open_decision_gates.py`
-- [ ] T044 [P] [US3] Create integration test for coverage matrix mapping scenarios to requirements and contracts in `backend/tests/integration/test_coverage_matrix.py`
+- [ ] T050 [P] [US3] Create contract test for decision register required fields and statuses in `backend/tests/contract/test_open_decisions_contract.py`
+- [ ] T051 [P] [US3] Create integration test for blocking critical decisions before implementation readiness in `backend/tests/integration/test_open_decision_gates.py`
+- [ ] T052 [P] [US3] Create integration test for coverage matrix mapping scenarios to requirements and contracts in `backend/tests/integration/test_coverage_matrix.py`
 
 ### Implementation for User Story 3
 
-- [ ] T045 [P] [US3] Implement DecisioneAperta schema and state transition validation in `backend/app/quality/decision.py`
-- [ ] T046 [P] [US3] Implement MatriceCopertura schema and coverage status validation in `backend/app/quality/coverage.py`
-- [ ] T047 [US3] Create initial open decisions register for proposal section 17 in `docs/decision-register.yaml`
-- [ ] T048 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-030, and spec owners in `docs/quality-coverage-matrix.yaml`
-- [ ] T049 [US3] Implement readiness gate that fails on silent critical assumptions in `backend/app/quality/readiness_gate.py`
-- [ ] T050 [US3] Document decision update workflow and propagation to spec owners in `docs/decision-workflow.md`
+- [ ] T053 [P] [US3] Implement DecisioneAperta schema and state transition validation in `backend/app/quality/decision.py`
+- [ ] T054 [P] [US3] Implement MatriceCopertura schema and coverage status validation in `backend/app/quality/coverage.py`
+- [ ] T055 [US3] Create initial open decisions register for proposal section 17 in `docs/decision-register.yaml`
+- [ ] T056 [US3] Create coverage matrix linking E2E scenarios, requirements including FR-027 through FR-038, and spec owners in `docs/quality-coverage-matrix.yaml`
+- [ ] T057 [US3] Implement readiness gate that fails on silent critical assumptions in `backend/app/quality/readiness_gate.py`
+- [ ] T058 [US3] Document decision update workflow and propagation to spec owners in `docs/decision-workflow.md`
 
 **Checkpoint**: User Story 3 can be validated independently by checking decision register,
 coverage matrix and readiness gate outcomes.
@@ -150,12 +159,12 @@ coverage matrix and readiness gate outcomes.
 
 **Purpose**: Final verification and documentation updates across the foundation feature.
 
-- [ ] T051 [P] Update project map status for `009-fondamenta-mock-test-qualita` after selected implementation scope is completed in `docs/project-map.md`
-- [ ] T052 [P] Add generated documentation notes for quality manifests and mock GEBAN in `README.md`
-- [ ] T053 [P] Add concrete success and functional error examples for mock-facing contracts in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`
-- [ ] T054 Run Python syntax and YAML validation for `backend/app/quality/`, `infra/local/`, `mock-geban/` and `docs/*.yaml`
-- [ ] T055 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`
-- [ ] T056 Review `specs/009-fondamenta-mock-test-qualita/quickstart.md` against implemented task outputs and update expected outcomes
+- [ ] T059 [P] Update project map status for `009-fondamenta-mock-test-qualita` after selected implementation scope is completed in `docs/project-map.md`
+- [ ] T060 [P] Add generated documentation notes for quality manifests and mock GEBAN in `README.md`
+- [ ] T061 [P] Add concrete success and functional error examples for mock-facing contracts in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`
+- [ ] T062 Run Python syntax and YAML validation for `backend/app/quality/`, `infra/local/`, `mock-geban/` and `docs/*.yaml`
+- [ ] T063 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`
+- [ ] T064 Review `specs/009-fondamenta-mock-test-qualita/quickstart.md` against implemented task outputs and update expected outcomes
 
 ---
 
@@ -186,14 +195,14 @@ coverage matrix and readiness gate outcomes.
 ## Parallel Opportunities
 
 - Setup tasks T005-T008 can run in parallel after T001.
-- Foundational tasks T014-T016 can run in parallel after T009-T013 are scoped.
-- US1 tests T018-T020 can run in parallel.
-- US1 validation components T021 and T022 can run in parallel.
-- US2 tests T030-T032 can run in parallel.
-- US2 payload tasks T034 and T035 can run in parallel with T033.
-- US3 tests T042-T044 can run in parallel.
-- US3 schema tasks T045 and T046 can run in parallel.
-- Polish documentation tasks T051-T053 can run in parallel.
+- Foundational tasks T014-T016, T020-T021 and T024-T025 can run in parallel after T009-T013 are scoped.
+- US1 tests T026-T028 can run in parallel.
+- US1 validation components T029 and T030 can run in parallel.
+- US2 tests T038-T040 can run in parallel.
+- US2 payload tasks T042 and T043 can run in parallel with T041.
+- US3 tests T050-T052 can run in parallel.
+- US3 schema tasks T053 and T054 can run in parallel.
+- Polish documentation tasks T059-T061 can run in parallel.
 
 ## Parallel Example: User Story 1
 
@@ -224,7 +233,7 @@ Task: "Create initial open decisions register for proposal section 17 in docs/de
 ### MVP First (User Story 1 Only)
 
 1. Complete Phase 1 setup.
-2. Complete Phase 2 foundational schemas, manifests and fixtures.
+2. Complete Phase 2 foundational schemas, manifests, integration profiles, controlled document model seeds and fixtures.
 3. Complete Phase 3 User Story 1.
 4. Stop and validate environment readiness, migrations/seed demo and prerequisiti.
 

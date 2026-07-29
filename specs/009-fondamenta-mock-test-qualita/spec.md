@@ -33,6 +33,9 @@
 - Q: Quali tipologie iniziali GEBAN deve gestire tra quelle SOL? -> A: Le tipologie evidenziate nel documento GEBAN sono TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP e MOB, ciascuna associata al codice SOL atteso per l'integrazione GEBAN-SOL.
 - Q: Qual e' il flusso contrattuale GEBAN-GEMODO per scegliere e generare il modello? -> A: GEBAN condivide con GEMODO il dominio tipologie; dopo scelta di tipologia e data inserimento e dopo valorizzazione dei campi obbligatori, chiama GEMODO per ottenere i modelli validi alla data, conserva la versione scelta e richiede il PDF inviando versione modello e dati obbligatori.
 - Q: Quale linea Keycloak proponiamo per utenti GEMODO e chiamate GEBAN? -> A: Per utenti GEMODO si propone login SSO Keycloak con client/ruoli GEMODO. Per GEBAN si propone chiamata backend-to-backend: GEBAN autorizza l'utente sul bando, poi `geban-backend` chiama `gemodo-backend` con token tecnico; utente reale e contesto bando passano nel payload per audit, tracciabilita' e idempotenza. La configurazione esatta dei client resta da confermare con il team Keycloak/GEBAN.
+- Q: Keycloak deve decidere direttamente quali tipologie, categorie o modelli un utente o sistema puo' usare? -> A: No. Keycloak resta sorgente di identita', autenticazione, client tecnici e ruoli/claim generali; GEMODO mantiene l'autorizzazione applicativa fine tramite sistemi richiedenti e profili di integrazione versionati, associando client, stato, tipi documento, categorie, tipologie, modelli/versioni, contratti dati e permessi operativi.
+- Q: Come si separano operatori umani GEMODO e applicazioni chiamanti come GEBAN, GRADUATORIE o CHECKIN? -> A: Gli operatori umani entrano in GEMODO con token SSO e ruoli/claim che abilitano admin, builder o consultazione per uno o piu' profili applicativi; le applicazioni chiamanti usano client tecnici autorizzati e sono registrate in GEMODO come sistemi richiedenti con profili di integrazione. GEMODO non gestisce password o credenziali, ma governa quali profili, modelli e operazioni sono disponibili.
+- Q: Come deve essere salvata la struttura visuale del documento senza builder nella prima fase e con builder in futuro? -> A: Il modello deve usare una sorgente documentale strutturata e versionata, composta da pagina, margini, regioni, blocchi ammessi, posizionamenti controllati, stili consentiti, asset, tabelle, firme e placeholder. L'utente del builder futuro non scrive HTML o CSS libero: lavora in un editor visuale limitato tipo word processor controllato; GEMODO salva e valida la struttura, poi il renderer produce internamente il formato necessario al PDF.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -131,6 +134,13 @@ bloccare la copertura ma impedire scelte implicite.
 - Mock GEBAN che seleziona un modello senza conservare e reinviare la versione modello scelta.
 - Chiamata GEBAN-GEMODO implementata assumendo token utente o token exchange obbligatorio prima della conferma Keycloak.
 - Dati utente e contesto bando messi nel token tecnico invece che nel payload applicativo.
+- Token Keycloak valido ma privo di ruolo o claim coerente con il profilo applicativo richiesto in GEMODO.
+- Utente con ruolo builder generico che modifica modelli riservati a GEBAN senza autorizzazione fine sul profilo di integrazione.
+- Client tecnico autorizzato in Keycloak che tenta di usare un modello, categoria o tipo output non abilitato dal profilo applicativo GEMODO.
+- Builder visuale che permette HTML, CSS o script liberi invece di blocchi documentali ammessi.
+- Template demo che posiziona logo, intestazione, firme, tabelle o colonne senza struttura controllata e validabile.
+- Asset grafico usato nel modello senza riferimento versionato, hash o autorizzazione.
+- Firma o blocco posizionato in modo non supportato dal formato controllato.
 
 ## Requirements *(mandatory)*
 
@@ -168,6 +178,12 @@ bloccare la copertura ma impedire scelte implicite.
 - **FR-030**: I contratti demo MUST escludere `Data inizio` dal payload obbligatorio, perche' il documento GEBAN indica che non va gestita.
 - **FR-031**: Le fondamenta sicurezza MUST restare configurabili finche' Keycloak non conferma client, audience e ruoli; in locale/test devono supportare un principal mock senza hardcodare token exchange o nomi client definitivi.
 - **FR-032**: Gli scenari GEBAN-GEMODO MUST assumere come baseline proposta token tecnico `geban-backend` verso `gemodo-backend`, con utente reale e contesto bando nel payload applicativo per audit, tracciabilita' e idempotenza.
+- **FR-033**: Il progetto MUST distinguere utenti umani, client tecnici e sistemi richiedenti; GEMODO non deve gestire password o credenziali, ma deve modellare profili applicativi che autorizzano sistemi e utenti su tipi documento, categorie, tipologie, modelli/versioni, contratti dati e operazioni.
+- **FR-034**: Gli scenari di qualita' MUST verificare che Keycloak fornisca identita', client, audience e ruoli/claim generali, mentre GEMODO applica l'autorizzazione fine sui propri profili di integrazione e sugli oggetti documentali configurati.
+- **FR-035**: Gli scenari admin/builder MUST assumere che un operatore possa vedere o modificare solo i profili e i modelli per cui il token abilita l'accesso e per cui GEMODO ha una regola applicativa coerente; un admin applicativo autorizzato puo' governare sistemi richiedenti, profili, stati e abilitazioni senza gestire credenziali.
+- **FR-036**: I seed demo e i contratti di qualita' MUST rappresentare la struttura visuale del documento come modello documentale controllato e versionato, non come HTML/CSS libero inserito dall'utente.
+- **FR-037**: Il modello documentale controllato MUST supportare almeno pagina e margini, intestazione, logo/asset, titolo, paragrafi, tabelle semplici, colonne controllate, firme posizionabili, footer, interruzioni pagina, stili ammessi e placeholder selezionabili.
+- **FR-038**: Gli scenari di qualita' MUST verificare che il builder futuro sia assunto come editor visuale limitato che manipola la struttura controllata del modello e che il renderer PDF possa usare un formato tecnico generato internamente senza esporre HTML libero all'utente.
 
 ### Key Entities
 
@@ -183,6 +199,9 @@ bloccare la copertura ma impedire scelte implicite.
 - **Contratto Demo**: esempio di richiesta, risposta o errore allineato ai dati demo.
 - **Blocco Critico**: decisione o prerequisito che impedisce planning o implementazione sicura di una parte.
 - **Profilo Integrazione GEBAN**: configurazione versionata che associa GEBAN a categorie, sottocategorie, modelli richiamabili, placeholder/campi concordati e regole di autorizzazione per le chiamate operative.
+- **Sistema Richiedente**: applicazione esterna o modulo autorizzato a consumare contratti e generazione documenti GEMODO, ad esempio GEBAN, GRADUATORIE o CHECKIN.
+- **Client Applicativo**: identita' tecnica riconosciuta da Keycloak e associata in GEMODO a uno o piu' sistemi richiedenti e profili di integrazione.
+- **Profilo Di Integrazione**: configurazione applicativa versionata, non credenziale, che collega sistema richiedente, client, stato, tipi documento, categorie, tipologie, modelli/versioni, contratti dati e permessi operativi.
 - **Bando Multiplo**: bando con padre e figli rappresentato, per la generazione, da un unico PDF del padre che contiene i dati rilevanti dei figli.
 - **Ribando**: nuovo bando collegato a un bando originario, con nuovo documento e nuovi riferimenti amministrativi.
 - **Bando Inglese**: richiesta GEBAN che, se attiva, produce oltre al modello italiano anche un modello/output inglese integrale tradotto usando i campi inglesi trasmessi.
@@ -190,6 +209,10 @@ bloccare la copertura ma impedire scelte implicite.
 - **Campo Comune GEBAN**: dato della bozza bando inviato a GEMODO per generazione e, in parte, usato da GEBAN per SOL.
 - **Principal GEMODO**: identita' applicativa ricostruita da token Keycloak reale o mock locale, con tipo chiamante, ruoli e contesto minimo.
 - **Client Tecnico GEBAN**: client Keycloak server-to-server autorizzato a chiamare le API operative GEMODO per conto del sistema GEBAN.
+- **Modello Documentale Controllato**: sorgente strutturata e versionata del layout e contenuto del documento, composta da pagina, blocchi, regioni, stili ammessi, asset e placeholder; non e' HTML libero.
+- **Blocco Documento**: elemento visuale ammesso nel modello, ad esempio intestazione, logo, titolo, paragrafo, tabella, colonna, firma, footer o interruzione pagina.
+- **Asset Documento**: logo, immagine o risorsa grafica referenziata dal modello con identificativo, versione e hash quando disponibile.
+- **Renderer PDF**: componente che trasforma modello documentale controllato e dati validati in PDF server-side, usando eventuali formati tecnici intermedi non modificabili liberamente dall'utente.
 
 ### Decision Ownership
 
@@ -200,6 +223,7 @@ bloccare la copertura ma impedire scelte implicite.
 - **Regole definitive di idempotenza e rigenerazione**: owner `005`; assunzione corrente nuova chiave funzionale o revisione esplicita per rigenerazione volontaria.
 - **Storage definitivo per PDF**: owner `005` con supporto `004`; assunzione corrente riferimento documentale stabile indipendente dal backend fisico.
 - **Regole di sicurezza per API catalogo e generazione**: owner `006`; assunzione corrente da confermare: utenti GEMODO con login SSO e ruoli GEMODO; chiamate operative GEBAN tramite token tecnico `geban-backend` verso audience/client API GEMODO, con utente reale e contesto bando nel payload per audit. Token exchange/on-behalf-of resta variante possibile solo se confermata dal team Keycloak/GEBAN.
+- **Confine Keycloak/GEMODO nelle autorizzazioni applicative**: owner `006` con supporto `001`, `002`, `007` e `009`; decisione di comportamento attesa: Keycloak autentica utenti e client, valida audience e fornisce ruoli/claim generali, mentre GEMODO decide l'accesso fine a profili di integrazione, tipi documento, categorie, tipologie, modelli/versioni, contratti e operazioni. GEMODO non conserva password o segreti dei chiamanti. Fase bloccante: `PLAN` della `006` e data model dei profili in `001`/`002` prima di implementare autorizzazioni reali.
 - **Profilo GEBAN versionato e mappatura campi concordata**: owner `001` con supporto `002`, `003`, `004`, `006` e `009`; assunzione corrente confermata come direzione funzionale: gestione ibrida con profilo GEBAN creato in GEMODO, versionato tramite configurazione, che associa categorie, sottocategorie, modelli richiamabili da GEBAN e placeholder/campi gia' concordati per la generazione. Le API restano disponibili per esporre catalogo e campi richiesti, ma lato creazione modello l'operatore GEMODO deve poter usare i placeholder fissati per il profilo GEBAN. Fase bloccante: `PLAN`/`TASKS` della `001`, `002`, `003` e `006` prima di implementare contratto dati operativo, builder e autorizzazioni.
 - **Configurazione del profilo GEBAN**: owner `001` e `002` con supporto `009`; da definire formato della configurazione, se file versionato o dati gestiti nel builder, stati del profilo, approvazione/pubblicazione, archiviazione e propagazione ai modelli gia' pubblicati. Fase bloccante: `PLAN` della `001` e `002`.
 - **Identificativi e mapping modello GEBAN-GEMODO**: owner `001`; decisione parzialmente chiarita: GEBAN deve ricevere da GEMODO la lista dei modelli validi alla data, far scegliere all'utente il modello/versione, conservare la versione scelta in tabella GEBAN e reinviarla con i dati obbligatori per la generazione. Resta da formalizzare nel contratto API il nome tecnico dell'identificativo, coerente con `modello_versione_id`, e il mapping con eventuali codici profilo o codici GEBAN. Fase bloccante: contratto API della `001`.
@@ -208,6 +232,7 @@ bloccare la copertura ma impedire scelte implicite.
 - **Autorizzazioni del profilo GEBAN**: owner `006` con supporto `001`; da definire ruoli, claim, audience, client e regole che autorizzano GEBAN a usare solo profili/modelli consentiti, impedendo l'uso da chiamanti non GEBAN. Fase bloccante: implementazione sicurezza e audit.
 - **Versionamento mapping campi e versione modello**: owner `001`, `002` e `003`; da definire cosa succede quando cambia un campo concordato o un placeholder: nuova versione profilo, nuova versione modello, bozza derivata o entrambe. Fase bloccante: pubblicazione modello e validazione placeholder.
 - **Formato dei campi complessi**: owner `003` con supporto `001`; assunzione corrente schema strutturato con sotto-campi, tipi, obbligatorieta' e vincoli.
+- **Formato visuale del modello documentale**: owner `003` con supporto `004`, `007` e `009`; decisione di comportamento attesa: il builder deve essere un editor visuale controllato, non un editor HTML. La struttura salvata deve essere un modello documentale versionato con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati. Fase bloccante: `PLAN`/`TASKS` della `003`, `004` e `007` prima di implementare builder visuale e rendering definitivo.
 - **Gestione lingua italiano/inglese del bando**: owner `001` e `004` con supporto `003`; decisione confermata: nel nuovo flusso va previsto il modello inglese integrale tradotto. GEBAN invia il flag `Bando Inglese` Si/No e, se Si, i campi inglesi compilati a video; GEMODO usa la stessa tipologia modello e restituisce due output/modelli, italiano e inglese. Fase bloccante: contratto dati, validazione campi IT/EN e generazione documento.
 - **Campi comuni GEBAN per generazione**: owner `001` con supporto `003`, `004` e `009`; decisione parzialmente chiarita dal documento GEBAN: il payload comune deve coprire codice bando, numero posti, bando multiplo/riferimento, titolo e descrizione ridotta IT/EN, sedi e strutture IT/EN, profilo/livello, tipo selezione, medaglione IT/EN, ribando/riferimento, PTA, flag inPA/Gazzetta e progetto di riferimento per TD/TDPNRR; `Data inizio` non va gestita. Fase bloccante: contratto dati della `001` e scenari mock.
 - **Client Keycloak GEMODO e GEBAN**: owner `006` con supporto `009`; decisione proposta in attesa di conferma: configurare accesso utenti GEMODO con client/ruoli GEMODO e chiamate GEBAN-GEMODO con token tecnico server-to-server. Da confermare se CNR preferisce due client `gemodo-frontend`/`gemodo-backend` o un unico client GEMODO, se esiste gia' `geban-backend`, audience attesa, ruoli tecnici e dati audit disponibili nel payload. Fase bloccante: implementazione sicurezza reale, non Phase 1/2 della `009`.
@@ -229,6 +254,7 @@ bloccare la copertura ma impedire scelte implicite.
 - **SC-006**: Il 100% dei contratti usati dal mock GEBAN ha esempi di successo e almeno un esempio di errore funzionale.
 - **SC-007**: Il 100% delle decisioni critiche aperte indica fase bloccata o assunzione provvisoria prima della generazione dei task implementativi.
 - **SC-008**: Gli scenari minimi coprono almeno un caso autorizzato e un caso non autorizzato per consultazione o download.
+- **SC-009**: Il 100% dei modelli demo usati per generazione ha struttura documentale controllata, versionata e priva di HTML/CSS libero o script inseriti dall'utente.
 
 ## Assumptions
 
@@ -240,6 +266,12 @@ bloccare la copertura ma impedire scelte implicite.
   la parte impattata non entra in implementazione senza conferma o sospensione documentata.
 - Gli scenari minimi devono restare coerenti con sicurezza, audit, idempotenza e confini
   GEBAN/GEMODO gia' definiti nelle spec collegate.
+- Keycloak e' assunto come sorgente di identita', ruoli/claim generali e client tecnici;
+  GEMODO resta proprietario dei profili applicativi e delle autorizzazioni fini sui propri
+  modelli, contratti e operazioni.
+- Il builder visuale futuro non consentira' all'utente di scrivere HTML/CSS libero; la
+  prima fase usera' seed/configurazioni per lo stesso modello documentale controllato che
+  il builder manipolera' in seguito.
 - Le risposte raccolte il 2026-07-28 chiudono il trattamento di bando multiplo, ribando,
   lingua inglese integrale e tipologie iniziali GEBAN/SOL come input per le spec owner
   `001`, `002`, `003`, `004` e `005`.
