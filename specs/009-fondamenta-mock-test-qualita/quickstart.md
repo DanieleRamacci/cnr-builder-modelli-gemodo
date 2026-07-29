@@ -73,42 +73,76 @@ Expected:
 
 ## Scenario 3 - Mock GEBAN flusso valido
 
-1. Usare il mock GEBAN per consultare catalogo e modello pubblicato demo.
-2. Richiedere campi/schema del modello.
-3. Inviare payload demo valido.
-4. Richiedere generazione e consultare stato.
+Le spec `001`/`004`/`005`/`006` non hanno ancora `tasks.md` proprio, quindi non esiste
+ancora un endpoint HTTP GEMODO reale da chiamare (vedi `AGENTS.md`). Fino ad allora:
+
+1. Risolvere il piano dello scenario (dry run, nessuna chiamata di rete):
+
+   ```bash
+   cd backend
+   uv run python ../mock-geban/scenario_runner.py --scenario E2E-001 --payload bando-concorso-valid.json
+   ```
+
+2. Eseguire lo scenario end-to-end contro il client fake che rispetta lo stesso
+   protocollo `ClienteGemodo` (`backend/tests/support/fake_gemodo_client.py`),
+   riusando l'autorizzazione reale (`backend/app/quality/integration_profile.py`):
+
+   ```bash
+   uv run pytest tests/e2e/test_mock_geban_valid_flow.py -v
+   ```
 
 Expected:
 
-- il mock usa solo contratti pubblici;
-- il payload viene validato;
-- la generazione viene tracciata;
-- lo stato contiene informazioni coerenti con versione modello, tipo output e riferimento
-  quando disponibile.
+- il piano usa solo le operazioni pubbliche di `backend/app/quality/mock_contract_guard.py`
+  (`catalogo_modelli`, `campi_richiesti`, `valida_payload`, `genera_documento`,
+  `stato_generazione`), mai scorciatoie interne;
+- il payload demo valido (`bando-concorso-valid.json`) viene validato senza errori;
+- la generazione produce due output, italiano e inglese (`bando_inglese: true`, FR-022),
+  coerenti con `mock-geban/scenarios/expected-outcomes.yaml`;
+- lo stato risulta `COMPLETATA` e consultabile.
 
 ## Scenario 4 - Errori funzionali e idempotenza
 
-1. Inviare payload demo non valido.
-2. Ripetere una generazione valida con stessa chiave e stessi dati.
-3. Ripetere una generazione con stessa chiave e dati divergenti.
+```bash
+cd backend
+uv run pytest tests/e2e/test_mock_geban_error_flows.py -v -k "e2e_002 or e2e_003 or e2e_004"
+```
+
+1. Il payload demo non valido (`bando-concorso-invalid.json`) viene inviato: campo
+   obbligatorio mancante, tipologia SOL non valida e campi inglesi mancanti.
+2. Una generazione valida viene ripetuta con la stessa chiave di idempotenza e gli
+   stessi dati.
+3. La stessa chiave viene ripetuta con dati divergenti (es. `numero_posti` diverso).
 
 Expected:
 
-- il payload non valido produce errore funzionale;
-- retry identico restituisce generazione esistente;
-- retry divergente produce conflitto;
-- conflitto e fallimenti rilevanti sono auditabili.
+- il payload non valido produce gli errori funzionali attesi
+  (`CAMPO_OBBLIGATORIO_MANCANTE`, `TIPOLOGIA_SOL_NON_VALIDA`, `CAMPI_INGLESI_MANCANTI`,
+  vedi `infra/openapi/errors.md`);
+- il retry identico restituisce la generazione esistente (`riutilizzato: true`), senza
+  duplicati;
+- il retry con dati divergenti produce `GENERAZIONE_CONFLITTO_IDEMPOTENTE`;
+- conflitto e fallimenti attesi sono elencati in `infra/local/audit-expectations.yaml`.
 
 ## Scenario 5 - Accesso non autorizzato
 
-1. Usare un ruolo o contesto non autorizzato per consultare stato o download.
-2. Verificare risposta e audit.
+```bash
+cd backend
+uv run pytest tests/e2e/test_mock_geban_error_flows.py -v -k "e2e_006"
+```
+
+1. Un client con profilo di integrazione non attivo (`GEBAN_RECLUTAMENTO_V1` in stato
+   `BOZZA` invece di `ATTIVO`) richiede stato e download.
 
 Expected:
 
-- stato/download non espongono file, payload o dettagli non consentiti;
-- l'accesso viene rifiutato;
-- l'evento autorizzativo e' previsto dalla matrice di audit.
+- stato e download restituiscono `PROFILO_INTEGRAZIONE_NON_ABILITATO`, nessun payload o
+  file esposto;
+- l'accesso viene rifiutato anche se il client tecnico e' di per se' riconosciuto
+  (identita' Keycloak valida ma profilo GEMODO non coerente, vedi
+  `infra/local/keycloak/authorization-boundary.local.yaml`);
+- l'evento autorizzativo e' previsto da `infra/local/audit-expectations.yaml`
+  (`audit-autorizzazione-negata`).
 
 ## Scenario 6 - Matrice copertura e decisioni aperte
 

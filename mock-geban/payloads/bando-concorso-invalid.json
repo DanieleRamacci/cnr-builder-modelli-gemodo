@@ -1,0 +1,63 @@
+{
+  "_comment": "Payload demo non valido per E2E-002 (spec 009, edge cases spec.md): campo obbligatorio mancante (numero_posti), tipologia SOL non valida, campi inglesi mancanti pur avendo bando_inglese=true. 'atteso_errori' documenta gli errori funzionali attesi (infra/openapi/errors.md) per i test/scenario runner, non fa parte del payload che verrebbe inviato.",
+  "demo_marker": "DEMO",
+  "sistema_richiedente": "GEBAN",
+  "client_id": "geban-backend",
+  "profilo_integrazione": "GEBAN_RECLUTAMENTO_V1",
+  "external_context_id": "GEBAN-DEMO-2026-002-INVALID",
+  "tipo_documento": "BANDO_CONCORSO",
+  "categoria_documento": "DEMO",
+  "modello_versione_id": "demo-bando-concorso-standard-v1",
+  "data_riferimento": "2026-07-29",
+  "tipologia_bando": {
+    "codice": "XX_NON_VALIDA",
+    "codice_sol": null
+  },
+  "bando_inglese": true,
+  "dati": {
+    "codice_bando": "BANDO-DEMO-2026-002",
+    "bando_multiplo": false,
+    "bando_multiplo_riferimento": null,
+    "titolo_it": "Selezione pubblica demo non valida per test errori",
+    "descrizione_ridotta_it": "Bando demo non valido, usato per verificare gli errori funzionali.",
+    "sede_prescelta_it": "Roma",
+    "struttura_riferimento_it": "Istituto Demo CNR",
+    "sede_lavoro_it": "Roma, Area della Ricerca Roma 1",
+    "profilo_livello": "Tecnologo III livello",
+    "tipo_selezione": "Titoli ed esami",
+    "medaglione_it": "Si richiede laurea magistrale in discipline tecnico-scientifiche (demo).",
+    "ribando": false,
+    "ribando_riferimento": null,
+    "pta": false,
+    "flag_in_pa": true,
+    "flag_gazzetta": true,
+    "progetto_riferimento": "PROGETTO-DEMO-PNRR-001"
+  },
+  "atteso_errori": [
+    {
+      "campo": "dati.numero_posti",
+      "codice": "CAMPO_OBBLIGATORIO_MANCANTE",
+      "motivo": "numero_posti non presente nel payload"
+    },
+    {
+      "campo": "tipologia_bando.codice",
+      "codice": "TIPOLOGIA_SOL_NON_VALIDA",
+      "motivo": "XX_NON_VALIDA non e' una delle tipologie GEBAN/SOL ammesse (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB)"
+    },
+    {
+      "campo": "dati.titolo_en",
+      "codice": "CAMPI_INGLESI_MANCANTI",
+      "motivo": "bando_inglese=true ma titolo_en non presente"
+    },
+    {
+      "campo": "dati.descrizione_ridotta_en",
+      "codice": "CAMPI_INGLESI_MANCANTI",
+      "motivo": "bando_inglese=true ma descrizione_ridotta_en non presente"
+    },
+    {
+      "campo": "dati.sede_prescelta_en",
+      "codice": "CAMPI_INGLESI_MANCANTI",
+      "motivo": "bando_inglese=true ma sede_prescelta_en non presente"
+    }
+  ]
+}

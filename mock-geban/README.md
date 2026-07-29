@@ -17,17 +17,43 @@ Contenuto:
 - `payloads/`: payload demo valido/non valido per `BANDO_CONCORSO`.
 - `scenario_runner.py`: runner che esegue gli scenari contro i contratti pubblici GEMODO.
 
-## Come si esegue
+## Come si esegue oggi (dry run / piano scenario)
 
-Verra' documentato in dettaglio in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
-(Scenario 3/4/5) man mano che i task implementativi della User Story 2 vengono completati.
-In sintesi:
+Le spec `001`/`004`/`005`/`006` non hanno ancora `tasks.md` proprio e quindi non
+espongono endpoint HTTP reali (vedi `AGENTS.md`): `scenario_runner.py` e' oggi uno
+**skeleton** che risolve il piano di uno scenario contro le sole operazioni pubbliche
+ammesse (`backend/app/quality/mock_contract_guard.py`), senza eseguire chiamate di
+rete.
 
-1. avviare l'ambiente locale (`infra/local/compose.yaml`, servizi `backend` e
-   `documentale-mock` almeno);
-2. eseguire `python mock-geban/scenario_runner.py --scenario E2E-001` (o l'id di uno degli
-   scenari `E2E-001`..`E2E-006`) puntando `GEMODO_API_BASE_URL` al backend locale;
-3. confrontare l'esito con `mock-geban/scenarios/expected-outcomes.yaml`.
+```bash
+cd backend && uv sync   # una tantum
+uv run python ../mock-geban/scenario_runner.py --scenario E2E-001 --payload bando-concorso-valid.json
+uv run python ../mock-geban/scenario_runner.py --scenario E2E-006
+```
+
+Stampa l'elenco ordinato delle operazioni pubbliche che lo scenario percorre (es. per
+`E2E-001`: `catalogo_modelli` -> `campi_richiesti` -> `valida_payload` ->
+`genera_documento` -> `stato_generazione`), utile per verificare che lo scenario sia
+ben formato e non referenzi scorciatoie interne, senza dipendere da un backend GEMODO
+in esecuzione.
+
+## Come si esegue end-to-end (test automatici)
+
+`backend/tests/e2e/test_mock_geban_valid_flow.py` e
+`backend/tests/e2e/test_mock_geban_error_flows.py` eseguono gli scenari per intero
+tramite `esegui_scenario(...)`, iniettando un client che implementa il protocollo
+`ClienteGemodo` di `scenario_runner.py`. In assenza del backend reale, i test usano
+`backend/tests/support/fake_gemodo_client.py`: uno stand-in in memoria che delega le
+decisioni di autorizzazione alla logica reale
+`backend/app/quality/integration_profile.py` (non la duplica). Quando le spec
+`001`/`004`/`005`/`006` implementeranno gli endpoint reali, uno stesso `ClienteGemodo`
+HTTP potra' sostituire il fake senza cambiare `scenario_runner.py` ne' gli scenari.
+
+```bash
+cd backend
+uv run pytest tests/e2e -v
+uv run pytest -m e2e -v
+```
 
 ## Regole
 
@@ -35,4 +61,5 @@ In sintesi:
   database interni (vedi `backend/app/quality/mock_contract_guard.py`).
 - I payload usano solo dati demo marcati `DEMO`, mai dati reali o sensibili.
 - Ogni scenario deve restare tracciabile a un requisito e a una spec owner nella matrice di
-  copertura (`docs/quality-coverage-matrix.yaml`).
+  copertura (`docs/quality-coverage-matrix.yaml`, popolata dalla User Story 3).
+- Gli esiti attesi per audit sono in `infra/local/audit-expectations.yaml`.

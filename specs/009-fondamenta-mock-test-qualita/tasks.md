@@ -20,13 +20,14 @@ testing of each story.
 
 ## Stato Implementazione (2026-07-29)
 
-Phase 1, Phase 2 and Phase 3 (T001-T037) are implemented and verified: `uv run pytest`
-in `backend/` passes 33/33 real tests (no mocked business logic), the Alembic baseline
-migration was applied and rolled back against a real local PostgreSQL, and
-`uv run gemodo-quality verifica-ambiente` runs real healthchecks (including a live
-check against the CNR test Keycloak realm). This is the MVP checkpoint from
-"Implementation Strategy" below. Phase 4 (US2 - mock GEBAN), Phase 5 (US3 - decisioni
-aperte) and Phase 6 (Polish) are **not started**.
+Phase 1, Phase 2, Phase 3 and Phase 4 (T001-T049) are implemented and verified:
+`uv run pytest` in `backend/` passes 53/53 real tests (contract + integration + e2e,
+no mocked business logic), the Alembic baseline migration was applied and rolled back
+against a real local PostgreSQL, `uv run gemodo-quality verifica-ambiente` runs real
+healthchecks (including a live check against the CNR test Keycloak realm), and
+`mock-geban/scenario_runner.py` resolves real scenario plans and runs them end-to-end
+against an injectable `ClienteGemodo`. Phase 5 (US3 - decisioni aperte) and Phase 6
+(Polish) are **not started**.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -117,21 +118,30 @@ are mapped to contracts and expected outcomes.
 
 ### Tests for User Story 2
 
-- [ ] T038 [P] [US2] Create contract test validating `mock-geban/scenarios/minimum-e2e.yaml` against `specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml` in `backend/tests/contract/test_mock_geban_scenarios_contract.py`
-- [ ] T039 [P] [US2] Create integration test for mock GEBAN valid flow catalog-to-status in `backend/tests/e2e/test_mock_geban_valid_flow.py`
-- [ ] T040 [P] [US2] Create integration test for payload invalid, idempotent retry, idempotent conflict, failed generation and unauthorized access scenarios in `backend/tests/e2e/test_mock_geban_error_flows.py`
+- [x] T038 [P] [US2] Create contract test validating `mock-geban/scenarios/minimum-e2e.yaml` against `specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml` in `backend/tests/contract/test_mock_geban_scenarios_contract.py`
+- [x] T039 [P] [US2] Create integration test for mock GEBAN valid flow catalog-to-status in `backend/tests/e2e/test_mock_geban_valid_flow.py`
+- [x] T040 [P] [US2] Create integration test for payload invalid, idempotent retry, idempotent conflict, failed generation and unauthorized access scenarios in `backend/tests/e2e/test_mock_geban_error_flows.py`
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [US2] Implement ScenarioEndToEnd schema parsing and validation in `backend/app/quality/scenario.py`
-- [ ] T042 [P] [US2] Create mock GEBAN payload for valid BANDO_CONCORSO generation with common fields, selected model version and optional `Bando Inglese` data in `mock-geban/payloads/bando-concorso-valid.json`
-- [ ] T043 [P] [US2] Create mock GEBAN payload for invalid BANDO_CONCORSO validation covering missing required fields, invalid SOL typology and missing English fields when `Bando Inglese` is true in `mock-geban/payloads/bando-concorso-invalid.json`
-- [ ] T044 [US2] Implement mock GEBAN scenario runner skeleton using public contract names in `mock-geban/scenario_runner.py`
-- [ ] T045 [US2] Implement guard that rejects mock scenarios using internal API or database shortcuts in `backend/app/quality/mock_contract_guard.py`
-- [ ] T046 [US2] Create expected outcomes manifest for E2E-001 through E2E-006, including two outputs for English-enabled generation, in `mock-geban/scenarios/expected-outcomes.yaml`
-- [ ] T047 [US2] Create audit expectations manifest for generation, download, conflict and authorization denial in `infra/local/audit-expectations.yaml`
-- [ ] T048 [US2] Add mock GEBAN usage and scenario execution notes in `mock-geban/README.md`
-- [ ] T049 [US2] Update quickstart scenarios for valid flow, error flow, idempotency and unauthorized access in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
+- [x] T041 [P] [US2] Implement ScenarioEndToEnd schema parsing and validation in `backend/app/quality/scenario.py`
+- [x] T042 [P] [US2] Create mock GEBAN payload for valid BANDO_CONCORSO generation with common fields, selected model version and optional `Bando Inglese` data in `mock-geban/payloads/bando-concorso-valid.json`
+- [x] T043 [P] [US2] Create mock GEBAN payload for invalid BANDO_CONCORSO validation covering missing required fields, invalid SOL typology and missing English fields when `Bando Inglese` is true in `mock-geban/payloads/bando-concorso-invalid.json`
+- [x] T044 [US2] Implement mock GEBAN scenario runner skeleton using public contract names in `mock-geban/scenario_runner.py`
+- [x] T045 [US2] Implement guard that rejects mock scenarios using internal API or database shortcuts in `backend/app/quality/mock_contract_guard.py`
+- [x] T046 [US2] Create expected outcomes manifest for E2E-001 through E2E-006, including two outputs for English-enabled generation, in `mock-geban/scenarios/expected-outcomes.yaml`
+- [x] T047 [US2] Create audit expectations manifest for generation, download, conflict and authorization denial in `infra/local/audit-expectations.yaml`
+- [x] T048 [US2] Add mock GEBAN usage and scenario execution notes in `mock-geban/README.md`
+- [x] T049 [US2] Update quickstart scenarios for valid flow, error flow, idempotency and unauthorized access in `specs/009-fondamenta-mock-test-qualita/quickstart.md`
+
+**Nota implementativa**: le spec `001`/`004`/`005`/`006` non hanno ancora `tasks.md`
+proprio, quindi non esiste un endpoint HTTP GEMODO reale da chiamare (AGENTS.md: nessun
+codice applicativo prima del tasks.md della relativa feature). `scenario_runner.py`
+risolve ed esegue gli scenari tramite un `ClienteGemodo` iniettabile; i test e2e usano
+`backend/tests/support/fake_gemodo_client.py`, uno stand-in in memoria per il backend
+non ancora implementato che delega le decisioni di autorizzazione alla logica reale di
+`integration_profile.py`. Quando quelle spec implementeranno gli endpoint reali, un
+client HTTP potra' sostituire il fake senza cambiare runner ne' scenari.
 
 **Checkpoint**: User Story 2 can be validated independently through mock GEBAN scenario
 manifests and e2e tests against public contracts.

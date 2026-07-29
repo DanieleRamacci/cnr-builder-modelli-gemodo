@@ -1,0 +1,82 @@
+# Esiti attesi per gli scenari E2E-001..E2E-006 (spec 009, User Story 2).
+#
+# Completa mock-geban/scenarios/minimum-e2e.yaml con dettagli verificabili (stati,
+# numero di output, codici errore attesi, chiave di idempotenza) usati da
+# scenario_runner.py e dai test e2e. I codici errore corrispondono a
+# infra/openapi/errors.md.
+#
+# Nessuna implementazione reale di generazione esiste ancora (specs 004/005/006 non
+# hanno tasks.md): questo manifest documenta il comportamento atteso che quelle spec
+# dovranno rispettare, non un'esecuzione gia' avvenuta.
+
+scenario_outcomes:
+  - scenario_id: E2E-001
+    payload_demo: bando-concorso-valid.json
+    stato_atteso: COMPLETATA
+    output_attesi:
+      - tipo_output: BOZZA
+        lingua: IT
+      - tipo_output: BOZZA
+        lingua: EN
+    note: >
+      Il payload demo ha bando_inglese=true (FR-022): la generazione deve restituire
+      due output/modelli, italiano e inglese, dalla stessa tipologia modello, non un
+      estratto sintetico.
+
+  - scenario_id: E2E-002
+    payload_demo: bando-concorso-invalid.json
+    stato_atteso: RIFIUTATO
+    output_attesi: []
+    errori_attesi:
+      - CAMPO_OBBLIGATORIO_MANCANTE
+      - TIPOLOGIA_SOL_NON_VALIDA
+      - CAMPI_INGLESI_MANCANTI
+
+  - scenario_id: E2E-003
+    payload_demo: bando-concorso-valid.json
+    chiave_idempotenza:
+      sistema_richiedente: GEBAN
+      external_context_id: GEBAN-DEMO-2026-001
+      modello_versione_id: demo-bando-concorso-standard-v1
+      tipo_output: BOZZA
+    stato_atteso: COMPLETATA
+    comportamento: >
+      Retry con la stessa chiave di idempotenza e gli stessi dati deve restituire la
+      generazione gia' esistente; nessun duplicato creato.
+
+  - scenario_id: E2E-004
+    payload_demo: bando-concorso-valid.json
+    chiave_idempotenza:
+      sistema_richiedente: GEBAN
+      external_context_id: GEBAN-DEMO-2026-001
+      modello_versione_id: demo-bando-concorso-standard-v1
+      tipo_output: BOZZA
+    stato_atteso: CONFLITTO
+    errori_attesi:
+      - GENERAZIONE_CONFLITTO_IDEMPOTENTE
+    comportamento: >
+      Stessa chiave di idempotenza (sistema richiedente, external context id, versione
+      modello, tipo output) ma dati divergenti (es. numero_posti diverso dalla prima
+      richiesta) deve produrre un conflitto auditabile, non sovrascrivere la
+      generazione esistente.
+
+  - scenario_id: E2E-005
+    payload_demo: bando-concorso-valid.json
+    stato_atteso: FALLITA
+    errori_attesi:
+      - GENERAZIONE_FALLITA
+    comportamento: >
+      Rendering PDF o validazione server-side non completata: lo stato fallito deve
+      restare consultabile, l'errore restituito deve essere sanificato (nessun dettaglio
+      tecnico interno) e deve esistere un evento audit corrispondente.
+
+  - scenario_id: E2E-006
+    payload_demo: bando-concorso-valid.json
+    ruolo_atteso_per_autorizzazione: DOCUMENTI_VIEWER
+    contesto_test: token valido ma privo di profilo di integrazione GEMODO coerente con l'operazione richiesta
+    stato_atteso: NEGATO
+    errori_attesi:
+      - PROFILO_INTEGRAZIONE_NON_ABILITATO
+    comportamento: >
+      Nessun payload o file viene esposto in risposta; l'evento autorizzativo deve
+      essere auditabile (vedi infra/local/audit-expectations.yaml).

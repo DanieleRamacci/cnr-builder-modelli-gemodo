@@ -1,0 +1,84 @@
+# Aspettative di audit per operazioni sensibili (spec 009, FR-014; costituzione,
+# principio V - Security, Audit and Controlled AI).
+#
+# Ogni riga descrive un evento che DEVE produrre un record auditabile quando le spec
+# proprietarie (004/005/006) implementano generazione, download e autorizzazione.
+# Colonne allineate a evento_audit (backend/alembic/versions/0001_initial_schema.py):
+# tipo_evento, entita_tipo, esito, attore.
+
+audit_events:
+  - id: audit-generazione-completata
+    tipo_evento: GENERAZIONE_DOCUMENTO
+    entita_tipo: generazione_documento
+    esito: SUCCESSO
+    scenario_id: E2E-001
+    spec_owner: specs/004-generazione-documenti-pdf
+    campi_minimi:
+      - sistema_richiedente
+      - external_context_id
+      - modello_versione_id
+      - richiesto_da
+      - tipo_output
+      - riferimento_documento
+    contiene_dati_reali: false
+
+  - id: audit-generazione-fallita
+    tipo_evento: GENERAZIONE_DOCUMENTO
+    entita_tipo: generazione_documento
+    esito: ERRORE
+    scenario_id: E2E-005
+    spec_owner: specs/004-generazione-documenti-pdf
+    campi_minimi:
+      - sistema_richiedente
+      - external_context_id
+      - modello_versione_id
+      - richiesto_da
+      - codice_errore
+    contiene_dati_reali: false
+
+  - id: audit-generazione-conflitto-idempotente
+    tipo_evento: GENERAZIONE_DOCUMENTO_CONFLITTO
+    entita_tipo: generazione_documento
+    esito: ERRORE
+    scenario_id: E2E-004
+    spec_owner: specs/005-storage-idempotenza-consultazione
+    campi_minimi:
+      - sistema_richiedente
+      - external_context_id
+      - modello_versione_id
+      - tipo_output
+      - richiesto_da
+      - codice_errore
+    contiene_dati_reali: false
+
+  - id: audit-download-documento
+    tipo_evento: DOWNLOAD_DOCUMENTO
+    entita_tipo: generazione_documento
+    esito: SUCCESSO
+    scenario_id: E2E-001
+    spec_owner: specs/005-storage-idempotenza-consultazione
+    campi_minimi:
+      - riferimento_documento
+      - richiesto_da
+      - modello_versione_id
+    contiene_dati_reali: false
+
+  - id: audit-autorizzazione-negata
+    tipo_evento: AUTORIZZAZIONE_NEGATA
+    entita_tipo: generazione_documento
+    esito: NEGATO
+    scenario_id: E2E-006
+    spec_owner: specs/006-sicurezza-autorizzazioni-audit
+    campi_minimi:
+      - client_id
+      - sistema_richiedente
+      - profilo_integrazione
+      - operazione_richiesta
+      - codice_errore
+    contiene_dati_reali: false
+
+rules:
+  - ogni evento con esito ERRORE o NEGATO deve restare distinguibile da un successo nella consultazione audit.
+  - nessun campo di audit puo' contenere segreti, token o credenziali (costituzione, principio V).
+  - i campi minimi elencati sono un requisito aggiuntivo, non sostituiscono i campi obbligatori di evento_audit.
+  - ogni riga deve restare collegata a uno scenario end-to-end e a una spec owner prima dell'implementazione runtime.

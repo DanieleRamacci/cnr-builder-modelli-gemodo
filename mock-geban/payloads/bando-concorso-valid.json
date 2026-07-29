@@ -1,0 +1,43 @@
+{
+  "_comment": "Payload demo valido per E2E-001/E2E-003/E2E-004 (spec 009, FR-029). modello_versione_id qui e' la stringa usata dai manifest 009 (infra/local/integration-profiles.local.yaml, seed-demo-catalog.yaml); il formato tecnico definitivo dell'identificativo resta una decisione aperta owner 001 (spec.md, 'Identificativi e mapping modello GEBAN-GEMODO').",
+  "demo_marker": "DEMO",
+  "sistema_richiedente": "GEBAN",
+  "client_id": "geban-backend",
+  "profilo_integrazione": "GEBAN_RECLUTAMENTO_V1",
+  "external_context_id": "GEBAN-DEMO-2026-001",
+  "tipo_documento": "BANDO_CONCORSO",
+  "categoria_documento": "DEMO",
+  "modello_versione_id": "demo-bando-concorso-standard-v1",
+  "data_riferimento": "2026-07-29",
+  "tipologia_bando": {
+    "codice": "TD",
+    "codice_sol": "F:jconon_call_tdet:folder"
+  },
+  "bando_inglese": true,
+  "dati": {
+    "codice_bando": "BANDO-DEMO-2026-001",
+    "numero_posti": 2,
+    "bando_multiplo": false,
+    "bando_multiplo_riferimento": null,
+    "titolo_it": "Selezione pubblica per titoli ed esami per l'assunzione di n. 2 unita' di personale a tempo determinato (demo)",
+    "titolo_en": "Public selection by qualifications and examinations for the recruitment of 2 fixed-term staff members (demo)",
+    "descrizione_ridotta_it": "Bando demo per profilo tecnologo, area amministrazione, sede di Roma.",
+    "descrizione_ridotta_en": "Demo call for a technologist profile, administration area, Rome office.",
+    "sede_prescelta_it": "Roma",
+    "sede_prescelta_en": "Rome",
+    "struttura_riferimento_it": "Istituto Demo CNR",
+    "struttura_riferimento_en": "CNR Demo Institute",
+    "sede_lavoro_it": "Roma, Area della Ricerca Roma 1",
+    "sede_lavoro_en": "Rome, Rome 1 Research Area",
+    "profilo_livello": "Tecnologo III livello",
+    "tipo_selezione": "Titoli ed esami",
+    "medaglione_it": "Si richiede laurea magistrale in discipline tecnico-scientifiche (demo).",
+    "medaglione_en": "A master's degree in technical/scientific disciplines is required (demo).",
+    "ribando": false,
+    "ribando_riferimento": null,
+    "pta": false,
+    "flag_in_pa": true,
+    "flag_gazzetta": true,
+    "progetto_riferimento": "PROGETTO-DEMO-PNRR-001"
+  }
+}
