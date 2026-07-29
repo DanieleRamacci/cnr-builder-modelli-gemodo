@@ -73,8 +73,11 @@ Expected:
 
 ## Scenario 3 - Mock GEBAN flusso valido
 
-Le spec `001`/`004`/`005`/`006` non hanno ancora `tasks.md` proprio, quindi non esiste
-ancora un endpoint HTTP GEMODO reale da chiamare (vedi `AGENTS.md`). Fino ad allora:
+Le spec `004`/`005`/`006` non hanno ancora `plan.md`/`tasks.md` propri; `001` li ha
+gia' ma restano fermi alla sessione di chiarimento del 2026-06-19 e non riflettono le
+decisioni successive (vedi `docs/project-map.md`, sezione "Stato Plan/Tasks Delle Spec
+Operative"). In nessun caso esiste oggi un endpoint HTTP GEMODO reale da chiamare
+(vedi `AGENTS.md`). Fino ad allora:
 
 1. Risolvere il piano dello scenario (dry run, nessuna chiamata di rete):
 
@@ -146,18 +149,41 @@ Expected:
 
 ## Scenario 6 - Matrice copertura e decisioni aperte
 
-1. Aprire il manifest di qualita' conforme a
-   [contracts/quality-readiness-contract.yaml](./contracts/quality-readiness-contract.yaml).
+```bash
+cd backend
+uv run pytest tests/contract/test_open_decisions_contract.py tests/integration/test_open_decision_gates.py tests/integration/test_coverage_matrix.py -v
+```
+
+1. Aprire `docs/decision-register.yaml` (28 decisioni, incluse `SEC-006-001`/`SEC-006-002`)
+   e `docs/quality-coverage-matrix.yaml` (43 righe, copertura FR-027..FR-045 e dei sei
+   scenari E2E minimi).
 2. Verificare che ogni scenario minimo sia collegato a spec owner, requisito e contratto.
-3. Verificare che ogni decisione critica abbia stato, owner, assunzione provvisoria e fase
-   bloccante.
+3. Verificare che ogni decisione critica abbia owner, assunzione provvisoria (o stato
+   confermato) e fase bloccante, ed eseguire il gate per una spec target, es.:
+
+   ```bash
+   uv run python -c "
+   from pathlib import Path
+   from app.quality.readiness_gate import load_decision_register, valuta_readiness
+   from app.quality.schemas import FaseBloccante
+   decisioni = load_decision_register(Path('../docs/decision-register.yaml'))
+   esito = valuta_readiness(decisioni, fase_richiesta=FaseBloccante.TASKS, spec_target='specs/001-catalogo-contratto-geban')
+   print('pronto:', esito.pronto, [d.id for d in esito.blocchi])
+   "
+   ```
 
 Expected:
 
-- nessuna decisione critica entra nei task come assunzione silenziosa;
+- nessuna decisione critica entra nei task come assunzione silenziosa (ogni decisione
+  non `CONFERMATA` ha `assunzione_provvisoria` esplicita, anche quando dichiara
+  "nessuna assunzione proposta");
 - gli scenari minimi coprono valido, payload non valido, retry idempotente, conflitto,
   fallimento e accesso non autorizzato;
-- le parti bloccate da decisioni aperte sono esplicite.
+- le parti bloccate da decisioni aperte sono esplicite: al momento della stesura,
+  `valuta_readiness` segnala `TASKS` non pronto per `specs/001-catalogo-contratto-geban`
+  a causa di decisioni ancora `APERTA`/`ASSUNTA_PROVVISORIA` (es.
+  `DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-IDENTIFICATIVI-MODELLO`) - comportamento
+  atteso, non un difetto.
 
 ## Scenario 7 - Profili integrazione e confine Keycloak/GEMODO
 

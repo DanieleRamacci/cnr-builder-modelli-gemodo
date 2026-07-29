@@ -69,12 +69,16 @@ seed_demo:
 contracts:
   - contract_ref: specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
     spec_owner: specs/001-catalogo-contratto-geban
-    success_examples: []
-    error_examples: []
+    success_examples:
+      - infra/openapi/examples/catalog-success.json
+    error_examples:
+      - infra/openapi/examples/validation-error.json
   - contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
     spec_owner: specs/009-fondamenta-mock-test-qualita
-    success_examples: []
-    error_examples: []
+    success_examples:
+      - mock-geban/payloads/bando-concorso-valid.json
+    error_examples:
+      - mock-geban/payloads/bando-concorso-invalid.json
 
 api_documentation:
   - openapi_ref: specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
@@ -93,8 +97,10 @@ api_documentation:
       per le chiamate GEBAN); GEMODO valida in aggiunta il profilo di integrazione
       GEBAN_RECLUTAMENTO_V1 su tipo documento, categoria e modello richiesti
       (infra/local/integration-profiles.local.yaml).
-    success_examples: []
-    error_examples: []
+    success_examples:
+      - infra/openapi/examples/catalog-success.json
+    error_examples:
+      - infra/openapi/examples/validation-error.json
     error_catalog_ref: infra/openapi/errors.md
     swagger_enabled: true
     redoc_enabled: true

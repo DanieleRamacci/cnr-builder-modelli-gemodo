@@ -20,7 +20,37 @@ Feature attiva:
 - `specs/009-fondamenta-mock-test-qualita`
 
 La feature attiva prepara fondamenta, mock, test, qualita', profili di integrazione,
-modello documentale controllato, documentazione API e readiness open source/PA.
+modello documentale controllato, documentazione API e readiness open source/PA. Le
+fasi 1-5 (`T001-T058`) sono implementate e verificate con 109 test reali; resta il
+Polish (`T059-T064`). Vedi `docs/project-map.md` per lo stato aggiornato di tutte le
+spec, incluso un avviso importante: `001`, `002` e `003` hanno gia' `plan.md`/`tasks.md`
+ma risalgono al 19 giugno 2026, prima delle decisioni successive - vanno aggiornati e
+ripianificati prima di implementarli.
+
+## Provare Il Backend In Locale
+
+```bash
+cd backend
+uv sync
+
+uv run gemodo-quality verifica-ambiente      # healthcheck reali dell'ambiente locale
+uv run pytest                                 # suite di test reale (109 test)
+uv run uvicorn app.main:app --reload          # backend acceso su http://localhost:8000
+# http://localhost:8000/docs/geban-catalog    -> Swagger UI del contratto 001
+# http://localhost:8000/redoc/geban-catalog   -> ReDoc dello stesso contratto
+
+uv run python ../mock-geban/scenario_runner.py --scenario E2E-001 \
+  --payload bando-concorso-valid.json         # piano di uno scenario mock GEBAN
+```
+
+Manifest e strumenti di qualita' principali:
+
+- `infra/local/quality-readiness.local.yaml`: readiness complessiva della feature 009.
+- `infra/local/integration-profiles.local.yaml`: profili di integrazione GEBAN/GEMODO.
+- `infra/local/document-models/`: modello documentale controllato demo.
+- `mock-geban/`: mock del sistema chiamante GEBAN, scenari e payload demo.
+- `docs/decision-register.yaml`: registro delle decisioni aperte (§17 proposta).
+- `docs/quality-coverage-matrix.yaml`: matrice requisiti/scenari/contratti/owner.
 
 ## Documentazione Navigabile
 
@@ -102,19 +132,20 @@ specs/009-fondamenta-mock-test-qualita
 
 ## Prossimo Blocco Di Sviluppo
 
-Per la feature attiva il blocco iniziale e':
+Per la feature attiva (`009`) resta solo il Polish (`T059-T064`): note di
+documentazione generata, esempi API pubblicabili, validazione sintassi/YAML, build
+MkDocs e revisione del quickstart contro gli output reali.
 
-- `T001-T008`: skeleton backend, frontend, infra e mock.
-- `T009-T025`: manifest qualita', loader, profili integrazione, confine Keycloak/GEMODO,
-  modello documentale controllato, API documentation readiness e open source/PA readiness.
+Dopo il Polish, prima di produrre un PDF vero servono, nell'ordine:
 
-Per l'MVP API + PDF servira' poi completare il flusso Spec Kit operativo di:
-
-- `004-generazione-documenti-pdf`
-- `005-storage-idempotenza-consultazione`
-
-Queste spec devono produrre plan, data model, OpenAPI, quickstart e tasks prima di
-implementare `POST /documenti/genera`, stato e download.
+1. Propagare nelle `spec.md` di `001`, `002`, `003` le decisioni ormai `CONFERMATA`
+   che le riguardano (vedi `docs/decision-register.yaml`), poi rigenerare i loro
+   `plan.md`/`tasks.md` (sono fermi al 19 giugno 2026 e non li riflettono).
+2. Completare il flusso Spec Kit (`plan` + `tasks`, non ancora esistenti) per
+   `006-sicurezza-autorizzazioni-audit`, `004-generazione-documenti-pdf` e
+   `005-storage-idempotenza-consultazione`.
+3. Solo allora implementare `POST /documenti/genera`, stato e download: nessun
+   renderer PDF esiste ancora oggi.
 
 GitHub Pages esegue `scripts/generate-spec-docs.py` nel workflow
 `.github/workflows/pages.yml` prima di pubblicare il sito.

@@ -12,15 +12,15 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
-| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Draft specificata | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; da integrare tipologie GEBAN/SOL, campi comuni, profilo GEBAN versionato, mapping codici/modelli, API per profilo e configurazione/autorizzazioni; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28 |
-| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Draft di copertura | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi |
-| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Tasks completati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente; chiarimento in `009`: builder visuale controllato, non editor HTML, con modello documentale versionato a blocchi/layout/asset/placeholder |
+| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Plan+tasks generati ma superati (2026-06-19), 0/56 task implementati | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; `spec.md`/`plan.md`/`tasks.md` restano fermi alla sessione di chiarimento 2026-06-19 e non riflettono ancora tipologie GEBAN/SOL, campi comuni, profilo GEBAN versionato, bando multiplo/ribando/bando inglese integrale ne' `SEC-006-001`, chiariti in `009` tra il 2026-06-22 e il 2026-07-29 (vedi `docs/decision-register.yaml`, decisioni `DEC-001-*`). Da aggiornare e ripianificare (`/speckit-plan` + `/speckit-tasks`) prima di implementare |
+| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Plan+tasks generati ma superati (2026-06-19), 0/59 task implementati | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi; `spec.md`/`plan.md`/`tasks.md` fermi al 2026-06-19, non riflettono `SEC-006-002` ne' il modello documentale controllato chiarito in `009`. Da aggiornare e ripianificare prima di implementare |
+| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Plan+tasks generati ma superati (2026-06-19), 0/48 task implementati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente; chiarimento in `009`: builder visuale controllato, non editor HTML, con modello documentale versionato a blocchi/layout/asset/placeholder - non ancora recepito in `plan.md`/`tasks.md` di questa spec (fermi al 2026-06-19). Da aggiornare e ripianificare prima di implementare |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
 | `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo; ribando chiarito in `009` come nuovo bando collegato al precedente; resta da chiarire nuova pubblicazione/riferimento documentale verso sistemi esterni |
 | `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | Decisioni risolte (SEC-006-001 e SEC-006-002), plan da avviare | §12, §8.11, §12.9 | `keycloak-jwt.md`; decisioni confermate il 2026-07-29: (1) GEBAN -> GEMODO con token tecnico backend-to-backend (client credentials) e contesto/utente reale nel payload solo per audit; ruoli GEMODO come client roles su `gemodo-backend` (realm Keycloak `cnr` condiviso); (2) nessuna separazione gestore/revisore/approvatore nella prima release, la pubblicazione del gestore vale come approvazione, ruoli revisore/approvatore restano riservati e inattivi; ambiente di test reale disponibile (`sso.test.si.cnr.it`, realm `cnr`, accesso admin per il team GEMODO), produzione da richiedere al referente infrastruttura Keycloak CNR |
 | `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft integrata | §11, §16.6 | Dipende da API builder e generazioni |
 | `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft integrata | §15 | Non prerequisito del primo rilascio |
-| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test, qualita', documentazione API e readiness riuso PA | Tasks generati | §16.1, §16.2, §16.7, §17 | Attiva; raccoglie setup, criteri cross-cutting, ownership decisioni, OpenAPI/Swagger/ReDoc, portale documentazione e vincoli open source/PA |
+| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test, qualita', documentazione API e readiness riuso PA | Implementata (Fase 1-5, T001-T058); Polish in corso | §16.1, §16.2, §16.7, §17 | Attiva; ambiente locale, mock GEBAN, registro decisioni (28 voci) e matrice di copertura reali e testati (109 test pytest); raccoglie setup, criteri cross-cutting, ownership decisioni, OpenAPI/Swagger/ReDoc, portale documentazione e vincoli open source/PA |
 
 ## Coverage Per Sezione Proposta
 
@@ -80,6 +80,31 @@ Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md
 - Prima della pubblicazione open source/PA devono essere tracciati licenza, setup,
   sviluppo, produzione, architettura, configurazione, sicurezza, contributi, segnalazione
   vulnerabilita', test, release e changelog.
+
+## Stato Plan/Tasks Delle Spec Operative (verificato 2026-07-29)
+
+`001-catalogo-contratto-geban`, `002-builder-modelli` e `003-sezioni-placeholder-versionamento`
+hanno gia' `plan.md` e `tasks.md` generati, ma tutti e tre risalgono alla sessione di
+chiarimento del 2026-06-19 (prima ancora della sessione 2026-06-22 che ha aperto il
+registro decisioni). Nessuno dei tre riflette le decisioni chiarite/confermate
+successivamente (2026-06-22, 2026-07-07, 2026-07-28, 2026-07-29) e tracciate in
+`docs/decision-register.yaml`: tipologie GEBAN/SOL, campi comuni GEBAN, profilo GEBAN
+versionato, bando multiplo/ribando, bando inglese integrale, `SEC-006-001`,
+`SEC-006-002`, modello documentale controllato.
+
+Nessun task di queste tre spec e' implementato (0/56, 0/59, 0/48). Prima di avviare
+l'implementazione applicativa:
+
+1. propagare nelle rispettive `spec.md` le decisioni ormai `CONFERMATA` che le
+   riguardano (vedi `spec_interessate` in `docs/decision-register.yaml`);
+2. rigenerare `plan.md` e `tasks.md` (`/speckit-plan` + `/speckit-tasks`) cosi' che
+   riflettano lo stato attuale, non quello del 19 giugno;
+3. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione
+   critica blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi
+   task implementativi (FR-018).
+
+Questo evita di implementare codice applicativo contro un contratto dati o un modello
+di autorizzazione gia' superato dalle decisioni successive.
 
 ## Ordine Suggerito Di Approfondimento
 

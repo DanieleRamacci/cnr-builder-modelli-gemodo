@@ -55,6 +55,23 @@ definisce solo la regola e l'inventario.
 
 ## Esempi pubblicabili
 
-Vedi `infra/openapi/examples/` per esempi JSON di successo e di errore funzionale, e
-`errors.md` per il catalogo errori. Nessun esempio puo' contenere token, secret,
-password, dati personali reali o URL ambientali sensibili (FR-045).
+`infra/openapi/examples/` contiene esempi JSON verificati contro lo schema OpenAPI
+reale (non solo scritti a mano):
+
+- [`catalog-success.json`](examples/catalog-success.json): risposta di successo per
+  `GET /catalogo/modelli` (schema `ModelloSearchResponse`).
+- [`validation-error.json`](examples/validation-error.json): risposta di errore
+  funzionale per `POST /documenti/valida` (schema `ValidazioneResponse`), coerente coi
+  codici in `errors.md` e col payload demo non valido di
+  `mock-geban/payloads/bando-concorso-invalid.json`.
+
+Entrambi sono stati validati con `jsonschema` contro i componenti dello schema
+`specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml` prima di
+essere committati. Nessun esempio contiene token, secret, password, dati personali
+reali o URL ambientali sensibili (FR-045).
+
+`modello_id`/`modello_versione_id` sono tipizzati come interi in questo contratto,
+mentre i manifest demo della `009` (es. `infra/local/integration-profiles.local.yaml`)
+usano identificativi stringa: la riconciliazione del formato definitivo resta la
+decisione aperta `DEC-001-IDENTIFICATIVI-MODELLO`
+(`docs/decision-register.yaml`).

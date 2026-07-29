@@ -20,16 +20,19 @@ testing of each story.
 
 ## Stato Implementazione (2026-07-29)
 
-Phase 1 through Phase 5 (T001-T058) are implemented and verified: `uv run pytest` in
-`backend/` passes 109/109 real tests (contract + integration + e2e, no mocked business
-logic), the Alembic baseline migration was applied and rolled back against a real
-local PostgreSQL, `uv run gemodo-quality verifica-ambiente` runs real healthchecks
-(including a live check against the CNR test Keycloak realm), `mock-geban/
-scenario_runner.py` resolves real scenario plans and runs them end-to-end against an
-injectable `ClienteGemodo`, and `docs/decision-register.yaml` tracks all 28 decisions
-from proposal §17 (plus SEC-006-002) validated against `backend/app/quality/decision.py`
-and gated by `backend/app/quality/readiness_gate.py`. Phase 6 (Polish) is **not
-started**.
+**Tutte le fasi T001-T064 sono completate e verificate.** `uv run pytest` in
+`backend/` passa 109/109 test reali (contract + integration + e2e, nessuna logica
+mockata), la migration Alembic baseline e' stata applicata e ripristinata su
+PostgreSQL locale reale, `uv run gemodo-quality verifica-ambiente` esegue healthcheck
+reali (inclusa una verifica live contro il realm Keycloak CNR di test),
+`mock-geban/scenario_runner.py` risolve piani scenario reali e li esegue end-to-end
+contro un `ClienteGemodo` iniettabile, `docs/decision-register.yaml` traccia tutte le
+28 decisioni della proposta §17 (piu' `SEC-006-002`) validate da
+`backend/app/quality/decision.py` e verificate da
+`backend/app/quality/readiness_gate.py`, e `mkdocs build --strict` completa senza
+warning. Feature `009` implementata; prossimo passo (fuori scope di questo
+tasks.md) e' allineare `001`/`002`/`003` alle decisioni piu' recenti prima di
+rigenerare i loro `plan.md`/`tasks.md` - vedi `docs/project-map.md`.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -188,12 +191,19 @@ coverage matrix and readiness gate outcomes.
 
 **Purpose**: Final verification and documentation updates across the foundation feature.
 
-- [ ] T059 [P] Update project map status for `009-fondamenta-mock-test-qualita` after selected implementation scope is completed in `docs/project-map.md`
-- [ ] T060 [P] Add generated documentation notes for quality manifests, mock GEBAN, Spec Kit navigation and open source/PA readiness in `README.md`
-- [ ] T061 [P] Add concrete success and functional error examples for mock-facing contracts and document Swagger/ReDoc publication in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`, `docs/api-documentation.md`
-- [ ] T062 Run Python syntax and YAML validation for `backend/app/quality/`, `infra/local/`, `mock-geban/` and `docs/*.yaml`
-- [ ] T063 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`, verifying generated navigation for feature active, roadmap, API readiness, decisions and reuse PA pages
-- [ ] T064 Review `specs/009-fondamenta-mock-test-qualita/quickstart.md` against implemented task outputs and update expected outcomes
+- [x] T059 [P] Update project map status for `009-fondamenta-mock-test-qualita` after selected implementation scope is completed in `docs/project-map.md`
+- [x] T060 [P] Add generated documentation notes for quality manifests, mock GEBAN, Spec Kit navigation and open source/PA readiness in `README.md`
+- [x] T061 [P] Add concrete success and functional error examples for mock-facing contracts and document Swagger/ReDoc publication in `infra/openapi/examples/catalog-success.json`, `infra/openapi/examples/validation-error.json`, `infra/openapi/README.md`, `docs/api-documentation.md`
+- [x] T062 Run Python syntax and YAML validation for `backend/app/quality/`, `infra/local/`, `mock-geban/` and `docs/*.yaml`
+- [x] T063 Run MkDocs generation and strict build with `scripts/generate-spec-docs.py` and `mkdocs build --strict`, verifying generated navigation for feature active, roadmap, API readiness, decisions and reuse PA pages
+- [x] T064 Review `specs/009-fondamenta-mock-test-qualita/quickstart.md` against implemented task outputs and update expected outcomes
+
+**Nota T059/T064**: durante il Polish e' emerso che `001`, `002` e `003` hanno gia'
+`plan.md`/`tasks.md` (e in parte gia' un OpenAPI) ma restano fermi al 2026-06-19,
+prima di tutte le decisioni successive. Documentato in `docs/project-map.md` (nuova
+sezione "Stato Plan/Tasks Delle Spec Operative") e in `README.md`; non e' stato
+implementato nulla di quelle spec in questa sessione (fuori dallo scope della `009`
+attiva, vedi AGENTS.md).
 
 ---
 

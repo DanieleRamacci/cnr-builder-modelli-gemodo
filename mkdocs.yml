@@ -19,6 +19,7 @@ nav:
       - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
   - Project Map: project-map.md
   - API Documentation: api-documentation.md
+  - Decision Workflow: decision-workflow.md
   - Riuso PA: open-source-pa-readiness.md
   - Costituzione: spec-kit/governance/constitution.md
 markdown_extensions:

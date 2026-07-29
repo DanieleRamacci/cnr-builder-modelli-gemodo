@@ -41,10 +41,21 @@ versionati elencati sotto ogni spec proprietaria, senza copie manuali (vedi
 presenti e mancanti vive in `infra/openapi/README.md`; il catalogo errori funzionali
 condiviso vive in `infra/openapi/errors.md`.
 
+## Esempi Pubblicabili
+
+`infra/openapi/examples/catalog-success.json` (successo, `GET /catalogo/modelli`) e
+`infra/openapi/examples/validation-error.json` (errore funzionale,
+`POST /documenti/valida`) sono i primi due esempi validati contro lo schema OpenAPI
+reale della `001` (FR-042). Solo dati demo, nessun segreto o dato reale.
+
 ## Link
 
 - [API readiness generata](spec-kit/api-readiness.md)
-- [Inventario contratti OpenAPI e pubblicazione Swagger/ReDoc](../infra/openapi/README.md)
-- [Catalogo errori funzionali](../infra/openapi/errors.md)
 - [Catalogo OpenAPI 001](spec-kit/specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml)
 - [Project map](project-map.md)
+
+I seguenti percorsi vivono fuori dalla cartella `docs/` pubblicata dal sito (fanno
+parte del repository, non della documentazione generata): `infra/openapi/README.md`
+(inventario contratti e pubblicazione Swagger/ReDoc), `infra/openapi/errors.md`
+(catalogo errori funzionali), `infra/openapi/examples/catalog-success.json` ed
+`infra/openapi/examples/validation-error.json` (esempi pubblicabili).
