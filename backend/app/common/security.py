@@ -59,8 +59,9 @@ def _extract_roles(payload: dict[str, Any], audience: str) -> tuple[str, ...]:
 
 def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> PrincipalGEMODO:
     client_id = payload.get("azp") or payload.get("client_id")
-    if client_id != GEBAN_BACKEND_CLIENT_ID:
-        raise AuthorizationError("Client non autorizzato per le API GEBAN")
+    allowed_clients = {GEBAN_BACKEND_CLIENT_ID, *settings.gemodo_allowed_interactive_clients}
+    if client_id not in allowed_clients:
+        raise AuthorizationError("Client non autorizzato per le API GEMODO")
     return PrincipalGEMODO(
         subject=str(payload.get("sub") or ""),
         client_id=str(client_id),

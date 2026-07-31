@@ -196,6 +196,9 @@ deploy/coolify.env.example
 ```
 
 In test reale lasciare `GEMODO_USE_MOCK_PRINCIPAL=false`; il mock principal serve solo
-per prove locali senza Keycloak. Per provare manualmente le API, ottenere un token
-`client_credentials` del client Keycloak `geban-backend` e incollarlo nello Swagger
-catalogo tramite `Authorize`.
+per prove locali senza Keycloak. La home DEV usa login SSO CNR con client pubblico
+`gemodo-frontend`; Swagger catalogo usa lo stesso client con Authorization Code + PKCE.
+Per far funzionare le chiamate API con token utente, il client Keycloak `gemodo-frontend`
+deve avere redirect URI e web origin per `https://dev-gemodo.concorsi.cnr.it/*`, audience
+`gemodo-backend` nel token, e l'utente deve avere ruoli client su `gemodo-backend`
+coerenti con l'endpoint (`DOCUMENTI_VIEWER` e, per validazione, `DOCUMENTI_GENERATORE`).

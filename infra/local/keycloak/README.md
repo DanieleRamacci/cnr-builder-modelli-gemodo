@@ -26,6 +26,20 @@ aggiornato. Baseline attuale:
 GEMODO non gestisce password o segreti dei client: Keycloak resta l'unica sorgente di
 identita', autenticazione e ruoli/claim generali (vedi `authorization-boundary.local.yaml`).
 
+## SSO DEV per home e Swagger
+
+La home DEV e Swagger catalogo usano `gemodo-frontend` con Authorization Code + PKCE.
+Nel realm CNR di test reale il client pubblico deve includere:
+
+- redirect URI: `https://dev-gemodo.concorsi.cnr.it/*`
+- web origin: `https://dev-gemodo.concorsi.cnr.it`
+- audience mapper nel token verso `gemodo-backend`
+
+L'utente che prova le API da Swagger deve avere ruoli client su `gemodo-backend` coerenti
+con l'endpoint: `DOCUMENTI_VIEWER` per catalogo/campi e `DOCUMENTI_GENERATORE` per
+validazione payload. Questi ruoli su utente servono solo per il test interattivo SSO;
+il flusso GEBAN operativo resta server-to-server con client tecnico `geban-backend`.
+
 ## Fallback offline: Keycloak containerizzato
 
 Per sviluppo senza rete verso `sso.test.si.cnr.it` o per CI isolata, e' disponibile un

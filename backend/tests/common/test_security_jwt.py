@@ -22,6 +22,8 @@ def _settings() -> Settings:
         database_url="postgresql+psycopg://test:test@localhost:5432/test",
         keycloak_issuer_url="https://sso.test.si.cnr.it/auth/realms/cnr",
         keycloak_audience="gemodo-backend",
+        keycloak_frontend_client_id="gemodo-frontend",
+        gemodo_allowed_interactive_clients=("gemodo-frontend",),
         keycloak_jwks_url=None,
         keycloak_jwks_cache_ttl_seconds=300,
         gemodo_use_mock_principal=False,
@@ -64,6 +66,16 @@ def test_decode_rejects_wrong_client():
 
     with pytest.raises(AuthorizationError):
         decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+
+
+def test_decode_accepts_configured_interactive_client():
+    keys = JwtTestKeys()
+    token = signed_token(keys, client_id="gemodo-frontend", roles=(ROLE_DOCUMENTI_VIEWER,))
+
+    principal = decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+
+    assert principal.client_id == "gemodo-frontend"
+    assert ROLE_DOCUMENTI_VIEWER in principal.ruoli
 
 
 def test_missing_role_is_forbidden():

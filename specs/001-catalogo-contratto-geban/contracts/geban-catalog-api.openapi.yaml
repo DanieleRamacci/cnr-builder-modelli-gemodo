@@ -13,6 +13,7 @@ servers:
   - url: /api/v1
 security:
   - KeycloakBearer: []
+  - KeycloakSSO: []
 paths:
   /catalogo/tipi-documento:
     get:
@@ -173,6 +174,20 @@ components:
         JWT Keycloak emesso dal realm CNR, con audience gemodo-backend e ruoli client in
         resource_access.gemodo-backend.roles. Le chiamate GEBAN usano client tecnico
         geban-backend.
+    KeycloakSSO:
+      type: oauth2
+      description: >
+        Login SSO CNR per test interattivo Swagger con client pubblico gemodo-frontend
+        e Authorization Code + PKCE. Il token deve avere audience gemodo-backend e ruoli
+        client in resource_access.gemodo-backend.roles.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://sso.test.si.cnr.it/auth/realms/cnr/protocol/openid-connect/auth
+          tokenUrl: https://sso.test.si.cnr.it/auth/realms/cnr/protocol/openid-connect/token
+          scopes:
+            openid: Identita' OpenID Connect
+            profile: Profilo utente CNR
+            email: Email utente CNR
   parameters:
     CodiceTipoDocumento:
       name: codiceTipoDocumento

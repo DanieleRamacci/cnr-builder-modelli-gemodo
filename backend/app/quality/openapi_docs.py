@@ -16,6 +16,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
+from app.core.settings import get_settings
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Registry of published OpenAPI contracts, keyed by the short id used in the doc URLs.
@@ -48,8 +50,15 @@ def get_openapi_source(spec_id: str) -> PlainTextResponse:
 @router.get("/docs/{spec_id}", include_in_schema=False)
 def get_spec_swagger_ui(spec_id: str) -> HTMLResponse:
     _resolve(spec_id)
+    settings = get_settings()
     return get_swagger_ui_html(
-        openapi_url=f"/openapi/{spec_id}.yaml", title=f"GEMODO - {spec_id} - Swagger UI"
+        openapi_url=f"/openapi/{spec_id}.yaml",
+        title=f"GEMODO - {spec_id} - Swagger UI",
+        init_oauth={
+            "clientId": settings.keycloak_frontend_client_id,
+            "usePkceWithAuthorizationCodeGrant": True,
+            "scopes": "openid profile email",
+        },
     )
 
 
