@@ -176,16 +176,16 @@ modalita' Docker Compose:
 Build Pack: Docker Compose
 Base Directory: /
 Docker Compose Location: /docker-compose.coolify.yml
-Domains for homepage: http://dev-gemodo.concorsi.cnr.it:80
+Domains for frontend: http://dev-gemodo.concorsi.cnr.it:80
 ```
 
 Il compose applicativo avvia:
 
-- `homepage`: pagina pubblica Nginx con link a Swagger/ReDoc/OpenAPI e proxy verso il backend.
+- `frontend`: pagina pubblica Nginx con link a Swagger/ReDoc/OpenAPI e proxy verso il backend.
 - `backend`: FastAPI GEMODO, migration Alembic all'avvio, API `001` protette da Keycloak.
 - `postgres`: database persistente per catalogo, contratti dati e seed demo.
 
-Non impostare port mapping host manuali: il servizio `homepage` espone internamente la
+Non impostare port mapping host manuali: il servizio `frontend` espone internamente la
 porta `80` e Coolify genera la route del proxy verso quella porta. Le route `/api`,
 `/docs`, `/redoc`, `/openapi` e `/health` vengono inoltrate al backend.
 
