@@ -196,4 +196,6 @@ deploy/coolify.env.example
 ```
 
 In test reale lasciare `GEMODO_USE_MOCK_PRINCIPAL=false`; il mock principal serve solo
-per prove locali senza Keycloak.
+per prove locali senza Keycloak. Per provare manualmente le API, ottenere un token
+`client_credentials` del client Keycloak `geban-backend` e incollarlo nello Swagger
+catalogo tramite `Authorize`.
