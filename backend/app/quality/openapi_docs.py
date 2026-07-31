@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from app.core.settings import get_settings
@@ -54,12 +54,19 @@ def get_spec_swagger_ui(spec_id: str) -> HTMLResponse:
     return get_swagger_ui_html(
         openapi_url=f"/openapi/{spec_id}.yaml",
         title=f"GEMODO - {spec_id} - Swagger UI",
+        oauth2_redirect_url=f"/docs/{spec_id}/oauth2-redirect",
         init_oauth={
             "clientId": settings.keycloak_frontend_client_id,
             "usePkceWithAuthorizationCodeGrant": True,
             "scopes": "openid profile email",
         },
     )
+
+
+@router.get("/docs/{spec_id}/oauth2-redirect", include_in_schema=False)
+def get_spec_swagger_oauth2_redirect(spec_id: str) -> HTMLResponse:
+    _resolve(spec_id)
+    return get_swagger_ui_oauth2_redirect_html()
 
 
 @router.get("/redoc/{spec_id}", include_in_schema=False)
