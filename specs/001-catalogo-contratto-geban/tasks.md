@@ -289,6 +289,9 @@ invalid payload produce predictable error codes and messages.
 - [x] T075 Add `POST /api/v1/documenti/genera` placeholder endpoint for GEBAN API
       collaudo, reusing payload validation and returning an explicit future-download
       message instead of a real PDF link
+- [x] T076 Add Alembic `0006` data realignment migration so deployments that already
+      applied the older `0005` receive the updated profiles, classification tree and
+      demo models for each configured typology/profile combination
 
 ---
 
