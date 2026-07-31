@@ -150,3 +150,18 @@ Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 
 GitHub Pages esegue `scripts/generate-spec-docs.py` nel workflow
 `.github/workflows/pages.yml` prima di pubblicare il sito.
+
+## Deploy Coolify Test
+
+Per pubblicare la pagina statica di stato su `dev-gemodo.concorsi.cnr.it`, usare in
+Coolify la modalita' Docker Compose:
+
+```text
+Build Pack: Docker Compose
+Base Directory: /
+Docker Compose Location: /docker-compose.coolify.yml
+Domains for frontend: http://dev-gemodo.concorsi.cnr.it:80
+```
+
+Non impostare port mapping host manuali: il servizio `frontend` espone internamente la
+porta `80` e Coolify genera la route del proxy verso quella porta.
