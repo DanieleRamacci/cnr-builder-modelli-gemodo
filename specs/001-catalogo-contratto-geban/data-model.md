@@ -83,6 +83,28 @@ Validation:
   `infra/local/postgres/seed-demo-catalog.yaml` della `009`); il dominio SOL completo
   puo' estendere l'elenco in seguito senza cambiare il contratto API.
 
+### ClassificazioneCatalogo
+
+Configurazione dell'albero operativo esposto a GEBAN per un tipo documento.
+
+Fields:
+
+- `codice_tipo_documento`: riferimento a `TipoDocumento`.
+- `codice_tipologia`: nodo di primo livello GEBAN/SOL, riferimento a `TipologiaBandoSOL`.
+- `codice_categoria`: categoria/profilo selezionabile sotto la tipologia, riferimento a
+  `CategoriaDocumento`.
+- `attiva`
+- `created_at`
+
+Validation:
+
+- chiave logica: `codice_tipo_documento + codice_tipologia + codice_categoria`.
+- il mapping tecnico SOL (`codice_sol`) resta metadato interno della `TipologiaBandoSOL`
+  e non viene esposto all'utente come valore da comprendere o digitare.
+- l'endpoint di classificazione restituisce l'albero tipologie -> categorie/profili;
+  la ricerca modelli puo' poi usare `codice_tipologia` e `categoria` come filtri
+  derivati dalla scelta nell'albero.
+
 ### ModelloDocumentoVersione
 
 Versione specifica selezionabile da GEBAN.
@@ -217,6 +239,9 @@ TipoDocumento 1--N CategoriaDocumento
 TipoDocumento 1--N ModelloDocumento
 CategoriaDocumento 1--N ModelloDocumento
 TipologiaBandoSOL 1--N ModelloDocumento
+TipoDocumento 1--N ClassificazioneCatalogo
+TipologiaBandoSOL 1--N ClassificazioneCatalogo
+CategoriaDocumento 1--N ClassificazioneCatalogo
 ModelloDocumento 1--N ModelloDocumentoVersione
 ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)

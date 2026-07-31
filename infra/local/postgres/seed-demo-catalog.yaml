@@ -53,10 +53,62 @@ catalogo:
       spec_owner: specs/001-catalogo-contratto-geban
 
   categorie:
-    - codice: DEMO
+    - codice: CTER
       tipo_documento: BANDO_CONCORSO
-      nome: Categoria demo
+      nome: Collaboratore Tecnico Enti di Ricerca
       spec_owner: specs/002-builder-modelli
+    - codice: RICERCATORE
+      tipo_documento: BANDO_CONCORSO
+      nome: Ricercatore
+      spec_owner: specs/002-builder-modelli
+    - codice: TECNOLOGO
+      tipo_documento: BANDO_CONCORSO
+      nome: Tecnologo
+      spec_owner: specs/002-builder-modelli
+    - codice: DIRETTORE
+      tipo_documento: BANDO_CONCORSO
+      nome: Direttore
+      spec_owner: specs/002-builder-modelli
+    - codice: OPERATORE_TECNICO
+      tipo_documento: BANDO_CONCORSO
+      nome: Operatore tecnico
+      spec_owner: specs/002-builder-modelli
+    - codice: FUNZIONARIO_AMMINISTRATIVO
+      tipo_documento: BANDO_CONCORSO
+      nome: Funzionario amministrativo
+      spec_owner: specs/002-builder-modelli
+
+  classificazioni:
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: TDPNRR
+      categorie: [RICERCATORE, TECNOLOGO, CTER]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: CD
+      categorie: [RICERCATORE, TECNOLOGO, CTER, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: DIR
+      categorie: [DIRETTORE]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: TD
+      categorie: [RICERCATORE, TECNOLOGO, CTER, OPERATORE_TECNICO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: CP
+      categorie: [RICERCATORE, TECNOLOGO, CTER, OPERATORE_TECNICO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: RS
+      categorie: [RICERCATORE, TECNOLOGO, CTER]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: CATP
+      categorie: [CTER, OPERATORE_TECNICO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: TI
+      categorie: [RICERCATORE, TECNOLOGO, CTER, OPERATORE_TECNICO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: SDIP
+      categorie: [RICERCATORE, TECNOLOGO, CTER, OPERATORE_TECNICO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: MOB
+      categorie: [RICERCATORE, TECNOLOGO, CTER, FUNZIONARIO_AMMINISTRATIVO]
 
   # Perimetro iniziale GEBAN per l'ufficio reclutamento centrale (spec.md, sessione
   # 2026-07-28); il dominio SOL completo resta in anagrafica GEBAN.
@@ -95,13 +147,15 @@ catalogo:
   modelli:
     - modello_versione_id: demo-bando-concorso-standard-v1
       tipo_documento: BANDO_CONCORSO
-      categoria: DEMO
+      categoria: TECNOLOGO
+      codice_tipologia: TD
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
     - modello_versione_id: demo-bando-concorso-html-libero-non-valido
       tipo_documento: BANDO_CONCORSO
-      categoria: DEMO
+      categoria: TECNOLOGO
+      codice_tipologia: TD
       stato: BOZZA
       formato_documentale_ref: null
       utilizzabile_da_mock_geban: false

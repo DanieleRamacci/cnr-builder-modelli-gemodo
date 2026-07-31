@@ -51,6 +51,29 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione:
+    get:
+      summary: Albero classificazione per tipo documento
+      description: >
+        Restituisce l'albero configurato per il tipo documento: tipologie GEBAN/SOL
+        disponibili e categorie/profili associati. Il mapping tecnico SOL resta interno
+        e non viene esposto nella risposta.
+      operationId: getClassificazioneDocumento
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      responses:
+        "200":
+          description: Classificazione ad albero per il tipo documento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificazioneCatalogoResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /catalogo/modelli:
     get:
       summary: Ricerca modelli pubblicati
@@ -71,10 +94,12 @@ paths:
           in: query
           required: false
           description: >
-            Se presente, deve corrispondere a una tipologia GEBAN/SOL configurata
-            (perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB);
-            un valore non riconosciuto produce errore TIPOLOGIA_SOL_NON_VALIDA, non un
-            elenco vuoto.
+            Nodo di primo livello dell'albero GEBAN/SOL selezionato da
+            /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione. Se presente,
+            deve corrispondere a una tipologia configurata (perimetro iniziale: TDPNRR,
+            CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB); un valore non riconosciuto produce
+            errore TIPOLOGIA_SOL_NON_VALIDA, non un elenco vuoto. Il codice SOL tecnico
+            associato resta metadato interno.
           schema:
             type: string
         - name: modalita
@@ -256,6 +281,30 @@ components:
       properties:
         tipo_documento:
           type: string
+        categorie:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaDocumento"
+    ClassificazioneCatalogoResponse:
+      type: object
+      required: [tipo_documento, tipologie]
+      properties:
+        tipo_documento:
+          type: string
+        tipologie:
+          type: array
+          items:
+            $ref: "#/components/schemas/TipologiaCatalogo"
+    TipologiaCatalogo:
+      type: object
+      required: [codice, descrizione, categorie]
+      properties:
+        codice:
+          type: string
+          example: TD
+        descrizione:
+          type: string
+          example: Tempo determinato
         categorie:
           type: array
           items:

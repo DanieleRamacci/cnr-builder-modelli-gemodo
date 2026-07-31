@@ -2,7 +2,7 @@
   "_comment": "Esempio pubblicabile di successo per GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti. Mostra lingua IT/EN e schema strict con additionalProperties=false.",
   "modello_versione_id": 1,
   "tipo_documento": "BANDO_CONCORSO",
-  "categoria": "DEMO",
+  "categoria": "TECNOLOGO",
   "campi": [
     {
       "codice": "codice_bando",

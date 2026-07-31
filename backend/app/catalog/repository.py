@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.catalog.models import (
     CategoriaDocumento,
+    ClassificazioneCatalogo,
     ModelloCampoRichiesto,
     ModelloDocumento,
     ModelloDocumentoVersione,
@@ -36,6 +37,27 @@ def list_categorie_by_tipo_codice(db: Session, codice_tipo_documento: str) -> li
         .join(TipoDocumento, CategoriaDocumento.tipo_documento_id == TipoDocumento.id)
         .where(TipoDocumento.codice == codice_tipo_documento)
         .order_by(CategoriaDocumento.codice)
+    )
+    return list(db.scalars(stmt))
+
+
+def list_classificazione_by_tipo_codice(db: Session, codice_tipo_documento: str) -> list[ClassificazioneCatalogo]:
+    stmt = (
+        select(ClassificazioneCatalogo)
+        .join(TipoDocumento, ClassificazioneCatalogo.tipo_documento_id == TipoDocumento.id)
+        .join(TipologiaBandoSOL, ClassificazioneCatalogo.tipologia_bando_sol_id == TipologiaBandoSOL.id)
+        .join(CategoriaDocumento, ClassificazioneCatalogo.categoria_documento_id == CategoriaDocumento.id)
+        .options(
+            joinedload(ClassificazioneCatalogo.tipologia_bando_sol),
+            joinedload(ClassificazioneCatalogo.categoria_documento),
+        )
+        .where(
+            TipoDocumento.codice == codice_tipo_documento,
+            ClassificazioneCatalogo.attiva.is_(True),
+            TipologiaBandoSOL.attiva.is_(True),
+            CategoriaDocumento.stato == STATO_ATTIVO,
+        )
+        .order_by(TipologiaBandoSOL.codice, CategoriaDocumento.codice)
     )
     return list(db.scalars(stmt))
 

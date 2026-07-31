@@ -32,7 +32,7 @@ sistemi_richiedenti:
         tipi_documento_ammessi:
           - BANDO_CONCORSO
         categorie_ammessi:
-          - DEMO
+          - TECNOLOGO
         tipologie_ammessi:
           - TDPNRR
           - CD

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 from app.catalog.schemas import (
     CampiRichiestiResponse,
     CategoriaDocumentoListResponse,
+    ClassificazioneCatalogoResponse,
     ModalitaCatalogo,
     ModelloSearchResponse,
     TipoDocumentoListResponse,
@@ -34,6 +35,15 @@ def list_categorie_documento(
     service: CatalogService = Depends(get_catalog_service),
 ) -> CategoriaDocumentoListResponse:
     return service.list_categorie(codiceTipoDocumento)
+
+
+@router.get("/tipi-documento/{codiceTipoDocumento}/classificazione", response_model=ClassificazioneCatalogoResponse)
+def get_classificazione_documento(
+    codiceTipoDocumento: str,
+    _: PrincipalGEMODO = Depends(require_documenti_viewer),
+    service: CatalogService = Depends(get_catalog_service),
+) -> ClassificazioneCatalogoResponse:
+    return service.get_classificazione(codiceTipoDocumento)
 
 
 @router.get("/modelli", response_model=ModelloSearchResponse)

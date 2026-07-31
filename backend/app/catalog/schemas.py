@@ -47,6 +47,17 @@ class CategoriaDocumentoListResponse(BaseModel):
     categorie: list[CategoriaDocumentoSchema]
 
 
+class TipologiaCatalogoSchema(BaseModel):
+    codice: str
+    descrizione: str
+    categorie: list[CategoriaDocumentoSchema]
+
+
+class ClassificazioneCatalogoResponse(BaseModel):
+    tipo_documento: str
+    tipologie: list[TipologiaCatalogoSchema]
+
+
 class ModelloCatalogoSchema(BaseModel):
     modello_id: int = Field(..., ge=1)
     modello_versione_id: int = Field(..., ge=1)

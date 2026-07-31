@@ -133,7 +133,7 @@ integration_profiles:
     allowed_document_types:
       - BANDO_CONCORSO
     allowed_categories:
-      - DEMO
+      - TECNOLOGO
     allowed_model_versions:
       - demo-bando-concorso-standard-v1
     allowed_operations:

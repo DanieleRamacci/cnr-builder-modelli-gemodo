@@ -14,11 +14,13 @@ from app.catalog.schemas import (
     CampoRichiestoSchema,
     CategoriaDocumentoListResponse,
     CategoriaDocumentoSchema,
+    ClassificazioneCatalogoResponse,
     LinguaCampo,
     ModalitaCatalogo,
     ModelloCatalogoSchema,
     ModelloSearchResponse,
     TipoCampo,
+    TipologiaCatalogoSchema,
     TipoDocumentoListResponse,
     TipoDocumentoSchema,
 )
@@ -52,6 +54,25 @@ class CatalogService:
             if categoria.stato == repository.STATO_ATTIVO
         ]
         return CategoriaDocumentoListResponse(tipo_documento=codice_tipo_documento, categorie=categorie)
+
+    def get_classificazione(self, codice_tipo_documento: str) -> ClassificazioneCatalogoResponse:
+        tipo = repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
+        if tipo is None or tipo.stato != repository.STATO_ATTIVO:
+            raise CatalogError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Tipo documento non configurato o non attivo",
+                status_code=404,
+            )
+        grouped: dict[str, TipologiaCatalogoSchema] = {}
+        for row in repository.list_classificazione_by_tipo_codice(self.db, codice_tipo_documento):
+            tipologia = row.tipologia_bando_sol
+            categoria = row.categoria_documento
+            item = grouped.setdefault(
+                tipologia.codice,
+                TipologiaCatalogoSchema(codice=tipologia.codice, descrizione=tipologia.descrizione, categorie=[]),
+            )
+            item.categorie.append(_categoria_documento_schema(categoria))
+        return ClassificazioneCatalogoResponse(tipo_documento=codice_tipo_documento, tipologie=list(grouped.values()))
 
     def search_modelli(
         self,

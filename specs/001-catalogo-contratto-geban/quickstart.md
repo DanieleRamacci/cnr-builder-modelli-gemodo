@@ -18,9 +18,11 @@ uv run uvicorn app.main:app --reload
 - Database migrato (baseline `009` + migration proprie di questa feature).
 - Seed demo con:
   - tipo documento `BANDO_CONCORSO`;
-  - categoria `DEMO`;
+  - categorie/profili `RICERCATORE`, `TECNOLOGO`, `CTER`, `DIRETTORE`,
+    `OPERATORE_TECNICO`, `FUNZIONARIO_AMMINISTRATIVO`;
   - tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB con codice SOL
-    (`infra/local/postgres/seed-demo-catalog.yaml` della `009`);
+    interno (`infra/local/postgres/seed-demo-catalog.yaml`);
+  - albero di classificazione tipo documento -> tipologia SOL/GEBAN -> categoria/profilo;
   - una versione modello `PUBBLICATO` con `modello_versione_id` pubblico `1`;
   - una versione modello `BOZZA` con `modello_versione_id` pubblico `2`;
   - campi richiesti demo `codice_bando`, `titolo_it`, `descrizione_ridotta_it`,
@@ -56,7 +58,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=TI&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=TECNOLOGO&codice_tipologia=TD&modalita=OPERATIVA
 ```
 
 Risultato atteso:
@@ -153,7 +155,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=TECNOLOGO&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
 ```
 
 Risultato atteso:

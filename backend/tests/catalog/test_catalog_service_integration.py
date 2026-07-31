@@ -26,16 +26,20 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
 
             tipi = service.list_tipi_documento()
             categorie = service.list_categorie("BANDO_CONCORSO")
+            classificazione = service.get_classificazione("BANDO_CONCORSO")
             modelli = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="DEMO",
+                categoria="TECNOLOGO",
+                codice_tipologia="TD",
                 modalita=ModalitaCatalogo.OPERATIVA,
             )
     finally:
         engine.dispose()
 
     assert [item.codice for item in tipi.items] == ["BANDO_CONCORSO"]
-    assert [item.codice for item in categorie.categorie] == ["DEMO"]
+    assert "TECNOLOGO" in [item.codice for item in categorie.categorie]
+    td = next(item for item in classificazione.tipologie if item.codice == "TD")
+    assert "TECNOLOGO" in [item.codice for item in td.categorie]
     assert len(modelli.modelli) == 1
     assert modelli.modelli[0].modello_versione_id == 1
     assert modelli.modelli[0].stato == "PUBBLICATO"

@@ -1,8 +1,8 @@
 {
   "_comment": "Esempio pubblicabile di successo per GET /catalogo/modelli (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ModelloSearchResponse). Solo dati demo. L'API espone modello_id/modello_versione_id come interi int64; il DB mantiene UUID interni e public_id interi stabili.",
   "tipo_documento": "BANDO_CONCORSO",
-  "categoria": "DEMO",
-  "codice_tipologia": null,
+  "categoria": "TECNOLOGO",
+  "codice_tipologia": "TD",
   "modalita": "OPERATIVA",
   "modelli": [
     {

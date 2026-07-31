@@ -31,6 +31,7 @@ class TipoDocumento(Base):
 
     categorie: Mapped[list[CategoriaDocumento]] = relationship(back_populates="tipo_documento")
     modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="tipo_documento")
+    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="tipo_documento")
 
 
 class CategoriaDocumento(Base):
@@ -49,6 +50,7 @@ class CategoriaDocumento(Base):
 
     tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="categorie")
     modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="categoria_documento")
+    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="categoria_documento")
 
 
 class TipologiaBandoSOL(Base):
@@ -62,6 +64,36 @@ class TipologiaBandoSOL(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="tipologia_bando_sol")
+    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="tipologia_bando_sol")
+
+
+class ClassificazioneCatalogo(Base):
+    __tablename__ = "classificazione_catalogo"
+    __table_args__ = (
+        UniqueConstraint(
+            "tipo_documento_id",
+            "tipologia_bando_sol_id",
+            "categoria_documento_id",
+            name="uq_classificazione_catalogo_albero",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
+    )
+    tipologia_bando_sol_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tipologia_bando_sol.id", ondelete="CASCADE"), nullable=False
+    )
+    categoria_documento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("categoria_documento.id", ondelete="CASCADE"), nullable=False
+    )
+    attiva: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="classificazioni")
+    tipologia_bando_sol: Mapped[TipologiaBandoSOL] = relationship(back_populates="classificazioni")
+    categoria_documento: Mapped[CategoriaDocumento] = relationship(back_populates="classificazioni")
 
 
 class ModelloDocumento(Base):

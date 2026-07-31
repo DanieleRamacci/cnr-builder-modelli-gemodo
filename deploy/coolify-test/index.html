@@ -345,7 +345,7 @@
             </div>
             <div class="box">
               <strong>3. Esegui le chiamate</strong>
-              <span>Prova prima tipi/categorie/modelli, poi campi richiesti e infine validazione payload.</span>
+              <span>Prova prima classificazione, poi modelli filtrando per tipologia e categoria, quindi campi e validazione.</span>
             </div>
           </div>
           <p class="note">
@@ -372,7 +372,12 @@
           </div>
           <div class="api-row">
             <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/modelli</code><br /><span class="note">Restituisce versioni modello pubblicate e valide per il contesto GEBAN.</span></div>
+            <div><code>/api/v1/catalogo/tipi-documento/{codice}/classificazione</code><br /><span class="note">Restituisce l'albero tipologie SOL -> categorie/profili; il codice SOL resta interno.</span></div>
+            <code>DOCUMENTI_VIEWER</code>
+          </div>
+          <div class="api-row">
+            <span class="method">GET</span>
+            <div><code>/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;codice_tipologia=TD&amp;categoria=TECNOLOGO</code><br /><span class="note">Restituisce versioni modello pubblicate e valide per il nodo dell'albero scelto.</span></div>
             <code>DOCUMENTI_VIEWER</code>
           </div>
           <div class="api-row">

@@ -282,6 +282,10 @@ invalid payload produce predictable error codes and messages.
       tests pass, and update `docs/decision-register.yaml` entries
       `DEC-001-TIPOLOGIE-SOL` / `DEC-001-LINGUA-IT-EN` implementation notes if their
       `impatto` text needs to reflect the shipped behavior
+- [x] T074 Align the GEBAN catalog classification tree by adding
+      `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/classificazione`,
+      seeding GEBAN/SOL typologies mapped to profile categories, and keeping SOL
+      technical folder codes internal instead of user-facing
 
 ---
 

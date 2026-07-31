@@ -42,7 +42,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     try:
         response = TestClient(app).get(
             "/api/v1/catalogo/modelli",
-            params={"tipo_documento": "BANDO_CONCORSO", "categoria": "DEMO", "codice_tipologia": "TD"},
+            params={"tipo_documento": "BANDO_CONCORSO", "categoria": "TECNOLOGO", "codice_tipologia": "TD"},
         )
     finally:
         app.dependency_overrides.clear()
@@ -51,7 +51,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     body = response.json()
     assert body["modalita"] == "OPERATIVA"
     assert body["tipo_documento"] == "BANDO_CONCORSO"
-    assert body["categoria"] == "DEMO"
+    assert body["categoria"] == "TECNOLOGO"
     assert body["codice_tipologia"] == "TD"
     assert body["modelli"][0]["modello_versione_id"] == 11
     assert body["modelli"][0]["stato"] == "PUBBLICATO"
