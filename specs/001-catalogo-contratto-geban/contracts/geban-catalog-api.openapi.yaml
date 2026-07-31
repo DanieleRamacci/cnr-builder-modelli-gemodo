@@ -274,7 +274,7 @@ components:
             $ref: "#/components/schemas/ModelloCatalogo"
     ModelloCatalogo:
       type: object
-      required: [modello_id, modello_versione_id, codice, descrizione, versione, stato]
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, versione, stato]
       properties:
         modello_id:
           type: integer
@@ -285,6 +285,8 @@ components:
         codice:
           type: string
         descrizione:
+          type: string
+        variante:
           type: string
         versione:
           type: integer
@@ -323,7 +325,7 @@ components:
           additionalProperties: true
     CampoRichiesto:
       type: object
-      required: [codice, etichetta, tipo, obbligatorio, ordine]
+      required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
       properties:
         codice:
           type: string

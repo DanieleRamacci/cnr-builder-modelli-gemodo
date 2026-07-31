@@ -89,9 +89,11 @@ Versione specifica selezionabile da GEBAN.
 
 Fields:
 
-- `id`: `modello_versione_id` usato da GEBAN.
+- `id`: UUID interno persistente, coerente con la baseline tecnica `009`.
+- `public_id`: identificativo intero `int64` esposto a GEBAN come
+  `modello_versione_id` nel contratto OpenAPI.
 - `modello_documento_id`
-- `numero_versione`
+- `versione`
 - `stato`: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`.
 - `data_inizio_validita`: opzionale.
 - `data_fine_validita`: opzionale.
@@ -107,7 +109,7 @@ Validation:
 - quando una nuova versione della stessa variante diventa `PUBBLICATO`, la precedente
   versione `PUBBLICATO` passa ad `ARCHIVIATO`.
 - piu' varianti pubblicate possono essere visibili nello stesso contesto; la scelta
-  operativa usa sempre `modello_versione_id`.
+  operativa usa sempre il `public_id` esposto come `modello_versione_id`.
 - una versione non piu' `PUBBLICATO` non e' validabile per uso operativo.
 - le modifiche contenutistiche a una versione pubblicata creano una bozza derivata e non
   aggiornano direttamente la versione pubblicata.
@@ -119,7 +121,7 @@ Campo dichiarato nel contratto dati di una versione modello.
 Fields:
 
 - `id`
-- `modello_documento_versione_id`
+- `modello_versione_id`
 - `codice`
 - `etichetta`
 - `descrizione`
@@ -136,7 +138,7 @@ Fields:
 
 Validation:
 
-- chiave logica: `modello_documento_versione_id + codice`.
+- chiave logica: `modello_versione_id + codice`.
 - `ordine` univoco per versione modello.
 - campi extra nel payload sono errore.
 - un campo con `lingua = EN` e `obbligatorio = true` e' richiesto in validazione solo

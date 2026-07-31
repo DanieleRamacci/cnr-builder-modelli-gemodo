@@ -62,9 +62,9 @@ conseguenza nella stessa sessione.
 - Q: `modello_versione_id` resta un intero o diventa una stringa come negli
   identificativi demo della `009` (es. `demo-bando-concorso-standard-v1`)? -> A:
   Resta intero (int64), coerente con il contratto OpenAPI gia' pubblicato da questa
-  feature (`DEC-001-IDENTIFICATIVI-MODELLO`, ancora `ASSUNTA_PROVVISORIA`: la
-  conferma definitiva richiede allineamento con GEBAN prima dell'implementazione). Gli
-  identificativi stringa nei manifest demo della `009` restano solo etichette
+  feature. L'implementazione mantiene UUID interni come chiavi tecniche della baseline
+  `009` ed espone a GEBAN un `public_id` intero stabile come `modello_versione_id`.
+  Gli identificativi stringa nei manifest demo della `009` restano solo etichette
   leggibili nei manifest di qualita', non il formato dell'API.
 - Q: La sicurezza delle chiamate operative cambia per questa feature? -> A: Si applica
   `SEC-006-001` (confermata dalla `006`): GEBAN chiama con token tecnico
@@ -430,9 +430,8 @@ non confermata, verificare `backend/app/quality/readiness_gate.py` (vedi
 - Le modifiche admin concordate con GEBAN non sovrascrivono contratti gia' pubblicati:
   producono una nuova versione per preservare storico e validazione coerente dei bandi
   gia' avviati.
-- `modello_versione_id` resta un identificativo intero (int64); il formato
-  definitivo e' tracciato come decisione aperta (`DEC-001-IDENTIFICATIVI-MODELLO`),
-  non bloccante per questo incremento.
+- `modello_versione_id` resta un identificativo intero (int64) esposto tramite
+  `public_id` stabile; gli UUID restano chiavi interne di persistenza.
 - Il profilo GEBAN versionato e l'autorizzazione fine per sistema richiedente
   restano fuori scope del primo incremento produttivo: il catalogo filtra solo per stato di pubblicazione,
   contesto, tipologia e versione modello, non ancora per profilo di integrazione

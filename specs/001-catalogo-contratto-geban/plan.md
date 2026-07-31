@@ -56,7 +56,9 @@ GEBAN interattiva; validazione payload deterministica e senza dipendenze dal DB 
 
 **Constraints**: nessuna lettura diretta del DB GEBAN; solo versioni `PUBBLICATO` correnti
 per variante esposte in modalita' operativa; `modello_versione_id` obbligatorio per
-contratto dati e validazione payload (resta intero int64, `DEC-001-IDENTIFICATIVI-MODELLO`);
+contratto dati e validazione payload (resta intero int64, `DEC-001-IDENTIFICATIVI-MODELLO`;
+in persistenza la baseline `009` mantiene UUID interni e la `001` espone un `public_id`
+intero stabile);
 campi non previsti nel payload sono errore bloccante; `codice_tipologia` deve corrispondere
 a una tipologia GEBAN/SOL configurata (FR-020); campi con `lingua: EN` sono obbligatori
 solo se `bando_inglese: true` (FR-021, FR-022); le route operative richiedono JWT
