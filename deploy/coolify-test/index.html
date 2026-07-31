@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GEMODO DEV - Servizi e API</title>
+    <title>GEMODO DEV - Test API GEBAN</title>
     <style>
       :root {
         color-scheme: light;
@@ -41,8 +41,60 @@
         text-decoration: underline;
       }
 
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 1px solid #074985;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      button.secondary {
+        border-color: var(--line);
+        background: #fff;
+        color: var(--text);
+      }
+
+      button:disabled {
+        border-color: var(--line);
+        background: var(--surface-soft);
+        color: var(--muted);
+        cursor: not-allowed;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      input,
+      select {
+        min-height: 40px;
+        padding: 8px 10px;
+      }
+
+      textarea {
+        min-height: 88px;
+        padding: 10px;
+        resize: vertical;
+      }
+
       .wrap {
-        width: min(1160px, calc(100vw - 32px));
+        width: min(1280px, calc(100vw - 32px));
         margin: 0 auto;
       }
 
@@ -59,10 +111,6 @@
         gap: 20px;
       }
 
-      .brand {
-        min-width: 0;
-      }
-
       h1,
       h2,
       h3,
@@ -76,32 +124,46 @@
         letter-spacing: 0;
       }
 
-      header p {
-        margin-bottom: 0;
+      header p,
+      .note {
         color: var(--muted);
+        line-height: 1.55;
       }
 
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--surface-soft);
-        color: var(--muted);
-        font-size: 14px;
-        white-space: nowrap;
+      header p,
+      .note {
+        margin-bottom: 0;
       }
 
       main {
+        display: grid;
+        gap: 16px;
         padding: 28px 0 44px;
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 16px;
+      .badge,
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      .badge {
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        background: var(--surface-soft);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .pill {
+        padding: 4px 8px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
       }
 
       .panel {
@@ -123,77 +185,69 @@
         padding: 18px 20px 20px;
       }
 
-      .links {
+      .stack {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .doc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 10px;
       }
 
-      .linkbox {
-        min-height: 78px;
-        padding: 14px;
+      .linkbox,
+      details {
         border: 1px solid var(--line);
         border-radius: 8px;
         background: #fbfcfe;
       }
 
+      .linkbox {
+        min-height: 118px;
+        padding: 14px;
+      }
+
       .linkbox span {
         display: block;
-        margin-top: 5px;
+        margin-top: 6px;
         color: var(--muted);
         font-size: 13px;
-        line-height: 1.35;
+        line-height: 1.4;
       }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
+      .test-grid {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 16px;
       }
 
-      th,
-      td {
-        padding: 13px 12px;
-        border-bottom: 1px solid var(--line);
-        text-align: left;
-        vertical-align: top;
-        font-size: 14px;
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      th {
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      label {
         color: var(--muted);
         font-size: 12px;
+        font-weight: 800;
         text-transform: uppercase;
       }
 
-      tr:last-child td {
-        border-bottom: 0;
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      .state {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-weight: 800;
-        white-space: nowrap;
-      }
-
-      .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: currentColor;
-      }
-
-      .ok {
-        color: var(--green);
-      }
-
-      .planned {
-        color: var(--amber);
-      }
-
-      .off {
-        color: var(--red);
+      .result {
+        min-height: 320px;
       }
 
       code,
@@ -216,18 +270,56 @@
         color: #f8fafc;
         font-size: 13px;
         line-height: 1.5;
+        white-space: pre-wrap;
       }
 
-      .stack {
+      summary {
+        display: flex;
+        min-height: 58px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::after {
+        content: "+";
+        color: var(--blue);
+        font-size: 20px;
+      }
+
+      details[open] summary::after {
+        content: "-";
+      }
+
+      .detail-body {
         display: grid;
-        gap: 16px;
+        gap: 12px;
+        padding: 0 16px 16px;
       }
 
-      .note {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.55;
+      .endpoint {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .method {
+        min-width: 50px;
+        border-radius: 6px;
+        padding: 5px 7px;
+        background: #e8f2ff;
+        color: #074985;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 900;
       }
 
       .warn {
@@ -239,22 +331,33 @@
         line-height: 1.45;
       }
 
-      @media (max-width: 860px) {
-        .topbar,
-        .grid {
+      .ok {
+        color: var(--green);
+      }
+
+      .planned {
+        color: var(--amber);
+      }
+
+      .error {
+        color: var(--red);
+      }
+
+      @media (max-width: 980px) {
+        .doc-grid,
+        .test-grid,
+        .form-grid,
+        .actions {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar {
           display: block;
+          padding: 16px 0;
         }
 
         .badge {
           margin-top: 14px;
-        }
-
-        .panel {
-          margin-top: 16px;
-        }
-
-        .links {
-          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -262,139 +365,329 @@
   <body>
     <header>
       <div class="wrap topbar">
-        <div class="brand">
-          <h1>GEMODO DEV</h1>
-          <p>Servizi disponibili, API pubblicate e chiamate autenticate per integrazione GEBAN.</p>
+        <div>
+          <h1>GEMODO DEV - Test API GEBAN</h1>
+          <p>Flusso operativo per provare catalogo, categorie, modelli, contratto dati e validazione payload.</p>
         </div>
         <div class="badge">Ambiente test / Coolify</div>
       </div>
     </header>
 
     <main class="wrap">
-      <section class="grid">
-        <div class="stack">
-          <div class="panel">
-            <h2>Documentazione</h2>
-            <div class="body">
-              <div class="links">
-                <div class="linkbox">
-                  <a href="/docs/geban-catalog" target="_blank" rel="noreferrer">Swagger catalogo GEBAN</a>
-                  <span>Contratto OpenAPI versionato per catalogo, campi richiesti e validazione payload.</span>
-                </div>
-                <div class="linkbox">
-                  <a href="/redoc/geban-catalog" target="_blank" rel="noreferrer">ReDoc catalogo GEBAN</a>
-                  <span>Lettura descrittiva dello stesso contratto OpenAPI.</span>
-                </div>
-                <div class="linkbox">
-                  <a href="/openapi/geban-catalog.yaml" target="_blank" rel="noreferrer">OpenAPI YAML</a>
-                  <span>Sorgente tecnica pubblicata per integratori e test automatici.</span>
-                </div>
-                <div class="linkbox">
-                  <a href="/docs" target="_blank" rel="noreferrer">Swagger runtime FastAPI</a>
-                  <span>Schema runtime esposto dal backend attualmente avviato.</span>
-                </div>
-              </div>
-            </div>
+      <section class="panel">
+        <h2>Documentazione disponibile</h2>
+        <div class="body doc-grid">
+          <div class="linkbox">
+            <a href="/docs/geban-catalog" target="_blank" rel="noreferrer">Swagger catalogo GEBAN</a>
+            <span>Console interattiva del contratto OpenAPI versionato. Utile per provare endpoint e parametri.</span>
           </div>
-
-          <div class="panel">
-            <h2>API disponibili ora</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Metodo</th>
-                  <th>Endpoint</th>
-                  <th>Uso</th>
-                  <th>Ruolo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>GET</code></td>
-                  <td><code>/api/v1/catalogo/tipi-documento</code></td>
-                  <td>Elenca i tipi documento disponibili.</td>
-                  <td><code>DOCUMENTI_VIEWER</code></td>
-                </tr>
-                <tr>
-                  <td><code>GET</code></td>
-                  <td><code>/api/v1/catalogo/tipi-documento/{codice}/categorie</code></td>
-                  <td>Elenca le categorie attive per un tipo documento.</td>
-                  <td><code>DOCUMENTI_VIEWER</code></td>
-                </tr>
-                <tr>
-                  <td><code>GET</code></td>
-                  <td><code>/api/v1/catalogo/modelli</code></td>
-                  <td>Restituisce versioni modello pubblicate e valide per il contesto GEBAN.</td>
-                  <td><code>DOCUMENTI_VIEWER</code></td>
-                </tr>
-                <tr>
-                  <td><code>GET</code></td>
-                  <td><code>/api/v1/catalogo/modelli/{id}/campi-richiesti</code></td>
-                  <td>Restituisce il contratto dati della versione modello selezionata.</td>
-                  <td><code>DOCUMENTI_VIEWER</code></td>
-                </tr>
-                <tr>
-                  <td><code>POST</code></td>
-                  <td><code>/api/v1/documenti/valida</code></td>
-                  <td>Valida il payload GEBAN prima della futura generazione documentale.</td>
-                  <td><code>DOCUMENTI_GENERATORE</code></td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="linkbox">
+            <a href="/redoc/geban-catalog" target="_blank" rel="noreferrer">ReDoc catalogo GEBAN</a>
+            <span>Stessa OpenAPI di Swagger, ma in formato più leggibile per documentazione e integratori.</span>
+          </div>
+          <div class="linkbox">
+            <a href="/openapi/geban-catalog.yaml" target="_blank" rel="noreferrer">OpenAPI YAML</a>
+            <span>Sorgente tecnica versionata del contratto API esposto a GEBAN.</span>
+          </div>
+          <div class="linkbox">
+            <a href="/docs" target="_blank" rel="noreferrer">Swagger runtime FastAPI</a>
+            <span>Schema generato dal backend in esecuzione. Serve a confrontare runtime e contratto versionato.</span>
           </div>
         </div>
+      </section>
 
-        <div class="stack">
-          <div class="panel">
-            <h2>Stato servizi</h2>
-            <table>
-              <tbody>
-                <tr>
-                  <td><span class="state ok"><span class="dot"></span>Homepage</span></td>
-                  <td>Pagina pubblica Coolify.</td>
-                </tr>
-                <tr>
-                  <td><span class="state ok"><span class="dot"></span>Backend API</span></td>
-                  <td>FastAPI, healthcheck <a href="/health" target="_blank" rel="noreferrer">/health</a>.</td>
-                </tr>
-                <tr>
-                  <td><span class="state ok"><span class="dot"></span>PostgreSQL</span></td>
-                  <td>Persistenza catalogo e seed demo via Alembic.</td>
-                </tr>
-                <tr>
-                  <td><span class="state ok"><span class="dot"></span>Keycloak Bearer</span></td>
-                  <td>Validazione JWT tramite issuer, audience e JWKS.</td>
-                </tr>
-                <tr>
-                  <td><span class="state planned"><span class="dot"></span>PDF</span></td>
-                  <td>Non disponibile in questa versione. Arriva con la spec 004.</td>
-                </tr>
-              </tbody>
-            </table>
+      <section class="panel">
+        <h2>Console test flusso GEBAN</h2>
+        <div class="body stack">
+          <div class="warn">
+            Oggi il backend accetta un Bearer token Keycloak del client tecnico <code>geban-backend</code>.
+            Il login SSO utente umano non è ancora implementato nella pagina: per il test incolla qui un access token valido.
           </div>
 
-          <div class="panel">
-            <h2>Chiamata autenticata</h2>
-            <div class="body stack">
-              <p class="note">
-                GEBAN deve ottenere un token Keycloak con client tecnico <code>geban-backend</code>,
-                audience <code>gemodo-backend</code> e ruolo client coerente.
-              </p>
-              <pre>curl -s -X POST "$KEYCLOAK_ISSUER_URL/protocol/openid-connect/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials" \
-  -d "client_id=geban-backend" \
-  -d "client_secret=$GEBAN_CLIENT_SECRET"</pre>
-              <pre>curl -s "$GEMODO_BASE_URL/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;categoria=DEMO" \
-  -H "Authorization: Bearer $ACCESS_TOKEN"</pre>
-              <div class="warn">
-                Il backend GEMODO non conserva il secret di <code>geban-backend</code>: quel secret serve al client GEBAN
-                per ottenere il token. GEMODO valida solo il Bearer token ricevuto.
+          <div class="test-grid">
+            <div class="stack">
+              <div class="field">
+                <label for="token">Bearer token Keycloak</label>
+                <textarea id="token" placeholder="Incolla qui solo il token, senza la parola Bearer"></textarea>
               </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="tipoDocumento">Tipo documento</label>
+                  <input id="tipoDocumento" value="BANDO_CONCORSO" />
+                </div>
+                <div class="field">
+                  <label for="categoria">Categoria</label>
+                  <select id="categoria">
+                    <option value="DEMO">DEMO</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="codiceTipologia">Tipologia SOL</label>
+                  <select id="codiceTipologia">
+                    <option value="">Nessun filtro</option>
+                    <option value="TDPNRR">TDPNRR</option>
+                    <option value="CD">CD</option>
+                    <option value="DIR">DIR</option>
+                    <option value="TD">TD</option>
+                    <option value="CP">CP</option>
+                    <option value="RS">RS</option>
+                    <option value="CATP">CATP</option>
+                    <option value="TI">TI</option>
+                    <option value="SDIP">SDIP</option>
+                    <option value="MOB">MOB</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="modelloVersioneId">Modello versione</label>
+                  <input id="modelloVersioneId" value="1" />
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" data-action="health">1. Health</button>
+                <button type="button" data-action="tipi">2. Tipi</button>
+                <button type="button" data-action="categorie">3. Categorie</button>
+                <button type="button" data-action="modelli">4. Modelli</button>
+                <button type="button" data-action="campi">5. Campi</button>
+                <button type="button" data-action="valida">6. Valida</button>
+              </div>
+              <button type="button" disabled>7. Genera PDF - endpoint non ancora disponibile</button>
+            </div>
+
+            <div class="stack">
+              <p class="note">
+                Sequenza consigliata: carica categorie, scegli categoria, carica modelli, scegli modello, leggi campi
+                richiesti, valida il payload. Il PDF verrà collegato appena sarà implementata la generazione documentale.
+              </p>
+              <pre id="result" class="result">Risultato chiamate API.</pre>
             </div>
           </div>
         </div>
       </section>
+
+      <section class="panel">
+        <h2>API disponibili ora</h2>
+        <div class="body stack">
+          <details open>
+            <summary>
+              <span class="endpoint"><span class="method">GET</span><code>/api/v1/catalogo/tipi-documento</code></span>
+              <span class="pill">DOCUMENTI_VIEWER</span>
+            </summary>
+            <div class="detail-body">
+              <p class="note">Restituisce i tipi documento disponibili per l'uso operativo.</p>
+              <pre>{
+  "items": [
+    { "codice": "BANDO_CONCORSO", "descrizione": "Bando di concorso" }
+  ]
+}</pre>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              <span class="endpoint"><span class="method">GET</span><code>/api/v1/catalogo/tipi-documento/{codice}/categorie</code></span>
+              <span class="pill">DOCUMENTI_VIEWER</span>
+            </summary>
+            <div class="detail-body">
+              <p class="note">Restituisce le categorie attive per il tipo documento scelto.</p>
+              <pre>{
+  "tipo_documento": "BANDO_CONCORSO",
+  "categorie": [
+    { "codice": "DEMO", "descrizione": "Categoria demo" }
+  ]
+}</pre>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              <span class="endpoint"><span class="method">GET</span><code>/api/v1/catalogo/modelli</code></span>
+              <span class="pill">DOCUMENTI_VIEWER</span>
+            </summary>
+            <div class="detail-body">
+              <p class="note">Filtra versioni modello pubblicate per tipo documento, categoria e tipologia SOL.</p>
+              <pre>{
+  "tipo_documento": "BANDO_CONCORSO",
+  "categoria": "DEMO",
+  "codice_tipologia": null,
+  "modalita": "OPERATIVA",
+  "modelli": [
+    {
+      "modello_id": 1,
+      "modello_versione_id": 1,
+      "codice": "demo-bando-concorso-standard-v1",
+      "descrizione": "demo-bando-concorso-standard-v1",
+      "variante": "STANDARD",
+      "versione": 1,
+      "stato": "PUBBLICATO"
+    }
+  ]
+}</pre>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              <span class="endpoint"><span class="method">GET</span><code>/api/v1/catalogo/modelli/{id}/campi-richiesti</code></span>
+              <span class="pill">DOCUMENTI_VIEWER</span>
+            </summary>
+            <div class="detail-body">
+              <p class="note">Restituisce il contratto dati per costruire la maschera GEBAN e validare il payload.</p>
+              <pre>{
+  "modello_versione_id": 1,
+  "tipo_documento": "BANDO_CONCORSO",
+  "categoria": "DEMO",
+  "campi": [
+    {
+      "codice": "codice_bando",
+      "etichetta": "Codice bando",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 1
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}</pre>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              <span class="endpoint"><span class="method">POST</span><code>/api/v1/documenti/valida</code></span>
+              <span class="pill">DOCUMENTI_GENERATORE</span>
+            </summary>
+            <div class="detail-body">
+              <p class="note">Valida i dati GEBAN contro il contratto del modello. Non genera ancora PDF.</p>
+              <pre>{
+  "sistema_richiedente": "GEBAN",
+  "external_context_id": "BANDO-DEMO-001",
+  "modello_versione_id": 1,
+  "bando_inglese": false,
+  "dati": {
+    "codice_bando": "BANDO-DEMO-001",
+    "titolo_it": "Bando demo",
+    "sede_prescelta_it": "Roma",
+    "numero_posti": 1
+  }
+}</pre>
+              <pre>{
+  "valido": true,
+  "errori": []
+}</pre>
+            </div>
+          </details>
+        </div>
+      </section>
     </main>
+
+    <script>
+      const result = document.getElementById("result");
+      const token = document.getElementById("token");
+      const tipoDocumento = document.getElementById("tipoDocumento");
+      const categoria = document.getElementById("categoria");
+      const codiceTipologia = document.getElementById("codiceTipologia");
+      const modelloVersioneId = document.getElementById("modelloVersioneId");
+
+      token.value = localStorage.getItem("gemodo-token") || "";
+      token.addEventListener("input", () => localStorage.setItem("gemodo-token", token.value.trim()));
+
+      function headers() {
+        const value = token.value.trim();
+        return value ? { Authorization: `Bearer ${value}`, "Content-Type": "application/json" } : {};
+      }
+
+      function show(title, data) {
+        result.textContent = `${title}\n\n${typeof data === "string" ? data : JSON.stringify(data, null, 2)}`;
+      }
+
+      async function callApi(title, url, options = {}) {
+        const response = await fetch(url, { ...options, headers: { ...headers(), ...(options.headers || {}) } });
+        const text = await response.text();
+        let data = text;
+        try {
+          data = JSON.parse(text);
+        } catch (_) {
+          data = text;
+        }
+        show(`${response.status} ${response.statusText} - ${title}`, data);
+        return { response, data };
+      }
+
+      async function loadCategorie() {
+        const encodedTipo = encodeURIComponent(tipoDocumento.value.trim());
+        const { data } = await callApi("categorie", `/api/v1/catalogo/tipi-documento/${encodedTipo}/categorie`);
+        if (data && Array.isArray(data.categorie)) {
+          categoria.innerHTML = "";
+          for (const item of data.categorie) {
+            const option = document.createElement("option");
+            option.value = item.codice;
+            option.textContent = `${item.codice} - ${item.descrizione}`;
+            categoria.appendChild(option);
+          }
+        }
+      }
+
+      async function loadModelli() {
+        const params = new URLSearchParams({
+          tipo_documento: tipoDocumento.value.trim(),
+          categoria: categoria.value,
+        });
+        if (codiceTipologia.value) {
+          params.set("codice_tipologia", codiceTipologia.value);
+        }
+        const { data } = await callApi("modelli", `/api/v1/catalogo/modelli?${params.toString()}`);
+        if (data && Array.isArray(data.modelli) && data.modelli.length > 0) {
+          modelloVersioneId.value = data.modelli[0].modello_versione_id;
+        }
+      }
+
+      function validationPayload() {
+        return {
+          sistema_richiedente: "GEBAN",
+          external_context_id: "BANDO-DEMO-001",
+          modello_versione_id: Number(modelloVersioneId.value),
+          bando_inglese: false,
+          dati: {
+            codice_bando: "BANDO-DEMO-001",
+            titolo_it: "Bando demo",
+            sede_prescelta_it: "Roma",
+            numero_posti: 1,
+          },
+        };
+      }
+
+      document.querySelectorAll("[data-action]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          try {
+            if (button.dataset.action === "health") {
+              await callApi("health", "/health");
+            }
+            if (button.dataset.action === "tipi") {
+              await callApi("tipi documento", "/api/v1/catalogo/tipi-documento");
+            }
+            if (button.dataset.action === "categorie") {
+              await loadCategorie();
+            }
+            if (button.dataset.action === "modelli") {
+              await loadModelli();
+            }
+            if (button.dataset.action === "campi") {
+              await callApi("campi richiesti", `/api/v1/catalogo/modelli/${encodeURIComponent(modelloVersioneId.value)}/campi-richiesti`);
+            }
+            if (button.dataset.action === "valida") {
+              await callApi("validazione payload", "/api/v1/documenti/valida", {
+                method: "POST",
+                body: JSON.stringify(validationPayload()),
+              });
+            }
+          } catch (error) {
+            show("Errore chiamata", String(error));
+          }
+        });
+      });
+    </script>
   </body>
 </html>
