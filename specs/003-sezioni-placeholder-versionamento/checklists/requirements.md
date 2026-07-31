@@ -33,3 +33,5 @@
 
 - Chiarito: contenuto strutturato controllato, campi complessi con schema esplicito,
   sezioni proprie della versione modello e nessun versionamento autonomo sezioni per ora.
+- Confermato il 2026-07-31: editor visuale controllato, non HTML libero; struttura
+  `GEMODO_DOCUMENT_V1` con blocchi, posizionamenti, asset, stili e placeholder validati.

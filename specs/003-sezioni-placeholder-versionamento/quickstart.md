@@ -7,6 +7,9 @@ l'implementazione. Non sostituisce i test automatici.
 
 - backend FastAPI avviato;
 - database PostgreSQL migrato;
+- JWT Bearer Keycloak valido per audience `gemodo-backend`;
+- ruolo `GEMODO_MODELLI_GESTORE` per creare/modificare sezioni, template, schemi e
+  validazioni di pubblicazione;
 - esiste una versione modello in stato `BOZZA`;
 - la versione modello ha campi/placeholder disponibili, ad esempio `NUM_POSTI`, `PROFILO`
   e `SEDI`.
@@ -79,3 +82,18 @@ Expected:
 
 - la configurazione condizionale viene rifiutata o non proposta;
 - le sezioni inserite sono considerate sempre presenti.
+
+## Scenario 7 - Modello documentale controllato
+
+1. Salvare un modello `GEMODO_DOCUMENT_V1` con blocchi ammessi, asset dichiarati e stili
+   consentiti.
+2. Validarlo con i placeholder disponibili della versione modello.
+3. Provare a salvare un blocco con HTML libero, CSS libero, script o posizionamento non
+   ammesso.
+
+Expected:
+
+- il modello valido viene accettato;
+- il modello con contenuto libero o layout fuori grammatica viene rifiutato con errore
+  stabile;
+- gli asset usati dai blocchi devono essere presenti nell'elenco asset del modello.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: Updated after clarification
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §5.5, §6, §8.7-§8.9 e §16.3.
 
@@ -17,6 +17,17 @@
 - Q: Come devono essere descritti i campi complessi? -> A: I campi complessi devono avere schema strutturato con sotto-campi, tipi, obbligatorieta' e vincoli; non sono ammessi come JSON libero generico.
 - Q: Le sezioni devono avere versionamento autonomo? -> A: No per ora. Le sezioni sono proprie della versione modello, modificabili solo quando la versione modello e' in bozza; una nuova versione modello copia le sezioni dalla precedente. Una eventuale libreria sezioni e' solo template copiabile. Il versionamento autonomo delle sezioni potra' essere valutato in futuro se necessario.
 - Q: Sono previste sezioni condizionali? -> A: No per ora. Le sezioni inserite nel modello sono sempre presenti; il perimetro corrente non include sezioni condizionali basate su regole o valori del payload.
+
+### Session 2026-07-31
+
+- Q: Quale formato visuale deve usare il modello documentale? -> A: Editor visuale controllato, non HTML libero; struttura `GEMODO_DOCUMENT_V1` versionata con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati.
+
+## Out of Scope
+
+- Frontend editor visuale, coperto dalla spec `007`.
+- Rendering PDF e conversioni tecniche interne, coperti dalla spec `004`.
+- Versionamento autonomo live delle sezioni condivise.
+- Sezioni condizionali basate su regole o valori del payload.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -104,7 +115,7 @@ placeholder non dichiarati nei campi richiesti.
 ### Functional Requirements
 
 - **FR-001**: Il sistema MUST gestire sezioni proprie della versione modello.
-- **FR-001a**: Il sistema MUST rappresentare il contenuto sezione come contenuto strutturato controllato con paragrafi, titoli, liste, tabelle semplici, grassetto/corsivo e placeholder.
+- **FR-001a**: Il sistema MUST rappresentare il contenuto sezione come modello documentale controllato `GEMODO_DOCUMENT_V1`, composto da blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati.
 - **FR-001b**: Il sistema MUST impedire HTML libero o formattazioni non ammesse nel contenuto delle sezioni.
 - **FR-001c**: Il sistema MUST consentire modifiche alle sezioni solo quando la versione modello e' in stato modificabile.
 - **FR-001d**: Il sistema MUST impedire modifiche dirette alle sezioni di una versione modello pubblicata.
@@ -125,12 +136,19 @@ placeholder non dichiarati nei campi richiesti.
 - **FR-007a**: Il sistema MUST impedire campi complessi definiti come JSON libero generico quando sono usati per il contratto dati verso GEBAN.
 - **FR-007b**: Il sistema MUST validare i valori dei campi complessi rispetto allo schema dei sotto-campi dichiarato.
 - **FR-008**: Il sistema MUST mantenere lo storico del contenuto sezioni tramite le versioni modello pubblicate.
+- **FR-009**: Il sistema MUST supportare solo i blocchi documentali ammessi `LOGO`, `INTESTAZIONE`, `TITOLO`, `PARAGRAFO`, `TABELLA`, `COLONNE`, `FIRMA`, `FOOTER`, `INTERRUZIONE_PAGINA` nel perimetro corrente.
+- **FR-010**: Il sistema MUST validare la compatibilita' tra tipo blocco e posizionamento, rifiutando layout fuori grammatica controllata.
+- **FR-011**: Il sistema MUST referenziare asset del modello tramite id, versione, storage reference e hash quando disponibile; gli asset non devono essere incorporati come contenuto libero.
+- **FR-012**: Le API interne della `003` MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; letture con `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, scritture e validazioni di pubblicazione con `GEMODO_MODELLI_GESTORE`.
 
 ### Key Entities
 
 - **Sezione Modello**: sezione propria di una specifica versione modello.
 - **Template Sezione**: contenuto opzionale copiabile in una versione modello; dopo la copia non aggiorna automaticamente i modelli esistenti.
 - **Contenuto Strutturato Sezione**: contenuto controllato composto da blocchi e formattazioni ammesse, non HTML libero.
+- **Modello Documentale Controllato**: struttura `GEMODO_DOCUMENT_V1` versionata con pagina, regioni, blocchi, asset, stili ammessi, placeholder usati e flag anti HTML/CSS/script libero.
+- **Blocco Documento**: elemento controllato del modello, con tipo ammesso, posizionamento, ordine, contenuto, stile, asset o placeholder.
+- **Asset Documento**: logo o immagine referenziata da id/versione/storage/hash e usabile solo dai blocchi ammessi.
 - **Voce Modello**: elemento ordinato della composizione modello.
 - **Placeholder**: riferimento testuale a un campo richiesto.
 - **Placeholder Disponibile**: placeholder associato alla versione modello e quindi esposto nel contratto dati.
@@ -145,11 +163,12 @@ placeholder non dichiarati nei campi richiesti.
 - **SC-001**: Il 100% dei placeholder presenti in un modello pubblicabile e' dichiarato nel contratto dati.
 - **SC-002**: Il 100% delle sezioni di una versione modello pubblicata resta immutabile e riproducibile tramite quella versione modello.
 - **SC-003**: Il 100% dei campi complessi ha una struttura documentata prima della pubblicazione del modello.
+- **SC-004**: Il 100% dei modelli pubblicabili usa solo blocchi, posizionamenti, stili, asset e placeholder validi per `GEMODO_DOCUMENT_V1`.
 
 ## Assumptions
 
-- Il contenuto sezione non usa HTML libero; eventuali dettagli tecnici del formato
-  controllato saranno definiti nel planning.
+- Il contenuto sezione non usa HTML libero, CSS libero o script; il formato controllato e'
+  `GEMODO_DOCUMENT_V1`, gia' prototipato in `infra/local/document-models/` dalla `009`.
 - Le sezioni non hanno versionamento autonomo nel perimetro corrente; lo storico e'
   garantito dalla versione modello.
 - Una libreria sezioni, se presente, fornisce template copiabili e non sezioni condivise

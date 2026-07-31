@@ -292,18 +292,19 @@ decisions:
     titolo: Formato visuale del modello documentale
     owner_spec: specs/003-sezioni-placeholder-versionamento
     spec_interessate:
+      - specs/003-sezioni-placeholder-versionamento
       - specs/004-generazione-documenti-pdf
       - specs/007-frontend-builder-consultazione
       - specs/009-fondamenta-mock-test-qualita
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: >
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
       builder come editor visuale controllato, non editor HTML; struttura salvata come
       modello documentale versionato con blocchi ammessi, posizionamenti controllati,
       asset versionati, stili consentiti e placeholder validati (prototipato in
       infra/local/document-models/ e backend/app/quality/document_model.py).
-    impatto: builder visuale e rendering definitivo
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-009-DOCUMENTAZIONE-API
     titolo: Documentazione API e Swagger/OpenAPI

@@ -11,6 +11,22 @@ riduce rischi di sicurezza, ambiguita' di rendering e contenuti non validabili.
 - Solo testo semplice: troppo limitato per bandi e documenti amministrativi.
 - HTML libero: scartato per rischi di validazione, sicurezza e riproducibilita' PDF.
 
+## Decision: modello documentale `GEMODO_DOCUMENT_V1`
+
+**Rationale**: la decisione confermata e' usare un editor visuale controllato, non un
+editor HTML. Il backend salva una struttura versionata con blocchi ammessi, posizionamenti
+controllati, asset versionati, stili consentiti e placeholder validati. Il prototipo della
+`009` (`infra/local/document-models/` e `backend/app/quality/document_model.py`) diventa il
+riferimento iniziale per il contratto della `003`.
+
+**Alternatives considered**:
+
+- HTML/CSS libero salvato dal builder: scartato per sicurezza, audit e riproducibilita'.
+- Formato visuale deciso solo dal frontend: scartato perche' la validazione deve essere
+  backend e contract-first.
+- Template fissi senza struttura visuale: scartato perche' non abilita il builder
+  documentale richiesto.
+
 ## Decision: sezioni proprie della versione modello
 
 **Rationale**: la versione modello e' l'unita' di storicizzazione operativa. Salvare le
@@ -71,3 +87,16 @@ obbligatorieta' e vincoli.
 
 - JSON libero generico: scartato perche' non supporta maschere dinamiche affidabili.
 - Solo campi semplici: troppo limitato per documenti reali.
+
+## Decision: API `003` protette con ruoli builder
+
+**Rationale**: sezioni, placeholder e schema campi complessi modificano il contenuto dei
+modelli pubblicabili. Le API devono quindi usare lo stesso confine Keycloak della `002`:
+letture con `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, scritture e validazioni
+di pubblicazione con `GEMODO_MODELLI_GESTORE`.
+
+**Alternatives considered**:
+
+- Demandare l'autorizzazione al frontend: scartato perche' viola la costituzione.
+- Proteggere solo la pubblicazione: scartato perche' anche la composizione della bozza
+  modifica configurazioni amministrative.

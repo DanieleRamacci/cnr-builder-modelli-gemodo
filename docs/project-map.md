@@ -13,8 +13,8 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
 | `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Spec/plan/tasks aggiornati (2026-07-31), 0/73 task implementati; readiness gate `TASKS` verde | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; recepisce tipologie GEBAN/SOL, lingua IT/EN, categorie e campi comuni GEBAN confermati, bando multiplo/ribando, versionamento campi/placeholder, campi complessi strutturati e protezione JWT Keycloak minima per le API operative. Profilo GEBAN versionato e API dedicate al profilo sono sospesi per il primo incremento produttivo e restano tracciati per `002`/`006` |
-| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/64 task implementati; readiness gate `TASKS` verde | §2, §4, §8.2-§8.6, §10, §16.3 | Stati definitivi confermati: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare/pubblicare nel primo rilascio. La `002` espone API builder protette da Keycloak e riusa il dominio catalogo condiviso della `001`, senza duplicare tabelle |
-| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Plan+tasks generati ma superati (2026-06-19), 0/48 task implementati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente; chiarimento in `009`: builder visuale controllato, non editor HTML, con modello documentale versionato a blocchi/layout/asset/placeholder - non ancora recepito in `plan.md`/`tasks.md` di questa spec (fermi al 2026-06-19). Da aggiornare e ripianificare prima di implementare |
+| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Spec/plan/tasks aggiornati (2026-07-31), 0/64 task implementati; readiness gate `TASKS` verde | §2, §4, §8.2-§8.6, §10, §16.3 | Stati definitivi confermati: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare/pubblicare nel primo rilascio. La `002` espone API builder protette da Keycloak e riusa il dominio catalogo condiviso della `001`, senza duplicare tabelle |
+| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/69 task implementati; readiness gate `TASKS` verde | §5.5, §6, §8.7-§8.9, §16.3 | Formato visuale confermato: editor controllato, non HTML libero; modello `GEMODO_DOCUMENT_V1` con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati. La `003` estende API builder protette da Keycloak e alimenta il renderer della `004` |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
 | `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo; ribando chiarito in `009` come nuovo bando collegato al precedente; resta da chiarire nuova pubblicazione/riferimento documentale verso sistemi esterni |
 | `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | Decisioni risolte (SEC-006-001 e SEC-006-002), plan da avviare | §12, §8.11, §12.9 | `keycloak-jwt.md`; decisioni confermate il 2026-07-29: (1) GEBAN -> GEMODO con token tecnico backend-to-backend (client credentials) e contesto/utente reale nel payload solo per audit; ruoli GEMODO come client roles su `gemodo-backend` (realm Keycloak `cnr` condiviso); (2) nessuna separazione gestore/revisore/approvatore nella prima release, la pubblicazione del gestore vale come approvazione, ruoli revisore/approvatore restano riservati e inattivi; ambiente di test reale disponibile (`sso.test.si.cnr.it`, realm `cnr`, accesso admin per il team GEMODO), produzione da richiedere al referente infrastruttura Keycloak CNR |
@@ -93,19 +93,19 @@ aggiornati al 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la conferm
 `DEC-002-STATI-MODELLO`; la feature puo' partire da `T001`, ma il codice runtime deve
 riusare le fondamenta condivise della `001` quando implementate.
 
-`003-sezioni-placeholder-versionamento` ha gia' `plan.md` e `tasks.md` generati, ma
-risale alla sessione di chiarimento del 2026-06-19 e non riflette ancora le decisioni
-successive sul modello documentale controllato, sui campi complessi e sul versionamento
-campi/placeholder.
+`003-sezioni-placeholder-versionamento` ha `spec.md`, `plan.md`, `data-model.md`, OpenAPI
+e `tasks.md` aggiornati al 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la
+conferma di `DEC-003-FORMATO-VISUALE-MODELLO`; la feature puo' partire da `T001` dopo le
+fondamenta runtime di `001` e `002`.
 
-Nessun task di queste tre spec e' implementato (0/73, 0/64, 0/48). Prima di avviare
-l'implementazione applicativa oltre la `002`:
+Nessun task di queste tre spec e' implementato (0/73, 0/64, 0/69). Prima di avviare
+l'implementazione applicativa oltre la `003`:
 
 1. implementare la `001` seguendo `specs/001-catalogo-contratto-geban/tasks.md`;
 2. implementare la `002` seguendo `specs/002-builder-modelli/tasks.md`, riusando dominio
    catalogo e sicurezza comune;
-3. propagare nella `003` le decisioni ormai `CONFERMATA` che la riguardano e rigenerare
-   `plan.md`/`tasks.md`;
+3. implementare la `003` seguendo `specs/003-sezioni-placeholder-versionamento/tasks.md`,
+   riusando ciclo vita versione, sicurezza builder e contratto campi;
 4. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione critica
    blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi task
    implementativi (FR-018).

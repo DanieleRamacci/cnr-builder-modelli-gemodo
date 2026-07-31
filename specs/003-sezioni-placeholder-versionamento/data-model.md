@@ -25,9 +25,79 @@ Validation:
 - sezioni di versioni modello pubblicate non sono modificabili direttamente.
 - la sezione e' sempre presente nel modello; condizioni su payload sono fuori perimetro.
 
+### ModelloDocumentaleControllato
+
+Struttura `GEMODO_DOCUMENT_V1` versionata salvata dal builder visuale controllato.
+
+Fields:
+
+- `id`
+- `modello_versione_id`
+- `formato`: `GEMODO_DOCUMENT_V1`
+- `pagina`
+- `regioni`
+- `blocchi`: elenco ordinato di blocchi documento consentiti.
+- `asset`: elenco asset documentali versionati.
+- `stili_ammessi`
+- `placeholder_usati`: elenco derivato o salvato dei placeholder presenti.
+- `contiene_html_libero`: deve essere `false`.
+- `contiene_css_libero`: deve essere `false`.
+- `contiene_script`: deve essere `false`.
+
+Validation:
+
+- HTML libero, CSS libero e script non sono ammessi.
+- ogni blocco deve usare tipo, posizionamento, stile, asset e placeholder consentiti.
+- ogni placeholder del modello deve essere coerente con il contratto dati della versione.
+
+### BloccoDocumento
+
+Elemento controllato della struttura documentale.
+
+Fields:
+
+- `id`
+- `tipo`: `LOGO`, `INTESTAZIONE`, `TITOLO`, `PARAGRAFO`, `TABELLA`, `COLONNE`,
+  `FIRMA`, `FOOTER`, `INTERRUZIONE_PAGINA`.
+- `posizionamento`: `TOP`, `BODY`, `INLINE`, `COLUMN_LEFT`, `COLUMN_RIGHT`,
+  `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `BOTTOM_CENTER`.
+- `ordine`
+- `contenuto`: opzionale.
+- `stile`: opzionale, deve appartenere a `stili_ammessi`.
+- `asset_ref`: opzionale.
+- `colonne`: obbligatorie per `TABELLA` e `COLONNE`.
+- `placeholder_usati`
+
+Validation:
+
+- il posizionamento deve essere compatibile con il tipo blocco.
+- `TABELLA` deve dichiarare colonne.
+- `COLONNE` deve dichiarare almeno due colonne.
+- ogni `asset_ref` deve esistere tra gli asset del modello.
+
+### AssetDocumento
+
+Asset referenziabile da blocchi del modello.
+
+Fields:
+
+- `id`
+- `tipo`: ad esempio `LOGO` o `IMMAGINE`.
+- `nome`
+- `versione`
+- `storage_ref`
+- `hash_file`: opzionale finche' lo storage definitivo non e' implementato.
+- `dimensioni_consentite`
+
+Validation:
+
+- gli asset sono referenziati per id/versione/storage/hash, non incorporati come contenuto
+  libero.
+- un asset non dichiarato non puo' essere usato da un blocco.
+
 ### ContenutoStrutturatoSezione
 
-Rappresentazione controllata del testo della sezione.
+Vista compatibile della sezione dentro il modello documentale controllato.
 
 Fields:
 
@@ -36,10 +106,15 @@ Fields:
 
 Block types ammessi:
 
-- `paragrafo`
-- `titolo`
-- `lista`
-- `tabella_semplice`
+- `LOGO`
+- `INTESTAZIONE`
+- `TITOLO`
+- `PARAGRAFO`
+- `TABELLA`
+- `COLONNE`
+- `FIRMA`
+- `FOOTER`
+- `INTERRUZIONE_PAGINA`
 
 Inline marks ammessi:
 
@@ -50,6 +125,7 @@ Inline marks ammessi:
 Validation:
 
 - HTML libero non ammesso.
+- CSS libero e script non ammessi.
 - formattazioni non previste non ammesse.
 - placeholder devono rispettare il formato canonico del progetto.
 
@@ -151,6 +227,9 @@ Validation:
 ```text
 ModelloDocumentoVersione 1--N SezioneModello
 TemplateSezione 0--N SezioneModello (solo origine copia)
+ModelloDocumentoVersione 1--1 ModelloDocumentaleControllato
+ModelloDocumentaleControllato 1--N BloccoDocumento
+ModelloDocumentaleControllato 0--N AssetDocumento
 ModelloDocumentoVersione 1--N PlaceholderDisponibile
 SezioneModello 1--N PlaceholderUsato
 ModelloCampoRichiesto 0--1 CampoComplessoSchema
@@ -166,3 +245,5 @@ CampoComplessoSchema 1--N SottoCampoSchema
 - Creare una nuova versione modello da una precedente copia anche le sezioni.
 - Aggiornare un template sezione non modifica le sezioni gia' copiate.
 - Sezioni condizionali basate su payload sono fuori perimetro corrente.
+- Il renderer PDF della `004` puo' trasformare internamente `GEMODO_DOCUMENT_V1`, ma il
+  builder non salva HTML/CSS/script libero.

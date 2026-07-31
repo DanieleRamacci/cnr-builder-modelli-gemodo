@@ -17,14 +17,16 @@ Branch:
 
 Feature attiva:
 
-- `specs/002-builder-modelli`
+- `specs/003-sezioni-placeholder-versionamento`
 
 La feature `009-fondamenta-mock-test-qualita` e' completa (`T001-T064`) e ha preparato
 fondamenta, mock, test, profili di integrazione, modello documentale controllato,
 documentazione API e readiness open source/PA. La feature `001-catalogo-contratto-geban`
 ha `spec.md`, `plan.md` e `tasks.md` aggiornati e readiness gate `TASKS` verde. La
-feature attiva e' ora `002-builder-modelli`: stati/versioni sono confermati, il piano e
-i task sono aggiornati al 2026-07-31, e il gate `TASKS` e' verde.
+feature `002-builder-modelli` ha stati/versioni confermati, piano e task aggiornati, e
+gate `TASKS` verde. La feature attiva e' ora `003-sezioni-placeholder-versionamento`:
+formato visuale controllato confermato, piano e task aggiornati al 2026-07-31, e gate
+`TASKS` verde.
 
 ## Provare Il Backend In Locale
 
@@ -126,22 +128,22 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/002-builder-modelli
+specs/003-sezioni-placeholder-versionamento
 ```
 
 ## Prossimo Blocco Di Sviluppo
 
-Per il codice applicativo resta corretto partire dalla `001`, perche' la `002` riusa
-modelli catalogo, errori comuni e validazione JWT condivisa. Dopo i task foundational
-della `001`, la `002` puo' partire da `T001` in `specs/002-builder-modelli/tasks.md`
-senza duplicare tabelle o sicurezza.
+Per il codice applicativo resta corretto partire dalla `001`, poi `002`, poi `003`.
+La `003` riusa modello versione, pubblicazione, errori comuni e validazione JWT condivisa.
+Dopo i task foundational di `001` e `002`, la `003` puo' partire da `T001` in
+`specs/003-sezioni-placeholder-versionamento/tasks.md`.
 
 Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 
 1. Implementare la `002-builder-modelli` seguendo i 64 task aggiornati, con API builder
    protette da Keycloak e dominio catalogo condiviso con la `001`.
-2. Propagare nella `003` le decisioni ormai `CONFERMATA` che la riguardano, poi
-   rigenerare `plan.md`/`tasks.md` per sezioni, placeholder e modello documentale.
+2. Implementare la `003-sezioni-placeholder-versionamento` seguendo i 69 task aggiornati,
+   con `GEMODO_DOCUMENT_V1`, placeholder validati e campi complessi strutturati.
 3. Completare il flusso Spec Kit (`plan` + `tasks`, dove mancanti o superati) per
    `006-sicurezza-autorizzazioni-audit`, `004-generazione-documenti-pdf` e
    `005-storage-idempotenza-consultazione`.

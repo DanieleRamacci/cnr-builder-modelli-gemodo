@@ -1,10 +1,15 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Sezioni e Placeholder API
-  version: 0.1.0
-  description: API interne builder per sezioni della versione modello, template, placeholder e schemi campi complessi.
+  version: 0.2.0
+  description: >
+    API interne builder protette da Keycloak JWT Bearer per sezioni della versione
+    modello, template, modello documentale controllato, placeholder e schemi campi
+    complessi.
 servers:
   - url: /api/v1/builder
+security:
+  - KeycloakBearer: []
 paths:
   /modelli/{modelloId}/versioni/{versioneId}/sezioni:
     get:
@@ -78,6 +83,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidazioneSezioniResponse"
+  /modelli/{modelloId}/versioni/{versioneId}/document-model:
+    put:
+      summary: Salva modello documentale controllato della versione modello
+      operationId: upsertModelloDocumentaleControllato
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelloDocumentaleControllato"
+      responses:
+        "200":
+          description: Modello documentale controllato salvato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloDocumentaleControllato"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      summary: Valida modello documentale controllato della versione modello
+      operationId: validaModelloDocumentaleControllato
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Esito validazione modello documentale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidazioneSezioniResponse"
   /template-sezioni:
     get:
       summary: Lista template sezione copiabili
@@ -129,6 +169,11 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 components:
+  securitySchemes:
+    KeycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     ModelloId:
       name: modelloId
@@ -159,6 +204,24 @@ components:
         type: integer
         format: int64
   responses:
+    Unauthorized:
+      description: JWT mancante, scaduto o non valido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCESSO_NON_AUTENTICATO
+            message: Token Bearer mancante o non valido
+    Forbidden:
+      description: JWT valido ma ruolo non autorizzato per la route builder
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCESSO_NON_AUTORIZZATO
+            message: Ruolo non autorizzato per l'operazione builder
     Conflict:
       description: Operazione non consentita nello stato corrente o contenuto non valido
       content:
@@ -224,13 +287,85 @@ components:
       properties:
         tipo:
           type: string
-          enum: [paragrafo, titolo, lista, tabella_semplice]
+          enum: [LOGO, INTESTAZIONE, TITOLO, PARAGRAFO, TABELLA, COLONNE, FIRMA, FOOTER, INTERRUZIONE_PAGINA]
+        posizionamento:
+          type: string
+          enum: [TOP, BODY, INLINE, COLUMN_LEFT, COLUMN_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, BOTTOM_CENTER]
         testo:
           type: string
+        stile:
+          type: string
+        asset_ref:
+          type: string
+        placeholder_usati:
+          type: array
+          items:
+            type: string
         righe:
           type: array
           items:
             type: object
+    ModelloDocumentaleControllato:
+      type: object
+      required: [id, modello_versione_id, formato, pagina, regioni, blocchi, asset, stili_ammessi, placeholder_usati, contiene_html_libero, contiene_css_libero, contiene_script]
+      properties:
+        id:
+          type: string
+        modello_versione_id:
+          type: string
+        formato:
+          type: string
+          enum: [GEMODO_DOCUMENT_V1]
+        pagina:
+          type: object
+        regioni:
+          type: array
+          items:
+            type: string
+        blocchi:
+          type: array
+          items:
+            $ref: "#/components/schemas/BloccoContenuto"
+        asset:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetDocumento"
+        stili_ammessi:
+          type: array
+          items:
+            type: string
+        placeholder_usati:
+          type: array
+          items:
+            type: string
+        contiene_html_libero:
+          type: boolean
+          enum: [false]
+        contiene_css_libero:
+          type: boolean
+          enum: [false]
+        contiene_script:
+          type: boolean
+          enum: [false]
+    AssetDocumento:
+      type: object
+      required: [id, tipo, nome, versione, storage_ref]
+      properties:
+        id:
+          type: string
+        tipo:
+          type: string
+          enum: [LOGO, IMMAGINE]
+        nome:
+          type: string
+        versione:
+          type: integer
+        storage_ref:
+          type: string
+        hash_file:
+          type: string
+        dimensioni_consentite:
+          type: string
     ValidazioneSezioniResponse:
       type: object
       required: [valido, errori]
