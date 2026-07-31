@@ -1,6 +1,6 @@
 # Implementation Plan: Builder Modelli Documentali
 
-**Branch**: `main` | **Date**: 2026-06-19 | **Spec**: [spec.md](./spec.md)
+**Branch**: `002-builder-modelli` | **Date**: 2026-07-31 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/002-builder-modelli/spec.md`
 
@@ -9,18 +9,25 @@
 Realizzare il dominio backend del builder modelli: gestione di tipi documento,
 categorie, modelli, varianti obbligatorie, versioni, stati e pubblicazione. La feature
 produce il catalogo di configurazione usato dalla 001, senza includere il frontend builder
-e senza implementare generazione PDF o sicurezza dettagliata.
+e senza includere generazione PDF, storage o profili integrazione GEBAN dedicati.
 
 La regola centrale e' che ogni modello appartiene a tipo/categoria/tipologia/variante,
 con variante obbligatoria e default `STANDARD`; per la stessa variante puo' esistere al
 massimo una versione `PUBBLICATO` corrente. Quando una nuova versione della stessa variante
 viene pubblicata, la precedente passa automaticamente ad `ARCHIVIATO`.
 
+Le API interne builder sono protette da JWT Keycloak lato backend. Le letture richiedono
+`GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`; creazione, modifica, approvazione,
+pubblicazione, archiviazione e sospensione richiedono `GEMODO_MODELLI_GESTORE`. Nel primo
+rilascio la pubblicazione del gestore vale anche come approvazione, in coerenza con
+`SEC-006-002`.
+
 ## Technical Context
 
 **Language/Version**: Python 3.12+
 
-**Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, OpenAPI tooling
+**Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, PyYAML/OpenAPI tooling,
+JWT/JWKS security helpers shared with `001`
 
 **Storage**: PostgreSQL
 
@@ -36,7 +43,7 @@ within 500 ms p95 on seeded/demo data. Publication must remain transactional.
 
 **Constraints**: no direct read/write of GEBAN DB; only published versions are visible to
 GEBAN catalog; published content is immutable; audit hooks required for state changes;
-security details are delegated to spec 006 but backend must expose authorization points.
+builder APIs must enforce backend authorization, not rely on frontend enablement.
 
 **Scale/Scope**: initial administrative dataset: tens of document types, hundreds of
 models/variants, thousands of versions/fields over time.
@@ -51,7 +58,8 @@ models/variants, thousands of versions/fields over time.
 | Contract-First Integration | PASS | Internal builder contracts and 001 catalog compatibility are documented before implementation. |
 | Configurable Document Models | PASS | Types, categories, models, variants, versions and fields are persisted/configured. |
 | Versioning, Traceability, Reproducibility | PASS | Published versions are immutable; replacements create new versions and archive prior current version. |
-| Security, Audit, Controlled AI | PASS | Feature records audit-relevant events; detailed roles are delegated to spec 006. |
+| Security, Audit, Controlled AI | PASS | Feature enforces Keycloak JWT roles for builder APIs and records audit-relevant events. |
+| Public Documentation and Reuse Readiness | PASS | Builder API OpenAPI and examples are versioned before runtime implementation. |
 
 Post-design re-check: PASS. Generated data model and contracts preserve the same boundaries
 and do not introduce direct GEBAN coupling.
@@ -75,22 +83,29 @@ specs/002-builder-modelli/
 
 ```text
 backend/
-├── app/modelli/
+├── app/builder/
 │   ├── api/
-│   ├── domain/
 │   ├── repository/
 │   ├── service/
 │   └── validation/
+├── app/catalog/
+│   ├── models.py
+│   └── repository.py
+├── app/common/
+│   ├── errors.py
+│   └── security.py
 ├── alembic/versions/
-└── tests/modelli/
+└── tests/builder/
     ├── contract/
     ├── integration/
     └── unit/
 ```
 
-**Structure Decision**: questa feature implementa solo backend/domain API. Il frontend
-builder resta nella spec 007; la sicurezza dettagliata nella spec 006; sezioni e
-placeholder nella spec 003.
+**Structure Decision**: questa feature implementa API amministrative e servizi builder in
+`backend/app/builder/`, riusando modelli e repository condivisi del catalogo in
+`backend/app/catalog/` definiti dalla `001`. Non deve introdurre un secondo set di tabelle
+`tipo_documento`, `categoria_documento`, `modello_documento` o `modello_versione`.
+Il frontend builder resta nella spec `007`; sezioni, placeholder e layout nella spec `003`.
 
 ## Phase 0: Research
 
@@ -105,6 +120,8 @@ Decisioni principali:
   corrente della stessa variante;
 - stati workflow separati: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`,
   `ARCHIVIATO`, `SOSPESO`.
+- protezione backend Keycloak con ruoli builder `GEMODO_MODELLI_VIEWER` e
+  `GEMODO_MODELLI_GESTORE`.
 
 ## Phase 1: Design & Contracts
 
@@ -115,7 +132,18 @@ Output:
 - [quickstart.md](./quickstart.md)
 
 The design deliberately exposes internal builder APIs separately from GEBAN catalog APIs.
-The GEBAN-facing contract remains owned by spec 001.
+The GEBAN-facing contract remains owned by spec 001. Both API surfaces use the same
+published model/version data, so the builder implementation must update the shared catalog
+domain rather than duplicate persistence.
+
+## Dependencies
+
+- `001-catalogo-contratto-geban`: shared catalog models, catalog filtering rules, common
+  security/error helpers and GEBAN-facing OpenAPI.
+- `009-fondamenta-mock-test-qualita`: documentation portal, decision gate, demo seed
+  conventions and API documentation checks.
+- `006-sicurezza-autorizzazioni-audit`: authoritative security model; for this feature the
+  confirmed first-release rule is `GEMODO_MODELLI_GESTORE` can approve and publish.
 
 ## Complexity Tracking
 

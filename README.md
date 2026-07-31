@@ -17,15 +17,14 @@ Branch:
 
 Feature attiva:
 
-- `specs/001-catalogo-contratto-geban`
+- `specs/002-builder-modelli`
 
 La feature `009-fondamenta-mock-test-qualita` e' completa (`T001-T064`) e ha preparato
 fondamenta, mock, test, profili di integrazione, modello documentale controllato,
-documentazione API e readiness open source/PA. Il prossimo blocco operativo e' la
-feature `001-catalogo-contratto-geban`: `spec.md`, `plan.md` e `tasks.md` sono gia'
-aggiornati alle decisioni del 2026-07-29 e al chiarimento sicurezza del 2026-07-31.
-Il readiness gate per `TASKS` e' verde; l'implementazione puo' partire da `T001`. Vedi
-`docs/project-map.md`.
+documentazione API e readiness open source/PA. La feature `001-catalogo-contratto-geban`
+ha `spec.md`, `plan.md` e `tasks.md` aggiornati e readiness gate `TASKS` verde. La
+feature attiva e' ora `002-builder-modelli`: stati/versioni sono confermati, il piano e
+i task sono aggiornati al 2026-07-31, e il gate `TASKS` e' verde.
 
 ## Provare Il Backend In Locale
 
@@ -127,25 +126,26 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/001-catalogo-contratto-geban
+specs/002-builder-modelli
 ```
 
 ## Prossimo Blocco Di Sviluppo
 
-Per la feature attiva (`001`) il readiness gate per `TASKS` e' verde. Il lavoro
-successivo e' avviare l'implementazione da `T001` in
-`specs/001-catalogo-contratto-geban/tasks.md`, includendo la protezione JWT Keycloak
-minima prevista dai task foundational.
+Per il codice applicativo resta corretto partire dalla `001`, perche' la `002` riusa
+modelli catalogo, errori comuni e validazione JWT condivisa. Dopo i task foundational
+della `001`, la `002` puo' partire da `T001` in `specs/002-builder-modelli/tasks.md`
+senza duplicare tabelle o sicurezza.
 
 Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 
-1. Propagare nelle `spec.md` di `002` e `003` le decisioni ormai `CONFERMATA`
-   che le riguardano (vedi `docs/decision-register.yaml`), poi rigenerare i loro
-   `plan.md`/`tasks.md` (sono fermi al 19 giugno 2026 e non li riflettono).
-2. Completare il flusso Spec Kit (`plan` + `tasks`, dove mancanti o superati) per
+1. Implementare la `002-builder-modelli` seguendo i 64 task aggiornati, con API builder
+   protette da Keycloak e dominio catalogo condiviso con la `001`.
+2. Propagare nella `003` le decisioni ormai `CONFERMATA` che la riguardano, poi
+   rigenerare `plan.md`/`tasks.md` per sezioni, placeholder e modello documentale.
+3. Completare il flusso Spec Kit (`plan` + `tasks`, dove mancanti o superati) per
    `006-sicurezza-autorizzazioni-audit`, `004-generazione-documenti-pdf` e
    `005-storage-idempotenza-consultazione`.
-3. Solo allora implementare `POST /documenti/genera`, stato e download: nessun
+4. Solo allora implementare `POST /documenti/genera`, stato e download: nessun
    renderer PDF esiste ancora oggi.
 
 GitHub Pages esegue `scripts/generate-spec-docs.py` nel workflow

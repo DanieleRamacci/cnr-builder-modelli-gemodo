@@ -27,11 +27,15 @@ decisions:
     spec_interessate:
       - specs/002-builder-modelli
       - specs/006-sicurezza-autorizzazioni-audit
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: stati separati BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO
-    impatto: contratto dati modello/versione e transizioni di stato esposte alle API
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      stati separati BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO e
+      SOSPESO confermati. Nel primo rilascio il ruolo GEMODO_MODELLI_GESTORE puo'
+      approvare e pubblicare; ruoli revisore/approvatore separati restano riservati e
+      inattivi secondo SEC-006-002.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-06-22
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-001-TIPOLOGIE-SOL
     titolo: Lista iniziale tipologie GEBAN/SOL

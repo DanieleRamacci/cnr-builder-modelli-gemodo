@@ -12,8 +12,8 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
-| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/73 task implementati; readiness gate `TASKS` verde | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; recepisce tipologie GEBAN/SOL, lingua IT/EN, categorie e campi comuni GEBAN confermati, bando multiplo/ribando, versionamento campi/placeholder, campi complessi strutturati e protezione JWT Keycloak minima per le API operative. Profilo GEBAN versionato e API dedicate al profilo sono sospesi per il primo incremento produttivo e restano tracciati per `002`/`006` |
-| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Plan+tasks generati ma superati (2026-06-19), 0/59 task implementati | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi; `spec.md`/`plan.md`/`tasks.md` fermi al 2026-06-19, non riflettono `SEC-006-002` ne' il modello documentale controllato chiarito in `009`. Da aggiornare e ripianificare prima di implementare |
+| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Spec/plan/tasks aggiornati (2026-07-31), 0/73 task implementati; readiness gate `TASKS` verde | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; recepisce tipologie GEBAN/SOL, lingua IT/EN, categorie e campi comuni GEBAN confermati, bando multiplo/ribando, versionamento campi/placeholder, campi complessi strutturati e protezione JWT Keycloak minima per le API operative. Profilo GEBAN versionato e API dedicate al profilo sono sospesi per il primo incremento produttivo e restano tracciati per `002`/`006` |
+| `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/64 task implementati; readiness gate `TASKS` verde | §2, §4, §8.2-§8.6, §10, §16.3 | Stati definitivi confermati: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare/pubblicare nel primo rilascio. La `002` espone API builder protette da Keycloak e riusa il dominio catalogo condiviso della `001`, senza duplicare tabelle |
 | `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Plan+tasks generati ma superati (2026-06-19), 0/48 task implementati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente; chiarimento in `009`: builder visuale controllato, non editor HTML, con modello documentale versionato a blocchi/layout/asset/placeholder - non ancora recepito in `plan.md`/`tasks.md` di questa spec (fermi al 2026-06-19). Da aggiornare e ripianificare prima di implementare |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
 | `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo; ribando chiarito in `009` come nuovo bando collegato al precedente; resta da chiarire nuova pubblicazione/riferimento documentale verso sistemi esterni |
@@ -81,33 +81,34 @@ Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md
   sviluppo, produzione, architettura, configurazione, sicurezza, contributi, segnalazione
   vulnerabilita', test, release e changelog.
 
-## Stato Plan/Tasks Delle Spec Operative (verificato 2026-07-29)
+## Stato Plan/Tasks Delle Spec Operative (verificato 2026-07-31)
 
 `001-catalogo-contratto-geban` ha `spec.md`, `plan.md` e `tasks.md` aggiornati al
 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la conferma/sospensione
 esplicita delle decisioni bloccanti: la feature puo' partire da `T001`, includendo
 catalogo, contratto dati, validazione payload e protezione JWT Keycloak minima.
 
-`002-builder-modelli` e `003-sezioni-placeholder-versionamento` hanno gia' `plan.md` e
-`tasks.md` generati, ma entrambi risalgono alla sessione di chiarimento del 2026-06-19
-(prima ancora della sessione 2026-06-22 che ha aperto il registro decisioni). Non
-riflettono ancora le decisioni chiarite/confermate successivamente (2026-06-22,
-2026-07-07, 2026-07-28, 2026-07-29) e tracciate in `docs/decision-register.yaml`:
-tipologie GEBAN/SOL, campi comuni GEBAN, profilo GEBAN versionato, bando
-multiplo/ribando, bando inglese integrale, `SEC-006-001`, `SEC-006-002`, modello
-documentale controllato.
+`002-builder-modelli` ha `spec.md`, `plan.md`, `data-model.md`, OpenAPI e `tasks.md`
+aggiornati al 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la conferma di
+`DEC-002-STATI-MODELLO`; la feature puo' partire da `T001`, ma il codice runtime deve
+riusare le fondamenta condivise della `001` quando implementate.
 
-Nessun task di queste tre spec e' implementato (0/73, 0/59, 0/48). Prima di avviare
-l'implementazione applicativa oltre la `001`:
+`003-sezioni-placeholder-versionamento` ha gia' `plan.md` e `tasks.md` generati, ma
+risale alla sessione di chiarimento del 2026-06-19 e non riflette ancora le decisioni
+successive sul modello documentale controllato, sui campi complessi e sul versionamento
+campi/placeholder.
+
+Nessun task di queste tre spec e' implementato (0/73, 0/64, 0/48). Prima di avviare
+l'implementazione applicativa oltre la `002`:
 
 1. implementare la `001` seguendo `specs/001-catalogo-contratto-geban/tasks.md`;
-2. propagare nelle `spec.md` di `002` e `003` le decisioni ormai `CONFERMATA` che le
-   riguardano (vedi `spec_interessate` in `docs/decision-register.yaml`);
-3. rigenerare `plan.md` e `tasks.md` di `002` e `003` (`/speckit-plan` +
-   `/speckit-tasks`) cosi' che riflettano lo stato attuale, non quello del 19 giugno;
-4. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione
-   critica blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi
-   task implementativi (FR-018).
+2. implementare la `002` seguendo `specs/002-builder-modelli/tasks.md`, riusando dominio
+   catalogo e sicurezza comune;
+3. propagare nella `003` le decisioni ormai `CONFERMATA` che la riguardano e rigenerare
+   `plan.md`/`tasks.md`;
+4. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione critica
+   blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi task
+   implementativi (FR-018).
 
 Questo evita di implementare codice applicativo contro un contratto dati o un modello
 di autorizzazione gia' superato dalle decisioni successive.

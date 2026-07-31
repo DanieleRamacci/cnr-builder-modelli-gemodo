@@ -1,10 +1,16 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Builder Modelli API
-  version: 0.1.0
-  description: API interne per configurare tipi documento, categorie, modelli, varianti e versioni.
+  version: 0.2.0
+  description: >
+    API interne protette da Keycloak JWT Bearer per configurare tipi documento,
+    categorie, modelli, varianti e versioni. Le letture richiedono
+    GEMODO_MODELLI_VIEWER o GEMODO_MODELLI_GESTORE; scritture e transizioni richiedono
+    GEMODO_MODELLI_GESTORE.
 servers:
   - url: /api/v1/builder
+security:
+  - KeycloakBearer: []
 paths:
   /tipi-documento:
     get:
@@ -170,6 +176,22 @@ paths:
                 $ref: "#/components/schemas/ModelloVersione"
         "409":
           $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/approva:
+    post:
+      summary: Approva una versione in revisione
+      operationId: approvaVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Versione approvata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /modelli/{modelloId}/versioni/{versioneId}/pubblica:
     post:
       summary: Pubblica una versione approvata
@@ -202,7 +224,28 @@ paths:
                 $ref: "#/components/schemas/ModelloVersione"
         "409":
           $ref: "#/components/responses/Conflict"
+  /modelli/{modelloId}/versioni/{versioneId}/sospendi:
+    post:
+      summary: Sospende una versione pubblicata
+      operationId: sospendiVersioneModello
+      parameters:
+        - $ref: "#/components/parameters/ModelloId"
+        - $ref: "#/components/parameters/VersioneId"
+      responses:
+        "200":
+          description: Versione sospesa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelloVersione"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
+  securitySchemes:
+    KeycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     CodiceTipoDocumento:
       name: codice
@@ -225,6 +268,24 @@ components:
         type: integer
         format: int64
   responses:
+    Unauthorized:
+      description: JWT mancante, scaduto o non valido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCESSO_NON_AUTENTICATO
+            message: Token Bearer mancante o non valido
+    Forbidden:
+      description: JWT valido ma ruolo non autorizzato per la route builder
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCESSO_NON_AUTORIZZATO
+            message: Ruolo non autorizzato per l'operazione builder
     Conflict:
       description: Operazione non consentita nello stato corrente o per vincolo di unicita'
       content:

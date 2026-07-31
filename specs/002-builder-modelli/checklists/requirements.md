@@ -31,5 +31,4 @@
 
 ## Notes
 
-- Draft di copertura. Da approfondire con chiarimenti sugli stati definitivi.
-
+- Stato/versioni confermati il 2026-07-31: workflow separato e pubblicazione consentita a `GEMODO_MODELLI_GESTORE` nel primo rilascio.

@@ -6,7 +6,8 @@ l'implementazione. Non sostituisce i test automatici.
 ## Prerequisiti
 
 - backend avviato con database PostgreSQL migrato;
-- utente o client autorizzato alle API interne builder;
+- JWT Bearer Keycloak valido per audience `gemodo-backend`;
+- ruolo `GEMODO_MODELLI_GESTORE` per gli scenari modificativi;
 - seed minimo con tipo documento `BANDO_CONCORSO` e categoria `CTER`.
 
 ## Scenario 1 - Creazione modello con variante default
@@ -20,6 +21,7 @@ Expected:
 - il modello viene creato;
 - la variante `STANDARD` e' persistita;
 - la versione parte in stato `BOZZA`.
+- l'audit registra il soggetto Keycloak che ha creato modello/versione.
 
 ## Scenario 2 - Variante duplicata nello stesso contesto
 
@@ -69,3 +71,15 @@ Expected:
 - entrambe le varianti possono essere pubblicate;
 - ogni variante ha una sola versione `PUBBLICATO` corrente;
 - la scelta operativa resta basata su `modello_versione_id`.
+
+## Scenario 6 - Autorizzazione builder
+
+1. Chiamare una route builder senza token.
+2. Chiamare una route modificativa con token valido ma senza `GEMODO_MODELLI_GESTORE`.
+3. Ripetere la route modificativa con token valido e ruolo `GEMODO_MODELLI_GESTORE`.
+
+Expected:
+
+- la prima richiesta fallisce con `ACCESSO_NON_AUTENTICATO`;
+- la seconda richiesta fallisce con `ACCESSO_NON_AUTORIZZATO`;
+- la terza richiesta viene eseguita e produce audit con soggetto, client e ruoli.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: Updated after clarification
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §2, §4, §8.2-§8.6, §10 e §16.3.
 
@@ -17,6 +17,17 @@
 - Q: Quale workflow stati deve seguire una versione modello? -> A: Per ora gli stati restano separati: BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO/SOSPESO; dopo approvazione una versione puo' essere pubblicata e poi archiviata.
 - Q: Cosa succede alla versione corrente precedente quando una nuova versione della stessa variante viene pubblicata? -> A: La precedente versione pubblicata corrente passa automaticamente ad ARCHIVIATO; solo la nuova resta PUBBLICATO e visibile nel catalogo operativo.
 - Q: La variante modello e' obbligatoria? -> A: Si', ogni modello ha una variante obbligatoria; se non specificata dal gestore viene usata la variante `STANDARD`.
+
+### Session 2026-07-31
+
+- Q: Quale workflow stati e ruoli di pubblicazione deve usare la prima release della 002? -> A: Stati separati `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare e pubblicare senza separazione obbligatoria revisore/approvatore.
+
+## Out of Scope
+
+- Frontend builder e consultazione grafica, coperti dalla spec `007`.
+- Sezioni, placeholder, layout e struttura documentale a blocchi, coperti dalla spec `003`.
+- Generazione PDF, storage e idempotenza, coperti dalle spec `004` e `005`.
+- API dedicate di profilo integrazione GEBAN e autorizzazioni fini per profilo, tracciate dalla spec `006` e dalle decisioni sospese della `001`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -66,7 +77,7 @@ modificarla e portarla a uno stato di revisione/pubblicazione.
 
 ### User Story 3 - Pubblicare e archiviare versioni modello (Priority: P1)
 
-Come approvatore modelli, voglio pubblicare o archiviare versioni modello, cosi' da
+Come gestore modelli autorizzato, voglio pubblicare o archiviare versioni modello, cosi' da
 controllare cosa GEBAN puo' usare operativamente.
 
 **Why this priority**: solo versioni pubblicate devono uscire verso GEBAN.
@@ -104,7 +115,7 @@ versione pubblicata valida appare nel catalogo.
 - **FR-003a**: Il sistema MUST assegnare a ogni modello una variante obbligatoria; se il gestore non ne indica una, il sistema MUST usare la variante `STANDARD`.
 - **FR-004**: Il sistema MUST gestire versioni modello con stati `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO` e `SOSPESO`.
 - **FR-004a**: Il sistema MUST consentire il passaggio da `APPROVATO` a `PUBBLICATO` e da `PUBBLICATO` ad `ARCHIVIATO` o `SOSPESO`.
-- **FR-004b**: La specifica non vincola per ora il numero di figure coinvolte nell'approvazione; i ruoli e le autorizzazioni dettagliate sono definiti nella spec sicurezza.
+- **FR-004b**: Nel primo rilascio il ruolo `GEMODO_MODELLI_GESTORE` MUST poter approvare e pubblicare una versione modello; ruoli separati revisore/approvatore restano riservati e inattivi finche' non saranno attivati dalla spec sicurezza.
 - **FR-005**: Il sistema MUST impedire modifiche contenutistiche dirette a versioni pubblicate.
 - **FR-006**: Il sistema MUST creare una bozza derivata quando cambia una configurazione gia' pubblicata.
 - **FR-007**: Il sistema MUST garantire al massimo una versione pubblicata corrente per la stessa combinazione di tipo documento, categoria, tipologia e variante.
@@ -112,6 +123,8 @@ versione pubblicata valida appare nel catalogo.
 - **FR-009**: Il sistema MUST rendere disponibili al catalogo operativo solo versioni pubblicate.
 - **FR-010**: Quando una nuova versione della stessa variante viene pubblicata, il sistema MUST passare automaticamente la precedente versione pubblicata corrente ad `ARCHIVIATO`; solo la nuova versione resta `PUBBLICATO` e visibile nel catalogo operativo.
 - **FR-011**: Il sistema MUST mantenere consultabili nello storico le versioni archiviate.
+- **FR-012**: Le API interne builder MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; le letture richiedono ruolo `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, le scritture e transizioni richiedono `GEMODO_MODELLI_GESTORE`.
+- **FR-013**: Il sistema MUST restituire errori stabili `ACCESSO_NON_AUTENTICATO` e `ACCESSO_NON_AUTORIZZATO` quando autenticazione o autorizzazione builder falliscono.
 
 ### Key Entities
 
@@ -122,6 +135,7 @@ versione pubblicata valida appare nel catalogo.
 - **Versione Modello**: configurazione versionata del modello.
 - **Identificativo Versione Modello**: identificativo univoco della versione usato da GEBAN per scegliere contratto dati, validazione e generazione.
 - **Stato Versione**: stato di workflow della versione.
+- **Principal GEMODO**: identita' applicativa ricostruita dal token Keycloak usata per autorizzare e auditare le operazioni builder.
 
 ## Success Criteria *(mandatory)*
 
@@ -135,6 +149,6 @@ versione pubblicata valida appare nel catalogo.
 
 ## Assumptions
 
-- La lista iniziale dei tipi documento e categorie verra' confermata prima del seed iniziale.
-- Il numero di figure coinvolte nell'approvazione verra' definito nella spec sicurezza/autorizzazioni.
-- Le regole di autorizzazione dettagliate sono definite nella spec sicurezza.
+- Tipi, categorie e tipologie iniziali derivano dalla documentazione GEBAN gia' recepita dalla `001` e restano dati configurabili/versionabili, non costanti applicative.
+- La separazione revisore/approvatore non e' obbligatoria nel primo rilascio; il gestore modelli autorizzato puo' completare approvazione e pubblicazione.
+- Le autorizzazioni fini per profili di integrazione non fanno parte della `002` e restano nella spec sicurezza.

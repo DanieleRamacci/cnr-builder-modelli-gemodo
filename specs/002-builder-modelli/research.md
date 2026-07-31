@@ -27,6 +27,20 @@ di stato nello stesso blocco di lavoro.
 - Gestione manuale solo da DB: scartato perche' viola il principio di modelli
   configurabili tramite workflow.
 
+## Decision: API builder sopra dominio catalogo condiviso
+
+**Rationale**: tipi documento, categorie, tipologie, modelli e versioni sono gli stessi
+dati che la `001` espone a GEBAN in sola lettura operativa. La `002` deve quindi fornire
+API amministrative e servizi di workflow sopra lo stesso dominio persistito, evitando un
+secondo set di tabelle o modelli applicativi separati.
+
+**Alternatives considered**:
+
+- Duplicare un modulo `modelli` autonomo: scartato perche' creerebbe divergenza tra
+  builder e catalogo operativo.
+- Mettere tutte le API amministrative nel modulo `catalog`: scartato perche' mescola
+  superficie interna builder e superficie GEBAN-facing.
+
 ## Decision: variante modello obbligatoria con default `STANDARD`
 
 **Rationale**: ogni modello deve essere distinguibile in modo uniforme anche quando non
@@ -82,10 +96,24 @@ transazionale, evitando finestre in cui il catalogo vede due correnti o nessuna 
 ## Decision: stati workflow separati
 
 **Rationale**: `APPROVATO` e `PUBBLICATO` sono stati diversi. Una versione approvata e'
-pronta per la pubblicazione, ma non e' ancora visibile a GEBAN. Il numero di figure
-coinvolte nell'approvazione resta demandato alla spec 006.
+pronta per la pubblicazione, ma non e' ancora visibile a GEBAN. Nel primo rilascio
+`GEMODO_MODELLI_GESTORE` puo' portare una versione ad `APPROVATO` e poi a `PUBBLICATO`;
+la separazione revisore/approvatore resta riservata e inattiva secondo `SEC-006-002`.
 
 **Alternatives considered**:
 
 - Accorpare approvazione e pubblicazione: scartato perche' riduce controllo operativo.
 - Introdurre subito workflow multi-approvatore: rinviato alla spec sicurezza/autorizzazioni.
+
+## Decision: autorizzazione Keycloak obbligatoria sulle API builder
+
+**Rationale**: il builder modifica contratti dati e versioni usabili da GEBAN, quindi le
+route devono validare JWT Bearer Keycloak lato backend. Le letture sono consentite a
+`GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`; le scritture e transizioni solo a
+`GEMODO_MODELLI_GESTORE`.
+
+**Alternatives considered**:
+
+- Demandare l'autorizzazione al frontend: scartato perche' viola la costituzione.
+- Rinviare la protezione alla spec 006: scartato perche' Keycloak e confine backend sono
+  gia' stati confermati e la `002` espone API modificative.
