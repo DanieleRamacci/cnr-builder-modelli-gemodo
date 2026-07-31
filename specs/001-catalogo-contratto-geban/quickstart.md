@@ -1,21 +1,31 @@
 # Quickstart - Catalogo Modelli E Contratto Dati GEBAN
 
-Questa guida descrive gli scenari minimi per validare la feature dopo
-l'implementazione. I comandi concreti saranno definiti quando il progetto backend esiste.
+Questa guida descrive gli scenari minimi per validare la feature `001` dopo
+l'implementazione backend.
 
 ## Prerequisiti
 
-- Backend avviato in ambiente locale (scheletro FastAPI/Alembic gia' creato dalla
-  `009` in `backend/`, vedi `specs/009-fondamenta-mock-test-qualita/quickstart.md`).
+- Backend avviato in ambiente locale:
+
+```bash
+cd backend
+uv sync
+export GEMODO_USE_MOCK_PRINCIPAL=true
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
+
 - Database migrato (baseline `009` + migration proprie di questa feature).
 - Seed demo con:
   - tipo documento `BANDO_CONCORSO`;
-  - categoria `CTER`;
+  - categoria `DEMO`;
   - tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB con codice SOL
     (`infra/local/postgres/seed-demo-catalog.yaml` della `009`);
-  - almeno due varianti modello pubblicate;
-  - campi richiesti demo `PROFILO`, `LIVELLO`, `NUM_POSTI`, `SEDI`, piu' almeno un
-    campo `lingua: EN` obbligatorio (es. `TITOLO_EN`) per lo Scenario 8.
+  - una versione modello `PUBBLICATO` con `modello_versione_id` pubblico `1`;
+  - una versione modello `BOZZA` con `modello_versione_id` pubblico `2`;
+  - campi richiesti demo `codice_bando`, `titolo_it`, `descrizione_ridotta_it`,
+    `sede_prescelta_it`, `numero_posti`, piu' `titolo_en` con `lingua: EN` per lo
+    Scenario 8.
 - Autenticazione Keycloak configurata secondo `specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md`
   o principal mock abilitato esplicitamente solo in profili locali/test
   (`GEMODO_USE_MOCK_PRINCIPAL=true`).
@@ -46,7 +56,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=CTER&codice_tipologia=TI&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=TI&modalita=OPERATIVA
 ```
 
 Risultato atteso:
@@ -62,6 +72,12 @@ Richiesta:
 
 ```http
 GET /api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti
+```
+
+Esempio locale:
+
+```bash
+curl -s http://localhost:8000/api/v1/catalogo/modelli/1/campi-richiesti
 ```
 
 Risultato atteso:
@@ -84,12 +100,12 @@ Content-Type: application/json
 {
   "sistema_richiedente": "GEBAN",
   "external_context_id": "BANDO-12345",
-  "modello_versione_id": 27,
+  "modello_versione_id": 1,
   "dati": {
-    "PROFILO": "Collaboratore Tecnico Enti di Ricerca",
-    "LIVELLO": "VI",
-    "NUM_POSTI": 2,
-    "SEDI": []
+    "codice_bando": "BANDO-12345",
+    "titolo_it": "Bando demo",
+    "sede_prescelta_it": "Roma",
+    "numero_posti": 2
   }
 }
 ```
@@ -105,22 +121,22 @@ Risultato atteso:
 
 ## Scenario 4 - Campo obbligatorio mancante
 
-Rimuovere `NUM_POSTI`.
+Rimuovere `numero_posti`.
 
 Risultato atteso:
 
 - `valido` = `false`;
-- errore con `campo` = `NUM_POSTI`;
+- errore con `campo` = `numero_posti`;
 - codice errore `CAMPO_OBBLIGATORIO`.
 
 ## Scenario 5 - Campo extra non ammesso
 
-Aggiungere un campo non dichiarato, ad esempio `CAMPO_EXTRA`.
+Aggiungere un campo non dichiarato, ad esempio `campo_extra`.
 
 Risultato atteso:
 
 - `valido` = `false`;
-- errore con `campo` = `CAMPO_EXTRA`;
+- errore con `campo` = `campo_extra`;
 - codice errore `CAMPO_NON_AMMESSO`.
 
 ## Scenario 6 - Versione non pubblicata
@@ -137,7 +153,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=CTER&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
 ```
 
 Risultato atteso:
@@ -160,19 +176,19 @@ Content-Type: application/json
 {
   "sistema_richiedente": "GEBAN",
   "external_context_id": "BANDO-12345",
-  "modello_versione_id": 27,
+  "modello_versione_id": 1,
   "bando_inglese": true,
   "dati": {
-    "PROFILO": "Collaboratore Tecnico Enti di Ricerca",
-    "LIVELLO": "VI",
-    "NUM_POSTI": 2,
-    "SEDI": []
+    "codice_bando": "BANDO-12345",
+    "titolo_it": "Bando demo",
+    "sede_prescelta_it": "Roma",
+    "numero_posti": 2
   }
 }
 ```
 
 Il modello demo dichiara almeno un campo con `lingua: EN` e `obbligatorio: true` (es.
-`TITOLO_EN`), assente dal payload sopra.
+`titolo_en`), assente dal payload sopra.
 
 Risultato atteso:
 
@@ -182,3 +198,23 @@ Risultato atteso:
 - ripetendo la stessa richiesta con `bando_inglese: false` (o assente) e senza i
   campi inglesi, la validazione MUST considerare quei campi facoltativi e non
   generare `CAMPO_INGLESE_MANCANTE`.
+
+## Verifica Test
+
+Comando eseguito il 2026-07-31:
+
+```bash
+cd backend
+uv run pytest tests/catalog tests/validation tests/common/test_api_error_response.py tests/common/test_security_jwt.py -q -rs
+```
+
+Esito mirato registrato: `28 passed`.
+
+Suite ampia eseguita il 2026-07-31:
+
+```bash
+cd backend
+uv run pytest -m "not e2e" -q -rs
+```
+
+Esito registrato: `126 passed, 12 deselected`.

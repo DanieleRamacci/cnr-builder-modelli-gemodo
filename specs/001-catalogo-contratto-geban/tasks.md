@@ -48,20 +48,20 @@ decisions for `specs/001-catalogo-contratto-geban`.
 **Purpose**: Extend the FastAPI backend skeleton `009` already created; do not recreate
 files that already exist.
 
-- [ ] T001 Add this feature's dependencies (`pyjwt[crypto]`, `httpx`, testcontainers
+- [x] T001 Add this feature's dependencies (`pyjwt[crypto]`, `httpx`, testcontainers
       if used) to the existing `backend/pyproject.toml` (created by `009` - extend, do
       not overwrite)
-- [ ] T002 Mount this feature's routers on the existing `app` instance in
+- [x] T002 Mount this feature's routers on the existing `app` instance in
       `backend/app/main.py` (created by `009` with the Swagger/ReDoc publishing router
       - add `app.include_router(...)` calls, do not recreate the file)
-- [ ] T003 Create settings module in `backend/app/core/settings.py` (new file inside the
+- [x] T003 Create settings module in `backend/app/core/settings.py` (new file inside the
       existing `backend/app/core/` package)
-- [ ] T004 Create database session module in `backend/app/db/session.py` (new file
+- [x] T004 Create database session module in `backend/app/db/session.py` (new file
       inside the existing `backend/app/db/` package)
-- [ ] T005 [P] Create catalog package under `backend/app/catalog/`
-- [ ] T006 [P] Create validation package under `backend/app/validation/`
-- [ ] T007 [P] Create common error and security package under `backend/app/common/`
-- [ ] T008 [P] Create `backend/tests/catalog/__init__.py`,
+- [x] T005 [P] Create catalog package under `backend/app/catalog/`
+- [x] T006 [P] Create validation package under `backend/app/validation/`
+- [x] T007 [P] Create common error and security package under `backend/app/common/`
+- [x] T008 [P] Create `backend/tests/catalog/__init__.py`,
       `backend/tests/validation/__init__.py` and `backend/tests/common/__init__.py`
       (new subpackages; `backend/tests/support/` already exists from `009` - add
       fixtures there, do not recreate the package)
@@ -74,54 +74,54 @@ files that already exist.
 
 **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T009 Create catalog schema migration in
+- [x] T009 Create catalog schema migration in
       `backend/alembic/versions/0002_catalogo_modelli.py`, extending the `009` baseline
       (`0001_initial_schema.py`) rather than redefining `tipo_documento` /
       `categoria_documento` / `modello_documento` / `modello_versione` /
       `campo_modello` - add the columns/constraints this feature needs
       (`variante`, `data_inizio_validita`, `data_fine_validita`, `pubblicato_at`,
       `lingua` on campo, unique constraint per variante corrente) via `ALTER TABLE`
-- [ ] T010 Create `TipologiaBandoSOL` table migration in
+- [x] T010 Create `TipologiaBandoSOL` table migration in
       `backend/alembic/versions/0003_tipologia_bando_sol.py` (`codice`, `codice_sol`,
       `descrizione`, `attiva`) and FK `tipologia_bando_sol_id` (nullable) on
       `modello_documento`/`tipo_documento` per FR-020
-- [ ] T011 [P] Create `TipoDocumento` SQLAlchemy model in `backend/app/catalog/models.py`
-- [ ] T012 [P] Create `CategoriaDocumento` SQLAlchemy model in `backend/app/catalog/models.py`
-- [ ] T013 [P] Create `TipologiaBandoSOL` SQLAlchemy model in `backend/app/catalog/models.py`
-- [ ] T014 [P] Create `ModelloDocumento` SQLAlchemy model (with `variante`,
+- [x] T011 [P] Create `TipoDocumento` SQLAlchemy model in `backend/app/catalog/models.py`
+- [x] T012 [P] Create `CategoriaDocumento` SQLAlchemy model in `backend/app/catalog/models.py`
+- [x] T013 [P] Create `TipologiaBandoSOL` SQLAlchemy model in `backend/app/catalog/models.py`
+- [x] T014 [P] Create `ModelloDocumento` SQLAlchemy model (with `variante`,
       `codice_tipologia` FK) in `backend/app/catalog/models.py`
-- [ ] T015 [P] Create `ModelloDocumentoVersione` SQLAlchemy model in `backend/app/catalog/models.py`
-- [ ] T016 [P] Create `ModelloCampoRichiesto` SQLAlchemy model, including `lingua`
+- [x] T015 [P] Create `ModelloDocumentoVersione` SQLAlchemy model in `backend/app/catalog/models.py`
+- [x] T016 [P] Create `ModelloCampoRichiesto` SQLAlchemy model, including `lingua`
       (`IT`/`EN`, default `IT`) in `backend/app/catalog/models.py`
-- [ ] T017 Create catalog repository functions in `backend/app/catalog/repository.py`
-- [ ] T018 Create common API error schemas in `backend/app/common/errors.py`
-- [ ] T019 Create FastAPI exception handlers in `backend/app/common/errors.py`
-- [ ] T020 Create catalog seed migration for demo data in
+- [x] T017 Create catalog repository functions in `backend/app/catalog/repository.py`
+- [x] T018 Create common API error schemas in `backend/app/common/errors.py`
+- [x] T019 Create FastAPI exception handlers in `backend/app/common/errors.py`
+- [x] T020 Create catalog seed migration for demo data in
       `backend/alembic/versions/0004_seed_catalogo_demo.py`, loading the tipologie
       GEBAN/SOL and demo model already declared in
       `infra/local/postgres/seed-demo-catalog.yaml` (`009`) rather than hardcoding a
       second, divergent seed list
-- [ ] T021 Create Testcontainers PostgreSQL fixtures in
+- [x] T021 Create Testcontainers PostgreSQL fixtures in
       `backend/tests/support/postgres.py`, with a documented fallback to a real local
       PostgreSQL connection (`DATABASE_URL` env var) when Docker/Testcontainers is
       unavailable, matching the approach already used by `009` (see
       `backend/alembic/README.md`)
-- [ ] T022 [P] Add Keycloak settings (`KEYCLOAK_ISSUER_URL`, `KEYCLOAK_AUDIENCE`,
+- [x] T022 [P] Add Keycloak settings (`KEYCLOAK_ISSUER_URL`, `KEYCLOAK_AUDIENCE`,
       JWKS URL/cache TTL, mock-principal toggle) in `backend/app/core/settings.py`,
       aligned with `infra/local/keycloak/authorization-boundary.local.yaml`
-- [ ] T023 [P] Create security principal schemas and role constants for `geban-backend`,
+- [x] T023 [P] Create security principal schemas and role constants for `geban-backend`,
       `DOCUMENTI_VIEWER` and `DOCUMENTI_GENERATORE` in `backend/app/common/security.py`
-- [ ] T024 [P] Create JWT/security test helpers for signed tokens, wrong audience,
+- [x] T024 [P] Create JWT/security test helpers for signed tokens, wrong audience,
       wrong client and missing roles in `backend/tests/support/security.py`
-- [ ] T025 [P] Add security tests for missing token, invalid audience, expired token,
+- [x] T025 [P] Add security tests for missing token, invalid audience, expired token,
       wrong client and missing role in `backend/tests/common/test_security_jwt.py`
-- [ ] T026 Implement JWKS-backed JWT verification (signature, issuer, audience,
+- [x] T026 Implement JWKS-backed JWT verification (signature, issuer, audience,
       expiration, `azp`/client and `resource_access.gemodo-backend.roles`) in
       `backend/app/common/security.py`
-- [ ] T027 Implement FastAPI dependencies `require_documenti_viewer` and
+- [x] T027 Implement FastAPI dependencies `require_documenti_viewer` and
       `require_documenti_generatore`, including mock principal support only when
       explicitly enabled, in `backend/app/common/security.py`
-- [ ] T028 Add authentication/authorization error mapping (`ACCESSO_NON_AUTENTICATO`,
+- [x] T028 Add authentication/authorization error mapping (`ACCESSO_NON_AUTENTICATO`,
       `ACCESSO_NON_AUTORIZZATO`) to `backend/app/common/errors.py` and keep codes
       aligned with `infra/openapi/errors.md`
 
@@ -142,20 +142,20 @@ historical versions in historical mode; an unrecognized `codice_tipologia` retur
 
 ### Tests for User Story 1
 
-- [ ] T029 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento` in `backend/tests/catalog/test_catalogo_tipi_documento_api.py`
-- [ ] T030 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/categorie` in `backend/tests/catalog/test_catalogo_categorie_api.py`
-- [ ] T031 [P] [US1] Add contract test for `GET /api/v1/catalogo/modelli` operative and historical modes in `backend/tests/catalog/test_catalogo_modelli_api.py`
-- [ ] T032 [P] [US1] Add test for `codice_tipologia` rejecting an unconfigured value with `TIPOLOGIA_SOL_NON_VALIDA` (FR-020) in `backend/tests/catalog/test_catalogo_tipologia_sol.py`
+- [x] T029 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento` in `backend/tests/catalog/test_catalogo_tipi_documento_api.py`
+- [x] T030 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/categorie` in `backend/tests/catalog/test_catalogo_categorie_api.py`
+- [x] T031 [P] [US1] Add contract test for `GET /api/v1/catalogo/modelli` operative and historical modes in `backend/tests/catalog/test_catalogo_modelli_api.py`
+- [x] T032 [P] [US1] Add test for `codice_tipologia` rejecting an unconfigured value with `TIPOLOGIA_SOL_NON_VALIDA` (FR-020) in `backend/tests/catalog/test_catalogo_tipologia_sol.py`
 
 ### Implementation for User Story 1
 
-- [ ] T033 [P] [US1] Create catalog response Pydantic schemas in `backend/app/catalog/schemas.py`
-- [ ] T034 [US1] Implement catalog query service in `backend/app/catalog/service.py`
-- [ ] T035 [US1] Implement catalog FastAPI router in `backend/app/catalog/api.py`
-- [ ] T036 [US1] Add operative mode filtering for `PUBBLICATO` versions in `backend/app/catalog/service.py`
-- [ ] T037 [US1] Add historical mode filtering by publication dates in `backend/app/catalog/service.py`
-- [ ] T038 [US1] Add not-found and empty-result handling in `backend/app/catalog/api.py`
-- [ ] T039 [US1] Validate `codice_tipologia` against `TipologiaBandoSOL` and raise
+- [x] T033 [P] [US1] Create catalog response Pydantic schemas in `backend/app/catalog/schemas.py`
+- [x] T034 [US1] Implement catalog query service in `backend/app/catalog/service.py`
+- [x] T035 [US1] Implement catalog FastAPI router in `backend/app/catalog/api.py`
+- [x] T036 [US1] Add operative mode filtering for `PUBBLICATO` versions in `backend/app/catalog/service.py`
+- [x] T037 [US1] Add historical mode filtering by publication dates in `backend/app/catalog/service.py`
+- [x] T038 [US1] Add not-found and empty-result handling in `backend/app/catalog/api.py`
+- [x] T039 [US1] Validate `codice_tipologia` against `TipologiaBandoSOL` and raise
       `TIPOLOGIA_SOL_NON_VALIDA` for unknown codes in `backend/app/catalog/service.py`
 
 **Checkpoint**: User Story 1 is independently testable through catalog endpoints.
@@ -173,18 +173,18 @@ and a schema with strict additional-property behavior.
 
 ### Tests for User Story 2
 
-- [ ] T040 [P] [US2] Add contract test for `GET /api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti` in `backend/tests/catalog/test_campi_richiesti_api.py`
-- [ ] T041 [P] [US2] Add test for non-published version rejection in `backend/tests/catalog/test_campi_richiesti_api.py`
-- [ ] T042 [P] [US2] Add test asserting each field response includes `lingua`
+- [x] T040 [P] [US2] Add contract test for `GET /api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti` in `backend/tests/catalog/test_campi_richiesti_api.py`
+- [x] T041 [P] [US2] Add test for non-published version rejection in `backend/tests/catalog/test_campi_richiesti_api.py`
+- [x] T042 [P] [US2] Add test asserting each field response includes `lingua`
       (`IT`/`EN`, default `IT`) in `backend/tests/catalog/test_campi_richiesti_api.py`
 
 ### Implementation for User Story 2
 
-- [ ] T043 [P] [US2] Create field contract Pydantic schemas, including `lingua`, in `backend/app/catalog/schemas.py`
-- [ ] T044 [US2] Implement field contract service in `backend/app/catalog/service.py`
-- [ ] T045 [US2] Add schema generation with `additionalProperties=false` in `backend/app/catalog/service.py`
-- [ ] T046 [US2] Add `campi-richiesti` route to `backend/app/catalog/api.py`
-- [ ] T047 [US2] Add conflict handling for non-published versions in `backend/app/common/errors.py`
+- [x] T043 [P] [US2] Create field contract Pydantic schemas, including `lingua`, in `backend/app/catalog/schemas.py`
+- [x] T044 [US2] Implement field contract service in `backend/app/catalog/service.py`
+- [x] T045 [US2] Add schema generation with `additionalProperties=false` in `backend/app/catalog/service.py`
+- [x] T046 [US2] Add `campi-richiesti` route to `backend/app/catalog/api.py`
+- [x] T047 [US2] Add conflict handling for non-published versions in `backend/app/common/errors.py`
 
 **Checkpoint**: User Story 2 is independently testable by requesting a contract for a selected model version.
 
@@ -203,29 +203,29 @@ without `bando_inglese` does not require the English fields.
 
 ### Tests for User Story 3
 
-- [ ] T048 [P] [US3] Add validation success test in `backend/tests/validation/test_validazione_payload_api.py`
-- [ ] T049 [P] [US3] Add missing required field test in `backend/tests/validation/test_validazione_payload_api.py`
-- [ ] T050 [P] [US3] Add wrong type test in `backend/tests/validation/test_validazione_payload_api.py`
-- [ ] T051 [P] [US3] Add extra field rejection test in `backend/tests/validation/test_validazione_payload_api.py`
-- [ ] T052 [P] [US3] Add non-published version validation failure test in `backend/tests/validation/test_validazione_payload_api.py`
-- [ ] T053 [P] [US3] Add test: `bando_inglese=true` and a required `lingua=EN` field
+- [x] T048 [P] [US3] Add validation success test in `backend/tests/validation/test_validazione_payload_api.py`
+- [x] T049 [P] [US3] Add missing required field test in `backend/tests/validation/test_validazione_payload_api.py`
+- [x] T050 [P] [US3] Add wrong type test in `backend/tests/validation/test_validazione_payload_api.py`
+- [x] T051 [P] [US3] Add extra field rejection test in `backend/tests/validation/test_validazione_payload_api.py`
+- [x] T052 [P] [US3] Add non-published version validation failure test in `backend/tests/validation/test_validazione_payload_api.py`
+- [x] T053 [P] [US3] Add test: `bando_inglese=true` and a required `lingua=EN` field
       missing produces `CAMPO_INGLESE_MANCANTE` in `backend/tests/validation/test_validazione_bando_inglese.py`
-- [ ] T054 [P] [US3] Add test: same payload with `bando_inglese=false` (or absent)
+- [x] T054 [P] [US3] Add test: same payload with `bando_inglese=false` (or absent)
       does not require the `EN` field and returns `valido=true` in
       `backend/tests/validation/test_validazione_bando_inglese.py`
 
 ### Implementation for User Story 3
 
-- [ ] T055 [P] [US3] Create validation request/response Pydantic schemas, including
+- [x] T055 [P] [US3] Create validation request/response Pydantic schemas, including
       `bando_inglese: bool = False`, in `backend/app/validation/schemas.py`
-- [ ] T056 [US3] Implement payload validation service in `backend/app/validation/service.py`
-- [ ] T057 [US3] Implement required-field validation in `backend/app/validation/service.py`
-- [ ] T058 [US3] Implement type validation for string, number, date, boolean, array and object in `backend/app/validation/service.py`
-- [ ] T059 [US3] Implement extra-field rejection in `backend/app/validation/service.py`
-- [ ] T060 [US3] Implement conditional requiredness for `lingua=EN` fields based on
+- [x] T056 [US3] Implement payload validation service in `backend/app/validation/service.py`
+- [x] T057 [US3] Implement required-field validation in `backend/app/validation/service.py`
+- [x] T058 [US3] Implement type validation for string, number, date, boolean, array and object in `backend/app/validation/service.py`
+- [x] T059 [US3] Implement extra-field rejection in `backend/app/validation/service.py`
+- [x] T060 [US3] Implement conditional requiredness for `lingua=EN` fields based on
       `bando_inglese`, raising `CAMPO_INGLESE_MANCANTE` per missing field, in
       `backend/app/validation/service.py`
-- [ ] T061 [US3] Implement validation FastAPI router in `backend/app/validation/api.py`
+- [x] T061 [US3] Implement validation FastAPI router in `backend/app/validation/api.py`
 
 **Checkpoint**: User Story 3 is independently testable through the validation endpoint.
 
@@ -241,21 +241,21 @@ invalid payload produce predictable error codes and messages.
 
 ### Tests for User Story 4
 
-- [ ] T062 [P] [US4] Add error envelope tests in `backend/tests/common/test_api_error_response.py`
-- [ ] T063 [P] [US4] Add invalid context error test in `backend/tests/catalog/test_catalogo_modelli_api.py`
+- [x] T062 [P] [US4] Add error envelope tests in `backend/tests/common/test_api_error_response.py`
+- [x] T063 [P] [US4] Add invalid context error test in `backend/tests/catalog/test_catalogo_modelli_api.py`
 
 ### Implementation for User Story 4
 
-- [ ] T064 [US4] Create domain exception hierarchy in `backend/app/common/errors.py`
-- [ ] T065 [US4] Map validation error codes (`CAMPO_OBBLIGATORIO`, `TIPO_NON_VALIDO`,
+- [x] T064 [US4] Create domain exception hierarchy in `backend/app/common/errors.py`
+- [x] T065 [US4] Map validation error codes (`CAMPO_OBBLIGATORIO`, `TIPO_NON_VALIDO`,
       `CAMPO_NON_AMMESSO`, `CAMPO_INGLESE_MANCANTE`, `CONTESTO_NON_VALIDO`) in
       `backend/app/validation/errors.py`, keeping the codes aligned with
       `infra/openapi/errors.md`
-- [ ] T066 [US4] Map catalog error codes (`MODELLO_VERSIONE_NON_PUBBLICATO`,
+- [x] T066 [US4] Map catalog error codes (`MODELLO_VERSIONE_NON_PUBBLICATO`,
       `MODELLO_VERSIONE_NON_TROVATO`, `TIPOLOGIA_SOL_NON_VALIDA`) in
       `backend/app/catalog/errors.py`, keeping the codes aligned with
       `infra/openapi/errors.md`
-- [ ] T067 [US4] Ensure routers return stable error envelope in `backend/app/common/errors.py`
+- [x] T067 [US4] Ensure routers return stable error envelope in `backend/app/common/errors.py`
 
 **Checkpoint**: User Story 4 is independently testable through negative API scenarios.
 
@@ -265,19 +265,19 @@ invalid payload produce predictable error codes and messages.
 
 **Purpose**: Align documentation, contracts and quickstart validation.
 
-- [ ] T068 [P] Update OpenAPI examples reflecting `lingua`/`bando_inglese` in
+- [x] T068 [P] Update OpenAPI examples reflecting `lingua`/`bando_inglese` in
       `specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml`
       (structure already updated 2026-07-29; add runtime-verified examples once the
       endpoints exist)
-- [ ] T069 [P] Update quickstart with concrete local FastAPI commands, replacing the
+- [x] T069 [P] Update quickstart with concrete local FastAPI commands, replacing the
       placeholder prerequisites in `specs/001-catalogo-contratto-geban/quickstart.md`
-- [ ] T070 Update `infra/openapi/README.md` inventory row for `001` from "Presente" to
+- [x] T070 Update `infra/openapi/README.md` inventory row for `001` from "Presente" to
       note the implemented endpoints, and add real success/error examples to
       `infra/openapi/examples/` generated from the running service (replacing the
       hand-built demo examples created by `009`)
-- [ ] T071 Add README pointer to implemented backend commands in `README.md`
-- [ ] T072 Run backend pytest suite (`uv run pytest -m "not e2e" or -k catalog or -k validation`, plus the full `009` suite to confirm no regression) and record result in `specs/001-catalogo-contratto-geban/quickstart.md`
-- [ ] T073 Update `docs/quality-coverage-matrix.yaml` rows for FR-004, FR-005, FR-020,
+- [x] T071 Add README pointer to implemented backend commands in `README.md`
+- [x] T072 Run backend pytest suite (`uv run pytest -m "not e2e" or -k catalog or -k validation`, plus the full `009` suite to confirm no regression) and record result in `specs/001-catalogo-contratto-geban/quickstart.md`
+- [x] T073 Update `docs/quality-coverage-matrix.yaml` rows for FR-004, FR-005, FR-020,
       FR-021, FR-022 from `DA_COPRIRE`/conceptual to `COPERTO` once the corresponding
       tests pass, and update `docs/decision-register.yaml` entries
       `DEC-001-TIPOLOGIE-SOL` / `DEC-001-LINGUA-IT-EN` implementation notes if their

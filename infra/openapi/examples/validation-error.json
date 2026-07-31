@@ -1,19 +1,14 @@
 {
-  "_comment": "Esempio pubblicabile di errore funzionale per POST /documenti/valida (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ValidazioneResponse). Basato sul payload demo non valido mock-geban/payloads/bando-concorso-invalid.json; codici coerenti con infra/openapi/errors.md. Solo dati demo, nessun dato reale o sensibile.",
+  "_comment": "Esempio pubblicabile di errore funzionale per POST /documenti/valida con bando_inglese=true (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ValidazioneResponse). Solo dati demo, nessun dato reale o sensibile.",
   "valido": false,
   "errori": [
     {
-      "campo": "dati.numero_posti",
+      "campo": "numero_posti",
       "codice": "CAMPO_OBBLIGATORIO",
       "messaggio": "Campo obbligatorio mancante nel payload"
     },
     {
-      "campo": "tipologia_bando.codice",
-      "codice": "TIPOLOGIA_SOL_NON_VALIDA",
-      "messaggio": "Tipologia bando non riconosciuta"
-    },
-    {
-      "campo": "dati.titolo_en",
+      "campo": "titolo_en",
       "codice": "CAMPO_INGLESE_MANCANTE",
       "messaggio": "Campo inglese obbligatorio mancante"
     }

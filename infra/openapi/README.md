@@ -23,7 +23,7 @@ abbiano un solo punto da cui partire.
 
 | Contratto | Spec owner | API scope | Stato |
 |---|---|---|---|
-| [`geban-catalog-api.openapi.yaml`](../../specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml) | `001-catalogo-contratto-geban` | GEBAN (catalogo, campi, validazione) | Presente |
+| [`geban-catalog-api.openapi.yaml`](../../specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml) | `001-catalogo-contratto-geban` | GEBAN (catalogo, campi, validazione) | Implementato |
 | Generazione documento/PDF | `004-generazione-documenti-pdf` | GEBAN | Da produrre prima dell'implementazione runtime |
 | Stato, riferimento, download, idempotenza | `005-storage-idempotenza-consultazione` | GEBAN | Da produrre prima dell'implementazione runtime |
 | API interne builder (tipi, categorie, modelli, versioni) | `002-builder-modelli` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
@@ -60,18 +60,18 @@ reale (non solo scritti a mano):
 
 - [`catalog-success.json`](examples/catalog-success.json): risposta di successo per
   `GET /catalogo/modelli` (schema `ModelloSearchResponse`).
+- [`fields-contract-success.json`](examples/fields-contract-success.json): risposta di
+  successo per `GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti`, con
+  `lingua` IT/EN e schema strict `additionalProperties=false`.
 - [`validation-error.json`](examples/validation-error.json): risposta di errore
-  funzionale per `POST /documenti/valida` (schema `ValidazioneResponse`), coerente coi
-  codici in `errors.md` e col payload demo non valido di
-  `mock-geban/payloads/bando-concorso-invalid.json`.
+  funzionale per `POST /documenti/valida` con `bando_inglese=true`
+  (schema `ValidazioneResponse`), coerente coi codici in `errors.md`.
 
 Entrambi sono stati validati con `jsonschema` contro i componenti dello schema
 `specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml` prima di
 essere committati. Nessun esempio contiene token, secret, password, dati personali
 reali o URL ambientali sensibili (FR-045).
 
-`modello_id`/`modello_versione_id` sono tipizzati come interi in questo contratto,
-mentre i manifest demo della `009` (es. `infra/local/integration-profiles.local.yaml`)
-usano identificativi stringa: la riconciliazione del formato definitivo resta la
-decisione aperta `DEC-001-IDENTIFICATIVI-MODELLO`
-(`docs/decision-register.yaml`).
+`modello_id`/`modello_versione_id` sono tipizzati come interi in questo contratto. In
+persistenza il backend mantiene UUID interni della baseline `009` e usa `public_id`
+interi stabili per l'identificativo esposto a GEBAN.

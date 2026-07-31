@@ -17,14 +17,15 @@ Branch:
 
 Feature attiva:
 
-- `specs/003-sezioni-placeholder-versionamento`
+- `specs/001-catalogo-contratto-geban`
 
 La feature `009-fondamenta-mock-test-qualita` e' completa (`T001-T064`) e ha preparato
 fondamenta, mock, test, profili di integrazione, modello documentale controllato,
 documentazione API e readiness open source/PA. La feature `001-catalogo-contratto-geban`
-ha `spec.md`, `plan.md` e `tasks.md` aggiornati e readiness gate `TASKS` verde. La
+implementa catalogo GEBAN, contratto campi, validazione payload e sicurezza JWT minima
+per le route operative. La
 feature `002-builder-modelli` ha stati/versioni confermati, piano e task aggiornati, e
-gate `TASKS` verde. La feature attiva e' ora `003-sezioni-placeholder-versionamento`:
+gate `TASKS` verde. La feature `003-sezioni-placeholder-versionamento`:
 formato visuale controllato confermato, piano e task aggiornati al 2026-07-31, e gate
 `TASKS` verde.
 
@@ -42,6 +43,19 @@ uv run uvicorn app.main:app --reload          # backend acceso su http://localho
 
 uv run python ../mock-geban/scenario_runner.py --scenario E2E-001 \
   --payload bando-concorso-valid.json         # piano di uno scenario mock GEBAN
+```
+
+Comandi rapidi per le API `001` in locale, con principal mock solo per sviluppo/test:
+
+```bash
+cd backend
+export GEMODO_USE_MOCK_PRINCIPAL=true
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+
+curl -s http://localhost:8000/api/v1/catalogo/tipi-documento
+curl -s "http://localhost:8000/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO"
+curl -s http://localhost:8000/api/v1/catalogo/modelli/1/campi-richiesti
 ```
 
 Manifest e strumenti di qualita' principali:
@@ -128,15 +142,15 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/003-sezioni-placeholder-versionamento
+specs/001-catalogo-contratto-geban
 ```
 
 ## Prossimo Blocco Di Sviluppo
 
-Per il codice applicativo resta corretto partire dalla `001`, poi `002`, poi `003`.
-La `003` riusa modello versione, pubblicazione, errori comuni e validazione JWT condivisa.
-Dopo i task foundational di `001` e `002`, la `003` puo' partire da `T001` in
-`specs/003-sezioni-placeholder-versionamento/tasks.md`.
+Per il codice applicativo la `001` ora fornisce la base API usabile da GEBAN per catalogo,
+campi richiesti e validazione payload. Il prossimo blocco applicativo resta `002`, poi
+`003`; la `003` riusa modello versione, pubblicazione, errori comuni e validazione JWT
+condivisa.
 
 Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 

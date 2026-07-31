@@ -1,0 +1,53 @@
+{
+  "_comment": "Esempio pubblicabile di successo per GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti. Mostra lingua IT/EN e schema strict con additionalProperties=false.",
+  "modello_versione_id": 1,
+  "tipo_documento": "BANDO_CONCORSO",
+  "categoria": "DEMO",
+  "campi": [
+    {
+      "codice": "codice_bando",
+      "etichetta": "Codice bando",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 1,
+      "descrizione": "Identificativo funzionale del bando",
+      "validazione": {
+        "minLength": 1
+      }
+    },
+    {
+      "codice": "titolo_en",
+      "etichetta": "Title",
+      "tipo": "string",
+      "lingua": "EN",
+      "obbligatorio": true,
+      "ordine": 6,
+      "descrizione": "Titolo inglese del bando",
+      "validazione": {
+        "minLength": 1
+      }
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "codice_bando": {
+        "type": "string",
+        "minLength": 1,
+        "x-gemodo-lingua": "IT",
+        "x-gemodo-obbligatorio": true
+      },
+      "titolo_en": {
+        "type": "string",
+        "minLength": 1,
+        "x-gemodo-lingua": "EN",
+        "x-gemodo-obbligatorio": true
+      }
+    },
+    "required": [
+      "codice_bando"
+    ]
+  }
+}

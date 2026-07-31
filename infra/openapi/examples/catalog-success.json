@@ -1,20 +1,21 @@
 {
-  "_comment": "Esempio pubblicabile di successo per GET /catalogo/modelli (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ModelloSearchResponse). Solo dati demo. modello_id/modello_versione_id sono interi (int64) come tipizzati da questo contratto OpenAPI; i manifest demo della 009 (es. infra/local/integration-profiles.local.yaml) usano invece identificativi stringa come 'demo-bando-concorso-standard-v1' - la riconciliazione del formato definitivo dell'identificativo resta la decisione aperta DEC-001-IDENTIFICATIVI-MODELLO (docs/decision-register.yaml).",
+  "_comment": "Esempio pubblicabile di successo per GET /catalogo/modelli (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ModelloSearchResponse). Solo dati demo. L'API espone modello_id/modello_versione_id come interi int64; il DB mantiene UUID interni e public_id interi stabili.",
   "tipo_documento": "BANDO_CONCORSO",
   "categoria": "DEMO",
   "codice_tipologia": null,
   "modalita": "OPERATIVA",
   "modelli": [
     {
-      "modello_id": 1001,
-      "modello_versione_id": 20260701,
-      "codice": "demo-bando-concorso-standard",
-      "descrizione": "Modello standard BANDO_CONCORSO (demo)",
+      "modello_id": 1,
+      "modello_versione_id": 1,
+      "codice": "demo-bando-concorso-standard-v1",
+      "descrizione": "demo-bando-concorso-standard-v1",
+      "variante": "STANDARD",
       "versione": 1,
       "stato": "PUBBLICATO",
-      "data_inizio_validita": "2026-07-01",
+      "data_inizio_validita": null,
       "data_fine_validita": null,
-      "pubblicato_at": "2026-07-01T09:00:00Z"
+      "pubblicato_at": "2026-07-31T10:00:00Z"
     }
   ]
 }

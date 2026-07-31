@@ -60,16 +60,17 @@ coverage:
     spec_owner: specs/001-catalogo-contratto-geban
     requirement_id: FR-004
     scenario_id: E2E-001
-    contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/mock-geban-scenarios.yaml
+    contract_ref: backend/tests/catalog/test_catalog_service_integration.py
     stato: COPERTO
-    note: piano scenario risolto e test_mock_geban_valid_flow.py
+    note: search_modelli filtra per tipo/categoria, modalita' operativa/storica e date pubblicazione su PostgreSQL reale
 
   - id: COV-007
-    spec_owner: specs/009-fondamenta-mock-test-qualita
+    spec_owner: specs/001-catalogo-contratto-geban
     requirement_id: FR-005
     scenario_id: E2E-001
-    contract_ref: mock-geban/scenarios/minimum-e2e.yaml
+    contract_ref: backend/tests/validation/test_validazione_payload_api.py
     stato: COPERTO
+    note: modello_versione_id pubblico 2 in stato BOZZA produce MODELLO_VERSIONE_NON_PUBBLICATO
 
   - id: COV-008
     spec_owner: specs/009-fondamenta-mock-test-qualita
@@ -96,27 +97,28 @@ coverage:
     note: aspettative documentate; evento audit reale richiede endpoint runtime (006)
 
   - id: COV-011
-    spec_owner: specs/009-fondamenta-mock-test-qualita
+    spec_owner: specs/001-catalogo-contratto-geban
     requirement_id: FR-020
     scenario_id: E2E-001
-    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    contract_ref: backend/tests/catalog/test_catalogo_tipologia_sol.py
     stato: COPERTO
+    note: codice_tipologia non configurato produce TIPOLOGIA_SOL_NON_VALIDA, non lista vuota silenziosa
 
   - id: COV-012
     spec_owner: specs/001-catalogo-contratto-geban
     requirement_id: FR-021
     scenario_id: SCENARIO-6
-    contract_ref: docs/decision-register.yaml#DEC-001-PROFILO-GEBAN
+    contract_ref: backend/tests/catalog/test_campi_richiesti_api.py
     stato: COPERTO
-    note: tracciata come decisione aperta ASSUNTA_PROVVISORIA, fase_bloccante TASKS
+    note: campi-richiesti espone lingua IT/EN e schema strict con additionalProperties=false
 
   - id: COV-013
     spec_owner: specs/001-catalogo-contratto-geban
     requirement_id: FR-022
     scenario_id: E2E-001
-    contract_ref: mock-geban/scenarios/expected-outcomes.yaml
+    contract_ref: backend/tests/validation/test_validazione_payload_api.py
     stato: COPERTO
-    note: due output IT/EN verificati in test_e2e_001_english_flag_produces_two_outputs_it_and_en
+    note: bando_inglese=true richiede titolo_en; bando_inglese=false non genera CAMPO_INGLESE_MANCANTE
 
   - id: COV-013b
     spec_owner: specs/009-fondamenta-mock-test-qualita
