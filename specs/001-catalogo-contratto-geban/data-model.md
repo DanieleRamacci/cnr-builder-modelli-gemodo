@@ -156,6 +156,28 @@ Fields:
 - `bando_inglese`: boolean opzionale nel payload, default `false`; quando `true`
   attiva l'obbligatorieta' dei campi con `lingua = EN` (FR-021, FR-022).
 
+### PrincipalGEMODO
+
+Identita' applicativa ricostruita dal JWT Keycloak per proteggere le API operative della
+`001`. Non e' una tabella persistente in questa feature.
+
+Fields:
+
+- `subject`: soggetto del token.
+- `client_id`: client chiamante, ricavato da `azp` o claim equivalente.
+- `audience`: audience validate, deve includere `gemodo-backend`.
+- `ruoli`: ruoli client letti da `resource_access.gemodo-backend.roles`.
+- `issuer`: issuer Keycloak validato.
+
+Validation:
+
+- il token deve avere firma valida tramite JWKS, issuer atteso, audience attesa e
+  scadenza non superata.
+- per chiamate GEBAN il client deve essere `geban-backend`.
+- catalogo e contratto dati richiedono `DOCUMENTI_VIEWER` o `DOCUMENTI_GENERATORE`.
+- validazione payload richiede `DOCUMENTI_GENERATORE`.
+- il principal mock e' ammesso solo se abilitato esplicitamente per profili locali/test.
+
 ### ErroreValidazione
 
 Errore funzionale restituito a GEBAN.
@@ -178,6 +200,9 @@ Common error codes:
   `TipologiaBandoSOL` configurata.
 - `CAMPO_INGLESE_MANCANTE` (FR-022): campo con `lingua = EN` obbligatorio assente
   quando `bando_inglese = true`.
+- `ACCESSO_NON_AUTENTICATO`: JWT mancante, scaduto o non valido per firma, issuer o
+  audience.
+- `ACCESSO_NON_AUTORIZZATO`: JWT valido ma client o ruolo non abilitato per la route.
 
 Questi codici sono coerenti con `infra/openapi/errors.md` (catalogo errori
 trasversale della `009`); eventuali nuovi codici funzionali di questa feature vanno
@@ -194,6 +219,7 @@ ModelloDocumento 1--N ModelloDocumentoVersione
 ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)
 ValidazionePayload 1--N ErroreValidazione
+PrincipalGEMODO 1--N Operazione API (runtime)
 ```
 
 ## State Rules
@@ -206,3 +232,4 @@ ValidazionePayload 1--N ErroreValidazione
 - Le versioni precedenti della stessa variante sono `ARCHIVIATO` e disponibili solo nello
   storico.
 - Il catalogo puo' esporre piu' varianti pubblicate per lo stesso tipo/categoria/tipologia.
+- Le route operative della `001` sono eseguite solo con `PrincipalGEMODO` valido.

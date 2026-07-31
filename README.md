@@ -17,15 +17,15 @@ Branch:
 
 Feature attiva:
 
-- `specs/009-fondamenta-mock-test-qualita`
+- `specs/001-catalogo-contratto-geban`
 
-La feature attiva prepara fondamenta, mock, test, qualita', profili di integrazione,
-modello documentale controllato, documentazione API e readiness open source/PA. Le
-fasi 1-5 (`T001-T058`) sono implementate e verificate con 109 test reali; resta il
-Polish (`T059-T064`). Vedi `docs/project-map.md` per lo stato aggiornato di tutte le
-spec, incluso un avviso importante: `001`, `002` e `003` hanno gia' `plan.md`/`tasks.md`
-ma risalgono al 19 giugno 2026, prima delle decisioni successive - vanno aggiornati e
-ripianificati prima di implementarli.
+La feature `009-fondamenta-mock-test-qualita` e' completa (`T001-T064`) e ha preparato
+fondamenta, mock, test, profili di integrazione, modello documentale controllato,
+documentazione API e readiness open source/PA. Il prossimo blocco operativo e' la
+feature `001-catalogo-contratto-geban`: `spec.md`, `plan.md` e `tasks.md` sono gia'
+aggiornati alle decisioni del 2026-07-29 e al chiarimento sicurezza del 2026-07-31.
+Il readiness gate per `TASKS` e' verde; l'implementazione puo' partire da `T001`. Vedi
+`docs/project-map.md`.
 
 ## Provare Il Backend In Locale
 
@@ -127,21 +127,22 @@ specs/009-fondamenta-mock-test-qualita/
 La feature attiva per il prossimo comando Spec Kit e':
 
 ```text
-specs/009-fondamenta-mock-test-qualita
+specs/001-catalogo-contratto-geban
 ```
 
 ## Prossimo Blocco Di Sviluppo
 
-Per la feature attiva (`009`) resta solo il Polish (`T059-T064`): note di
-documentazione generata, esempi API pubblicabili, validazione sintassi/YAML, build
-MkDocs e revisione del quickstart contro gli output reali.
+Per la feature attiva (`001`) il readiness gate per `TASKS` e' verde. Il lavoro
+successivo e' avviare l'implementazione da `T001` in
+`specs/001-catalogo-contratto-geban/tasks.md`, includendo la protezione JWT Keycloak
+minima prevista dai task foundational.
 
-Dopo il Polish, prima di produrre un PDF vero servono, nell'ordine:
+Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 
-1. Propagare nelle `spec.md` di `001`, `002`, `003` le decisioni ormai `CONFERMATA`
+1. Propagare nelle `spec.md` di `002` e `003` le decisioni ormai `CONFERMATA`
    che le riguardano (vedi `docs/decision-register.yaml`), poi rigenerare i loro
    `plan.md`/`tasks.md` (sono fermi al 19 giugno 2026 e non li riflettono).
-2. Completare il flusso Spec Kit (`plan` + `tasks`, non ancora esistenti) per
+2. Completare il flusso Spec Kit (`plan` + `tasks`, dove mancanti o superati) per
    `006-sicurezza-autorizzazioni-audit`, `004-generazione-documenti-pdf` e
    `005-storage-idempotenza-consultazione`.
 3. Solo allora implementare `POST /documenti/genera`, stato e download: nessun

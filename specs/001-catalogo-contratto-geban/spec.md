@@ -66,10 +66,45 @@ conseguenza nella stessa sessione.
   conferma definitiva richiede allineamento con GEBAN prima dell'implementazione). Gli
   identificativi stringa nei manifest demo della `009` restano solo etichette
   leggibili nei manifest di qualita', non il formato dell'API.
-- Q: La sicurezza delle chiamate operative cambia per questa feature? -> A: No.
-  `SEC-006-001` (confermata dalla `006`) conferma che GEBAN chiama con token tecnico
-  `geban-backend`; questa feature continua ad assumere che il chiamante sia gia'
-  autorizzato (FR-017/Assumptions), senza validare qui token o ruoli.
+- Q: La sicurezza delle chiamate operative cambia per questa feature? -> A: Si applica
+  `SEC-006-001` (confermata dalla `006`): GEBAN chiama con token tecnico
+  `geban-backend`. La risposta iniziale che rimandava la validazione token/ruoli alla
+  `006` e' superata dal chiarimento del 2026-07-31: la `001` valida gia' il JWT minimo
+  per le proprie API operative.
+
+### Session 2026-07-31
+
+- Q: Serve definire e implementare ora il profilo GEBAN versionato per sbloccare il primo
+  incremento della `001`? -> A: No. Per il primo incremento produttivo della `001` il catalogo non filtra per
+  profilo GEBAN: filtra solo per stato `PUBBLICATO`, contesto richiesto, tipologia
+  GEBAN/SOL configurata e `modello_versione_id`. Profilo GEBAN versionato,
+  configurazione del profilo, relazione profilo/catalogo e API dedicate restano sospesi
+  con rischio tracciato e verranno ripresi quando `002` e `006` saranno allineate.
+- Q: Categorie iniziali e campi comuni GEBAN sono solo seed demo o contenuto funzionale
+  da implementare nella `001`? -> A: Sono contenuto funzionale da implementare secondo
+  la documentazione fornita dai colleghi GEBAN. La `001` deve includere le categorie
+  iniziali e i campi comuni GEBAN gia' indicati negli artefatti di progetto, mantenendoli
+  configurabili e versionabili come dati del catalogo/contratto, non hard-coded nella
+  logica applicativa. La generazione PDF resta responsabilita' della `004`.
+- Q: Quando un admin aggiorna, dopo accordo con GEBAN, un campo concordato, un vincolo o
+  il placeholder collegato nel modello, la modifica sovrascrive il contratto esistente?
+  -> A: No. Ogni modifica admin concordata crea una nuova versione del contratto/modello;
+  le versioni precedenti restano storiche e sono usabili operativamente solo finche'
+  restano pubblicate e valide. Se una versione precedente viene archiviata o sospesa,
+  GEBAN deve ricaricare catalogo/campi e selezionare una versione valida.
+- Q: I campi complessi nel contratto dati verso GEBAN sono testo preformattato o dati
+  strutturati? -> A: Sono dati JSON strutturati con sotto-campi tipizzati,
+  obbligatorieta' e vincoli per `array` e `object`. GEBAN invia dati strutturati; la
+  formattazione visuale e l'impaginazione restano responsabilita' del modello
+  documentale e del renderer PDF nelle spec successive.
+- Q: Poiche' Keycloak e' gia' configurato, le API operative della `001` devono restare
+  senza sicurezza applicativa fino alla `006`? -> A: No. La `001` deve implementare la
+  protezione minima corretta delle proprie API con JWT Keycloak: validazione firma/JWKS,
+  issuer, audience `gemodo-backend`, scadenza, client chiamante (`geban-backend` per le
+  chiamate GEBAN) e ruolo client su `resource_access.gemodo-backend.roles`
+  (`DOCUMENTI_GENERATORE` per validazione operativa, `DOCUMENTI_VIEWER` o
+  `DOCUMENTI_GENERATORE` per consultazione catalogo/campi). Audit completo,
+  autorizzazioni fini per profilo e workflow sicurezza restano nella `006`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -165,7 +200,8 @@ da mostrare messaggi utili all'utente e decidere se correggere dati, cambiare mo
 interrompere il flusso.
 
 **Why this priority**: gli errori sono necessari per rendere usabile il flusso, ma il
-catalogo, il contratto dati e la validazione positiva sono il nucleo MVP.
+catalogo, il contratto dati e la validazione positiva sono il nucleo del primo
+incremento produttivo.
 
 **Independent Test**: la storia e' verificabile simulando contesti non validi, modelli
 non pubblicati, payload errati e richieste incoerenti.
@@ -192,6 +228,8 @@ non pubblicati, payload errati e richieste incoerenti.
   servizio li restituisce come opzioni distinte.
 - Il contratto dati include campi array o object che richiedono una struttura interna
   definita.
+- Il payload contiene array/object con sotto-campi mancanti, tipi non coerenti o campi
+  extra non ammessi rispetto allo schema strutturato del campo complesso.
 - Il payload contiene valori vuoti per campi obbligatori.
 - Il payload contiene campi facoltativi non valorizzati.
 - La versione modello viene archiviata dopo essere stata proposta a GEBAN ma prima della
@@ -235,10 +273,18 @@ non pubblicati, payload errati e richieste incoerenti.
 - **FR-006b**: Le date di validita' della versione modello MUST essere opzionali; una
   versione pubblicata senza data fine resta valida finche' non viene archiviata, sospesa o
   sostituita secondo le regole del modello.
+- **FR-006f**: Ogni modifica admin concordata con GEBAN a campi, vincoli o placeholder
+  collegati MUST creare una nuova versione del contratto/modello; le versioni precedenti
+  MUST restare tracciate come storico e MAY essere usate operativamente solo finche'
+  restano in stato `PUBBLICATO` e valide.
 - **FR-007**: Il servizio MUST restituire a GEBAN il contratto dati associato a una
   versione modello pubblicata.
 - **FR-008**: Il contratto dati MUST includere per ogni campo almeno codice, etichetta,
   tipo dato, obbligatorieta', ordine e vincoli di validazione disponibili.
+- **FR-008a**: Per campi complessi di tipo `array` o `object`, il contratto dati MUST
+  esporre uno schema JSON strutturato con sotto-campi, tipi, obbligatorieta', ordine e
+  vincoli; il servizio MUST NOT richiedere a GEBAN testo gia' preformattato per
+  rappresentare dati complessi.
 - **FR-009**: Il contratto dati MUST distinguere campi obbligatori e campi facoltativi.
 - **FR-010**: Il contratto dati MUST consentire a GEBAN di costruire una maschera di
   compilazione senza replicare la logica dei modelli.
@@ -259,6 +305,17 @@ non pubblicati, payload errati e richieste incoerenti.
   utilizzabile, contratto dati non disponibile e payload non valido.
 - **FR-017**: Il servizio MUST mantenere il confine di responsabilita': GEBAN raccoglie i
   dati del processo, mentre il servizio modelli definisce contratto dati e validazione.
+- **FR-017a**: Le API operative della `001` MUST richiedere JWT Bearer Keycloak valido,
+  verificando firma tramite JWKS, issuer, audience, scadenza e ruoli client del client
+  `gemodo-backend`.
+- **FR-017b**: Le chiamate GEBAN alla `001` MUST identificare il client tecnico
+  `geban-backend` nel token (`azp` o claim equivalente) e MUST avere ruolo
+  `DOCUMENTI_GENERATORE` per la validazione payload; catalogo e contratto dati MAY
+  accettare anche `DOCUMENTI_VIEWER` quando usati in sola consultazione.
+- **FR-017c**: La `001` MUST fornire dipendenze/autorizzazioni riusabili per le proprie
+  route, senza implementare ancora autorizzazioni fini per profilo GEBAN versionato,
+  workflow builder, generazione PDF o audit completo, che restano nella `006` e nelle
+  spec collegate.
 - **FR-018**: Il servizio MUST NOT richiedere letture dirette dal database GEBAN per
   completare catalogo, contratto dati o validazione payload.
 - **FR-019**: La specifica di questa feature MUST NOT includere builder frontend,
@@ -278,8 +335,14 @@ non pubblicati, payload errati e richieste incoerenti.
 - **FR-023**: Il servizio MUST continuare a esporre catalogo e contratto dati in base
   allo stato di pubblicazione della versione modello; l'autorizzazione fine per
   sistema richiedente e profilo di integrazione (es. profilo GEBAN versionato) resta
-  fuori scope di questa feature e appartiene alla `006` finche' `DEC-001-PROFILO-GEBAN`
-  non viene chiusa.
+  fuori scope del primo incremento produttivo di questa feature e appartiene alla `006`/`002` finche'
+  `DEC-001-PROFILO-GEBAN`, `DEC-001-CONFIG-PROFILO-GEBAN`,
+  `DEC-001-RELAZIONE-PROFILO-CATALOGO` e `DEC-001-API-PROFILO-GEBAN` non vengono
+  riprese.
+- **FR-024**: La `001` MUST implementare come baseline funzionale le categorie iniziali
+  e i campi comuni GEBAN indicati nella documentazione fornita dai colleghi GEBAN e gia'
+  tracciati negli artefatti di progetto; tali contenuti MUST restare configurabili e
+  versionabili come dati del catalogo/contratto, non hard-coded nella logica.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -355,20 +418,30 @@ non confermata, verificare `backend/app/quality/readiness_gate.py` (vedi
   dinamica.
 - Il servizio modelli e' la fonte del catalogo, del contratto dati e delle regole di
   validazione del payload.
-- La sicurezza dettagliata viene trattata in una feature separata; questa specifica assume
-  che il chiamante sia gia' autorizzato secondo le regole di progetto.
+- La sicurezza dettagliata e l'audit completo vengono trattati nella `006`, ma le API
+  operative della `001` non sono pubbliche: validano gia' JWT Keycloak, audience, client
+  tecnico e ruoli applicativi minimi.
 - La generazione PDF dettagliata viene trattata in una feature separata; questa specifica
   si ferma alla validazione del payload e alla preparazione del flusso verso la generazione.
 - Il builder frontend e le API amministrative di creazione modello sono fuori scope per
   questa feature.
 - La data di riferimento non obbliga ogni modello ad avere una scadenza: serve a
   selezionare la versione corrente quando sono definite finestre temporali.
+- Le modifiche admin concordate con GEBAN non sovrascrivono contratti gia' pubblicati:
+  producono una nuova versione per preservare storico e validazione coerente dei bandi
+  gia' avviati.
 - `modello_versione_id` resta un identificativo intero (int64); il formato
   definitivo e' tracciato come decisione aperta (`DEC-001-IDENTIFICATIVI-MODELLO`),
   non bloccante per questo incremento.
 - Il profilo GEBAN versionato e l'autorizzazione fine per sistema richiedente
-  restano fuori scope: il catalogo filtra solo per stato di pubblicazione, non ancora
-  per profilo di integrazione (`DEC-001-PROFILO-GEBAN`).
+  restano fuori scope del primo incremento produttivo: il catalogo filtra solo per stato di pubblicazione,
+  contesto, tipologia e versione modello, non ancora per profilo di integrazione
+  (`DEC-001-PROFILO-GEBAN`, sospesa per il primo incremento `001`).
 - I campi comuni GEBAN, la gestione di bando multiplo e ribando sono dati del
   contratto dati dinamico esistente, non richiedono nuove entita' di dominio in
   questa feature.
+- In questa specifica il primo incremento produttivo del perimetro `001` copre catalogo,
+  contratto dati e validazione payload, non e' un prototipo usa-e-getta; la generazione
+  PDF completa e il builder UI restano in spec successive.
+- I campi complessi vengono validati come JSON strutturato; la resa testuale o tabellare
+  nel PDF non appartiene alla `001`.

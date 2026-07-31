@@ -1,18 +1,23 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.2.0
+  version: 0.3.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
     campi con lingua condizionata (bando_inglese) - vedi
     docs/decision-register.yaml, DEC-001-TIPOLOGIE-SOL e DEC-001-LINGUA-IT-EN.
+    Versione 0.3.0: le API operative richiedono JWT Bearer Keycloak con audience
+    gemodo-backend e ruoli DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE.
 servers:
   - url: /api/v1
+security:
+  - KeycloakBearer: []
 paths:
   /catalogo/tipi-documento:
     get:
       summary: Elenco tipi documento disponibili
+      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
       operationId: listTipiDocumento
       responses:
         "200":
@@ -21,9 +26,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TipoDocumentoListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /catalogo/tipi-documento/{codiceTipoDocumento}/categorie:
     get:
       summary: Elenco categorie per tipo documento
+      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
       operationId: listCategorieDocumento
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
@@ -36,9 +46,14 @@ paths:
                 $ref: "#/components/schemas/CategoriaDocumentoListResponse"
         "404":
           $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /catalogo/modelli:
     get:
       summary: Ricerca modelli pubblicati
+      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
       operationId: searchModelli
       parameters:
         - name: tipo_documento
@@ -94,9 +109,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelloSearchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /catalogo/modelli/{modelloVersioneId}/campi-richiesti:
     get:
       summary: Contratto dati per versione modello pubblicata
+      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
       operationId: getCampiRichiesti
       parameters:
         - $ref: "#/components/parameters/ModelloVersioneId"
@@ -111,9 +133,14 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /documenti/valida:
     post:
       summary: Valida payload contro contratto dati
+      description: Richiede ruolo DOCUMENTI_GENERATORE.
       operationId: validaPayload
       requestBody:
         required: true
@@ -132,7 +159,20 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 components:
+  securitySchemes:
+    KeycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT Keycloak emesso dal realm CNR, con audience gemodo-backend e ruoli client in
+        resource_access.gemodo-backend.roles. Le chiamate GEBAN usano client tecnico
+        geban-backend.
   parameters:
     CodiceTipoDocumento:
       name: codiceTipoDocumento
@@ -148,6 +188,24 @@ components:
         type: integer
         format: int64
   responses:
+    BadRequest:
+      description: Richiesta non valida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Token mancante, scaduto o non valido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Client o ruolo non autorizzato per l'operazione richiesta
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: Risorsa non trovata
       content:

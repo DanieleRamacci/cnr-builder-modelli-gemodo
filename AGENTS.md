@@ -4,10 +4,10 @@ Before working on this project, read:
 1. `.specify/memory/constitution.md` for non-negotiable project principles.
 2. `docs/project-map.md` for proposal-section coverage and spec ownership.
 3. `.specify/feature.json` to identify the active feature for Spec Kit commands.
-4. `specs/009-fondamenta-mock-test-qualita/plan.md` for the current technical plan.
+4. `specs/001-catalogo-contratto-geban/plan.md` for the current technical plan.
 5. The active feature's `spec.md` before changing requirements.
 
-The current active feature is `specs/009-fondamenta-mock-test-qualita`.
+The current active feature is `specs/001-catalogo-contratto-geban`.
 
 Do not implement application code before the active feature has `tasks.md`.
 

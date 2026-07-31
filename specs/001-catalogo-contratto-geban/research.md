@@ -139,12 +139,13 @@ allineamento con GEBAN.
 
 ## Decision: profilo GEBAN e autorizzazione fine restano fuori scope
 
-**Rationale**: `DEC-001-PROFILO-GEBAN` e le decisioni collegate (`DEC-001-CONFIG-PROFILO-GEBAN`,
-`DEC-001-RELAZIONE-PROFILO-CATALOGO`, `DEC-001-API-PROFILO-GEBAN`) restano aperte.
-Il catalogo di questa feature continua a filtrare solo per stato di pubblicazione;
-l'autorizzazione fine per sistema richiedente e profilo di integrazione (Keycloak per
-identita' generale, GEMODO per profili) e' responsabilita' della `006` e non entra qui
-come assunzione implicita.
+**Rationale**: `DEC-001-PROFILO-GEBAN` e le decisioni collegate
+(`DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-RELAZIONE-PROFILO-CATALOGO`,
+`DEC-001-API-PROFILO-GEBAN`) sono sospese esplicitamente per il primo incremento
+produttivo della `001`. Il catalogo di questa feature continua a filtrare solo per
+stato di pubblicazione, contesto, tipologia e versione modello; l'autorizzazione fine
+per sistema richiedente e profilo di integrazione resta responsabilita' della `006` e
+non entra qui come assunzione implicita.
 
 **Alternatives considered**:
 
@@ -152,3 +153,20 @@ come assunzione implicita.
   decisioni da cui dipende (formato profilo, relazione con il catalogo, API dedicate)
   non sono ancora chiuse; implementarlo ora significherebbe costruire su assunzioni non
   confermate.
+
+## Decision: protezione JWT Keycloak minima nelle API operative della 001
+
+**Rationale**: il progetto ha gia' configurato Keycloak e la costituzione richiede che le
+API protette validino JWT Bearer. La `001` quindi implementa il minimo corretto per le
+proprie route: firma/JWKS, issuer, audience `gemodo-backend`, scadenza, client tecnico
+`geban-backend` per il canale GEBAN e ruoli client `DOCUMENTI_VIEWER` /
+`DOCUMENTI_GENERATORE`. Questo non sostituisce la `006`: audit completo, profili di
+integrazione e autorizzazioni fini restano fuori scope.
+
+**Alternatives considered**:
+
+- Lasciare le API senza sicurezza fino alla `006`: scartato, non coerente con la
+  costituzione e con la configurazione Keycloak gia' disponibile.
+- Implementare tutta la sicurezza `006` dentro `001`: scartato, confonderebbe ownership
+  e introdurrebbe profili/audit/workflow non necessari per catalogo, contratto e
+  validazione payload.

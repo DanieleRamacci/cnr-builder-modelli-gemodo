@@ -12,7 +12,7 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
-| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Plan+tasks generati ma superati (2026-06-19), 0/56 task implementati | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; `spec.md`/`plan.md`/`tasks.md` restano fermi alla sessione di chiarimento 2026-06-19 e non riflettono ancora tipologie GEBAN/SOL, campi comuni, profilo GEBAN versionato, bando multiplo/ribando/bando inglese integrale ne' `SEC-006-001`, chiariti in `009` tra il 2026-06-22 e il 2026-07-29 (vedi `docs/decision-register.yaml`, decisioni `DEC-001-*`). Da aggiornare e ripianificare (`/speckit-plan` + `/speckit-tasks`) prima di implementare |
+| `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/73 task implementati; readiness gate `TASKS` verde | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; recepisce tipologie GEBAN/SOL, lingua IT/EN, categorie e campi comuni GEBAN confermati, bando multiplo/ribando, versionamento campi/placeholder, campi complessi strutturati e protezione JWT Keycloak minima per le API operative. Profilo GEBAN versionato e API dedicate al profilo sono sospesi per il primo incremento produttivo e restano tracciati per `002`/`006` |
 | `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Plan+tasks generati ma superati (2026-06-19), 0/59 task implementati | §2, §4, §8.2-§8.6, §10, §16.3 | Da chiarire stati definitivi; `spec.md`/`plan.md`/`tasks.md` fermi al 2026-06-19, non riflettono `SEC-006-002` ne' il modello documentale controllato chiarito in `009`. Da aggiornare e ripianificare prima di implementare |
 | `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Plan+tasks generati ma superati (2026-06-19), 0/48 task implementati | §5.5, §6, §8.7-§8.9, §16.3 | Sezioni non versionate autonomamente nel perimetro corrente; chiarimento in `009`: builder visuale controllato, non editor HTML, con modello documentale versionato a blocchi/layout/asset/placeholder - non ancora recepito in `plan.md`/`tasks.md` di questa spec (fermi al 2026-06-19). Da aggiornare e ripianificare prima di implementare |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
@@ -83,23 +83,29 @@ Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md
 
 ## Stato Plan/Tasks Delle Spec Operative (verificato 2026-07-29)
 
-`001-catalogo-contratto-geban`, `002-builder-modelli` e `003-sezioni-placeholder-versionamento`
-hanno gia' `plan.md` e `tasks.md` generati, ma tutti e tre risalgono alla sessione di
-chiarimento del 2026-06-19 (prima ancora della sessione 2026-06-22 che ha aperto il
-registro decisioni). Nessuno dei tre riflette le decisioni chiarite/confermate
-successivamente (2026-06-22, 2026-07-07, 2026-07-28, 2026-07-29) e tracciate in
-`docs/decision-register.yaml`: tipologie GEBAN/SOL, campi comuni GEBAN, profilo GEBAN
-versionato, bando multiplo/ribando, bando inglese integrale, `SEC-006-001`,
-`SEC-006-002`, modello documentale controllato.
+`001-catalogo-contratto-geban` ha `spec.md`, `plan.md` e `tasks.md` aggiornati al
+2026-07-31. Il readiness gate per `TASKS` e' verde dopo la conferma/sospensione
+esplicita delle decisioni bloccanti: la feature puo' partire da `T001`, includendo
+catalogo, contratto dati, validazione payload e protezione JWT Keycloak minima.
 
-Nessun task di queste tre spec e' implementato (0/56, 0/59, 0/48). Prima di avviare
-l'implementazione applicativa:
+`002-builder-modelli` e `003-sezioni-placeholder-versionamento` hanno gia' `plan.md` e
+`tasks.md` generati, ma entrambi risalgono alla sessione di chiarimento del 2026-06-19
+(prima ancora della sessione 2026-06-22 che ha aperto il registro decisioni). Non
+riflettono ancora le decisioni chiarite/confermate successivamente (2026-06-22,
+2026-07-07, 2026-07-28, 2026-07-29) e tracciate in `docs/decision-register.yaml`:
+tipologie GEBAN/SOL, campi comuni GEBAN, profilo GEBAN versionato, bando
+multiplo/ribando, bando inglese integrale, `SEC-006-001`, `SEC-006-002`, modello
+documentale controllato.
 
-1. propagare nelle rispettive `spec.md` le decisioni ormai `CONFERMATA` che le
+Nessun task di queste tre spec e' implementato (0/73, 0/59, 0/48). Prima di avviare
+l'implementazione applicativa oltre la `001`:
+
+1. implementare la `001` seguendo `specs/001-catalogo-contratto-geban/tasks.md`;
+2. propagare nelle `spec.md` di `002` e `003` le decisioni ormai `CONFERMATA` che le
    riguardano (vedi `spec_interessate` in `docs/decision-register.yaml`);
-2. rigenerare `plan.md` e `tasks.md` (`/speckit-plan` + `/speckit-tasks`) cosi' che
-   riflettano lo stato attuale, non quello del 19 giugno;
-3. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione
+3. rigenerare `plan.md` e `tasks.md` di `002` e `003` (`/speckit-plan` +
+   `/speckit-tasks`) cosi' che riflettano lo stato attuale, non quello del 19 giugno;
+4. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione
    critica blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi
    task implementativi (FR-018).
 

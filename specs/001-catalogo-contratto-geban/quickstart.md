@@ -16,8 +16,30 @@ l'implementazione. I comandi concreti saranno definiti quando il progetto backen
   - almeno due varianti modello pubblicate;
   - campi richiesti demo `PROFILO`, `LIVELLO`, `NUM_POSTI`, `SEDI`, piu' almeno un
     campo `lingua: EN` obbligatorio (es. `TITOLO_EN`) per lo Scenario 8.
-- Autenticazione configurata secondo la spec sicurezza o disabilitata solo nel profilo di
-  test locale.
+- Autenticazione Keycloak configurata secondo `specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md`
+  o principal mock abilitato esplicitamente solo in profili locali/test
+  (`GEMODO_USE_MOCK_PRINCIPAL=true`).
+- Token Bearer tecnico GEBAN per le prove operative:
+  - catalogo/campi: ruolo `DOCUMENTI_VIEWER` o `DOCUMENTI_GENERATORE`;
+  - validazione payload: ruolo `DOCUMENTI_GENERATORE`;
+  - audience `gemodo-backend`, client `geban-backend`.
+
+## Scenario 0 - Accesso non autenticato
+
+Inviare una richiesta catalogo senza header `Authorization: Bearer ...`.
+
+Risultato atteso:
+
+- risposta 401;
+- codice errore `ACCESSO_NON_AUTENTICATO`.
+
+Inviare una richiesta con token valido ma senza ruolo richiesto o con client diverso da
+`geban-backend`.
+
+Risultato atteso:
+
+- risposta 403;
+- codice errore `ACCESSO_NON_AUTORIZZATO`.
 
 ## Scenario 1 - Catalogo operativo
 

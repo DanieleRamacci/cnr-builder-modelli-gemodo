@@ -6,10 +6,10 @@
 
 ## Summary
 
-Implementare le API backend che permettono a GEBAN di consultare tipi documento,
-categorie e versioni modello pubblicate, ottenere il contratto dati di una specifica
-versione tramite `modello_versione_id`, e validare un payload dinamico prima della
-generazione documento.
+Implementare API backend protette da JWT Keycloak che permettono a GEBAN di consultare
+tipi documento, categorie e versioni modello pubblicate, ottenere il contratto dati di
+una specifica versione tramite `modello_versione_id`, e validare un payload dinamico
+prima della generazione documento.
 
 L'approccio tecnico e' un servizio REST Python FastAPI con persistenza PostgreSQL,
 migrations Alembic, validazione payload guidata da metadati/schema del modello tramite
@@ -22,12 +22,20 @@ manifest di qualita' gia' creati dalla `009` (`backend/pyproject.toml`,
 `backend/app/main.py`, `backend/alembic/`, `infra/local/postgres/seed-demo-catalog.yaml`).
 Questa feature **estende** quello scheletro, non lo ricrea.
 
+**Aggiornamento 2026-07-31**: il piano recepisce il chiarimento sul confine
+Keycloak/GEMODO: la `001` implementa gia' la protezione minima delle proprie API
+operative con JWT Bearer Keycloak (firma/JWKS, issuer, audience `gemodo-backend`,
+scadenza, client tecnico `geban-backend` e ruoli `DOCUMENTI_GENERATORE` /
+`DOCUMENTI_VIEWER`). Audit completo, autorizzazioni fini per profilo GEBAN, builder e
+workflow sicurezza restano nella `006`.
+
 ## Technical Context
 
 **Language/Version**: Python 3.12+
 
-**Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, python-jose/PyJWT,
-OpenAPI tooling - stesso stack e stesso progetto backend gia' avviato dalla `009`
+**Primary Dependencies**: FastAPI, Pydantic, SQLAlchemy 2, Alembic, PyJWT/cryptography
+per validazione JWT/JWKS, httpx per recupero JWKS, OpenAPI tooling - stesso stack e
+stesso progetto backend gia' avviato dalla `009`
 (`backend/pyproject.toml`), non un progetto separato
 
 **Storage**: PostgreSQL (stessa istanza/schema della `009`, baseline
@@ -51,12 +59,15 @@ per variante esposte in modalita' operativa; `modello_versione_id` obbligatorio 
 contratto dati e validazione payload (resta intero int64, `DEC-001-IDENTIFICATIVI-MODELLO`);
 campi non previsti nel payload sono errore bloccante; `codice_tipologia` deve corrispondere
 a una tipologia GEBAN/SOL configurata (FR-020); campi con `lingua: EN` sono obbligatori
-solo se `bando_inglese: true` (FR-021, FR-022); profilo GEBAN versionato e autorizzazione
-fine restano fuori scope (`DEC-001-PROFILO-GEBAN`, owner `006`)
+solo se `bando_inglese: true` (FR-021, FR-022); le route operative richiedono JWT
+Keycloak valido con audience `gemodo-backend`, client `geban-backend` per il canale GEBAN
+e ruolo coerente (`DOCUMENTI_VIEWER` per consultazione, `DOCUMENTI_GENERATORE` per
+validazione); profilo GEBAN versionato e autorizzazione fine restano fuori scope
+(`DEC-001-PROFILO-GEBAN`, owner `006`)
 
-**Scale/Scope**: primo incremento backend per catalogo, contratto dati e validazione; fuori
-scope builder frontend, generazione PDF dettagliata, storage documentale e sicurezza
-dettagliata oltre al rispetto dei vincoli costituzionali
+**Scale/Scope**: primo incremento backend per catalogo, contratto dati, validazione e
+protezione JWT minima delle API; fuori scope builder frontend, generazione PDF
+dettagliata, storage documentale, audit completo e autorizzazioni fini per profilo
 
 ## Constitution Check
 
@@ -68,7 +79,7 @@ dettagliata oltre al rispetto dei vincoli costituzionali
 | Contract-First Integration | Le API sono documentate in `contracts/geban-catalog-api.openapi.yaml` prima dei task. | PASS |
 | Configurable Document Models | Tipi, categorie, modelli, versioni e campi richiesti sono dati persistiti/configurati. | PASS |
 | Versioning, Traceability, Reproducibility | Le API operative usano `modello_versione_id`; validazione verifica stato pubblicato corrente. | PASS |
-| Security, Audit, Controlled AI | La feature assume API protette; dettagli ruoli/audit sono in spec dedicata, senza violare il principio. | PASS |
+| Security, Audit, Controlled AI | La feature implementa JWT Bearer Keycloak minimo sulle API operative; audit completo e autorizzazioni fini restano in spec 006. | PASS |
 
 ## Project Structure
 
@@ -120,6 +131,7 @@ backend/
 │       └── service.py
 └── tests/
     ├── support/                # esiste gia' (009, con fixture quality_fixtures.py ecc.): aggiungere fixture proprie, non ricreare il package
+    ├── common/                  # NUOVO in questa feature per errori/sicurezza comuni
     ├── catalog/                 # NUOVO in questa feature
     └── validation/               # NUOVO in questa feature
 ```
@@ -151,6 +163,9 @@ Decisioni chiave:
   secondo meccanismo di validazione (`DEC-001-LINGUA-IT-EN`).
 - Campi comuni GEBAN, bando multiplo e ribando restano dati del contratto dinamico
   esistente, non nuove entita' di dominio.
+- JWT Keycloak Bearer e' validato gia' nella `001` per le route operative; il principal
+  ricostruito contiene client, audience e ruoli minimi, senza gestire credenziali in
+  GEMODO.
 - `modello_versione_id` resta intero (int64); profilo GEBAN e autorizzazione fine
   restano fuori scope di questa feature.
 
@@ -170,4 +185,4 @@ Output:
 | Contract-First Integration | Contratto OpenAPI definito per catalogo, contratto dati e validazione. | PASS |
 | Configurable Document Models | Entita' supportano modelli e campi configurabili. | PASS |
 | Versioning, Traceability, Reproducibility | `modello_versione_id` e stato versione sono centrali nel modello dati. | PASS |
-| Security, Audit, Controlled AI | Nessuna scelta contraria; la protezione API verra' cablata in coerenza con spec 006. | PASS |
+| Security, Audit, Controlled AI | Le API operative della `001` includono validazione JWT Keycloak minima coerente con `SEC-006-001`; audit completo e profili restano alla `006`. | PASS |

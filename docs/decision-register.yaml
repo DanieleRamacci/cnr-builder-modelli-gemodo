@@ -54,11 +54,14 @@ decisions:
     spec_interessate:
       - specs/001-catalogo-contratto-geban
       - specs/002-builder-modelli
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: categorie demo minime
-    impatto: catalogo modelli e seed demo
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      categorie iniziali da implementare nella 001 secondo la documentazione fornita dai
+      colleghi GEBAN e gli artefatti di progetto gia' presenti; devono restare dati
+      configurabili/versionabili del catalogo, non valori hard-coded nella logica.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-06-22
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-005-IDEMPOTENZA-RIGENERAZIONE
     titolo: Regole definitive di idempotenza e rigenerazione
@@ -121,16 +124,18 @@ decisions:
       - specs/002-builder-modelli
       - specs/007-frontend-builder-consultazione
       - specs/009-fondamenta-mock-test-qualita
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: >
-      Keycloak autentica utenti/client, valida audience e fornisce ruoli/claim
-      generali; GEMODO decide l'accesso fine a profili di integrazione, tipi
-      documento, categorie, tipologie, modelli/versioni, contratti e operazioni (gia'
-      implementato come base in infra/local/keycloak/authorization-boundary.local.yaml
-      e backend/app/quality/integration_profile.py).
-    impatto: modello di autorizzazione applicativa e data model dei profili
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Keycloak autentica utenti/client, firma JWT, issuer, audience e ruoli/claim
+      generali; GEMODO valida il JWT lato backend e applica autorizzazioni applicative.
+      Per la 001 le API operative devono gia' validare JWT Bearer, audience
+      gemodo-backend, client tecnico geban-backend per chiamate GEBAN e ruoli
+      DOCUMENTI_GENERATORE/DOCUMENTI_VIEWER. Le autorizzazioni fini su profili di
+      integrazione, oggetti documentali, builder, generazione e audit completo restano
+      responsabilita' della 006 e delle spec collegate.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-001-PROFILO-GEBAN
     titolo: Profilo GEBAN versionato e mappatura campi concordata
@@ -141,15 +146,19 @@ decisions:
       - specs/004-generazione-documenti-pdf
       - specs/006-sicurezza-autorizzazioni-audit
       - specs/009-fondamenta-mock-test-qualita
-    stato: ASSUNTA_PROVVISORIA
+    stato: SOSPESA
     assunzione_provvisoria: >
-      gestione ibrida: profilo GEBAN versionato in GEMODO che associa categorie,
-      sottocategorie, modelli richiamabili e placeholder/campi gia' concordati; le API
-      restano disponibili per esporre catalogo e campi richiesti (prototipato in
-      infra/local/integration-profiles.local.yaml).
-    impatto: contratto dati operativo, builder e autorizzazioni
+      sospesa per il primo incremento produttivo della 001: il catalogo non filtra per profilo GEBAN versionato,
+      ma solo per stato PUBBLICATO, contesto richiesto, tipologia GEBAN/SOL configurata
+      e modello_versione_id. La gestione ibrida del profilo GEBAN resta direzione
+      attesa per un incremento successivo, dopo allineamento di 002 e 006.
+    impatto: >
+      rischio residuo tracciato: il primo incremento 001 non impedisce ancora a livello
+      di catalogo l'uso di modelli tramite profilo GEBAN versionato; questa limitazione
+      e' accettata perche' l'autorizzazione fine resta fuori scope e sara' ripresa con
+      builder/profili e sicurezza applicativa.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-001-CONFIG-PROFILO-GEBAN
     titolo: Configurazione del profilo GEBAN
@@ -157,17 +166,17 @@ decisions:
     spec_interessate:
       - specs/002-builder-modelli
       - specs/009-fondamenta-mock-test-qualita
-    stato: APERTA
+    stato: SOSPESA
     assunzione_provvisoria: >
-      nessuna assunzione proposta nella proposta/spec; da definire se file versionato o
-      dati gestiti nel builder, stati del profilo, approvazione/pubblicazione,
-      archiviazione e propagazione ai modelli gia' pubblicati prima del PLAN di 001/002.
+      sospesa per il primo incremento produttivo della 001: non viene scelto ora se il profilo GEBAN sara' file
+      versionato o dato gestito nel builder; nessun task 001 implementa configurazione,
+      stati, pubblicazione o archiviazione del profilo.
     impatto: >
-      da definire se file versionato o dati gestiti nel builder, stati del profilo,
-      approvazione/pubblicazione, archiviazione e propagazione ai modelli gia'
-      pubblicati.
+      rischio residuo tracciato: la configurazione definitiva del profilo GEBAN resta
+      aperta per 002/006 e per un incremento successivo; il primo incremento 001 espone catalogo e
+      contratto dati senza profilo dedicato.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-001-IDENTIFICATIVI-MODELLO
     titolo: Identificativi e mapping modello GEBAN-GEMODO
@@ -197,32 +206,34 @@ decisions:
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/002-builder-modelli
-    stato: APERTA
+    stato: SOSPESA
     assunzione_provvisoria: >
-      nessuna assunzione proposta; da definire la relazione esatta tra profilo, tipo
-      documento, categoria, sottocategoria, tipologia, variante, modello e versione
-      modello pubblicata prima del data model operativo di 001/002.
+      sospesa per il primo incremento produttivo della 001: la relazione esatta tra profilo, tipo documento,
+      categoria, sottocategoria, tipologia, variante, modello e versione modello non
+      viene modellata nel primo incremento catalogo/contratto.
     impatto: >
-      da definire la relazione esatta tra profilo, tipo documento, categoria,
-      sottocategoria, tipologia, variante, modello e versione modello pubblicata.
+      rischio residuo tracciato: il catalogo del primo incremento non applica ancora restrizioni o
+      derivazioni da profilo; la relazione profilo/catalogo va definita prima di
+      implementare filtri per profilo o builder di profili.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-001-API-PROFILO-GEBAN
     titolo: API specifiche per profilo GEBAN
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/006-sicurezza-autorizzazioni-audit
-    stato: APERTA
+    stato: SOSPESA
     assunzione_provvisoria: >
-      nessuna assunzione proposta; da definire se bastano catalogo e campi esistenti o
-      se servono endpoint dedicati per recuperare modelli/campi filtrati dal profilo
-      GEBAN prima del contratto OpenAPI di 001.
+      sospesa per il primo incremento produttivo della 001: non vengono introdotti endpoint dedicati al profilo
+      GEBAN; restano solo catalogo, campi richiesti e validazione payload gia' previsti
+      dal contratto OpenAPI della 001.
     impatto: >
-      da definire se bastano catalogo e campi esistenti o se servono endpoint dedicati
-      per recuperare modelli/campi filtrati dal profilo GEBAN.
+      rischio residuo tracciato: eventuali endpoint filtrati per profilo richiederanno
+      una revisione esplicita del contratto OpenAPI e non devono essere aggiunti come
+      estensione silenziosa durante il primo incremento.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN
     titolo: Autorizzazioni del profilo GEBAN
@@ -246,27 +257,32 @@ decisions:
     spec_interessate:
       - specs/002-builder-modelli
       - specs/003-sezioni-placeholder-versionamento
-    stato: APERTA
-    assunzione_provvisoria: >
-      nessuna assunzione proposta; da definire cosa succede quando cambia un campo
-      concordato o un placeholder: nuova versione profilo, nuova versione modello,
-      bozza derivata o entrambe, prima dei task di pubblicazione modello.
+    stato: CONFERMATA
+    assunzione_provvisoria: null
     impatto: >
-      da definire cosa succede quando cambia un campo concordato o un placeholder:
-      nuova versione profilo, nuova versione modello, bozza derivata o entrambe.
+      ogni modifica admin concordata con GEBAN a campi, vincoli o placeholder collegati
+      crea una nuova versione del contratto/modello; le versioni precedenti restano
+      storiche e sono usabili operativamente solo finche' restano pubblicate e valide.
+      Se una versione precedente viene archiviata o sospesa, GEBAN deve ricaricare
+      catalogo/campi e selezionare una versione valida.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-003-FORMATO-CAMPI-COMPLESSI
     titolo: Formato dei campi complessi
     owner_spec: specs/003-sezioni-placeholder-versionamento
     spec_interessate:
       - specs/001-catalogo-contratto-geban
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: schema strutturato con sotto-campi, tipi, obbligatorieta' e vincoli
-    impatto: contratto dati e validazione campo
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      i campi complessi esposti dalla 001 verso GEBAN usano schema JSON strutturato con
+      sotto-campi, tipi, obbligatorieta', ordine e vincoli per array/object. GEBAN invia
+      dati strutturati, non testo preformattato; formattazione visuale e impaginazione
+      restano responsabilita' del modello documentale e del renderer PDF nelle spec
+      successive.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-06-22
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-003-FORMATO-VISUALE-MODELLO
     titolo: Formato visuale del modello documentale
@@ -348,16 +364,18 @@ decisions:
       - specs/003-sezioni-placeholder-versionamento
       - specs/004-generazione-documenti-pdf
       - specs/009-fondamenta-mock-test-qualita
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: >
-      payload comune: codice bando, numero posti, bando multiplo/riferimento, titolo e
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      payload comune da implementare nella 001 secondo la documentazione fornita dai
+      colleghi GEBAN: codice bando, numero posti, bando multiplo/riferimento, titolo e
       descrizione ridotta IT/EN, sedi e strutture IT/EN, profilo/livello, tipo
       selezione, medaglione IT/EN, ribando/riferimento, PTA, flag inPA/Gazzetta e
       progetto di riferimento per TD/TDPNRR; `Data inizio` non va gestita (FR-029,
-      FR-030; prototipato in mock-geban/payloads/bando-concorso-valid.json).
-    impatto: contratto dati della 001 e scenari mock
+      FR-030; prototipato in mock-geban/payloads/bando-concorso-valid.json). I campi
+      restano dati configurabili/versionabili del contratto, non logica hard-coded.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-28
+    data_ultima_revisione: 2026-07-31
 
   - id: DEC-006-CLIENT-KEYCLOAK
     titolo: Client Keycloak GEMODO e GEBAN

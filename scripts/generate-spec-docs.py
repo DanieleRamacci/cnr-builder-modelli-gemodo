@@ -203,6 +203,11 @@ def write_active_feature(specs: list[SpecInfo]) -> None:
             ]
         )
     else:
+        artifact_lines = [
+            f"- [{label}](specs/{active.slug}/{relative_name})"
+            for relative_name, label in KNOWN_ARTIFACTS
+            if (active.directory / relative_name).exists()
+        ]
         lines.extend(
             [
                 f"Feature attiva: **{active.slug}**",
@@ -215,26 +220,17 @@ def write_active_feature(specs: list[SpecInfo]) -> None:
                 "",
                 "## Artefatti Principali",
                 "",
-                f"- [Spec](specs/{active.slug}/spec.md)",
-                f"- [Plan](specs/{active.slug}/plan.md)",
-                f"- [Tasks](specs/{active.slug}/tasks.md)",
-                f"- [Data model](specs/{active.slug}/data-model.md)",
-                f"- [Research](specs/{active.slug}/research.md)",
-                f"- [Quickstart](specs/{active.slug}/quickstart.md)",
-                f"- [Quality contract](specs/{active.slug}/contracts/quality-readiness-contract.yaml)",
-                f"- [Mock scenarios](specs/{active.slug}/contracts/mock-geban-scenarios.yaml)",
+                *(artifact_lines or ["- Nessun artefatto principale trovato"]),
                 "",
                 "## Blocco Di Partenza",
                 "",
-                "Per la feature `009` lo sviluppo parte dalle task di setup e fondazione:",
+                f"Per la feature `{active.slug}` lo sviluppo parte dalle task di setup e fondazione",
+                "descritte nel relativo `tasks.md`:",
                 "",
-                "- `T001-T008`: skeleton backend, frontend, infra e mock.",
-                "- `T009-T025`: manifest qualita', loader, profili integrazione, confine",
-                "  Keycloak/GEMODO, modello documentale controllato, readiness API e readiness",
-                "  open source/PA.",
+                f"- [Tasks](specs/{active.slug}/tasks.md)",
                 "",
-                "Dopo questo blocco si puo' procedere con `US1` (`T026-T037`) per ambiente",
-                "locale, seed, migration baseline e verifica prerequisiti.",
+                "Completare prima le fasi condivise/foundational, poi procedere con le user",
+                "story in ordine di priorita'.",
             ]
         )
 
@@ -285,7 +281,7 @@ def write_api_readiness(specs: list[SpecInfo]) -> None:
     lines.extend(
         [
             "",
-            "## API MVP Da Coprire Prima Dello Sviluppo Runtime",
+            "## API Da Coprire Prima Dello Sviluppo Runtime",
             "",
             "- `POST /documenti/genera`: richiesta generazione bozza/ufficiale, idempotenza,",
             "  output italiano/inglese quando previsto, errori validazione/autorizzazione/rendering.",
@@ -334,7 +330,7 @@ def write_roadmap(specs: list[SpecInfo]) -> None:
     lines.extend(
         [
             "",
-            "## Blocco Prima Dell'MVP API + PDF",
+            "## Blocco Prima Di API + PDF",
             "",
             "- Completare `009` almeno fino a `T025` per fondamenta e readiness.",
             "- Completare Spec Kit operativo di `004/005`: plan, data model, OpenAPI, quickstart",
