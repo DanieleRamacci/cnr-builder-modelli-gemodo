@@ -3,20 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GEMODO DEV - Stato servizi</title>
+    <title>GEMODO DEV - Servizi e API</title>
     <style>
       :root {
         color-scheme: light;
-        --bg: #f4f6f9;
+        --bg: #f5f7fb;
         --surface: #ffffff;
-        --surface-muted: #eef2f7;
+        --surface-soft: #eef3f8;
         --text: #172033;
-        --muted: #5c6778;
+        --muted: #5d6878;
         --line: #d8e0ea;
-        --green: #1c7c54;
-        --amber: #b16600;
-        --red: #ba1a1a;
+        --green: #177245;
+        --amber: #9a5a00;
+        --red: #b42318;
         --blue: #0b5cab;
+        --code: #101828;
       }
 
       * {
@@ -25,10 +26,24 @@
 
       body {
         margin: 0;
-        min-height: 100vh;
         background: var(--bg);
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      a {
+        color: var(--blue);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .wrap {
+        width: min(1160px, calc(100vw - 32px));
+        margin: 0 auto;
       }
 
       header {
@@ -36,100 +51,63 @@
         background: var(--surface);
       }
 
-      .wrap {
-        width: min(1120px, calc(100vw - 32px));
-        margin: 0 auto;
-      }
-
       .topbar {
         display: flex;
-        min-height: 72px;
+        min-height: 76px;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
       }
 
       .brand {
-        display: flex;
         min-width: 0;
-        align-items: center;
-        gap: 14px;
       }
 
-      .mark {
-        display: grid;
-        width: 44px;
-        height: 44px;
-        flex: 0 0 auto;
-        place-items: center;
-        border-radius: 8px;
-        background: var(--blue);
-        color: #fff;
-        font-size: 15px;
-        font-weight: 800;
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
       }
 
-      .brand h1 {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.1;
+      h1 {
+        margin-bottom: 4px;
+        font-size: 26px;
         letter-spacing: 0;
       }
 
-      .brand p {
-        margin: 4px 0 0;
+      header p {
+        margin-bottom: 0;
         color: var(--muted);
-        font-size: 14px;
       }
 
-      .env {
+      .badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         padding: 8px 10px;
         border: 1px solid var(--line);
         border-radius: 8px;
+        background: var(--surface-soft);
         color: var(--muted);
         font-size: 14px;
         white-space: nowrap;
       }
 
       main {
-        padding: 34px 0 42px;
+        padding: 28px 0 44px;
       }
 
-      .summary {
+      .grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-bottom: 24px;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 16px;
       }
 
-      .metric,
       .panel {
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--surface);
-      }
-
-      .metric {
-        padding: 18px;
-      }
-
-      .metric span {
-        display: block;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .metric strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 24px;
-        line-height: 1;
-      }
-
-      .panel {
         overflow: hidden;
       }
 
@@ -141,6 +119,32 @@
         letter-spacing: 0;
       }
 
+      .body {
+        padding: 18px 20px 20px;
+      }
+
+      .links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .linkbox {
+        min-height: 78px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+      }
+
+      .linkbox span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
@@ -148,7 +152,7 @@
 
       th,
       td {
-        padding: 14px 20px;
+        padding: 13px 12px;
         border-bottom: 1px solid var(--line);
         text-align: left;
         vertical-align: top;
@@ -158,7 +162,6 @@
       th {
         color: var(--muted);
         font-size: 12px;
-        font-weight: 700;
         text-transform: uppercase;
       }
 
@@ -166,18 +169,17 @@
         border-bottom: 0;
       }
 
-      .status {
+      .state {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        font-weight: 700;
+        gap: 7px;
+        font-weight: 800;
         white-space: nowrap;
       }
 
       .dot {
-        width: 10px;
-        height: 10px;
-        flex: 0 0 auto;
+        width: 9px;
+        height: 9px;
         border-radius: 50%;
         background: currentColor;
       }
@@ -186,7 +188,7 @@
         color: var(--green);
       }
 
-      .work {
+      .planned {
         color: var(--amber);
       }
 
@@ -194,41 +196,65 @@
         color: var(--red);
       }
 
-      .muted {
-        color: var(--muted);
+      code,
+      pre {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       }
 
-      .foot {
-        margin-top: 18px;
-        color: var(--muted);
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: var(--surface-soft);
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 0;
+        padding: 14px;
+        border-radius: 8px;
+        background: var(--code);
+        color: #f8fafc;
         font-size: 13px;
+        line-height: 1.5;
       }
 
-      @media (max-width: 760px) {
-        .topbar {
-          align-items: flex-start;
-          flex-direction: column;
-          padding: 16px 0;
-        }
-
-        .summary {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        th:nth-child(3),
-        td:nth-child(3) {
-          display: none;
-        }
+      .stack {
+        display: grid;
+        gap: 16px;
       }
 
-      @media (max-width: 520px) {
-        .summary {
+      .note {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .warn {
+        border-left: 4px solid var(--amber);
+        padding: 12px 14px;
+        background: #fff8eb;
+        color: #513400;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 860px) {
+        .topbar,
+        .grid {
+          display: block;
+        }
+
+        .badge {
+          margin-top: 14px;
+        }
+
+        .panel {
+          margin-top: 16px;
+        }
+
+        .links {
           grid-template-columns: 1fr;
-        }
-
-        th,
-        td {
-          padding: 12px;
         }
       }
     </style>
@@ -237,86 +263,138 @@
     <header>
       <div class="wrap topbar">
         <div class="brand">
-          <div class="mark">CN</div>
-          <div>
-            <h1>GEMODO</h1>
-            <p>CNR GEBAN - Gestione modelli e generazione documenti</p>
-          </div>
+          <h1>GEMODO DEV</h1>
+          <p>Servizi disponibili, API pubblicate e chiamate autenticate per integrazione GEBAN.</p>
         </div>
-        <div class="env">Ambiente DEV · branch test</div>
+        <div class="badge">Ambiente test / Coolify</div>
       </div>
     </header>
 
     <main class="wrap">
-      <section class="summary" aria-label="Sintesi stato">
-        <div class="metric">
-          <span>Servizi attivi</span>
-          <strong>1</strong>
+      <section class="grid">
+        <div class="stack">
+          <div class="panel">
+            <h2>Documentazione</h2>
+            <div class="body">
+              <div class="links">
+                <div class="linkbox">
+                  <a href="/docs/geban-catalog" target="_blank" rel="noreferrer">Swagger catalogo GEBAN</a>
+                  <span>Contratto OpenAPI versionato per catalogo, campi richiesti e validazione payload.</span>
+                </div>
+                <div class="linkbox">
+                  <a href="/redoc/geban-catalog" target="_blank" rel="noreferrer">ReDoc catalogo GEBAN</a>
+                  <span>Lettura descrittiva dello stesso contratto OpenAPI.</span>
+                </div>
+                <div class="linkbox">
+                  <a href="/openapi/geban-catalog.yaml" target="_blank" rel="noreferrer">OpenAPI YAML</a>
+                  <span>Sorgente tecnica pubblicata per integratori e test automatici.</span>
+                </div>
+                <div class="linkbox">
+                  <a href="/docs" target="_blank" rel="noreferrer">Swagger runtime FastAPI</a>
+                  <span>Schema runtime esposto dal backend attualmente avviato.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>API disponibili ora</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Metodo</th>
+                  <th>Endpoint</th>
+                  <th>Uso</th>
+                  <th>Ruolo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>GET</code></td>
+                  <td><code>/api/v1/catalogo/tipi-documento</code></td>
+                  <td>Elenca i tipi documento disponibili.</td>
+                  <td><code>DOCUMENTI_VIEWER</code></td>
+                </tr>
+                <tr>
+                  <td><code>GET</code></td>
+                  <td><code>/api/v1/catalogo/tipi-documento/{codice}/categorie</code></td>
+                  <td>Elenca le categorie attive per un tipo documento.</td>
+                  <td><code>DOCUMENTI_VIEWER</code></td>
+                </tr>
+                <tr>
+                  <td><code>GET</code></td>
+                  <td><code>/api/v1/catalogo/modelli</code></td>
+                  <td>Restituisce versioni modello pubblicate e valide per il contesto GEBAN.</td>
+                  <td><code>DOCUMENTI_VIEWER</code></td>
+                </tr>
+                <tr>
+                  <td><code>GET</code></td>
+                  <td><code>/api/v1/catalogo/modelli/{id}/campi-richiesti</code></td>
+                  <td>Restituisce il contratto dati della versione modello selezionata.</td>
+                  <td><code>DOCUMENTI_VIEWER</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST</code></td>
+                  <td><code>/api/v1/documenti/valida</code></td>
+                  <td>Valida il payload GEBAN prima della futura generazione documentale.</td>
+                  <td><code>DOCUMENTI_GENERATORE</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="metric">
-          <span>In sviluppo</span>
-          <strong>4</strong>
-        </div>
-        <div class="metric">
-          <span>Feature attiva</span>
-          <strong>001</strong>
-        </div>
-        <div class="metric">
-          <span>Readiness gate</span>
-          <strong class="ok">verde</strong>
+
+        <div class="stack">
+          <div class="panel">
+            <h2>Stato servizi</h2>
+            <table>
+              <tbody>
+                <tr>
+                  <td><span class="state ok"><span class="dot"></span>Homepage</span></td>
+                  <td>Pagina pubblica Coolify.</td>
+                </tr>
+                <tr>
+                  <td><span class="state ok"><span class="dot"></span>Backend API</span></td>
+                  <td>FastAPI, healthcheck <a href="/health" target="_blank" rel="noreferrer">/health</a>.</td>
+                </tr>
+                <tr>
+                  <td><span class="state ok"><span class="dot"></span>PostgreSQL</span></td>
+                  <td>Persistenza catalogo e seed demo via Alembic.</td>
+                </tr>
+                <tr>
+                  <td><span class="state ok"><span class="dot"></span>Keycloak Bearer</span></td>
+                  <td>Validazione JWT tramite issuer, audience e JWKS.</td>
+                </tr>
+                <tr>
+                  <td><span class="state planned"><span class="dot"></span>PDF</span></td>
+                  <td>Non disponibile in questa versione. Arriva con la spec 004.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h2>Chiamata autenticata</h2>
+            <div class="body stack">
+              <p class="note">
+                GEBAN deve ottenere un token Keycloak con client tecnico <code>geban-backend</code>,
+                audience <code>gemodo-backend</code> e ruolo client coerente.
+              </p>
+              <pre>curl -s -X POST "$KEYCLOAK_ISSUER_URL/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=geban-backend" \
+  -d "client_secret=$GEBAN_CLIENT_SECRET"</pre>
+              <pre>curl -s "$GEMODO_BASE_URL/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;categoria=DEMO" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</pre>
+              <div class="warn">
+                Il backend GEMODO non conserva il secret di <code>geban-backend</code>: quel secret serve al client GEBAN
+                per ottenere il token. GEMODO valida solo il Bearer token ricevuto.
+              </div>
+            </div>
+          </div>
         </div>
       </section>
-
-      <section class="panel" aria-label="Stato servizi">
-        <h2>Stato servizi</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Servizio</th>
-              <th>Stato</th>
-              <th>Uso</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Pagina stato</td>
-              <td><span class="status ok"><span class="dot"></span>Attivo</span></td>
-              <td>Informazione ambiente DEV</td>
-              <td>Deploy Coolify da branch test</td>
-            </tr>
-            <tr>
-              <td>Documentazione Spec Kit</td>
-              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
-              <td>Spec, decisioni, roadmap, API readiness</td>
-              <td>Artefatti disponibili nel repository</td>
-            </tr>
-            <tr>
-              <td>API catalogo GEBAN</td>
-              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
-              <td>Tipi documento, categorie, modelli, campi richiesti</td>
-              <td>Feature 001 pronta per implementazione</td>
-            </tr>
-            <tr>
-              <td>Validazione payload</td>
-              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
-              <td>Controllo dati GEBAN prima della generazione</td>
-              <td>JWT Keycloak previsto nel primo incremento</td>
-            </tr>
-            <tr>
-              <td>Generazione PDF</td>
-              <td><span class="status off"><span class="dot"></span>Non attivo</span></td>
-              <td>Bozza, ufficiale, stato e download</td>
-              <td>Spec 004/005 da pianificare</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <p class="foot">
-        Stato statico aggiornato dal repository. I controlli live verranno collegati agli endpoint
-        health dei servizi quando backend e worker saranno disponibili.
-      </p>
     </main>
   </body>
 </html>

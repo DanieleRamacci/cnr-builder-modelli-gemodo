@@ -169,15 +169,31 @@ GitHub Pages esegue `scripts/generate-spec-docs.py` nel workflow
 
 ## Deploy Coolify Test
 
-Per pubblicare la pagina statica di stato su `dev-gemodo.concorsi.cnr.it`, usare in
-Coolify la modalita' Docker Compose:
+Per pubblicare l'ambiente DEV su `dev-gemodo.concorsi.cnr.it`, usare in Coolify la
+modalita' Docker Compose:
 
 ```text
 Build Pack: Docker Compose
 Base Directory: /
 Docker Compose Location: /docker-compose.coolify.yml
-Domains for frontend: http://dev-gemodo.concorsi.cnr.it:80
+Domains for homepage: http://dev-gemodo.concorsi.cnr.it:80
 ```
 
-Non impostare port mapping host manuali: il servizio `frontend` espone internamente la
-porta `80` e Coolify genera la route del proxy verso quella porta.
+Il compose applicativo avvia:
+
+- `homepage`: pagina pubblica Nginx con link a Swagger/ReDoc/OpenAPI e proxy verso il backend.
+- `backend`: FastAPI GEMODO, migration Alembic all'avvio, API `001` protette da Keycloak.
+- `postgres`: database persistente per catalogo, contratti dati e seed demo.
+
+Non impostare port mapping host manuali: il servizio `homepage` espone internamente la
+porta `80` e Coolify genera la route del proxy verso quella porta. Le route `/api`,
+`/docs`, `/redoc`, `/openapi` e `/health` vengono inoltrate al backend.
+
+Variabili Coolify di riferimento:
+
+```text
+deploy/coolify.env.example
+```
+
+In test reale lasciare `GEMODO_USE_MOCK_PRINCIPAL=false`; il mock principal serve solo
+per prove locali senza Keycloak.

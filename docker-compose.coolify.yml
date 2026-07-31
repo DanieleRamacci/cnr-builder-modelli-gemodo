@@ -1,10 +1,15 @@
 services:
-  frontend:
+  homepage:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      NGINX_BACKEND_URL: http://backend:8000
     expose:
       - "80"
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -14,3 +19,49 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-gemodo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gemodo}}
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-gemodo-backend}
+      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-}
+      KEYCLOAK_JWKS_CACHE_TTL_SECONDS: ${KEYCLOAK_JWKS_CACHE_TTL_SECONDS:-300}
+      GEMODO_USE_MOCK_PRINCIPAL: ${GEMODO_USE_MOCK_PRINCIPAL:-false}
+      DOCUMENTALE_MOCK_URL: ${DOCUMENTALE_MOCK_URL:-}
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gemodo}
+      POSTGRES_USER: ${POSTGRES_USER:-gemodo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - gemodo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "pg_isready -U ${POSTGRES_USER:-gemodo} -d ${POSTGRES_DB:-gemodo}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gemodo-postgres-data:
