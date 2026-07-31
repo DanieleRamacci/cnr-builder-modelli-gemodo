@@ -3,16 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GEMODO</title>
+    <title>GEMODO DEV - Stato servizi</title>
     <style>
       :root {
         color-scheme: light;
-        --bg: #f5f7fb;
-        --panel: #ffffff;
+        --bg: #f4f6f9;
+        --surface: #ffffff;
+        --surface-muted: #eef2f7;
         --text: #172033;
-        --muted: #5f6b7a;
-        --accent: #0b6bcb;
+        --muted: #5c6778;
         --line: #d8e0ea;
+        --green: #1c7c54;
+        --amber: #b16600;
+        --red: #ba1a1a;
+        --blue: #0b5cab;
       }
 
       * {
@@ -22,58 +26,297 @@
       body {
         margin: 0;
         min-height: 100vh;
-        display: grid;
-        place-items: center;
         background: var(--bg);
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
-      main {
-        width: min(720px, calc(100vw - 32px));
-        padding: 40px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--panel);
-        box-shadow: 0 16px 44px rgba(23, 32, 51, 0.08);
+      header {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
       }
 
-      .eyebrow {
-        margin: 0 0 12px;
-        color: var(--accent);
+      .wrap {
+        width: min(1120px, calc(100vw - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        min-height: 72px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .mark {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      .brand p {
+        margin: 4px 0 0;
+        color: var(--muted);
         font-size: 14px;
+      }
+
+      .env {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      main {
+        padding: 34px 0 42px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .metric,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .metric {
+        padding: 18px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .panel {
+        overflow: hidden;
+      }
+
+      .panel h2 {
+        margin: 0;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 12px;
         font-weight: 700;
         text-transform: uppercase;
       }
 
-      h1 {
-        margin: 0;
-        font-size: clamp(36px, 7vw, 64px);
-        line-height: 1;
-      }
-
-      p {
-        margin: 18px 0 0;
-        color: var(--muted);
-        font-size: 20px;
-        line-height: 1.45;
+      tr:last-child td {
+        border-bottom: 0;
       }
 
       .status {
-        margin-top: 28px;
-        padding-top: 20px;
-        border-top: 1px solid var(--line);
-        color: var(--text);
-        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .ok {
+        color: var(--green);
+      }
+
+      .work {
+        color: var(--amber);
+      }
+
+      .off {
+        color: var(--red);
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .foot {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 760px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 16px 0;
+        }
+
+        .summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+          display: none;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .summary {
+          grid-template-columns: 1fr;
+        }
+
+        th,
+        td {
+          padding: 12px;
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <p class="eyebrow">CNR GEBAN</p>
-      <h1>GEMODO</h1>
-      <p>Applicativo per la gestione e generazione dei modelli di documento.</p>
-      <p class="status">Ambiente di test collegato al branch <strong>test</strong>.</p>
+    <header>
+      <div class="wrap topbar">
+        <div class="brand">
+          <div class="mark">CN</div>
+          <div>
+            <h1>GEMODO</h1>
+            <p>CNR GEBAN - Gestione modelli e generazione documenti</p>
+          </div>
+        </div>
+        <div class="env">Ambiente DEV · branch test</div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="summary" aria-label="Sintesi stato">
+        <div class="metric">
+          <span>Servizi attivi</span>
+          <strong>1</strong>
+        </div>
+        <div class="metric">
+          <span>In sviluppo</span>
+          <strong>4</strong>
+        </div>
+        <div class="metric">
+          <span>Feature attiva</span>
+          <strong>001</strong>
+        </div>
+        <div class="metric">
+          <span>Readiness gate</span>
+          <strong class="ok">verde</strong>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Stato servizi">
+        <h2>Stato servizi</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Servizio</th>
+              <th>Stato</th>
+              <th>Uso</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pagina stato</td>
+              <td><span class="status ok"><span class="dot"></span>Attivo</span></td>
+              <td>Informazione ambiente DEV</td>
+              <td>Deploy Coolify da branch test</td>
+            </tr>
+            <tr>
+              <td>Documentazione Spec Kit</td>
+              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
+              <td>Spec, decisioni, roadmap, API readiness</td>
+              <td>Artefatti disponibili nel repository</td>
+            </tr>
+            <tr>
+              <td>API catalogo GEBAN</td>
+              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
+              <td>Tipi documento, categorie, modelli, campi richiesti</td>
+              <td>Feature 001 pronta per implementazione</td>
+            </tr>
+            <tr>
+              <td>Validazione payload</td>
+              <td><span class="status work"><span class="dot"></span>In sviluppo</span></td>
+              <td>Controllo dati GEBAN prima della generazione</td>
+              <td>JWT Keycloak previsto nel primo incremento</td>
+            </tr>
+            <tr>
+              <td>Generazione PDF</td>
+              <td><span class="status off"><span class="dot"></span>Non attivo</span></td>
+              <td>Bozza, ufficiale, stato e download</td>
+              <td>Spec 004/005 da pianificare</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <p class="foot">
+        Stato statico aggiornato dal repository. I controlli live verranno collegati agli endpoint
+        health dei servizi quando backend e worker saranno disponibili.
+      </p>
     </main>
   </body>
 </html>
