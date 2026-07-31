@@ -18,10 +18,13 @@ uv run uvicorn app.main:app --reload
 - Database migrato (baseline `009` + migration proprie di questa feature).
 - Seed demo con:
   - tipo documento `BANDO_CONCORSO`;
-  - categoria `DEMO`;
-  - tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB con codice SOL
-    (`infra/local/postgres/seed-demo-catalog.yaml` della `009`);
-  - una versione modello `PUBBLICATO` con `modello_versione_id` pubblico `1`;
+  - profili professionali `CTER`, `OPERATORE_TECNICO`, `RICERCATORE`, `TECNOLOGO`,
+    `FUNZIONARIO_AMMINISTRATIVO`;
+  - tipologie/procedure bando GEBAN/SOL `CP`, `TD`, `TI`, `IR`, `MOB` con codice SOL
+    interno configurato in `infra/local/postgres/seed-demo-catalog.yaml`;
+  - albero di classificazione tipo documento -> tipologia/procedura bando -> profilo;
+  - una versione modello `PUBBLICATO` per ogni combinazione tipologia/profilo
+    configurata, tutte basate sullo stesso modello temporaneo;
   - una versione modello `BOZZA` con `modello_versione_id` pubblico `2`;
   - campi richiesti demo `codice_bando`, `titolo_it`, `descrizione_ridotta_it`,
     `sede_prescelta_it`, `numero_posti`, piu' `titolo_en` con `lingua: EN` per lo
@@ -33,6 +36,32 @@ uv run uvicorn app.main:app --reload
   - catalogo/campi: ruolo `DOCUMENTI_VIEWER` o `DOCUMENTI_GENERATORE`;
   - validazione payload: ruolo `DOCUMENTI_GENERATORE`;
   - audience `gemodo-backend`, client `geban-backend`.
+
+Combinazioni demo pubblicate:
+
+| Tipologia | Profilo | `modello_versione_id` |
+|---|---|---|
+| TD | CTER | 1 |
+| CP | CTER | 3 |
+| CP | OPERATORE_TECNICO | 4 |
+| CP | RICERCATORE | 5 |
+| CP | TECNOLOGO | 6 |
+| CP | FUNZIONARIO_AMMINISTRATIVO | 7 |
+| TD | OPERATORE_TECNICO | 8 |
+| TD | RICERCATORE | 9 |
+| TD | TECNOLOGO | 10 |
+| TI | CTER | 11 |
+| TI | OPERATORE_TECNICO | 12 |
+| TI | RICERCATORE | 13 |
+| TI | TECNOLOGO | 14 |
+| TI | FUNZIONARIO_AMMINISTRATIVO | 15 |
+| IR | RICERCATORE | 16 |
+| IR | TECNOLOGO | 17 |
+| MOB | CTER | 18 |
+| MOB | OPERATORE_TECNICO | 19 |
+| MOB | RICERCATORE | 20 |
+| MOB | TECNOLOGO | 21 |
+| MOB | FUNZIONARIO_AMMINISTRATIVO | 22 |
 
 ## Scenario 0 - Accesso non autenticato
 
@@ -56,7 +85,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=TI&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=CTER&codice_tipologia=TD&modalita=OPERATIVA
 ```
 
 Risultato atteso:
@@ -119,7 +148,37 @@ Risultato atteso:
 }
 ```
 
-## Scenario 4 - Campo obbligatorio mancante
+## Scenario 4 - Generazione simulata
+
+Richiesta:
+
+```http
+POST /api/v1/documenti/genera
+Content-Type: application/json
+```
+
+Usare lo stesso payload valido dello Scenario 3.
+
+Risultato atteso:
+
+```json
+{
+  "stato": "GENERAZIONE_SIMULATA",
+  "messaggio": "Chiamata ricevuta correttamente: i dati sono validi.",
+  "modello_versione_id": 1,
+  "external_context_id": "BANDO-12345",
+  "download_placeholder": "Qui sara' disponibile il link per scaricare il PDF generato.",
+  "validazione": {
+    "valido": true,
+    "errori": []
+  }
+}
+```
+
+L'endpoint non genera ancora un PDF reale; serve per collaudare autenticazione,
+selezione modello e correttezza dei dati prima della spec `004-generazione-documenti-pdf`.
+
+## Scenario 5 - Campo obbligatorio mancante
 
 Rimuovere `numero_posti`.
 
@@ -129,7 +188,7 @@ Risultato atteso:
 - errore con `campo` = `numero_posti`;
 - codice errore `CAMPO_OBBLIGATORIO`.
 
-## Scenario 5 - Campo extra non ammesso
+## Scenario 6 - Campo extra non ammesso
 
 Aggiungere un campo non dichiarato, ad esempio `campo_extra`.
 
@@ -139,7 +198,7 @@ Risultato atteso:
 - errore con `campo` = `campo_extra`;
 - codice errore `CAMPO_NON_AMMESSO`.
 
-## Scenario 6 - Versione non pubblicata
+## Scenario 7 - Versione non pubblicata
 
 Usare un `modello_versione_id` non pubblicato o archiviato.
 
@@ -148,22 +207,22 @@ Risultato atteso:
 - validazione non consentita;
 - errore funzionale `MODELLO_VERSIONE_NON_PUBBLICATO` o equivalente.
 
-## Scenario 7 - Tipologia GEBAN/SOL non valida (FR-020)
+## Scenario 8 - Tipologia GEBAN/SOL non valida (FR-020)
 
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=CTER&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
 ```
 
 Risultato atteso:
 
 - risposta di errore funzionale, non un elenco vuoto;
 - codice errore `TIPOLOGIA_SOL_NON_VALIDA`;
-- le tipologie ammesse nel perimetro iniziale sono TDPNRR, CD, DIR, TD, CP, RS, CATP,
-  TI, SDIP, MOB (vedi `infra/local/postgres/seed-demo-catalog.yaml` della `009`).
+- le tipologie/procedure ammesse nel perimetro iniziale sono CP, TD, TI, IR, MOB
+  (vedi `infra/local/postgres/seed-demo-catalog.yaml`).
 
-## Scenario 8 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
+## Scenario 9 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
 
 Richiesta:
 

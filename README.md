@@ -161,8 +161,9 @@ Dopo la `001`, prima di produrre un PDF vero servono, nell'ordine:
 3. Completare il flusso Spec Kit (`plan` + `tasks`, dove mancanti o superati) per
    `006-sicurezza-autorizzazioni-audit`, `004-generazione-documenti-pdf` e
    `005-storage-idempotenza-consultazione`.
-4. Solo allora implementare `POST /documenti/genera`, stato e download: nessun
-   renderer PDF esiste ancora oggi.
+4. Solo allora sostituire lo stub `POST /documenti/genera` con generazione PDF reale,
+   stato e download: lo stub attuale valida token/dati e restituisce solo un messaggio
+   placeholder del futuro link.
 
 GitHub Pages esegue `scripts/generate-spec-docs.py` nel workflow
 `.github/workflows/pages.yml` prima di pubblicare il sito.

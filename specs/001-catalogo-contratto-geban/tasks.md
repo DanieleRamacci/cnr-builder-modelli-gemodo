@@ -131,7 +131,7 @@ files that already exist.
 
 ## Phase 3: User Story 1 - Consultare modelli pubblicati disponibili (Priority: P1)
 
-**Goal**: GEBAN can list document types, categories and published model versions for a
+**Goal**: GEBAN can list document types, profiles and published model versions for a
 process context, with `codice_tipologia` validated against configured GEBAN/SOL
 typologies (FR-020).
 
@@ -143,7 +143,7 @@ historical versions in historical mode; an unrecognized `codice_tipologia` retur
 ### Tests for User Story 1
 
 - [x] T029 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento` in `backend/tests/catalog/test_catalogo_tipi_documento_api.py`
-- [x] T030 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/categorie` in `backend/tests/catalog/test_catalogo_categorie_api.py`
+- [x] T030 [P] [US1] Add contract test for `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/profili` in `backend/tests/catalog/test_catalogo_categorie_api.py`
 - [x] T031 [P] [US1] Add contract test for `GET /api/v1/catalogo/modelli` operative and historical modes in `backend/tests/catalog/test_catalogo_modelli_api.py`
 - [x] T032 [P] [US1] Add test for `codice_tipologia` rejecting an unconfigured value with `TIPOLOGIA_SOL_NON_VALIDA` (FR-020) in `backend/tests/catalog/test_catalogo_tipologia_sol.py`
 
@@ -282,6 +282,13 @@ invalid payload produce predictable error codes and messages.
       tests pass, and update `docs/decision-register.yaml` entries
       `DEC-001-TIPOLOGIE-SOL` / `DEC-001-LINGUA-IT-EN` implementation notes if their
       `impatto` text needs to reflect the shipped behavior
+- [x] T074 Align the GEBAN catalog classification tree by adding
+      `GET /api/v1/catalogo/tipi-documento/{codiceTipoDocumento}/classificazione`,
+      seeding GEBAN/SOL typologies mapped to profiles, and keeping SOL
+      technical folder codes internal instead of user-facing
+- [x] T075 Add `POST /api/v1/documenti/genera` placeholder endpoint for GEBAN API
+      collaudo, reusing payload validation and returning an explicit future-download
+      message instead of a real PDF link
 
 ---
 
@@ -338,7 +345,7 @@ Task: T054 Add bando_inglese=false does-not-require-English test in backend/test
 
 ### Incremental Delivery
 
-1. Catalogo tipi/categorie/modelli, con validazione tipologia GEBAN/SOL.
+1. Catalogo tipi/profili/modelli, con validazione tipologia GEBAN/SOL.
 2. Protezione JWT minima sulle route operative (`DOCUMENTI_VIEWER` per consultazione,
    `DOCUMENTI_GENERATORE` per validazione).
 3. Contratto dati per `modello_versione_id`, incluso `lingua` per campo.

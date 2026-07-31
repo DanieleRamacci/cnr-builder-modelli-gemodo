@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.catalog.schemas import (
     CampiRichiestiResponse,
-    CategoriaDocumentoListResponse,
+    ClassificazioneCatalogoResponse,
     ModalitaCatalogo,
     ModelloSearchResponse,
+    ProfiloDocumentoListResponse,
     TipoDocumentoListResponse,
 )
 from app.catalog.service import CatalogService, get_catalog_service
@@ -27,30 +28,53 @@ def list_tipi_documento(
     return service.list_tipi_documento()
 
 
-@router.get("/tipi-documento/{codiceTipoDocumento}/categorie", response_model=CategoriaDocumentoListResponse)
-def list_categorie_documento(
+@router.get("/tipi-documento/{codiceTipoDocumento}/profili", response_model=ProfiloDocumentoListResponse)
+def list_profili_documento(
     codiceTipoDocumento: str,
     _: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
-) -> CategoriaDocumentoListResponse:
-    return service.list_categorie(codiceTipoDocumento)
+) -> ProfiloDocumentoListResponse:
+    return service.list_profili(codiceTipoDocumento)
+
+
+@router.get(
+    "/tipi-documento/{codiceTipoDocumento}/categorie",
+    response_model=ProfiloDocumentoListResponse,
+    include_in_schema=False,
+)
+def list_categorie_documento_compat(
+    codiceTipoDocumento: str,
+    _: PrincipalGEMODO = Depends(require_documenti_viewer),
+    service: CatalogService = Depends(get_catalog_service),
+) -> ProfiloDocumentoListResponse:
+    return service.list_profili(codiceTipoDocumento)
+
+
+@router.get("/tipi-documento/{codiceTipoDocumento}/classificazione", response_model=ClassificazioneCatalogoResponse)
+def get_classificazione_documento(
+    codiceTipoDocumento: str,
+    _: PrincipalGEMODO = Depends(require_documenti_viewer),
+    service: CatalogService = Depends(get_catalog_service),
+) -> ClassificazioneCatalogoResponse:
+    return service.get_classificazione(codiceTipoDocumento)
 
 
 @router.get("/modelli", response_model=ModelloSearchResponse)
 def search_modelli(
     tipo_documento: str,
-    categoria: str | None = None,
+    profilo: str | None = None,
     codice_tipologia: str | None = None,
     modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA,
     data_riferimento: date | None = None,
     pubblicato_da: date | None = None,
     pubblicato_a: date | None = None,
+    categoria: str | None = Query(default=None, include_in_schema=False),
     _: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
 ) -> ModelloSearchResponse:
     return service.search_modelli(
         tipo_documento=tipo_documento,
-        categoria=categoria,
+        categoria=profilo or categoria,
         codice_tipologia=codice_tipologia,
         modalita=modalita,
         data_riferimento=data_riferimento,

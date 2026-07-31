@@ -66,11 +66,11 @@ def test_real_seed_catalog_has_an_unpublishable_case(loaded_seed_catalog):
     assert any(m.get("utilizzabile_da_mock_geban") is False for m in modelli)
 
 
-def test_real_seed_catalog_typologies_cover_the_ten_geban_sol_codes(loaded_seed_catalog):
+def test_real_seed_catalog_typologies_cover_configured_geban_procedures(loaded_seed_catalog):
     _, catalogo = loaded_seed_catalog
     codici = {t["codice"] for t in catalogo["tipologie_sol"]}
 
-    assert codici == {"TDPNRR", "CD", "DIR", "TD", "CP", "RS", "CATP", "TI", "SDIP", "MOB"}
+    assert codici == {"CP", "TD", "TI", "IR", "MOB"}
 
 
 def test_seed_with_sensitive_data_is_rejected():

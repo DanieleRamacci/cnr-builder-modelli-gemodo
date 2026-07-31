@@ -31,20 +31,43 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-  /catalogo/tipi-documento/{codiceTipoDocumento}/categorie:
+  /catalogo/tipi-documento/{codiceTipoDocumento}/profili:
     get:
-      summary: Elenco categorie per tipo documento
+      summary: Elenco profili per tipo documento
       description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
-      operationId: listCategorieDocumento
+      operationId: listProfiliDocumento
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
       responses:
         "200":
-          description: Categorie disponibili
+          description: Profili disponibili
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CategoriaDocumentoListResponse"
+                $ref: "#/components/schemas/ProfiloDocumentoListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione:
+    get:
+      summary: Albero classificazione per tipo documento
+      description: >
+        Restituisce l'albero configurato per il tipo documento: tipologie/procedure
+        GEBAN/SOL disponibili e profili associati. Il mapping tecnico SOL resta interno
+        e non viene esposto nella risposta.
+      operationId: getClassificazioneDocumento
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      responses:
+        "200":
+          description: Classificazione ad albero per il tipo documento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificazioneCatalogoResponse"
         "404":
           $ref: "#/components/responses/NotFound"
         "401":
@@ -62,19 +85,22 @@ paths:
           required: true
           schema:
             type: string
-        - name: categoria
+        - name: profilo
           in: query
           required: false
+          description: Profilo professionale selezionato sotto la tipologia/procedura bando.
           schema:
             type: string
         - name: codice_tipologia
           in: query
           required: false
           description: >
-            Se presente, deve corrispondere a una tipologia GEBAN/SOL configurata
-            (perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB);
-            un valore non riconosciuto produce errore TIPOLOGIA_SOL_NON_VALIDA, non un
-            elenco vuoto.
+            Nodo di primo livello dell'albero GEBAN/SOL selezionato da
+            /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione. Se presente,
+            deve corrispondere a una tipologia/procedura bando configurata (perimetro
+            iniziale: CP, TD, TI, IR, MOB); un valore non riconosciuto produce
+            errore TIPOLOGIA_SOL_NON_VALIDA, non un elenco vuoto. Il codice SOL tecnico
+            associato resta metadato interno.
           schema:
             type: string
         - name: modalita
@@ -156,6 +182,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidazioneResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /documenti/genera:
+    post:
+      summary: Simula richiesta generazione documento
+      description: >
+        Endpoint temporaneo per collaudo GEBAN: valida token, versione modello e payload.
+        Se i dati sono corretti restituisce un esito OK e un testo placeholder dove in
+        seguito verra' restituito il link per scaricare il PDF generato. Non produce
+        ancora un file PDF reale.
+      operationId: generaDocumentoPlaceholder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidazioneRequest"
+      responses:
+        "200":
+          description: Esito simulazione generazione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerazioneDocumentoResponse"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
@@ -250,17 +306,41 @@ components:
           type: string
         descrizione:
           type: string
-    CategoriaDocumentoListResponse:
+    ProfiloDocumentoListResponse:
       type: object
-      required: [tipo_documento, categorie]
+      required: [tipo_documento, profili]
       properties:
         tipo_documento:
           type: string
-        categorie:
+        profili:
           type: array
           items:
-            $ref: "#/components/schemas/CategoriaDocumento"
-    CategoriaDocumento:
+            $ref: "#/components/schemas/ProfiloDocumento"
+    ClassificazioneCatalogoResponse:
+      type: object
+      required: [tipo_documento, tipologie]
+      properties:
+        tipo_documento:
+          type: string
+        tipologie:
+          type: array
+          items:
+            $ref: "#/components/schemas/TipologiaCatalogo"
+    TipologiaCatalogo:
+      type: object
+      required: [codice, descrizione, profili]
+      properties:
+        codice:
+          type: string
+          example: TD
+        descrizione:
+          type: string
+          example: Tempo determinato
+        profili:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfiloDocumento"
+    ProfiloDocumento:
       type: object
       required: [codice, descrizione]
       properties:
@@ -274,7 +354,7 @@ components:
       properties:
         tipo_documento:
           type: string
-        categoria:
+        profilo:
           type: string
           nullable: true
         codice_tipologia:
@@ -329,7 +409,7 @@ components:
           format: int64
         tipo_documento:
           type: string
-        categoria:
+        profilo:
           type: string
         campi:
           type: array
@@ -405,6 +485,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ErroreValidazione"
+    GenerazioneDocumentoResponse:
+      type: object
+      required: [stato, messaggio, modello_versione_id, external_context_id, validazione]
+      properties:
+        stato:
+          type: string
+          enum: [GENERAZIONE_SIMULATA, DATI_NON_VALIDI]
+        messaggio:
+          type: string
+        modello_versione_id:
+          type: integer
+          format: int64
+        external_context_id:
+          type: string
+        download_placeholder:
+          type: string
+          nullable: true
+          example: Qui sara' disponibile il link per scaricare il PDF generato.
+        validazione:
+          $ref: "#/components/schemas/ValidazioneResponse"
     ErroreValidazione:
       type: object
       required: [codice, messaggio]

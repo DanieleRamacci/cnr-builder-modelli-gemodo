@@ -86,6 +86,7 @@ def upgrade() -> None:
         sa.column("public_id", sa.BigInteger()),
         sa.column("tipo_documento_id", sa.Uuid()),
         sa.column("categoria_documento_id", sa.Uuid()),
+        sa.column("tipologia_bando_sol_id", sa.Uuid()),
         sa.column("codice", sa.String()),
         sa.column("nome", sa.String()),
         sa.column("stato", sa.String()),
@@ -148,11 +149,12 @@ def upgrade() -> None:
             [
                 {
                     "id": modello_id,
-                    "public_id": index,
+                    "public_id": item.get("public_id", index),
                     "tipo_documento_id": tipo_ids[item["tipo_documento"]],
                     "categoria_documento_id": categoria_ids[(item["tipo_documento"], item["categoria"])],
+                    "tipologia_bando_sol_id": tipologia_ids.get(item.get("codice_tipologia")),
                     "codice": codice_modello,
-                    "nome": codice_modello,
+                    "nome": item.get("nome", codice_modello),
                     "stato": "ATTIVA",
                     "variante": "STANDARD",
                 }
@@ -164,7 +166,7 @@ def upgrade() -> None:
             "INSERT INTO modello_versione "
             "(id, public_id, modello_documento_id, versione, stato, formato_documentale, struttura_documentale, "
             "pubblicato_il, pubblicato_at) "
-            f"VALUES ('{versione_id}', {index}, '{modello_id}', 1, '{item['stato']}', "
+            f"VALUES ('{versione_id}', {item.get('public_id', index)}, '{modello_id}', 1, '{item['stato']}', "
             f"'GEMODO_DOCUMENT_V1', '{struttura}'::jsonb, {published_at}, {published_at})"
         )
         if item["stato"] == "PUBBLICATO":

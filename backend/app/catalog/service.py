@@ -12,13 +12,15 @@ from app.catalog.models import CategoriaDocumento, ModelloDocumentoVersione, Tip
 from app.catalog.schemas import (
     CampiRichiestiResponse,
     CampoRichiestoSchema,
-    CategoriaDocumentoListResponse,
-    CategoriaDocumentoSchema,
+    ClassificazioneCatalogoResponse,
     LinguaCampo,
     ModalitaCatalogo,
     ModelloCatalogoSchema,
     ModelloSearchResponse,
+    ProfiloDocumentoListResponse,
+    ProfiloDocumentoSchema,
     TipoCampo,
+    TipologiaCatalogoSchema,
     TipoDocumentoListResponse,
     TipoDocumentoSchema,
 )
@@ -38,7 +40,7 @@ class CatalogService:
         ]
         return TipoDocumentoListResponse(items=items)
 
-    def list_categorie(self, codice_tipo_documento: str) -> CategoriaDocumentoListResponse:
+    def list_profili(self, codice_tipo_documento: str) -> ProfiloDocumentoListResponse:
         tipo = repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
         if tipo is None or tipo.stato != repository.STATO_ATTIVO:
             raise CatalogError(
@@ -46,12 +48,34 @@ class CatalogService:
                 "Tipo documento non configurato o non attivo",
                 status_code=404,
             )
-        categorie = [
+        profili = [
             _categoria_documento_schema(categoria)
             for categoria in repository.list_categorie_by_tipo_codice(self.db, codice_tipo_documento)
             if categoria.stato == repository.STATO_ATTIVO
         ]
-        return CategoriaDocumentoListResponse(tipo_documento=codice_tipo_documento, categorie=categorie)
+        return ProfiloDocumentoListResponse(tipo_documento=codice_tipo_documento, profili=profili)
+
+    def list_categorie(self, codice_tipo_documento: str) -> ProfiloDocumentoListResponse:
+        return self.list_profili(codice_tipo_documento)
+
+    def get_classificazione(self, codice_tipo_documento: str) -> ClassificazioneCatalogoResponse:
+        tipo = repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
+        if tipo is None or tipo.stato != repository.STATO_ATTIVO:
+            raise CatalogError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Tipo documento non configurato o non attivo",
+                status_code=404,
+            )
+        grouped: dict[str, TipologiaCatalogoSchema] = {}
+        for row in repository.list_classificazione_by_tipo_codice(self.db, codice_tipo_documento):
+            tipologia = row.tipologia_bando_sol
+            categoria = row.categoria_documento
+            item = grouped.setdefault(
+                tipologia.codice,
+                TipologiaCatalogoSchema(codice=tipologia.codice, descrizione=tipologia.descrizione, profili=[]),
+            )
+            item.profili.append(_categoria_documento_schema(categoria))
+        return ClassificazioneCatalogoResponse(tipo_documento=codice_tipo_documento, tipologie=list(grouped.values()))
 
     def search_modelli(
         self,
@@ -90,7 +114,7 @@ class CatalogService:
         )
         return ModelloSearchResponse(
             tipo_documento=tipo_documento,
-            categoria=categoria,
+            profilo=categoria,
             codice_tipologia=codice_tipologia,
             modalita=modalita,
             modelli=[_modello_catalogo_schema(version) for version in versions],
@@ -116,7 +140,7 @@ class CatalogService:
         return CampiRichiestiResponse(
             modello_versione_id=modello_versione_id,
             tipo_documento=version.modello.tipo_documento.codice,
-            categoria=version.modello.categoria_documento.codice,
+            profilo=version.modello.categoria_documento.codice,
             campi=field_schemas,
             schema_=_json_schema_for_fields(field_schemas),
         )
@@ -130,8 +154,8 @@ def _tipo_documento_schema(tipo: TipoDocumento) -> TipoDocumentoSchema:
     return TipoDocumentoSchema(codice=tipo.codice, descrizione=tipo.nome)
 
 
-def _categoria_documento_schema(categoria: CategoriaDocumento) -> CategoriaDocumentoSchema:
-    return CategoriaDocumentoSchema(codice=categoria.codice, descrizione=categoria.nome)
+def _categoria_documento_schema(categoria: CategoriaDocumento) -> ProfiloDocumentoSchema:
+    return ProfiloDocumentoSchema(codice=categoria.codice, descrizione=categoria.nome)
 
 
 def _date_only(value):

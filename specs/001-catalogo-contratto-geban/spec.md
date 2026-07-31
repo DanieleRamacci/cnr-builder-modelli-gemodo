@@ -15,7 +15,7 @@
 - Q: Come deve comportarsi la validazione quando il payload contiene campi non previsti dal contratto dati? -> A: I campi non previsti rendono il payload non valido.
 - Q: Cosa succede se una versione modello viene archiviata tra consultazione catalogo e validazione payload? -> A: La validazione fallisce se la versione non e' piu' pubblicata o valida al momento della validazione.
 - Q: Come deve funzionare il filtro temporale dei modelli? -> A: Il catalogo distingue modalita' operativa per modelli correnti/validi e modalita' storico per tutti i pubblicati filtrabili per data pubblicazione.
-- Q: Possono esistere piu' versioni pubblicate equivalenti per lo stesso contesto? -> A: No, per stessa combinazione tipo documento, categoria, tipologia e variante esiste una sola versione pubblicata corrente; modelli simili coesistono come varianti distinte.
+- Q: Possono esistere piu' versioni pubblicate equivalenti per lo stesso contesto? -> A: No, per stessa combinazione tipo documento, profilo, tipologia e variante esiste una sola versione pubblicata corrente; modelli simili coesistono come varianti distinte.
 - Q: Come si evita ambiguita' quando esistono piu' modelli pubblicati nello stesso contesto? -> A: Il catalogo restituisce varianti distinte e le chiamate operative successive devono indicare obbligatoriamente il `modello_versione_id` scelto.
 
 ### Session 2026-07-29 (propagazione decisioni da `009`)
@@ -29,9 +29,9 @@ conseguenza nella stessa sessione.
 
 - Q: Il catalogo deve validare la tipologia di processo (`codice_tipologia`) contro un
   elenco noto? -> A: Si (`DEC-001-TIPOLOGIE-SOL`, confermata). Il perimetro iniziale
-  copre le tipologie GEBAN/SOL TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP e MOB,
-  ciascuna con codice SOL associato (vedi `infra/local/postgres/seed-demo-catalog.yaml`
-  della `009`). Una tipologia non tra queste e' un errore funzionale, non un filtro
+  copre le tipologie/procedure bando CP, TD, TI, IR e MOB, ciascuna con codice SOL
+  associato o placeholder da configurare in `infra/local/postgres/seed-demo-catalog.yaml`.
+  Una tipologia non tra queste e' un errore funzionale, non un filtro
   vuoto silenzioso.
 - Q: Il contratto dati deve gestire il flag `Bando Inglese` e i campi in lingua
   inglese? -> A: Si (`DEC-001-LINGUA-IT-EN`, confermata). Il payload di validazione
@@ -80,9 +80,9 @@ conseguenza nella stessa sessione.
   GEBAN/SOL configurata e `modello_versione_id`. Profilo GEBAN versionato,
   configurazione del profilo, relazione profilo/catalogo e API dedicate restano sospesi
   con rischio tracciato e verranno ripresi quando `002` e `006` saranno allineate.
-- Q: Categorie iniziali e campi comuni GEBAN sono solo seed demo o contenuto funzionale
+- Q: Profili iniziali e campi comuni GEBAN sono solo seed demo o contenuto funzionale
   da implementare nella `001`? -> A: Sono contenuto funzionale da implementare secondo
-  la documentazione fornita dai colleghi GEBAN. La `001` deve includere le categorie
+  la documentazione fornita dai colleghi GEBAN. La `001` deve includere i profili
   iniziali e i campi comuni GEBAN gia' indicati negli artefatti di progetto, mantenendoli
   configurabili e versionabili come dati del catalogo/contratto, non hard-coded nella
   logica applicativa. La generazione PDF resta responsabilita' della `004`.
@@ -118,7 +118,7 @@ iniziare il flusso operativo di scelta del modello.
 
 **Independent Test**: dato un catalogo con modelli in stati diversi, la storia e'
 verificabile controllando che GEBAN riceva solo versioni pubblicate, valide e coerenti con
-tipo documento, categoria, tipologia e data di riferimento.
+tipo documento, profilo, tipologia e data di riferimento.
 
 **Acceptance Scenarios**:
 
@@ -217,8 +217,8 @@ non pubblicati, payload errati e richieste incoerenti.
 
 ### Edge Cases
 
-- Il contesto GEBAN contiene tipo documento valido ma categoria non attiva.
-- Il contesto GEBAN contiene categoria valida ma nessun modello pubblicato alla data di
+- Il contesto GEBAN contiene tipo documento valido ma profilo non attivo.
+- Il contesto GEBAN contiene profilo valido ma nessun modello pubblicato alla data di
   riferimento.
 - Il catalogo viene richiesto in modalita' storico per vedere versioni archiviate o non
   operative.
@@ -247,13 +247,13 @@ non pubblicati, payload errati e richieste incoerenti.
 
 - **FR-001**: Il servizio MUST esporre a GEBAN i tipi documento disponibili per l'uso
   operativo.
-- **FR-002**: Il servizio MUST esporre a GEBAN le categorie disponibili per un tipo
+- **FR-002**: Il servizio MUST esporre a GEBAN i profili disponibili per un tipo
   documento attivo.
 - **FR-003**: Il servizio MUST restituire a GEBAN solo versioni modello in stato
   `PUBBLICATO` e valide per il contesto richiesto quando il catalogo e' usato in modalita'
   operativa.
 - **FR-004**: Il servizio MUST filtrare i modelli disponibili per tipo documento,
-  categoria, eventuale tipologia di processo e data di riferimento quando presente.
+  profilo, eventuale tipologia di processo e data di riferimento quando presente.
 - **FR-005**: Il servizio MUST impedire l'uso operativo di versioni modello in stato
   diverso da `PUBBLICATO`.
 - **FR-006**: Il servizio MUST restituire per ogni modello disponibile almeno
@@ -264,7 +264,7 @@ non pubblicati, payload errati e richieste incoerenti.
 - **FR-006d**: Le chiamate operative successive alla consultazione catalogo MUST indicare
   obbligatoriamente il `modello_versione_id` scelto; il servizio MUST NOT applicare un
   fallback automatico all'ultima versione pubblicata.
-- **FR-006e**: Per la stessa combinazione di tipo documento, categoria, tipologia e
+- **FR-006e**: Per la stessa combinazione di tipo documento, profilo, tipologia e
   variante, il catalogo operativo MUST esporre al massimo una versione pubblicata
   corrente.
 - **FR-006a**: Il servizio MUST supportare una modalita' di consultazione storica che
@@ -321,8 +321,8 @@ non pubblicati, payload errati e richieste incoerenti.
 - **FR-019**: La specifica di questa feature MUST NOT includere builder frontend,
   generazione PDF dettagliata, firma, protocollo o pubblicazione.
 - **FR-020**: Quando la richiesta di catalogo o validazione indica `codice_tipologia`,
-  il servizio MUST verificare che corrisponda a una tipologia GEBAN/SOL configurata
-  (perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB) e MUST
+  il servizio MUST verificare che corrisponda a una tipologia/procedura bando GEBAN/SOL
+  configurata (perimetro iniziale: CP, TD, TI, IR, MOB) e MUST
   restituire un errore funzionale distinto quando non corrisponde, invece di un
   risultato vuoto silenzioso.
 - **FR-021**: Il contratto dati di un campo MUST poter dichiarare una lingua (`IT` o
@@ -339,7 +339,7 @@ non pubblicati, payload errati e richieste incoerenti.
   `DEC-001-PROFILO-GEBAN`, `DEC-001-CONFIG-PROFILO-GEBAN`,
   `DEC-001-RELAZIONE-PROFILO-CATALOGO` e `DEC-001-API-PROFILO-GEBAN` non vengono
   riprese.
-- **FR-024**: La `001` MUST implementare come baseline funzionale le categorie iniziali
+- **FR-024**: La `001` MUST implementare come baseline funzionale i profili iniziali
   e i campi comuni GEBAN indicati nella documentazione fornita dai colleghi GEBAN e gia'
   tracciati negli artefatti di progetto; tali contenuti MUST restare configurabili e
   versionabili come dati del catalogo/contratto, non hard-coded nella logica.
@@ -348,12 +348,13 @@ non pubblicati, payload errati e richieste incoerenti.
 
 - **Tipo Documento**: famiglia documentale generale disponibile nel catalogo, ad esempio
   bando di concorso, graduatoria, decreto, comunicazione o verbale.
-- **Categoria Documento**: classificazione interna collegata a un tipo documento, usata
-  per filtrare i modelli disponibili.
+- **Categoria Documento**: entita' interna che rappresenta il profilo professionale
+  collegato a un tipo documento, esposto nelle API pubbliche come `profilo`; usato come
+  secondo livello della classificazione dei bandi e per filtrare i modelli disponibili.
 - **Modello Documento**: contenitore logico di un modello selezionabile da GEBAN quando
   esiste almeno una versione pubblicata valida.
 - **Variante Modello**: etichetta funzionale obbligatoria che distingue modelli simili per
-  stesso tipo, categoria e tipologia; `STANDARD` rappresenta la variante predefinita.
+  stesso tipo, profilo e tipologia; `STANDARD` rappresenta la variante predefinita.
 - **Versione Modello**: versione specifica del modello, con stato, numero versione,
   periodo di validita' opzionale e identificativo usato da GEBAN per contratto dati,
   validazione e generazione.
@@ -365,9 +366,9 @@ non pubblicati, payload errati e richieste incoerenti.
   contratto della versione modello selezionata.
 - **Errore Di Validazione**: errore funzionale associato a un campo o alla richiesta,
   composto da codice e messaggio comprensibile.
-- **Tipologia Bando SOL**: tipologia di processo condivisa con GEBAN (`codice_tipologia`),
-  con codice SOL associato per l'integrazione GEBAN-SOL; perimetro iniziale TDPNRR, CD,
-  DIR, TD, CP, RS, CATP, TI, SDIP, MOB.
+- **Tipologia Bando SOL**: tipologia/procedura bando condivisa con GEBAN
+  (`codice_tipologia`), con codice SOL associato per l'integrazione GEBAN-SOL;
+  perimetro iniziale CP, TD, TI, IR, MOB.
 
 ## Decisioni Aperte Collegate
 

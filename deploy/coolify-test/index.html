@@ -345,7 +345,7 @@
             </div>
             <div class="box">
               <strong>3. Esegui le chiamate</strong>
-              <span>Prova prima tipi/categorie/modelli, poi campi richiesti e infine validazione payload.</span>
+              <span>Prova prima classificazione, poi modelli filtrando per tipologia e profilo, quindi campi e validazione.</span>
             </div>
           </div>
           <p class="note">
@@ -367,12 +367,17 @@
           </div>
           <div class="api-row">
             <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/tipi-documento/{codice}/categorie</code><br /><span class="note">Elenca le categorie attive per un tipo documento.</span></div>
+            <div><code>/api/v1/catalogo/tipi-documento/{codice}/profili</code><br /><span class="note">Elenca i profili attivi per un tipo documento.</span></div>
             <code>DOCUMENTI_VIEWER</code>
           </div>
           <div class="api-row">
             <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/modelli</code><br /><span class="note">Restituisce versioni modello pubblicate e valide per il contesto GEBAN.</span></div>
+            <div><code>/api/v1/catalogo/tipi-documento/{codice}/classificazione</code><br /><span class="note">Restituisce l'albero tipologie/procedure SOL -> profili; il codice SOL resta interno.</span></div>
+            <code>DOCUMENTI_VIEWER</code>
+          </div>
+          <div class="api-row">
+            <span class="method">GET</span>
+            <div><code>/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;codice_tipologia=TD&amp;profilo=CTER</code><br /><span class="note">Restituisce versioni modello pubblicate e valide per il nodo dell'albero scelto. Ogni combinazione della classificazione bandi ha un modello demo temporaneo.</span></div>
             <code>DOCUMENTI_VIEWER</code>
           </div>
           <div class="api-row">
@@ -385,6 +390,11 @@
             <div><code>/api/v1/documenti/valida</code><br /><span class="note">Valida il payload GEBAN prima della generazione documentale.</span></div>
             <code>DOCUMENTI_GENERATORE</code>
           </div>
+          <div class="api-row">
+            <span class="method">POST</span>
+            <div><code>/api/v1/documenti/genera</code><br /><span class="note">Simula la generazione: valida i dati e restituisce un OK con placeholder del futuro link PDF.</span></div>
+            <code>DOCUMENTI_GENERATORE</code>
+          </div>
         </div>
       </section>
 
@@ -392,8 +402,9 @@
         <h2>Nota PDF</h2>
         <div class="body">
           <p class="note">
-            La generazione PDF non è ancora implementata nel backend attuale. Verrà aggiunta con la spec
-            <code>004-generazione-documenti-pdf</code>; a quel punto comparirà anche il relativo endpoint in Swagger.
+            La generazione PDF reale non è ancora implementata nel backend attuale. L'endpoint
+            <code>/api/v1/documenti/genera</code> è uno stub di collaudo: controlla token e dati,
+            poi risponde con il testo che indica dove sarà restituito il link di download.
           </p>
         </div>
       </section>

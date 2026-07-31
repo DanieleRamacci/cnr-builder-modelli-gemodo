@@ -15,7 +15,7 @@ sezioni, generazioni documento e audit. La migration `0001_initial_schema.py` cr
 |---|---|---|
 | `tipo_documento` | Tipo documento (es. `BANDO_CONCORSO`) | `001-catalogo-contratto-geban` |
 | `categoria_documento` | Categoria per tipo documento | `002-builder-modelli` |
-| `tipologia_bando` | Tipologia SOL (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB) | `001-catalogo-contratto-geban` |
+| `tipologia_bando` | Tipologia/procedura bando SOL (es. CP, TD, TI, IR, MOB) | `001-catalogo-contratto-geban` |
 | `modello_documento` | Modello documentale | `002-builder-modelli` |
 | `modello_versione` | Versione di un modello, con struttura documentale controllata | `002-builder-modelli`, `003-sezioni-placeholder-versionamento` |
 | `campo_modello` | Campo/placeholder richiesto da una versione modello | `003-sezioni-placeholder-versionamento` |

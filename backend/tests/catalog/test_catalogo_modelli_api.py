@@ -17,7 +17,7 @@ class FakeCatalogService:
         self.calls.append(kwargs)
         return ModelloSearchResponse(
             tipo_documento=kwargs["tipo_documento"],
-            categoria=kwargs.get("categoria"),
+            profilo=kwargs.get("categoria"),
             codice_tipologia=kwargs.get("codice_tipologia"),
             modalita=kwargs.get("modalita", ModalitaCatalogo.OPERATIVA),
             modelli=[
@@ -42,7 +42,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     try:
         response = TestClient(app).get(
             "/api/v1/catalogo/modelli",
-            params={"tipo_documento": "BANDO_CONCORSO", "categoria": "DEMO", "codice_tipologia": "TD"},
+            params={"tipo_documento": "BANDO_CONCORSO", "profilo": "CTER", "codice_tipologia": "TD"},
         )
     finally:
         app.dependency_overrides.clear()
@@ -51,7 +51,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     body = response.json()
     assert body["modalita"] == "OPERATIVA"
     assert body["tipo_documento"] == "BANDO_CONCORSO"
-    assert body["categoria"] == "DEMO"
+    assert body["profilo"] == "CTER"
     assert body["codice_tipologia"] == "TD"
     assert body["modelli"][0]["modello_versione_id"] == 11
     assert body["modelli"][0]["stato"] == "PUBBLICATO"

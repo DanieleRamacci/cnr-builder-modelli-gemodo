@@ -26,7 +26,7 @@ Classificazione interna collegata a un tipo documento.
 Fields:
 
 - `codice_tipo_documento`: riferimento a `TipoDocumento`.
-- `codice`: identificativo categoria.
+- `codice`: identificativo profilo.
 - `descrizione`
 - `attiva`
 - `created_at`
@@ -35,7 +35,7 @@ Fields:
 Validation:
 
 - chiave logica: `codice_tipo_documento + codice`.
-- categorie non attive non vengono proposte per nuovi filtri operativi.
+- profili non attivi non vengono proposti per nuovi filtri operativi.
 
 ### ModelloDocumento
 
@@ -47,7 +47,7 @@ Fields:
 - `codice`: identificativo funzionale del modello.
 - `descrizione`
 - `codice_tipo_documento`
-- `codice_categoria`
+- `codice_categoria`: riferimento interno al profilo esposto nelle API come `profilo`.
 - `codice_tipologia`: opzionale, dipende dal processo GEBAN.
 - `variante`: etichetta funzionale obbligatoria; default `STANDARD`.
 - `attivo`
@@ -56,9 +56,9 @@ Fields:
 
 Validation:
 
-- il modello deve riferire tipo e categoria esistenti.
+- il modello deve riferire tipo e profilo esistenti.
 - `variante` non puo' essere vuota; se manca viene assegnata `STANDARD`.
-- la combinazione `codice_tipo_documento + codice_categoria + codice_tipologia + variante`
+- la combinazione `codice_tipo_documento + profilo + codice_tipologia + variante`
   identifica una variante funzionale nel catalogo.
 - se presente, `codice_tipologia` deve corrispondere a una `TipologiaBandoSOL`
   configurata (FR-020).
@@ -79,9 +79,31 @@ Fields:
 Validation:
 
 - `codice` obbligatorio e univoco.
-- perimetro iniziale: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB (seed demo in
-  `infra/local/postgres/seed-demo-catalog.yaml` della `009`); il dominio SOL completo
-  puo' estendere l'elenco in seguito senza cambiare il contratto API.
+- perimetro iniziale bandi: CP, TD, TI, IR, MOB (seed demo in
+  `infra/local/postgres/seed-demo-catalog.yaml`); il dominio SOL completo puo'
+  estendere l'elenco in seguito senza cambiare il contratto API.
+
+### ClassificazioneCatalogo
+
+Configurazione dell'albero operativo esposto a GEBAN per un tipo documento.
+
+Fields:
+
+- `codice_tipo_documento`: riferimento a `TipoDocumento`.
+- `codice_tipologia`: nodo di primo livello GEBAN/SOL, riferimento a `TipologiaBandoSOL`.
+- `codice_categoria`: profilo selezionabile sotto la tipologia, riferimento interno a
+  `CategoriaDocumento`.
+- `attiva`
+- `created_at`
+
+Validation:
+
+- chiave logica: `codice_tipo_documento + codice_tipologia + profilo`.
+- il mapping tecnico SOL (`codice_sol`) resta metadato interno della `TipologiaBandoSOL`
+  e non viene esposto all'utente come valore da comprendere o digitare.
+- l'endpoint di classificazione restituisce l'albero tipologie -> profili;
+  la ricerca modelli puo' poi usare `codice_tipologia` e `profilo` come filtri
+  derivati dalla scelta nell'albero.
 
 ### ModelloDocumentoVersione
 
@@ -104,7 +126,7 @@ Fields:
 Validation:
 
 - solo `PUBBLICATO` e' utilizzabile in modalita' operativa.
-- per la stessa combinazione di tipo documento, categoria, tipologia e variante puo'
+- per la stessa combinazione di tipo documento, profilo, tipologia e variante puo'
   esistere al massimo una versione `PUBBLICATO`.
 - quando una nuova versione della stessa variante diventa `PUBBLICATO`, la precedente
   versione `PUBBLICATO` passa ad `ARCHIVIATO`.
@@ -217,6 +239,9 @@ TipoDocumento 1--N CategoriaDocumento
 TipoDocumento 1--N ModelloDocumento
 CategoriaDocumento 1--N ModelloDocumento
 TipologiaBandoSOL 1--N ModelloDocumento
+TipoDocumento 1--N ClassificazioneCatalogo
+TipologiaBandoSOL 1--N ClassificazioneCatalogo
+CategoriaDocumento 1--N ClassificazioneCatalogo
 ModelloDocumento 1--N ModelloDocumentoVersione
 ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)
@@ -233,5 +258,5 @@ PrincipalGEMODO 1--N Operazione API (runtime)
 - Il catalogo operativo espone al massimo una versione `PUBBLICATO` per variante.
 - Le versioni precedenti della stessa variante sono `ARCHIVIATO` e disponibili solo nello
   storico.
-- Il catalogo puo' esporre piu' varianti pubblicate per lo stesso tipo/categoria/tipologia.
+- Il catalogo puo' esporre piu' varianti pubblicate per lo stesso tipo/profilo/tipologia.
 - Le route operative della `001` sono eseguite solo con `PrincipalGEMODO` valido.

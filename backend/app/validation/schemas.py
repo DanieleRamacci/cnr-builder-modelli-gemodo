@@ -28,3 +28,25 @@ class ErroreValidazione(BaseModel):
 class ValidazioneResponse(BaseModel):
     valido: bool
     errori: list[ErroreValidazione]
+
+
+class GenerazioneDocumentoResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "stato": "GENERAZIONE_SIMULATA",
+                "messaggio": "Chiamata ricevuta correttamente: i dati sono validi.",
+                "modello_versione_id": 1,
+                "external_context_id": "test-context-001",
+                "download_placeholder": "Qui sara' disponibile il link per scaricare il PDF generato.",
+                "validazione": {"valido": True, "errori": []},
+            }
+        }
+    )
+
+    stato: str
+    messaggio: str
+    modello_versione_id: int
+    external_context_id: str
+    download_placeholder: str | None = None
+    validazione: ValidazioneResponse

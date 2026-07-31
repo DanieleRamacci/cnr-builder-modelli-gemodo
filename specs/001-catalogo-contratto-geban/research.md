@@ -78,9 +78,10 @@ mentre consultazioni interne possono richiedere storico e filtri di pubblicazion
 
 ## Decision: tipologia GEBAN/SOL validata contro un elenco configurato
 
-**Rationale**: `009` ha confermato (`DEC-001-TIPOLOGIE-SOL`) il perimetro iniziale
-delle tipologie GEBAN/SOL (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB), ciascuna
-con codice SOL. Il servizio deve trattare una tipologia sconosciuta come errore
+**Rationale**: `009` ha confermato (`DEC-001-TIPOLOGIE-SOL`) la validazione contro un
+elenco configurato; il perimetro iniziale dei bandi e' ora espresso come procedure
+GEBAN/SOL (CP, TD, TI, IR, MOB), ciascuna con codice SOL o placeholder interno da
+configurare. Il servizio deve trattare una tipologia sconosciuta come errore
 funzionale esplicito, non come filtro che restituisce silenziosamente zero risultati,
 per evitare che GEBAN interpreti un errore di configurazione come "nessun modello
 disponibile".

@@ -37,14 +37,42 @@ class TipoDocumentoListResponse(BaseModel):
     items: list[TipoDocumentoSchema]
 
 
-class CategoriaDocumentoSchema(BaseModel):
+class ProfiloDocumentoSchema(BaseModel):
     codice: str
     descrizione: str
 
 
-class CategoriaDocumentoListResponse(BaseModel):
+class ProfiloDocumentoListResponse(BaseModel):
     tipo_documento: str
-    categorie: list[CategoriaDocumentoSchema]
+    profili: list[ProfiloDocumentoSchema]
+
+
+class TipologiaCatalogoSchema(BaseModel):
+    codice: str
+    descrizione: str
+    profili: list[ProfiloDocumentoSchema]
+
+
+class ClassificazioneCatalogoResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "tipo_documento": "BANDO_CONCORSO",
+                "tipologie": [
+                    {
+                        "codice": "TD",
+                        "descrizione": "Tempo determinato",
+                        "profili": [
+                            {"codice": "CTER", "descrizione": "Collaboratore Tecnico Enti di Ricerca"}
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    tipo_documento: str
+    tipologie: list[TipologiaCatalogoSchema]
 
 
 class ModelloCatalogoSchema(BaseModel):
@@ -61,8 +89,33 @@ class ModelloCatalogoSchema(BaseModel):
 
 
 class ModelloSearchResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "tipo_documento": "BANDO_CONCORSO",
+                "profilo": "CTER",
+                "codice_tipologia": "TD",
+                "modalita": "OPERATIVA",
+                "modelli": [
+                    {
+                        "modello_id": 1,
+                        "modello_versione_id": 1,
+                        "codice": "demo-bando-concorso-standard-v1",
+                        "descrizione": "demo-bando-concorso-standard-v1",
+                        "variante": "STANDARD",
+                        "versione": 1,
+                        "stato": "PUBBLICATO",
+                        "data_inizio_validita": None,
+                        "data_fine_validita": None,
+                        "pubblicato_at": "2026-07-31T10:00:00Z",
+                    }
+                ],
+            }
+        }
+    )
+
     tipo_documento: str
-    categoria: str | None = None
+    profilo: str | None = None
     codice_tipologia: str | None = None
     modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA
     modelli: list[ModelloCatalogoSchema]
@@ -84,6 +137,10 @@ class CampiRichiestiResponse(BaseModel):
 
     modello_versione_id: int = Field(..., ge=1)
     tipo_documento: str | None = None
-    categoria: str | None = None
+    profilo: str | None = None
     campi: list[CampoRichiestoSchema]
     schema_: dict[str, Any] = Field(alias="schema")
+
+
+CategoriaDocumentoSchema = ProfiloDocumentoSchema
+CategoriaDocumentoListResponse = ProfiloDocumentoListResponse

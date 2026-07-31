@@ -13,7 +13,7 @@ class FakeCatalogService:
         return CampiRichiestiResponse(
             modello_versione_id=modello_versione_id,
             tipo_documento="BANDO_CONCORSO",
-            categoria="DEMO",
+            profilo="CTER",
             campi=[
                 CampoRichiestoSchema(
                     codice="codice_bando",

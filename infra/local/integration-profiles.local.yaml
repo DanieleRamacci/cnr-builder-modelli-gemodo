@@ -32,17 +32,12 @@ sistemi_richiedenti:
         tipi_documento_ammessi:
           - BANDO_CONCORSO
         categorie_ammessi:
-          - DEMO
+          - CTER
         tipologie_ammessi:
-          - TDPNRR
-          - CD
-          - DIR
-          - TD
           - CP
-          - RS
-          - CATP
+          - TD
           - TI
-          - SDIP
+          - IR
           - MOB
         modelli_versioni_ammessi:
           - demo-bando-concorso-standard-v1

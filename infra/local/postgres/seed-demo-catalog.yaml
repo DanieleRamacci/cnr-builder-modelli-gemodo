@@ -3,9 +3,9 @@
 # `seeds` elenca le entita' SeedDemo (backend/app/quality/schemas.py) usate da
 # backend/app/quality/seed_demo.py per la validazione (marcatura demo obbligatoria,
 # nessun dato reale o sensibile). `catalogo` contiene i dati demo veri e propri:
-# tipologie GEBAN/SOL, categoria demo e i due modelli richiesti da FR-011 (uno
-# pubblicato e utilizzabile dal mock GEBAN, uno non pubblicabile per verificare gli
-# errori funzionali).
+# tipologie/procedure bando GEBAN/SOL, profili professionali e i due modelli richiesti
+# da FR-011 (uno pubblicato e utilizzabile dal mock GEBAN, uno non pubblicabile per
+# verificare gli errori funzionali).
 #
 # Nessun valore qui rappresenta un bando, un utente o un dato reale.
 
@@ -18,14 +18,14 @@ seeds:
     resettable: true
     dati_sensibili: false
   - id: seed-categoria-bando-concorso-demo
-    nome: Categoria DEMO per BANDO_CONCORSO
+    nome: Profili professionali per BANDO_CONCORSO
     tipo: CATALOGO
     marcatura_demo: DEMO
     spec_owner: specs/002-builder-modelli
     resettable: true
     dati_sensibili: false
   - id: seed-tipologie-sol-geban-demo
-    nome: Tipologie GEBAN/SOL iniziali (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB)
+    nome: Tipologie/procedure bando GEBAN/SOL iniziali
     tipo: CATALOGO
     marcatura_demo: DEMO
     spec_owner: specs/001-catalogo-contratto-geban
@@ -53,55 +53,260 @@ catalogo:
       spec_owner: specs/001-catalogo-contratto-geban
 
   categorie:
-    - codice: DEMO
+    - codice: CTER
       tipo_documento: BANDO_CONCORSO
-      nome: Categoria demo
+      nome: Collaboratore Tecnico Enti di Ricerca
+      spec_owner: specs/002-builder-modelli
+    - codice: OPERATORE_TECNICO
+      tipo_documento: BANDO_CONCORSO
+      nome: Operatore tecnico
+      spec_owner: specs/002-builder-modelli
+    - codice: RICERCATORE
+      tipo_documento: BANDO_CONCORSO
+      nome: Ricercatore
+      spec_owner: specs/002-builder-modelli
+    - codice: TECNOLOGO
+      tipo_documento: BANDO_CONCORSO
+      nome: Tecnologo
+      spec_owner: specs/002-builder-modelli
+    - codice: FUNZIONARIO_AMMINISTRATIVO
+      tipo_documento: BANDO_CONCORSO
+      nome: Funzionario amministrativo
       spec_owner: specs/002-builder-modelli
 
-  # Perimetro iniziale GEBAN per l'ufficio reclutamento centrale (spec.md, sessione
-  # 2026-07-28); il dominio SOL completo resta in anagrafica GEBAN.
+  classificazioni:
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: CP
+      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: TD
+      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: TI
+      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: IR
+      categorie: [RICERCATORE, TECNOLOGO]
+    - tipo_documento: BANDO_CONCORSO
+      codice_tipologia: MOB
+      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+
+  # Tipologie/procedure bando esposte a GEBAN. Il codice SOL resta metadato interno:
+  # se una procedura non ha ancora il folder definitivo, aggiornare solo questo file
+  # e riallineare il seed DB, senza cambiare contratto API.
   tipologie_sol:
-    - codice: TDPNRR
-      codice_sol: "F:jconon_call_tdet_pnrr:folder"
-      nome: Tempo determinato PNRR
-    - codice: CD
-      codice_sol: "F:jconon_call_comandi_distacchi:folder"
-      nome: Comandi e distacchi
-    - codice: DIR
-      codice_sol: "F:jconon_call_director:folder"
-      nome: Dirigenza
+    - codice: CP
+      codice_sol: "F:jconon_call_tind:folder_concorsi_pubblici"
+      nome: Concorso pubblico
     - codice: TD
       codice_sol: "F:jconon_call_tdet:folder"
       nome: Tempo determinato
-    - codice: CP
-      codice_sol: "F:jconon_call_tind:folder_concorsi_pubblici"
-      nome: Concorsi pubblici
-    - codice: RS
-      codice_sol: "F:jconon_call_tind:folder_reclutamento_speciale"
-      nome: Reclutamento speciale
-    - codice: CATP
-      codice_sol: "F:jconon_call_tind:folder_categorie_protette"
-      nome: Categorie protette
     - codice: TI
       codice_sol: "F:jconon_call_tind:folder"
       nome: Tempo indeterminato
-    - codice: SDIP
-      codice_sol: "F:jconon_call_employees:folder"
-      nome: Personale dipendente
+    - codice: IR
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Incarichi di ricerca
     - codice: MOB
       codice_sol: "F:jconon_call_mobility:folder"
       nome: Mobilita'
 
   modelli:
     - modello_versione_id: demo-bando-concorso-standard-v1
+      public_id: 1
       tipo_documento: BANDO_CONCORSO
-      categoria: DEMO
+      categoria: CTER
+      codice_tipologia: TD
+      nome: Bando tempo determinato CTER demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-cp-cter-v1
+      public_id: 3
+      tipo_documento: BANDO_CONCORSO
+      categoria: CTER
+      codice_tipologia: CP
+      nome: Bando concorso pubblico CTER demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-cp-operatore-tecnico-v1
+      public_id: 4
+      tipo_documento: BANDO_CONCORSO
+      categoria: OPERATORE_TECNICO
+      codice_tipologia: CP
+      nome: Bando concorso pubblico Operatore tecnico demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-cp-ricercatore-v1
+      public_id: 5
+      tipo_documento: BANDO_CONCORSO
+      categoria: RICERCATORE
+      codice_tipologia: CP
+      nome: Bando concorso pubblico Ricercatore demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-cp-tecnologo-v1
+      public_id: 6
+      tipo_documento: BANDO_CONCORSO
+      categoria: TECNOLOGO
+      codice_tipologia: CP
+      nome: Bando concorso pubblico Tecnologo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-cp-funzionario-amministrativo-v1
+      public_id: 7
+      tipo_documento: BANDO_CONCORSO
+      categoria: FUNZIONARIO_AMMINISTRATIVO
+      codice_tipologia: CP
+      nome: Bando concorso pubblico Funzionario amministrativo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-td-operatore-tecnico-v1
+      public_id: 8
+      tipo_documento: BANDO_CONCORSO
+      categoria: OPERATORE_TECNICO
+      codice_tipologia: TD
+      nome: Bando tempo determinato Operatore tecnico demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-td-ricercatore-v1
+      public_id: 9
+      tipo_documento: BANDO_CONCORSO
+      categoria: RICERCATORE
+      codice_tipologia: TD
+      nome: Bando tempo determinato Ricercatore demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-td-tecnologo-v1
+      public_id: 10
+      tipo_documento: BANDO_CONCORSO
+      categoria: TECNOLOGO
+      codice_tipologia: TD
+      nome: Bando tempo determinato Tecnologo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ti-cter-v1
+      public_id: 11
+      tipo_documento: BANDO_CONCORSO
+      categoria: CTER
+      codice_tipologia: TI
+      nome: Bando tempo indeterminato CTER demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ti-operatore-tecnico-v1
+      public_id: 12
+      tipo_documento: BANDO_CONCORSO
+      categoria: OPERATORE_TECNICO
+      codice_tipologia: TI
+      nome: Bando tempo indeterminato Operatore tecnico demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ti-ricercatore-v1
+      public_id: 13
+      tipo_documento: BANDO_CONCORSO
+      categoria: RICERCATORE
+      codice_tipologia: TI
+      nome: Bando tempo indeterminato Ricercatore demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ti-tecnologo-v1
+      public_id: 14
+      tipo_documento: BANDO_CONCORSO
+      categoria: TECNOLOGO
+      codice_tipologia: TI
+      nome: Bando tempo indeterminato Tecnologo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ti-funzionario-amministrativo-v1
+      public_id: 15
+      tipo_documento: BANDO_CONCORSO
+      categoria: FUNZIONARIO_AMMINISTRATIVO
+      codice_tipologia: TI
+      nome: Bando tempo indeterminato Funzionario amministrativo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ir-ricercatore-v1
+      public_id: 16
+      tipo_documento: BANDO_CONCORSO
+      categoria: RICERCATORE
+      codice_tipologia: IR
+      nome: Bando incarichi di ricerca Ricercatore demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-ir-tecnologo-v1
+      public_id: 17
+      tipo_documento: BANDO_CONCORSO
+      categoria: TECNOLOGO
+      codice_tipologia: IR
+      nome: Bando incarichi di ricerca Tecnologo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-mob-cter-v1
+      public_id: 18
+      tipo_documento: BANDO_CONCORSO
+      categoria: CTER
+      codice_tipologia: MOB
+      nome: Bando mobilita CTER demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-mob-operatore-tecnico-v1
+      public_id: 19
+      tipo_documento: BANDO_CONCORSO
+      categoria: OPERATORE_TECNICO
+      codice_tipologia: MOB
+      nome: Bando mobilita Operatore tecnico demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-mob-ricercatore-v1
+      public_id: 20
+      tipo_documento: BANDO_CONCORSO
+      categoria: RICERCATORE
+      codice_tipologia: MOB
+      nome: Bando mobilita Ricercatore demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-mob-tecnologo-v1
+      public_id: 21
+      tipo_documento: BANDO_CONCORSO
+      categoria: TECNOLOGO
+      codice_tipologia: MOB
+      nome: Bando mobilita Tecnologo demo
+      stato: PUBBLICATO
+      formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
+      utilizzabile_da_mock_geban: true
+    - modello_versione_id: demo-bando-concorso-mob-funzionario-amministrativo-v1
+      public_id: 22
+      tipo_documento: BANDO_CONCORSO
+      categoria: FUNZIONARIO_AMMINISTRATIVO
+      codice_tipologia: MOB
+      nome: Bando mobilita Funzionario amministrativo demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
     - modello_versione_id: demo-bando-concorso-html-libero-non-valido
+      public_id: 2
       tipo_documento: BANDO_CONCORSO
-      categoria: DEMO
+      categoria: CTER
+      codice_tipologia: TD
+      nome: Bando demo non pubblicabile
       stato: BOZZA
       formato_documentale_ref: null
       utilizzabile_da_mock_geban: false

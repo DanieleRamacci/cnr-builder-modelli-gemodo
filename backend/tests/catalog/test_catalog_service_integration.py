@@ -25,20 +25,32 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
             service = CatalogService(session)
 
             tipi = service.list_tipi_documento()
-            categorie = service.list_categorie("BANDO_CONCORSO")
+            profili = service.list_profili("BANDO_CONCORSO")
+            classificazione = service.get_classificazione("BANDO_CONCORSO")
             modelli = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="DEMO",
+                categoria="CTER",
+                codice_tipologia="TD",
+                modalita=ModalitaCatalogo.OPERATIVA,
+            )
+            modelli_cp = service.search_modelli(
+                tipo_documento="BANDO_CONCORSO",
+                categoria="CTER",
+                codice_tipologia="CP",
                 modalita=ModalitaCatalogo.OPERATIVA,
             )
     finally:
         engine.dispose()
 
     assert [item.codice for item in tipi.items] == ["BANDO_CONCORSO"]
-    assert [item.codice for item in categorie.categorie] == ["DEMO"]
+    assert "CTER" in [item.codice for item in profili.profili]
+    td = next(item for item in classificazione.tipologie if item.codice == "TD")
+    assert "CTER" in [item.codice for item in td.profili]
     assert len(modelli.modelli) == 1
     assert modelli.modelli[0].modello_versione_id == 1
     assert modelli.modelli[0].stato == "PUBBLICATO"
+    assert len(modelli_cp.modelli) == 1
+    assert modelli_cp.modelli[0].modello_versione_id == 3
 
 
 @pytest.mark.integration
@@ -72,7 +84,7 @@ def test_catalog_service_returns_empty_list_when_no_model_matches_context(postgr
         engine.dispose()
 
     assert response.tipo_documento == "BANDO_CONCORSO"
-    assert response.categoria == "NON_CONFIGURATA"
+    assert response.profilo == "NON_CONFIGURATA"
     assert response.modelli == []
 
 
@@ -87,12 +99,16 @@ def test_catalog_service_filters_historical_models_by_publication_dates(postgres
             service = CatalogService(session)
             matching = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
+                categoria="CTER",
+                codice_tipologia="TD",
                 modalita=ModalitaCatalogo.STORICO,
                 pubblicato_da=date.fromisoformat("2026-07-01"),
                 pubblicato_a=date.fromisoformat("2026-07-31"),
             )
             not_matching = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
+                categoria="CTER",
+                codice_tipologia="TD",
                 modalita=ModalitaCatalogo.STORICO,
                 pubblicato_da=date.fromisoformat("2026-08-01"),
             )
