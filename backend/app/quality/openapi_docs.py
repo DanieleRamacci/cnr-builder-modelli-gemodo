@@ -47,6 +47,11 @@ def get_openapi_source(spec_id: str) -> PlainTextResponse:
     return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="application/yaml")
 
 
+@router.get("/docs/oauth2-redirect.html", include_in_schema=False)
+def get_swagger_default_oauth2_redirect() -> HTMLResponse:
+    return get_swagger_ui_oauth2_redirect_html()
+
+
 @router.get("/docs/{spec_id}", include_in_schema=False)
 def get_spec_swagger_ui(spec_id: str) -> HTMLResponse:
     _resolve(spec_id)
