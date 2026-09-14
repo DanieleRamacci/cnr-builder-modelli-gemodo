@@ -77,7 +77,12 @@ Risolve le implicazioni concrete della sessione precedente per questa spec.
   `GEMODO_MODELLI_GESTORE` guadagna un campo esplicito `ufficio:` che dichiara a
   quale Ufficio quel ruolo da' diritto di scrittura, configurato a mano dall'admin
   GEMODO in coordinamento con chi gestisce ACE/Keycloak — stesso processo operativo
-  gia' in uso oggi per `role_mappings`, nessuna interfaccia self-service.
+  gia' in uso oggi per `role_mappings`, nessuna interfaccia self-service. Resta
+  pero' aperto (`DEC-002-SORGENTE-UFFICIO-TOKEN`, in attesa di risposta dal team
+  ACE) se il segnale ufficio arrivi come claim diretto nel token (indipendente dal
+  contesto/servizio chiamante) o si inferisca dal contesto/servizio stesso (es. il
+  contesto "geban" implica Ufficio Reclutamento) — cambia lo schema esatto da
+  implementare, non solo il processo di configurazione gia' confermato sopra.
 
 ## Out of Scope
 

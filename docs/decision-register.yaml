@@ -221,6 +221,41 @@ decisions:
       dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak, stesso
       identico processo operativo gia' in uso per configurare role_mappings oggi
       (nessuna interfaccia self-service, coerente con DEC-001-CONFIG-PROFILO-GEBAN).
+      Nota 2026-09-14: lo schema esatto di dove/come leggere il segnale ufficio nel
+      token resta un dettaglio aperto, vedi DEC-002-SORGENTE-UFFICIO-TOKEN — questa
+      decisione fissa il meccanismo/processo, non ancora lo schema JWT preciso.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-14
+
+  - id: DEC-002-SORGENTE-UFFICIO-TOKEN
+    titolo: Sorgente del segnale Ufficio nel token del gestore (claim diretto vs. inferenza da contesto)
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/009-fondamenta-mock-test-qualita
+    stato: APERTA
+    assunzione_provvisoria: >
+      in attesa di conferma dal team che gestisce ACE (2026-09-14). Due scenari
+      alternativi individuati, entrambi compatibili con il meccanismo/processo gia'
+      confermato in DEC-002-GESTORE-UFFICIO-MAPPING (nessuna interfaccia GEMODO
+      self-service, configurazione manuale coordinata con ACE):
+      (A) ACE fornisce un claim di afferenza/ufficio diretto nel token, indipendente
+      dal ruolo, popolato da un servizio ACE dove l'ufficio si sceglie da una lista
+      in fase di creazione del profilo utente — GEMODO legge l'ufficio direttamente
+      dal claim, senza inferirlo.
+      (B) ACE fornisce solo ruolo + contesto/servizio chiamante (stesso meccanismo
+      contexts.<app>.roles gia' in uso per GEBAN), senza un vero claim di ufficio —
+      l'ufficio si INFERISCE dal contesto/servizio stesso (es. il contesto "geban"
+      implica Ufficio Reclutamento), coerente con l'estensione di role_mappings gia'
+      descritta in DEC-002-GESTORE-UFFICIO-MAPPING.
+    impatto: >
+      cambia lo schema esatto da implementare: nello scenario A serve leggere un
+      claim JWT generico indipendente dal contesto; nello scenario B basta
+      l'estensione di role_mappings (campo ufficio: per voce) gia' descritta. Non
+      generare tabelle/schema Ufficio-token nella 002 finche' non arriva la risposta
+      dal team ACE — bloccante per completare data-model.md/plan.md della 002 con lo
+      schema corretto.
     fase_bloccante: PLAN
     data_ultima_revisione: 2026-09-14
 
