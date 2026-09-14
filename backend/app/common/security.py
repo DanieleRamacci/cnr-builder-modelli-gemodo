@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Iterable
 
 import jwt
@@ -12,12 +14,18 @@ from jwt import InvalidTokenError, PyJWKClient
 
 from app.common.errors import AuthenticationError, AuthorizationError
 from app.core.settings import Settings, get_settings
+from app.quality.integration_profile import (
+    client_ids_attivi,
+    load_sistemi_richiedenti,
+    permessi_da_ruoli_esterni,
+)
 
 
 KEYCLOAK_AUDIENCE = "gemodo-backend"
 GEBAN_BACKEND_CLIENT_ID = "geban-backend"
 ROLE_DOCUMENTI_VIEWER = "DOCUMENTI_VIEWER"
 ROLE_DOCUMENTI_GENERATORE = "DOCUMENTI_GENERATORE"
+ROLE_GEMODO_MODELLI_GESTORE = "GEMODO_MODELLI_GESTORE"
 ALLOWED_ALGORITHMS = ["RS256"]
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -30,6 +38,8 @@ class PrincipalGEMODO:
     audience: tuple[str, ...]
     ruoli: tuple[str, ...]
     issuer: str
+    ruoli_diretti: tuple[str, ...] = ()
+    ruoli_contesto: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
     def has_any_role(self, required_roles: Iterable[str]) -> bool:
         available = set(self.ruoli)
@@ -57,17 +67,60 @@ def _extract_roles(payload: dict[str, Any], audience: str) -> tuple[str, ...]:
     return tuple(str(role) for role in roles)
 
 
+def _extract_context_roles(payload: dict[str, Any]) -> dict[str, tuple[str, ...]]:
+    contexts = payload.get("contexts") or {}
+    if not isinstance(contexts, dict):
+        return {}
+    extracted: dict[str, tuple[str, ...]] = {}
+    for context_name, context_value in contexts.items():
+        if not isinstance(context_value, dict):
+            continue
+        roles = context_value.get("roles") or []
+        if isinstance(roles, list):
+            extracted[str(context_name)] = tuple(str(role) for role in roles)
+    return extracted
+
+
+@lru_cache(maxsize=16)
+def _load_sistemi_richiedenti_cached(path: str):
+    return tuple(load_sistemi_richiedenti(Path(path)))
+
+
+def _configured_sistemi(settings: Settings):
+    if settings.integration_profiles_path is None:
+        return ()
+    path = Path(settings.integration_profiles_path)
+    if not path.exists():
+        return ()
+    return _load_sistemi_richiedenti_cached(str(path))
+
+
 def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> PrincipalGEMODO:
     client_id = payload.get("azp") or payload.get("client_id")
-    allowed_clients = {GEBAN_BACKEND_CLIENT_ID, *settings.gemodo_allowed_interactive_clients}
+    sistemi = list(_configured_sistemi(settings))
+    allowed_clients = {
+        GEBAN_BACKEND_CLIENT_ID,
+        *settings.gemodo_allowed_interactive_clients,
+        *client_ids_attivi(sistemi),
+    }
     if client_id not in allowed_clients:
         raise AuthorizationError("Client non autorizzato per le API GEMODO")
+    direct_roles = _extract_roles(payload, settings.keycloak_audience)
+    context_roles = _extract_context_roles(payload)
+    external_permissions = permessi_da_ruoli_esterni(
+        sistemi,
+        client_id=str(client_id),
+        context_roles=context_roles,
+    )
+    normalized_roles = tuple(dict.fromkeys([*direct_roles, *sorted(external_permissions)]))
     return PrincipalGEMODO(
         subject=str(payload.get("sub") or ""),
         client_id=str(client_id),
         audience=_audience_tuple(payload.get("aud")),
-        ruoli=_extract_roles(payload, settings.keycloak_audience),
+        ruoli=normalized_roles,
         issuer=str(payload.get("iss") or ""),
+        ruoli_diretti=direct_roles,
+        ruoli_contesto=tuple(sorted(context_roles.items())),
     )
 
 
@@ -101,6 +154,7 @@ def mock_principal(settings: Settings) -> PrincipalGEMODO:
         audience=(settings.keycloak_audience,),
         ruoli=settings.gemodo_mock_roles,
         issuer=settings.keycloak_issuer_url,
+        ruoli_diretti=settings.gemodo_mock_roles,
     )
 
 
@@ -121,3 +175,7 @@ def require_documenti_viewer(principal: PrincipalGEMODO = Depends(require_princi
 
 def require_documenti_generatore(principal: PrincipalGEMODO = Depends(require_principal)) -> PrincipalGEMODO:
     return ensure_roles(principal, (ROLE_DOCUMENTI_GENERATORE,))
+
+
+def require_modelli_gestore(principal: PrincipalGEMODO = Depends(require_principal)) -> PrincipalGEMODO:
+    return ensure_roles(principal, (ROLE_GEMODO_MODELLI_GESTORE,))

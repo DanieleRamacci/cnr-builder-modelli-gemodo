@@ -22,7 +22,8 @@ def validation_client(postgres_database_url, monkeypatch):
     session = Session(engine)
     app.dependency_overrides[get_payload_validation_service] = lambda: PayloadValidationService(session)
     try:
-        yield TestClient(app)
+        with TestClient(app) as client:
+            yield client
     finally:
         app.dependency_overrides.clear()
         session.close()

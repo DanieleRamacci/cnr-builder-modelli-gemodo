@@ -232,6 +232,7 @@ class ClientApplicativo(QualityBaseModel):
     client_id: str
     audience_attesa: str
     ruoli_claim_richiesti: list[str] = Field(default_factory=list)
+    token_contexts: list[str] = Field(default_factory=list)
     sistemi_abilitati: list[str] = Field(default_factory=list)
     stato: StatoClientApplicativo = StatoClientApplicativo.DA_CONFERMARE
     gestisce_credenziali: bool = False
@@ -253,6 +254,18 @@ class PermessoOperativo(str, Enum):
     DOWNLOAD = "download"
 
 
+class ExternalRoleMapping(QualityBaseModel):
+    """Mappa un ruolo esterno ACE/context role in permessi applicativi GEMODO."""
+
+    token_context: str
+    external_role: str
+    internal_permissions: list[str] = Field(default_factory=list)
+    scope: list[str] = Field(default_factory=list)
+    tipi_documento: list[str] = Field(default_factory=list)
+    categorie: list[str] = Field(default_factory=list)
+    tipologie: list[str] = Field(default_factory=list)
+
+
 class ProfiloDiIntegrazione(QualityBaseModel):
     """Configurazione applicativa versionata che collega sistema, client e permessi."""
 
@@ -267,6 +280,7 @@ class ProfiloDiIntegrazione(QualityBaseModel):
     modelli_versioni_ammessi: list[str] = Field(default_factory=list)
     contratti_dati_ammessi: list[str] = Field(default_factory=list)
     permessi_operativi: list[PermessoOperativo] = Field(default_factory=list)
+    role_mappings: list[ExternalRoleMapping] = Field(default_factory=list)
 
 
 class SistemaRichiedente(QualityBaseModel):

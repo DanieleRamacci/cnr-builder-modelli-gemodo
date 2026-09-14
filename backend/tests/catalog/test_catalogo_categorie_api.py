@@ -39,7 +39,8 @@ def test_list_profili_documento_returns_contract_response(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/tipi-documento/BANDO_CONCORSO/profili")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/tipi-documento/BANDO_CONCORSO/profili")
     finally:
         app.dependency_overrides.clear()
 
@@ -58,7 +59,8 @@ def test_list_profili_documento_returns_error_envelope_when_tipo_is_unknown(monk
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: NotFoundCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/tipi-documento/NON_CONFIGURATO/profili")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/tipi-documento/NON_CONFIGURATO/profili")
     finally:
         app.dependency_overrides.clear()
 
@@ -70,7 +72,8 @@ def test_get_classificazione_documento_returns_tree(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/tipi-documento/BANDO_CONCORSO/classificazione")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/tipi-documento/BANDO_CONCORSO/classificazione")
     finally:
         app.dependency_overrides.clear()
 

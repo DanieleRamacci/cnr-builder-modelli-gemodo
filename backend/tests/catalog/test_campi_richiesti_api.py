@@ -49,7 +49,8 @@ def test_get_campi_richiesti_returns_contract_response_with_lingua(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/modelli/11/campi-richiesti")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/modelli/11/campi-richiesti")
     finally:
         app.dependency_overrides.clear()
 
@@ -73,7 +74,8 @@ def test_get_campi_richiesti_rejects_non_published_version(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: NonPublishedCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/modelli/12/campi-richiesti")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/modelli/12/campi-richiesti")
     finally:
         app.dependency_overrides.clear()
 

@@ -20,10 +20,11 @@ def test_search_modelli_rejects_unconfigured_tipologia_sol(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
-        response = TestClient(app).get(
-            "/api/v1/catalogo/modelli",
-            params={"tipo_documento": "BANDO_CONCORSO", "codice_tipologia": "NON_CONFIGURATA"},
-        )
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/v1/catalogo/modelli",
+                params={"tipo_documento": "BANDO_CONCORSO", "codice_tipologia": "NON_CONFIGURATA"},
+            )
     finally:
         app.dependency_overrides.clear()
 

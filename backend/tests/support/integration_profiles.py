@@ -18,6 +18,7 @@ from app.quality.schemas import (
 )
 
 GEBAN_CLIENT_ID = "geban-backend"
+GEBAN_ACE_CLIENT_ID = "geri-angular-public"
 GEBAN_PROFILE_CODE = "GEBAN_RECLUTAMENTO_V1"
 
 
@@ -26,6 +27,17 @@ def client_geban_backend(stato: StatoClientApplicativo = StatoClientApplicativo.
         client_id=GEBAN_CLIENT_ID,
         audience_attesa="gemodo-backend",
         ruoli_claim_richiesti=["DOCUMENTI_GENERATORE"],
+        sistemi_abilitati=["GEBAN"],
+        stato=stato,
+        gestisce_credenziali=False,
+    )
+
+
+def client_geban_ace(stato: StatoClientApplicativo = StatoClientApplicativo.ATTIVO) -> ClientApplicativo:
+    return ClientApplicativo(
+        client_id=GEBAN_ACE_CLIENT_ID,
+        audience_attesa="gemodo-backend",
+        token_contexts=["geban"],
         sistemi_abilitati=["GEBAN"],
         stato=stato,
         gestisce_credenziali=False,
@@ -42,7 +54,7 @@ def profilo_geban_attivo(
         sistema_richiedente="GEBAN",
         versione="1",
         stato=StatoProfiloIntegrazione.ATTIVO,
-        client_ammessi=[GEBAN_CLIENT_ID],
+        client_ammessi=[GEBAN_CLIENT_ID, GEBAN_ACE_CLIENT_ID],
         tipi_documento_ammessi=tipi_documento_ammessi
         if tipi_documento_ammessi is not None
         else ["BANDO_CONCORSO"],
@@ -60,6 +72,36 @@ def profilo_geban_attivo(
             PermessoOperativo.STATO,
             PermessoOperativo.DOWNLOAD,
         ],
+        role_mappings=[
+            {
+                "token_context": "geban",
+                "external_role": "ROLE_GESTORE#geban",
+                "internal_permissions": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"],
+                "scope": ["generazione", "consultazione"],
+            },
+            {
+                "token_context": "geban",
+                "external_role": "ROLE_MANAGER#geban",
+                "internal_permissions": [
+                    "DOCUMENTI_GENERATORE",
+                    "DOCUMENTI_VIEWER",
+                    "GEMODO_MODELLI_GESTORE",
+                ],
+                "scope": ["generazione", "consultazione", "builder"],
+            },
+            {
+                "token_context": "geban",
+                "external_role": "ROLE_COORDINATOR#geban",
+                "internal_permissions": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"],
+                "scope": ["generazione", "consultazione"],
+            },
+            {
+                "token_context": "geban",
+                "external_role": "ROLE_USER#geban",
+                "internal_permissions": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"],
+                "scope": ["generazione", "consultazione"],
+            },
+        ],
     )
 
 
@@ -72,7 +114,7 @@ def sistema_geban_attivo() -> SistemaRichiedente:
         codice="GEBAN",
         nome="GEBAN - gestione bandi di concorso",
         stato=StatoSistemaRichiedente.ATTIVO,
-        client_applicativi=[client_geban_backend()],
+        client_applicativi=[client_geban_backend(), client_geban_ace()],
         profili_integrazione=[profilo_geban_attivo()],
         spec_owner="specs/001-catalogo-contratto-geban",
     )

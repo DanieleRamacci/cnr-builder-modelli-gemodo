@@ -17,9 +17,11 @@ from typing import Any
 from app.quality.errors import ContrattoNonValidoError, PrerequisitoMancanteError
 from app.quality.manifest_loader import load_yaml
 from app.quality.schemas import (
+    ClientApplicativo,
     PermessoOperativo,
     ProfiloDiIntegrazione,
     SistemaRichiedente,
+    StatoClientApplicativo,
     StatoProfiloIntegrazione,
     StatoSistemaRichiedente,
 )
@@ -51,6 +53,60 @@ def validate_sistema_richiedente(sistema: SistemaRichiedente) -> None:
             servizio=f"sistema-richiedente:{sistema.codice}",
             dettaglio="nessun client applicativo configurato",
         )
+
+
+def _client_attivo(sistema: SistemaRichiedente, client_id: str) -> ClientApplicativo | None:
+    for client in sistema.client_applicativi:
+        if client.client_id == client_id and client.stato == StatoClientApplicativo.ATTIVO:
+            return client
+    return None
+
+
+def client_ids_attivi(sistemi: list[SistemaRichiedente]) -> set[str]:
+    """Return active client IDs declared by active requesting systems."""
+
+    client_ids: set[str] = set()
+    for sistema in sistemi:
+        if sistema.stato != StatoSistemaRichiedente.ATTIVO:
+            continue
+        for client in sistema.client_applicativi:
+            if client.stato == StatoClientApplicativo.ATTIVO:
+                client_ids.add(client.client_id)
+    return client_ids
+
+
+def permessi_da_ruoli_esterni(
+    sistemi: list[SistemaRichiedente],
+    *,
+    client_id: str,
+    context_roles: dict[str, tuple[str, ...]],
+) -> set[str]:
+    """Derive GEMODO permissions from configured ACE/context roles.
+
+    Only active systems, active clients and active profiles are considered. Unknown
+    external roles never grant permissions.
+    """
+
+    permessi: set[str] = set()
+    for sistema in sistemi:
+        if sistema.stato != StatoSistemaRichiedente.ATTIVO:
+            continue
+        client = _client_attivo(sistema, client_id)
+        if client is None:
+            continue
+        context_ammessi = set(client.token_contexts)
+        for profilo in sistema.profili_integrazione:
+            if profilo.stato != StatoProfiloIntegrazione.ATTIVO:
+                continue
+            if client_id not in profilo.client_ammessi:
+                continue
+            for mapping in profilo.role_mappings:
+                if context_ammessi and mapping.token_context not in context_ammessi:
+                    continue
+                ruoli_contesto = set(context_roles.get(mapping.token_context, ()))
+                if mapping.external_role in ruoli_contesto:
+                    permessi.update(mapping.internal_permissions)
+    return permessi
 
 
 def validate_profilo(profilo: ProfiloDiIntegrazione) -> None:
@@ -111,7 +167,7 @@ def is_operazione_autorizzata(
 
     if sistema.stato != StatoSistemaRichiedente.ATTIVO:
         return False
-    if client_id not in [c.client_id for c in sistema.client_applicativi]:
+    if _client_attivo(sistema, client_id) is None:
         return False
 
     profilo = trova_profilo_attivo(sistema, profilo_codice)

@@ -24,6 +24,9 @@ contenga:
   `ROLE_USER#geban` verso `DOCUMENTI_GENERATORE` e `DOCUMENTI_VIEWER`;
 - mapping aggiuntivo solo per `ROLE_MANAGER#geban` verso `GEMODO_MODELLI_GESTORE`.
 
+Il backend legge questo file tramite `GEMODO_INTEGRATION_PROFILES_PATH`; se la variabile
+non e' impostata usa il manifest locale versionato in `infra/local/integration-profiles.local.yaml`.
+
 ## Verifiche Manuali
 
 1. Ottenere un token ACE da GEBAN/ACE.

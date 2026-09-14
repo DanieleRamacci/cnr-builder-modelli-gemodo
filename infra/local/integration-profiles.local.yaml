@@ -7,6 +7,8 @@
 # FR-034, FR-035; decisione confermata SEC-006-001, 2026-07-29).
 #
 # GEMODO non gestisce password o segreti: gestisce_credenziali resta sempre false.
+# Dal flusso reale ACE/GEBAN (2026-09-14), questo manifest contiene anche la mappatura
+# fra ruoli esterni in contexts.<app>.roles e permessi applicativi GEMODO.
 
 sistemi_richiedenti:
   - codice: GEBAN
@@ -22,6 +24,14 @@ sistemi_richiedenti:
           - GEBAN
         stato: ATTIVO
         gestisce_credenziali: false
+      - client_id: geri-angular-public
+        audience_attesa: gemodo-backend
+        token_contexts:
+          - geban
+        sistemi_abilitati:
+          - GEBAN
+        stato: ATTIVO
+        gestisce_credenziali: false
     profili_integrazione:
       - codice: GEBAN_RECLUTAMENTO_V1
         sistema_richiedente: GEBAN
@@ -29,15 +39,27 @@ sistemi_richiedenti:
         stato: ATTIVO
         client_ammessi:
           - geban-backend
+          - geri-angular-public
         tipi_documento_ammessi:
           - BANDO_CONCORSO
         categorie_ammessi:
-          - CTER
+          - RICERCATORE
+          - TECNOLOGO
+          - FUNZIONARIO_AMMINISTRAZIONE
+          - COLLABORATORE_TECNICO_ER
+          - COLLABORATORE_AMMINISTRAZIONE
+          - OPERATORE_TECNICO
+          - OPERATORE_AMMINISTRAZIONE
         tipologie_ammessi:
-          - CP
+          - TDPNRR
+          - CD
+          - DIR
           - TD
+          - CP
+          - RS
+          - CATP
           - TI
-          - IR
+          - SDIP
           - MOB
         modelli_versioni_ammessi:
           - demo-bando-concorso-standard-v1
@@ -50,6 +72,41 @@ sistemi_richiedenti:
           - generazione_ufficiale
           - stato
           - download
+        role_mappings:
+          - token_context: geban
+            external_role: ROLE_GESTORE#geban
+            internal_permissions:
+              - DOCUMENTI_GENERATORE
+              - DOCUMENTI_VIEWER
+            scope:
+              - generazione
+              - consultazione
+          - token_context: geban
+            external_role: ROLE_MANAGER#geban
+            internal_permissions:
+              - DOCUMENTI_GENERATORE
+              - DOCUMENTI_VIEWER
+              - GEMODO_MODELLI_GESTORE
+            scope:
+              - generazione
+              - consultazione
+              - builder
+          - token_context: geban
+            external_role: ROLE_COORDINATOR#geban
+            internal_permissions:
+              - DOCUMENTI_GENERATORE
+              - DOCUMENTI_VIEWER
+            scope:
+              - generazione
+              - consultazione
+          - token_context: geban
+            external_role: ROLE_USER#geban
+            internal_permissions:
+              - DOCUMENTI_GENERATORE
+              - DOCUMENTI_VIEWER
+            scope:
+              - generazione
+              - consultazione
 
   # Sistemi richiedenti futuri (GRADUATORIE, CHECKIN) restano solo previsti dal modello
   # dati; non hanno ancora client o profilo attivo in questo ambiente locale.

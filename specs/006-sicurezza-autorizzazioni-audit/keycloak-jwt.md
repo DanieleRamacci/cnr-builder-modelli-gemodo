@@ -156,6 +156,50 @@ Il mapping deve essere configurabile per contesto applicativo. Nuovi ruoli ACE, 
 contesti o nuovi applicativi non devono essere aggiunti come condizioni hard-coded dentro
 le singole API.
 
+### Dove Vive La Configurazione Del Mapping
+
+La configurazione applicativa GEMODO del mapping vive nel profilo di integrazione, oggi
+`infra/local/integration-profiles.local.yaml`.
+
+Questo file tiene insieme il perimetro GEBAN:
+
+- client ammessi a chiamare GEMODO;
+- audience attesa (`gemodo-backend`);
+- contesti ACE letti dal token (`geban`);
+- tipologie/categorie/modelli ammessi;
+- mapping da ruoli esterni ACE/GEBAN a permessi interni GEMODO.
+
+Il seed catalogo (`infra/local/postgres/seed-demo-catalog.yaml`) resta invece la sorgente
+delle entita' di dominio disponibili, come categorie/profili e tipologie bando. Non deve
+contenere autorizzazioni specifiche GEBAN/ACE, cosi' le stesse categorie possono essere
+riusate da altri applicativi con una mappatura ruoli diversa.
+
+Esempio di forma attesa:
+
+```yaml
+client_applicativi:
+  - client_id: geri-angular-public
+    audience_attesa: gemodo-backend
+    token_contexts:
+      - geban
+
+profili_integrazione:
+  - codice: GEBAN_RECLUTAMENTO_V1
+    client_ammessi:
+      - geri-angular-public
+    role_mappings:
+      - token_context: geban
+        external_role: ROLE_MANAGER#geban
+        internal_permissions:
+          - DOCUMENTI_GENERATORE
+          - DOCUMENTI_VIEWER
+          - GEMODO_MODELLI_GESTORE
+```
+
+La configurazione Keycloak resta separata: il mapper ACE va aggiunto al client che emette
+il token, non al resource server `gemodo-backend`. GEMODO poi legge il token ricevuto e
+applica la mappa sopra.
+
 ## Flusso 1 - Utente Che Usa Il Builder GEMODO
 
 ```text

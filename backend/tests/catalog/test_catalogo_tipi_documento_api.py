@@ -18,7 +18,8 @@ def test_list_tipi_documento_returns_contract_response(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
-        response = TestClient(app).get("/api/v1/catalogo/tipi-documento")
+        with TestClient(app) as client:
+            response = client.get("/api/v1/catalogo/tipi-documento")
     finally:
         app.dependency_overrides.clear()
 

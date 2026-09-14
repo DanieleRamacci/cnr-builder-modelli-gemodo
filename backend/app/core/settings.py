@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
 
 
 def _bool_env(name: str, default: bool = False) -> bool:
@@ -37,6 +38,7 @@ class Settings:
     gemodo_mock_subject: str
     gemodo_mock_client_id: str
     gemodo_mock_roles: tuple[str, ...]
+    integration_profiles_path: str | None
 
     @property
     def jwks_url(self) -> str:
@@ -46,6 +48,7 @@ class Settings:
 
 
 def get_settings() -> Settings:
+    repo_root = Path(__file__).resolve().parents[3]
     return Settings(
         database_url=os.getenv("DATABASE_URL", "postgresql+psycopg://gemodo:gemodo@localhost:5432/gemodo"),
         keycloak_issuer_url=os.getenv("KEYCLOAK_ISSUER_URL", "https://sso.test.si.cnr.it/auth/realms/cnr"),
@@ -61,5 +64,9 @@ def get_settings() -> Settings:
             role.strip()
             for role in os.getenv("GEMODO_MOCK_ROLES", "DOCUMENTI_VIEWER,DOCUMENTI_GENERATORE").split(",")
             if role.strip()
+        ),
+        integration_profiles_path=os.getenv(
+            "GEMODO_INTEGRATION_PROFILES_PATH",
+            str(repo_root / "infra" / "local" / "integration-profiles.local.yaml"),
         ),
     )
