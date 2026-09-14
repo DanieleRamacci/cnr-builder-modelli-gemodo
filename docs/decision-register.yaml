@@ -183,16 +183,78 @@ decisions:
       confermato 2026-09-14 col product owner: il profilo/contratto di ogni sistema
       richiedente (GEBAN e futuri altri) resta un file versionato nel repository, non
       un dato gestito a runtime dal builder. Non serve pubblicazione live: ogni
-      aggiornamento richiede commit, build immagine e deploy. Questo e' gia' garantito
-      meccanicamente oggi (backend/Dockerfile fa COPY infra/ nell'immagine; ogni deploy
-      avvia un processo nuovo, azzerando la cache lru_cache di
-      _load_sistemi_richiedenti_cached in backend/app/common/security.py) a patto di
-      non montare mai il file come volume esterno modificabile senza rebuild.
+      aggiornamento richiede commit, build immagine e deploy. Raffinato lo stesso
+      giorno: il file diventa il seed iniziale che popola vere tabelle Postgres per
+      profili/uffici/tipi documento ammessi (stesso pattern gia' usato per il catalogo,
+      migration 0005-0007), non solo un valore cachato in memoria di processo
+      (_load_sistemi_richiedenti_cached in backend/app/common/security.py); un futuro
+      punto di modifica (es. interfaccia web) scrivera' sulle stesse tabelle, senza
+      richiedere un cambio di schema in quel momento. Questo risolve anche il rischio
+      di staleness della lru_cache descritto sotto, spostando la fonte di verita' a
+      runtime dal file cachato al DB.
     impatto: >
-      rischio residuo: nessuna barriera esplicita impedisce in futuro di montare il
-      file come volume esterno (renderebbe la lru_cache una trappola di staleness
-      silenziosa); da documentare come vincolo esplicito del deploy, non solo come
-      comportamento implicito del Dockerfile attuale.
+      da progettare in plan.md: schema esatto delle tabelle profili/uffici, la
+      migration di caricamento dal file, e la modifica di security.py per leggere dal
+      DB invece che dal file in memoria. Rischio residuo se questo non viene fatto:
+      nessuna barriera esplicita impedirebbe in futuro di montare il file come volume
+      esterno modificabile senza rebuild, rendendo la lru_cache attuale una trappola di
+      staleness silenziosa.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-14
+
+  - id: DEC-001-UFFICIO-PROPRIETARIO
+    titolo: Distinzione Ufficio (proprietario) da Applicazione (consumatore)
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/007-frontend-builder-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      direzione presa 2026-09-14: un Ufficio (nuova entita') possiede uno o piu' Tipo
+      Documento e autora categorie/tipologie/contratti dati/modelli per quelli che
+      possiede; un'Applicazione (ProfiloDiIntegrazione, es. GEBAN) e' autorizzata a
+      consumare (consultare/generare) uno o piu' Tipo Documento indipendentemente da
+      quale Ufficio li possiede — lo stesso profilo GEBAN potra' essere autorizzato
+      anche a un futuro tipo documento come GRADUATORIA_CONCORSO, posseduto da un
+      Ufficio diverso da quello di BANDO_CONCORSO. Sostituisce l'ipotesi precedente di
+      un flag tipo_integrazione: APPLICAZIONE|UFFICIO su ProfiloDiIntegrazione, che
+      mescolava i due concetti in un'unica entita' (corretto dal product owner).
+    impatto: >
+      per il primo incremento GEBAN non cambia nulla in pratica (GEMODO agisce per
+      conto di un Ufficio "Reclutamento" implicito via file di config), ma tipo_
+      documento deve gia' avere un riferimento a un Ufficio proprietario (FR-031) per
+      non richiedere un redesign quando arrivera' un secondo ufficio/tipo documento
+      reale. Schema esatto (tabella Ufficio, FK su tipo_documento) da completare in
+      plan.md.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-14
+
+  - id: DEC-001-GENERALIZZAZIONE-TIPOLOGIA
+    titolo: Generalizzazione di TipologiaBandoSOL a TipologiaDocumento
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      direzione presa 2026-09-14, su richiesta esplicita del product owner di
+      generalizzare subito invece che dopo con piu' codice sopra: la tabella
+      tipologia_bando_sol (oggi globale, codice univoco nell'intero sistema, con
+      codice_sol obbligatorio legato solo all'integrazione GEBAN-SOL) diventa
+      tipologia_documento, scoped per tipo_documento_id (come gia' categoria_
+      documento), con un riferimento_esterno opzionale invece che un codice_sol
+      obbligatorio. Il parametro pubblico codice_tipologia e il codice errore
+      TIPOLOGIA_SOL_NON_VALIDA restano invariati per non rompere il contratto OpenAPI
+      gia' pubblicato. Rimossa anche la colonna tipo_documento.tipologia_bando_sol_id
+      (verificato 2026-09-14: non letta/scritta da nessun codice reale, vestigiale).
+    impatto: >
+      richiede una migration Alembic di rename tabella/colonne (non modificare le
+      migration storiche 0003/0005/0006) e l'aggiornamento di
+      backend/app/catalog/models.py, repository.py, service.py, dei test e di
+      infra/local/postgres/seed-demo-catalog.yaml (chiave tipologie_sol -> tipologie,
+      ogni voce guadagna tipo_documento). Nessun impatto sul contratto OpenAPI
+      pubblico. Da completare in plan.md prima dell'implementazione.
     fase_bloccante: PLAN
     data_ultima_revisione: 2026-09-14
 
@@ -266,7 +328,7 @@ decisions:
     data_ultima_revisione: 2026-09-14
 
   - id: DEC-001-REGISTRO-CONTRATTI-DATI
-    titolo: Registro multi-tenant dei contratti dati per sistema richiedente
+    titolo: Registro multi-tenant dei contratti dati per tipo documento
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/002-builder-modelli
@@ -278,13 +340,14 @@ decisions:
       "bando-concorso-common-fields-v1" in infra/local/integration-profiles.local.yaml)
       e' oggi solo una stringa senza nessuna definizione a supporto: nessun file,
       tabella o validazione la risolve. Direzione presa: introdurre un registro dei
-      contratti dati, di proprieta' di un sistema richiedente (non specifico a GEBAN,
-      coerente con SistemaRichiedente gia' modellato come lista estendibile); ogni
+      contratti dati, scoped per Tipo Documento (proprieta' ereditata transitivamente
+      dall'Ufficio che possiede quel tipo documento — vedi DEC-001-UFFICIO-
+      PROPRIETARIO — non dal sistema richiedente/profilo che lo consuma); ogni
       contratto dati del registro definisce l'insieme di campi (stessa forma di Campo
       Richiesto/campo_modello: codice, etichetta, tipo, obbligatorieta', lingua) che un
-      modello legato a quel sistema puo' dichiarare. Il builder (002/003, non ancora
+      modello di quel tipo documento puo' dichiarare. Il builder (002/003, non ancora
       implementato) dovra' vincolare la creazione di campi modello ai contratti dati
-      ammessi dal profilo del sistema per cui il modello viene creato.
+      ammessi per il tipo documento in cui il modello viene creato.
     impatto: >
       bloccante per 002/003: senza questo registro il builder non ha modo di limitare
       cosa un gestore puo' inserire in un modello per un dato sistema richiedente.

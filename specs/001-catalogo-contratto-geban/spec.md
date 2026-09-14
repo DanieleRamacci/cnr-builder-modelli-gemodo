@@ -4,10 +4,11 @@
 
 **Created**: 2026-06-19
 
-**Status**: Implementata (primo incremento) - estesa 2026-09-14 con FR-025..FR-030 per
-riprendere il perimetro contrattuale per-profilo e il registro contratti dati
-(`DEC-001-PROFILO-GEBAN` e decisioni collegate, ora `ASSUNTA_PROVVISORIA`); design in
-`plan.md` e task da generare prima dell'implementazione di questo incremento.
+**Status**: Implementata (primo incremento) - estesa 2026-09-14 con FR-025..FR-031 per
+riprendere il perimetro contrattuale per-profilo, il registro contratti dati e la
+distinzione Ufficio (proprieta') / Applicazione (consumo) (`DEC-001-PROFILO-GEBAN` e
+decisioni collegate, ora `ASSUNTA_PROVVISORIA`); design in `plan.md` e task da generare
+prima dell'implementazione di questo incremento.
 
 **Input**: User description: "Partendo da PROPOSTA-servizio-gestione-modelli-bando.md, crea la prima specifica solo per Catalogo modelli e contratto dati verso GEBAN. Includi attori, flusso GEBAN, modelli pubblicati, campi richiesti, validazione payload, errori e acceptance criteria. Escludi builder frontend, generazione PDF dettagliata e sicurezza dettagliata."
 
@@ -157,12 +158,33 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
 - Q: Come si pubblica un aggiornamento del profilo/contratto di un sistema richiedente
   in produzione? -> A: Resta un file versionato nel repository, aggiornato solo via
   build e deploy, senza requisito di ricaricamento a caldo (`DEC-001-CONFIG-PROFILO-
-  GEBAN`, assunta provvisoriamente, confermato col product owner). Va pero' evitato di
-  montare quel file come volume esterno modificabile fuori dal processo di deploy: la
-  cache in-process (`lru_cache` su `_load_sistemi_richiedenti_cached` in
-  `backend/app/common/security.py`) non si accorgerebbe di una modifica fatta cosi',
-  e continuerebbe a servire la versione precedente finche' il processo non viene
-  riavviato.
+  GEBAN`, assunta provvisoriamente, confermato col product owner). Raffinato: il file
+  diventa il *seed iniziale* che popola vere tabelle DB per profili/proprietari/tipi
+  documento (stesso pattern gia' usato per il catalogo, migration `0005`-`0007`); il
+  backend legge dalle tabelle, non piu' da un file cachato in eterno in memoria (evita
+  la trappola di staleness della `lru_cache` su `_load_sistemi_richiedenti_cached`).
+  Quando in futuro un'interfaccia web sostituira' il file come punto di modifica,
+  scrivera' nelle stesse tabelle: nessun redesign dello schema in quel momento.
+- Q: Un "profilo" rappresenta sia chi possiede/crea un tipo documento sia chi lo
+  consuma (es. GEBAN)? -> A: No (`DEC-001-UFFICIO-PROPRIETARIO`, nuova decisione,
+  assunta provvisoriamente, 2026-09-14). Sono due concetti distinti: un `Ufficio`
+  possiede uno o piu' `TipoDocumento` e ne autora categorie/tipologie/contratti
+  dati/modelli (es. `UFFICIO_RECLUTAMENTO` possiede `BANDO_CONCORSO`); un'Applicazione
+  (`ProfiloDiIntegrazione`, es. GEBAN) e' autorizzata a **consumare** uno o piu' tipi
+  documento indipendentemente da quale Ufficio li possiede — lo stesso profilo GEBAN
+  potra' domani essere autorizzato anche a un tipo documento come `GRADUATORIA_
+  CONCORSO`, posseduto da un Ufficio diverso da quello di `BANDO_CONCORSO`. Sostituisce
+  l'ipotesi precedente di un flag `tipo_integrazione: APPLICAZIONE|UFFICIO` su
+  `ProfiloDiIntegrazione`, che mescolava i due concetti in un'unica entita'.
+- Q: La tabella delle tipologie di processo deve restare nominata e modellata per il
+  dominio bandi/SOL di GEBAN? -> A: No (`DEC-001-GENERALIZZAZIONE-TIPOLOGIA`, nuova
+  decisione, assunta provvisoriamente, 2026-09-14). Generalizzata subito, non dopo con
+  piu' codice sopra: `TipologiaBandoSOL` diventa `TipologiaDocumento`, scoped per
+  `TipoDocumento` invece che globale, con un `riferimento_esterno` opzionale (era
+  `codice_sol` obbligatorio) cosi' un tipo documento senza un'integrazione esterna
+  equivalente a SOL non deve popolarlo. Il parametro pubblico `codice_tipologia` e il
+  codice errore `TIPOLOGIA_SOL_NON_VALIDA` restano invariati per non rompere il
+  contratto OpenAPI gia' pubblicato.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -397,7 +419,7 @@ non pubblicati, payload errati e richieste incoerenti.
   `DEC-001-PROFILO-GEBAN`, `DEC-001-CONFIG-PROFILO-GEBAN`,
   `DEC-001-RELAZIONE-PROFILO-CATALOGO` e `DEC-001-API-PROFILO-GEBAN` non vengono
   riprese. **Riprese 2026-09-14** (Session 2026-09-14): le decisioni sono ora
-  `ASSUNTA_PROVVISORIA` con la direzione descritta in FR-025..FR-030; restano da
+  `ASSUNTA_PROVVISORIA` con la direzione descritta in FR-025..FR-031; restano da
   completare design (`plan.md`) e implementazione prima che l'enforcement per-profilo
   sia effettivo.
 - **FR-024**: La `001` MUST implementare come baseline funzionale i profili iniziali
@@ -425,7 +447,16 @@ non pubblicati, payload errati e richieste incoerenti.
 - **FR-030**: La configurazione dei profili di integrazione e dei contratti dati MUST
   restare un artefatto versionato nel repository; il servizio MUST NOT richiedere o
   offrire un meccanismo di aggiornamento a runtime che modifichi questa configurazione
-  senza un nuovo deploy del servizio.
+  senza un nuovo deploy del servizio. Il file di configurazione MUST popolare tabelle
+  persistenti (non restare solo in memoria di processo), cosi' che un futuro punto di
+  modifica (es. interfaccia web) possa scrivere sulle stesse tabelle senza richiedere
+  un cambio di schema.
+- **FR-031**: Ogni `TipoDocumento` MUST riferire esattamente un `Ufficio` proprietario;
+  la creazione o modifica di categorie, tipologie, contratti dati o modelli per quel
+  tipo documento MUST essere consentita solo a un chiamante con ruolo di gestore scoped
+  a quell'Ufficio. Questa autorizzazione di scrittura (proprieta') resta distinta
+  dall'autorizzazione di lettura/generazione di un'Applicazione (FR-025..FR-027), che
+  non implica proprieta'.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -446,24 +477,33 @@ non pubblicati, payload errati e richieste incoerenti.
 - **Contratto Dati**: insieme dei campi e delle regole che GEBAN usa per costruire la
   maschera e preparare il payload; e' l'insieme di campi dichiarato da una specifica
   versione modello (livello 1, gia' implementato tramite `Campo Richiesto`).
-- **Profilo Di Integrazione**: perimetro contrattuale di un sistema richiedente
+- **Ufficio**: gruppo organizzativo proprietario di uno o piu' Tipo Documento
+  (`DEC-001-UFFICIO-PROPRIETARIO`); autora categorie, tipologie, contratti dati e
+  modelli dei tipi documento che possiede. Distinto da Profilo Di Integrazione: la
+  proprieta' (scrittura) non implica ne' e' implicata dall'autorizzazione a consumare
+  (lettura/generazione).
+- **Profilo Di Integrazione**: perimetro contrattuale di un'Applicazione consumatrice
   (es. GEBAN): client tecnici ammessi, tipi documento/categorie/tipologie/versioni
-  modello e contratti dati che quel sistema puo' usare, operazioni abilitate. Introdotto
+  modello e contratti dati che quell'Applicazione puo' **consultare o generare**,
+  indipendentemente da quale Ufficio li possiede; operazioni abilitate. Introdotto
   dalla `009`, oggi modellato ma non ancora applicato dalle API di questa feature
   (`DEC-001-RELAZIONE-PROFILO-CATALOGO`).
 - **Registro Contratti Dati**: nuova entita' (livello 2, `DEC-001-REGISTRO-CONTRATTI-
-  DATI`), di proprieta' di un sistema richiedente: raccoglie i contratti dati riusabili
-  e versionati (stessa forma del Contratto Dati di livello 1: campi con codice,
-  etichetta, tipo, obbligatorieta', lingua) che i profili di quel sistema possono
-  referenziare tramite `contratti_dati_ammessi`, e che vincolano cosa il builder
-  (`002`/`003`) permette di inserire in un modello legato a quel sistema.
+  DATI`), scoped per Tipo Documento (proprieta' ereditata dall'Ufficio di quel tipo
+  documento): raccoglie i contratti dati riusabili e versionati (stessa forma del
+  Contratto Dati di livello 1: campi con codice, etichetta, tipo, obbligatorieta',
+  lingua) che i profili possono referenziare tramite `contratti_dati_ammessi`, e che
+  vincolano cosa il builder (`002`/`003`) permette di inserire in un modello di quel
+  tipo documento.
 - **Payload Di Validazione**: dati inviati da GEBAN per verificare la conformita' al
   contratto della versione modello selezionata.
 - **Errore Di Validazione**: errore funzionale associato a un campo o alla richiesta,
   composto da codice e messaggio comprensibile.
-- **Tipologia Bando SOL**: tipologia/procedura bando condivisa con GEBAN
-  (`codice_tipologia`), con codice SOL associato per l'integrazione GEBAN-SOL;
-  perimetro iniziale CP, TD, TI, IR, MOB.
+- **Tipologia Documento** *(rinominata da Tipologia Bando SOL,
+  `DEC-001-GENERALIZZAZIONE-TIPOLOGIA`)*: seconda dimensione di classificazione,
+  scoped per Tipo Documento (`codice_tipologia`), con un riferimento esterno opzionale
+  (per GEBAN: codice SOL); per `BANDO_CONCORSO` il perimetro e' TDPNRR, CD, DIR, TD,
+  CP, RS, CATP, TI, SDIP, MOB.
 
 ## Decisioni Aperte Collegate
 
@@ -478,6 +518,8 @@ copie divergano nel tempo. Voci con `owner_spec: specs/001-catalogo-contratto-ge
 `DEC-001-RELAZIONE-PROFILO-CATALOGO` (assunta provvisoria),
 `DEC-001-API-PROFILO-GEBAN` (assunta provvisoria),
 `DEC-001-REGISTRO-CONTRATTI-DATI` (assunta provvisoria, nuova 2026-09-14),
+`DEC-001-UFFICIO-PROPRIETARIO` (assunta provvisoria, nuova 2026-09-14),
+`DEC-001-GENERALIZZAZIONE-TIPOLOGIA` (assunta provvisoria, nuova 2026-09-14),
 `DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN` (assunta provvisoria),
 `DEC-001-VERSIONAMENTO-MAPPING-CAMPI`,
 `DEC-003-FORMATO-CAMPI-COMPLESSI`, `DEC-001-LINGUA-IT-EN` (confermata),

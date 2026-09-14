@@ -2,6 +2,31 @@
 
 ## Entities
 
+### Ufficio
+
+*(nuova entita', `DEC-001-UFFICIO-PROPRIETARIO`, 2026-09-14)* Gruppo organizzativo
+proprietario di uno o piu' `TipoDocumento`. Distinto da `ProfiloDiIntegrazione`: un
+Ufficio possiede/autora i tipi documento (lato scrittura), un'Applicazione li consuma
+se autorizzata (lato lettura/generazione), indipendentemente da chi li possiede.
+Esempio: `UFFICIO_RECLUTAMENTO` possiede `BANDO_CONCORSO`; GEBAN (applicazione) puo'
+essere autorizzato a consultarlo senza esserne proprietario, e potrebbe in futuro
+essere autorizzato anche a `GRADUATORIA_CONCORSO` posseduto da un ufficio diverso.
+
+Fields:
+
+- `codice`: identificativo funzionale, univoco.
+- `nome`: es. "Ufficio Reclutamento".
+- `stato`: `ATTIVO` o `INATTIVO`.
+- `created_at`
+- `updated_at`
+
+Validation:
+
+- `codice` obbligatorio e univoco.
+- un utente MUST avere un ruolo di gestore scoped a un Ufficio per creare/editare
+  categorie, tipologie, contratti dati o modelli dei tipi documento che quell'Ufficio
+  possiede (FR-031).
+
 ### TipoDocumento
 
 Rappresenta una famiglia documentale generale.
@@ -10,6 +35,9 @@ Fields:
 
 - `codice`: identificativo funzionale, univoco.
 - `descrizione`: testo descrittivo.
+- `codice_ufficio_proprietario`: riferimento a `Ufficio` che possiede/autora questo
+  tipo documento (FR-031). Determina transitivamente la proprieta' di categorie,
+  tipologie, contratti dati e modelli legati a questo tipo documento.
 - `attivo`: indica se il tipo e' usabile per configurazioni operative.
 - `created_at`
 - `updated_at`
@@ -17,7 +45,11 @@ Fields:
 Validation:
 
 - `codice` obbligatorio e univoco.
+- `codice_ufficio_proprietario` obbligatorio e deve riferire un Ufficio esistente.
 - tipi non attivi non vengono proposti come nuovi elementi operativi.
+- un'Applicazione (`ProfiloDiIntegrazione`) puo' consultare/generare per questo tipo
+  documento solo se lo ha nel proprio `tipi_documento_ammessi` (FR-025..FR-027),
+  indipendentemente da quale Ufficio lo possiede.
 
 ### CategoriaDocumento
 
@@ -60,28 +92,39 @@ Validation:
 - `variante` non puo' essere vuota; se manca viene assegnata `STANDARD`.
 - la combinazione `codice_tipo_documento + profilo + codice_tipologia + variante`
   identifica una variante funzionale nel catalogo.
-- se presente, `codice_tipologia` deve corrispondere a una `TipologiaBandoSOL`
-  configurata (FR-020).
+- se presente, `codice_tipologia` deve corrispondere a una `TipologiaDocumento`
+  configurata per lo stesso `codice_tipo_documento` (FR-020).
+- la proprieta' (chi puo' modificare questo modello) e' quella dell'`Ufficio`
+  proprietario del `TipoDocumento` referenziato, non un campo proprio (FR-031).
 
-### TipologiaBandoSOL
+### TipologiaDocumento
 
-Tipologia di processo GEBAN/SOL, condivisa con il dominio SOL (`DEC-001-TIPOLOGIE-SOL`).
+*(rinominata da `TipologiaBandoSOL`, `DEC-001-GENERALIZZAZIONE-TIPOLOGIA`, 2026-09-14)*
+Seconda dimensione di classificazione di un tipo documento, accanto a
+`CategoriaDocumento`. Generalizzata da subito (non dopo, per non riscrivere schema e
+codice quando arrivera' un secondo tipo documento con una classificazione concettuale
+diversa da quella dei bandi GEBAN): scoped per `TipoDocumento`, non piu' globale, e con
+un riferimento esterno opzionale invece che un `codice_sol` obbligatorio legato solo
+all'integrazione GEBAN-SOL.
 
 Fields:
 
+- `codice_tipo_documento`: riferimento a `TipoDocumento` (nuovo: prima la tabella era
+  globale, non partizionata).
 - `codice`: identificativo funzionale usato come `codice_tipologia`, ad esempio `TD`.
-- `codice_sol`: codice atteso dall'integrazione GEBAN-SOL, ad esempio
-  `F:jconon_call_tdet:folder`.
+- `riferimento_esterno`: opzionale (era `codice_sol`, obbligatorio). Per GEBAN resta
+  popolato coi codici dell'integrazione SOL (es. `F:jconon_call_tdet:folder`); per un
+  tipo documento senza un sistema esterno equivalente resta vuoto.
 - `descrizione`
 - `attiva`
 - `created_at`
 
 Validation:
 
-- `codice` obbligatorio e univoco.
-- perimetro iniziale bandi: CP, TD, TI, IR, MOB (seed demo in
-  `infra/local/postgres/seed-demo-catalog.yaml`); il dominio SOL completo puo'
-  estendere l'elenco in seguito senza cambiare il contratto API.
+- chiave logica: `codice_tipo_documento + codice` (prima: `codice` globale).
+- perimetro GEBAN per `BANDO_CONCORSO`: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB
+  (seed demo in `infra/local/postgres/seed-demo-catalog.yaml`); altri tipi documento
+  definiranno il proprio elenco indipendente, senza collidere sui codici.
 
 ### ClassificazioneCatalogo
 
@@ -90,7 +133,7 @@ Configurazione dell'albero operativo esposto a GEBAN per un tipo documento.
 Fields:
 
 - `codice_tipo_documento`: riferimento a `TipoDocumento`.
-- `codice_tipologia`: nodo di primo livello GEBAN/SOL, riferimento a `TipologiaBandoSOL`.
+- `codice_tipologia`: nodo di primo livello, riferimento a `TipologiaDocumento`.
 - `codice_categoria`: profilo selezionabile sotto la tipologia, riferimento interno a
   `CategoriaDocumento`.
 - `attiva`
@@ -99,11 +142,68 @@ Fields:
 Validation:
 
 - chiave logica: `codice_tipo_documento + codice_tipologia + profilo`.
-- il mapping tecnico SOL (`codice_sol`) resta metadato interno della `TipologiaBandoSOL`
-  e non viene esposto all'utente come valore da comprendere o digitare.
+- il riferimento esterno (`riferimento_esterno`, es. codice SOL per GEBAN) resta
+  metadato interno della `TipologiaDocumento` e non viene esposto all'utente come
+  valore da comprendere o digitare.
 - l'endpoint di classificazione restituisce l'albero tipologie -> profili;
   la ricerca modelli puo' poi usare `codice_tipologia` e `profilo` come filtri
   derivati dalla scelta nell'albero.
+
+### RegistroContrattiDati
+
+*(nuova entita', `DEC-001-REGISTRO-CONTRATTI-DATI`, 2026-09-14)* Contratto dati
+riusabile e versionato, scoped per `TipoDocumento` (proprieta' ereditata
+transitivamente dall'Ufficio che possiede quel tipo documento). Referenziato da
+`ProfiloDiIntegrazione.contratti_dati_ammessi`; vincola quali campi un modello legato
+a quel tipo documento puo' dichiarare (stessa forma di `ModelloCampoRichiesto`).
+Distinto dal contratto dati di livello 1 (`ModelloCampoRichiesto`, gia' implementato,
+specifico di una singola versione modello): questo e' il livello 2, riusabile fra piu'
+modelli dello stesso tipo documento.
+
+Fields:
+
+- `codice`: identificativo funzionale, univoco per tipo documento (es.
+  `bando-concorso-common-fields-v1`).
+- `codice_tipo_documento`: riferimento a `TipoDocumento`.
+- `versione`
+- `campi`: lista di definizioni campo (stessa struttura di `ModelloCampoRichiesto`:
+  codice, etichetta, tipo dato, obbligatorieta', lingua, ordine, vincoli).
+- `stato`: `ATTIVO` o `INATTIVO`.
+- `created_at`
+- `updated_at`
+
+Validation:
+
+- chiave logica: `codice_tipo_documento + codice`.
+- ogni riferimento in `ProfiloDiIntegrazione.contratti_dati_ammessi` MUST corrispondere
+  a un `RegistroContrattiDati` esistente (FR-029); un riferimento a un contratto dati
+  inesistente MUST essere rifiutato al caricamento, non ignorato silenziosamente.
+
+### ProfiloDiIntegrazione *(riferimento)*
+
+Entita' introdotta dalla `009`, definita per intero in
+`specs/009-fondamenta-mock-test-qualita/data-model.md`; qui solo i campi rilevanti per
+l'enforcement di questa feature (FR-025..FR-030). Rappresenta un'Applicazione (es.
+GEBAN) autorizzata a **consumare** (consultare/validare/generare), non a possedere.
+
+Fields rilevanti:
+
+- `tipi_documento_ammessi`: lista di `TipoDocumento.codice` che questo profilo puo'
+  consultare/consumare, indipendentemente da quale `Ufficio` li possiede.
+- `categorie_ammessi`, `tipologie_ammessi`: stesso principio, dentro un tipo documento
+  ammesso.
+- `modelli_versioni_ammessi`: lista di `modello_versione_id` (o codici) che questo
+  profilo puo' usare per generazione, anche se posseduti da un tipo documento/Ufficio
+  diverso da quello "principale" del profilo — e' il meccanismo di concessione
+  cross-ufficio (es. GEBAN autorizzato a un modello di un tipo documento posseduto da
+  un altro ufficio).
+- `contratti_dati_ammessi`: lista di `RegistroContrattiDati.codice` ammessi.
+
+Validation:
+
+- FR-026: ogni richiesta catalogo/validazione/generazione MUST verificare che tipo
+  documento, categoria, tipologia e modello_versione_id richiesti siano in una di
+  queste liste per il profilo risolto dal chiamante.
 
 ### ModelloDocumentoVersione
 
@@ -221,7 +321,13 @@ Common error codes:
 - `MODELLO_VERSIONE_NON_TROVATO`
 - `CONTESTO_NON_VALIDO`
 - `TIPOLOGIA_SOL_NON_VALIDA` (FR-020): `codice_tipologia` non corrisponde a una
-  `TipologiaBandoSOL` configurata.
+  `TipologiaDocumento` configurata per il tipo documento richiesto. Il nome del codice
+  resta invariato per compatibilita' col contratto OpenAPI gia' pubblicato, anche se
+  l'entita' sottostante non si chiama piu' `TipologiaBandoSOL`.
+- `FUORI_PERIMETRO_PROFILO` (FR-027, nuovo): tipo documento, categoria, tipologia o
+  modello_versione_id richiesti non sono nel perimetro ammesso dal profilo del
+  chiamante risolto — distinto da un elenco vuoto (nel perimetro, nessun modello
+  pubblicato ancora).
 - `CAMPO_INGLESE_MANCANTE` (FR-022): campo con `lingua = EN` obbligatorio assente
   quando `bando_inglese = true`.
 - `ACCESSO_NON_AUTENTICATO`: JWT mancante, scaduto o non valido per firma, issuer o
@@ -235,18 +341,23 @@ aggiunti in entrambi i posti.
 ## Relationships
 
 ```text
+Ufficio 1--N TipoDocumento (proprieta')
 TipoDocumento 1--N CategoriaDocumento
+TipoDocumento 1--N TipologiaDocumento
 TipoDocumento 1--N ModelloDocumento
+TipoDocumento 1--N RegistroContrattiDati
 CategoriaDocumento 1--N ModelloDocumento
-TipologiaBandoSOL 1--N ModelloDocumento
+TipologiaDocumento 1--N ModelloDocumento
 TipoDocumento 1--N ClassificazioneCatalogo
-TipologiaBandoSOL 1--N ClassificazioneCatalogo
+TipologiaDocumento 1--N ClassificazioneCatalogo
 CategoriaDocumento 1--N ClassificazioneCatalogo
 ModelloDocumento 1--N ModelloDocumentoVersione
 ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)
 ValidazionePayload 1--N ErroreValidazione
 PrincipalGEMODO 1--N Operazione API (runtime)
+ProfiloDiIntegrazione N--N TipoDocumento (consumo, indipendente dalla proprieta' Ufficio)
+ProfiloDiIntegrazione N--N ModelloDocumentoVersione (concessione esplicita, FR-025..FR-027)
 ```
 
 ## State Rules
