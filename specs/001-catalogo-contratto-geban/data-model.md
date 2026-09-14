@@ -27,6 +27,11 @@ Validation:
   categorie, tipologie, contratti dati o modelli dei tipi documento che quell'Ufficio
   possiede (FR-031).
 
+**Seed**: sezione `uffici:` in `infra/local/postgres/seed-demo-catalog.yaml` (stesso
+file di `tipi_documento:`), caricata da migration Alembic come le altre entita' del
+catalogo. Rinominare il file quando arrivera' un secondo tipo documento reale: il
+nome attuale dichiara "seed demo" ma contiene gia' nomenclatura GEBAN di produzione.
+
 ### TipoDocumento
 
 Rappresenta una famiglia documentale generale.

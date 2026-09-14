@@ -368,3 +368,226 @@ Task: T054 Add bando_inglese=false does-not-require-English test in backend/test
   `DOCUMENTI_GENERATORE`.
 - Profilo GEBAN versionato e autorizzazione fine restano fuori scope (FR-023); non
   aggiungere filtri per profilo qui senza prima chiudere `DEC-001-PROFILO-GEBAN`.
+
+---
+
+## Secondo Incremento (2026-09-14): Perimetro Per-Profilo, Ufficio, Registro Contratti Dati
+
+`DEC-001-PROFILO-GEBAN` e le decisioni collegate sono ora `CONFERMATA` (vedi
+`docs/decision-register.yaml`, `research.md`, `data-model.md`). FR-025..FR-031,
+User Story 5. Numerazione task continua da T076.
+
+## Phase 8: Foundational (secondo incremento)
+
+**Purpose**: schema DB, seed e loader per profili/uffici/registro contratti dati.
+Blocca la Phase 9 (nessuna route puo' verificare un perimetro che non esiste ancora
+come dato interrogabile).
+
+**⚠️ CRITICAL**: nessun lavoro della User Story 5 puo' iniziare prima che questa fase
+sia completa.
+
+- [ ] T077 [P] Aggiungere sezione `uffici:` (`UFFICIO_RECLUTAMENTO`) e campo
+      `ufficio: UFFICIO_RECLUTAMENTO` a ogni voce di `tipi_documento:` in
+      `infra/local/postgres/seed-demo-catalog.yaml`
+- [ ] T078 [P] Rinominare `tipologie_sol:` in `tipologie:` in
+      `infra/local/postgres/seed-demo-catalog.yaml`: ogni voce guadagna
+      `tipo_documento: BANDO_CONCORSO` e `codice_sol` viene rinominato
+      `riferimento_esterno`
+- [ ] T079 [P] Aggiungere sezione `contratti_dati:` a
+      `infra/local/postgres/seed-demo-catalog.yaml` che definisce
+      `bando-concorso-common-fields-v1` (codice, `tipo_documento: BANDO_CONCORSO`,
+      versione, campi ricalcati da `CAMPI_DEMO`/`ModelloCampoRichiesto`)
+- [ ] T080 Migration Alembic `0008` in
+      `backend/alembic/versions/0008_generalizza_tipologia_documento.py`: rinomina
+      tabella `tipologia_bando_sol` -> `tipologia_documento`, aggiunge
+      `tipo_documento_id` (FK), cambia il vincolo univoco a
+      `(tipo_documento_id, codice)`, rinomina `codice_sol` -> `riferimento_esterno`
+      (nullable), rimuove la colonna vestigiale
+      `tipo_documento.tipologia_bando_sol_id` (verificato: non usata da nessun
+      codice reale), rilegge `seed-demo-catalog.yaml` aggiornato (T078) per
+      ripopolare (stesso pattern upsert/disattiva-stale di `0005`-`0007`)
+- [ ] T081 [P] Rinominare `TipologiaBandoSOL` -> `TipologiaDocumento` in
+      `backend/app/catalog/models.py`, aggiungere relazione/FK
+      `tipo_documento_id`, rinominare `codice_sol` -> `riferimento_esterno`
+      (nullable)
+- [ ] T082 Aggiornare `get_tipologia_sol_by_codice` in
+      `backend/app/catalog/repository.py` per filtrare anche per
+      `tipo_documento_id` (depends on T080, T081)
+- [ ] T083 Aggiornare riferimenti a `TipologiaBandoSOL`/`codice_sol` in
+      `backend/app/catalog/service.py` e `backend/app/catalog/schemas.py`
+      (nessun cambio del contratto pubblico: `codice_tipologia` e
+      `TIPOLOGIA_SOL_NON_VALIDA` restano invariati)
+- [ ] T084 [P] Aggiornare fixture e test esistenti che referenziano
+      `TipologiaBandoSOL`/`codice_sol` in `backend/tests/catalog/`,
+      `backend/tests/support/`, `backend/tests/integration/test_seed_demo_validation.py`
+- [ ] T085 Migration Alembic `0009` in
+      `backend/alembic/versions/0009_ufficio_proprietario.py`: crea tabella
+      `ufficio`, aggiunge `tipo_documento.ufficio_id` (FK NOT NULL), rilegge
+      `uffici:`/`ufficio:` da `seed-demo-catalog.yaml` (T077) (depends on T080)
+- [ ] T086 [P] Aggiungere modello SQLAlchemy `Ufficio` e relazione
+      `TipoDocumento.ufficio_id` in `backend/app/catalog/models.py`
+- [ ] T087 Migration Alembic `0010` in
+      `backend/alembic/versions/0010_profili_registro_contratti_dati.py`: crea
+      tabelle `sistema_richiedente`, `client_applicativo`, `profilo_integrazione`
+      (+ tabelle di collegamento per `tipi_documento_ammessi`,
+      `categorie_ammessi`, `tipologie_ammessi`, `modelli_versioni_ammessi`,
+      `contratti_dati_ammessi`, `role_mappings`) e `registro_contratti_dati` (+
+      tabella figlia per i campi), rilegge
+      `infra/local/integration-profiles.local.yaml` e la sezione
+      `contratti_dati:` di `seed-demo-catalog.yaml` (T079) per popolarle (depends
+      on T085)
+- [ ] T088 [P] Aggiungere modelli SQLAlchemy per le nuove tabelle in un nuovo
+      `backend/app/quality/models.py`, stessa forma dei Pydantic gia' esistenti in
+      `backend/app/quality/schemas.py`
+- [ ] T089 Aggiungere loader DB-backed (`load_sistemi_richiedenti_db` o simile) in
+      `backend/app/quality/integration_profile.py` che sostituisce
+      `load_sistemi_richiedenti`/`_load_sistemi_richiedenti_cached` leggendo dalle
+      tabelle invece che dal file YAML in cache eterna, restituendo gli stessi
+      Pydantic `SistemaRichiedente`/`ProfiloDiIntegrazione` (depends on T087, T088)
+- [ ] T090 Aggiornare `_configured_sistemi` in `backend/app/common/security.py`
+      per usare il loader DB-backed (T089) invece di
+      `_load_sistemi_richiedenti_cached` sullo YAML
+- [ ] T091 Validare i riferimenti di `contratti_dati_ammessi` al caricamento
+      (FR-029): il loader (T089) MUST rifiutare un `ProfiloDiIntegrazione` che
+      referenzia un `RegistroContrattiDati` inesistente, non ignorarlo
+      silenziosamente, in `backend/app/quality/integration_profile.py`
+- [ ] T092 [P] Aggiungere test reali su Postgres per il loader DB-backed e la
+      validazione T091 in `backend/tests/integration/test_integration_profiles_db.py`
+
+**Checkpoint**: profili, uffici e registro contratti dati sono dati reali
+interrogabili dal DB; `security.py` non dipende piu' dalla cache YAML in memoria
+per la risoluzione del profilo.
+
+---
+
+## Phase 9: User Story 5 - Applicare il perimetro contrattuale del profilo (Priority: P1) 🎯
+
+**Goal**: le API catalogo/validazione rifiutano esplicitamente le richieste fuori dal
+perimetro del profilo del chiamante, invece di rispondere con un elenco vuoto
+indistinguibile o, peggio, con i dati di un altro profilo.
+
+**Independent Test**: dato un profilo GEBAN con perimetro noto, chiamare le API con
+valori dentro e fuori dal perimetro e verificare che le risposte siano
+distinguibili (vedi Acceptance Scenarios della User Story 5 in `spec.md`).
+
+### Tests for User Story 5
+
+> **NOTE**: scrivere questi test per primi, verificare che falliscano prima
+> dell'implementazione (coerente con lo stile gia' usato per US1-US4).
+
+- [ ] T093 [P] [US5] Aggiungere test: richiesta con tipo documento fuori dal
+      perimetro del profilo restituisce `PROFILO_INTEGRAZIONE_NON_ABILITATO` in
+      `backend/tests/catalog/test_perimetro_profilo_api.py` (nuovo file)
+- [ ] T094 [P] [US5] Aggiungere test: categoria/tipologia nel perimetro ma senza
+      modello pubblicato restituisce elenco vuoto, non l'errore (regressione
+      esplicita rispetto al comportamento del primo incremento) nello stesso file
+- [ ] T095 [P] [US5] Aggiungere test: `modello_versione_id` concesso via
+      `modelli_versioni_ammessi` di un tipo documento diverso da quello
+      "principale" del profilo viene comunque autorizzato (concessione
+      cross-ufficio) nello stesso file
+- [ ] T096 [P] [US5] Aggiungere test end-to-end con profilo GEBAN reale caricato
+      dalle tabelle DB (non fixture in-memory) in
+      `backend/tests/e2e/test_perimetro_profilo_geban.py`
+
+### Implementation for User Story 5
+
+- [ ] T097 [US5] Aggiungere `ErrorCode.PROFILO_INTEGRAZIONE_NON_ABILITATO` in
+      `backend/app/common/errors.py` (codice gia' descritto in
+      `infra/openapi/errors.md`, mai wired a codice reale prima d'ora)
+- [ ] T098 [US5] Aggiungere funzione di risoluzione profilo (da `client_id`/contesto
+      di `PrincipalGEMODO`) in `backend/app/common/security.py`, riusando
+      `_configured_sistemi` (T090)
+- [ ] T099 [US5] Aggiungere funzione di verifica perimetro in
+      `backend/app/quality/integration_profile.py`, riusando `is_operazione_
+      autorizzata`/`_valore_ammesso` gia' esistenti (oggi usate solo dal fixture
+      `fake_gemodo_client.py`) invece di duplicarne la logica (depends on T098)
+- [ ] T100 [US5] Collegare la verifica perimetro (T099) alle route in
+      `backend/app/catalog/api.py` (`search_modelli`, `list_profili_documento`,
+      `get_classificazione_documento`, `get_campi_richiesti`), passando il
+      `PrincipalGEMODO` reale invece di scartarlo con `_: PrincipalGEMODO`
+- [ ] T101 [US5] Collegare la verifica perimetro (T099) a
+      `backend/app/validation/api.py` per `POST /documenti/valida` e
+      `POST /documenti/genera`
+- [ ] T102 [US5] Verificare che l'elenco vuoto resti invariato quando
+      categoria/tipologia sono nel perimetro senza modello pubblicato (nessuna
+      regressione sul comportamento del primo incremento, vedi T094)
+
+**Checkpoint**: User Story 5 e' completa e testabile indipendentemente; il gap
+trovato il 2026-09-14 (allow-list mai collegata alle route reali) e' chiuso.
+
+---
+
+## Phase 10: Polish & Cross-Cutting Concerns (secondo incremento)
+
+- [ ] T103 [P] Aggiornare
+      `specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml`
+      con `PROFILO_INTEGRAZIONE_NON_ABILITATO` (esempio errore, status 403)
+- [ ] T104 [P] Aggiungere uno scenario dedicato in
+      `specs/001-catalogo-contratto-geban/quickstart.md` per il perimetro
+      per-profilo (chiamata dentro vs fuori dal perimetro)
+- [ ] T105 Aggiornare `docs/quality-coverage-matrix.yaml` per FR-025..FR-031 da
+      `DA_COPRIRE` a `COPERTO`
+- [ ] T106 Eseguire la suite pytest completa su Postgres reale (non solo unitaria,
+      coerente con T072 del primo incremento) e registrare l'esito in
+      `specs/001-catalogo-contratto-geban/quickstart.md`
+- [ ] T107 Aggiornare `docs/project-map.md` e l'`impatto` delle decisioni in
+      `docs/decision-register.yaml` per riflettere lo stato effettivamente
+      implementato (oggi descrivono solo la direzione confermata)
+
+---
+
+## Dependencies & Execution Order - Secondo Incremento
+
+### Phase Dependencies
+
+- **Foundational (Phase 8)**: dipende dal primo incremento gia' completo (Phase 1-7);
+  blocca la Phase 9 per intero — nessuna route puo' verificare un perimetro contro
+  dati che non esistono ancora.
+- **US5 (Phase 9)**: dipende da Phase 8 completa.
+- **Polish (Phase 10)**: dipende da Phase 9 completa.
+
+### Parallel Opportunities
+
+- T077-T079 possono girare in parallelo (file diversi/sezioni diverse dello stesso
+  seed, nessuna dipendenza fra loro).
+- T081, T086, T088 possono girare in parallelo dopo le rispettive migration.
+- T084 puo' girare in parallelo dopo T080-T083.
+- T092 puo' girare in parallelo dopo T089-T091.
+- T093-T096 possono girare in parallelo (stesso file di test ma scenari
+  indipendenti, o file separati come indicato).
+- T103-T104 possono girare in parallelo dopo che il comportamento e' stabile.
+
+## Parallel Example: User Story 5
+
+```text
+Task: T093 Add out-of-perimeter test in backend/tests/catalog/test_perimetro_profilo_api.py
+Task: T094 Add in-perimeter-no-model regression test in backend/tests/catalog/test_perimetro_profilo_api.py
+Task: T095 Add cross-ufficio grant test in backend/tests/catalog/test_perimetro_profilo_api.py
+Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.py
+```
+
+## Implementation Strategy - Secondo Incremento
+
+1. Completare la Phase 8 (schema, seed, loader) — nessun comportamento API cambia
+   ancora in questa fase, solo dati e infrastruttura.
+2. Completare la Phase 9 (US5) — qui il comportamento API cambia: verificare con la
+   suite reale su Postgres che nessuna regressione tocchi US1-US4 del primo
+   incremento.
+3. Completare la Phase 10 (polish, contratto OpenAPI, coverage matrix).
+4. **Non incluso in questo incremento** (per decisione esplicita, vedi `spec.md`
+   Session 2026-09-14): interfaccia web di amministrazione per creare
+   Uffici/tipi documento/associare Applicazioni; enforcement lato scrittura di
+   FR-031 (nessun endpoint di creazione modello esiste ancora: e' scope della
+   `002`, non implementabile qui).
+
+## Notes - Secondo Incremento
+
+- Nessuna migration storica (`0001`-`0007`) va modificata: solo nuove migration
+  (`0008`, `0009`, `0010`).
+- Il rename `TipologiaBandoSOL` -> `TipologiaDocumento` e' interno: `codice_tipologia`
+  e `TIPOLOGIA_SOL_NON_VALIDA` restano invariati nel contratto pubblico.
+- FR-031 (proprieta' Ufficio sul lato scrittura) e' modellata a livello di schema in
+  questo incremento (T085-T086) ma la sua *enforcement* (chi puo' editare cosa)
+  resta bloccata sull'esistenza di endpoint di scrittura, che appartengono alla
+  `002` non ancora implementata — non inventare qui un endpoint di scrittura solo
+  per testare FR-031.

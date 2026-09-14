@@ -185,6 +185,22 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
   equivalente a SOL non deve popolarlo. Il parametro pubblico `codice_tipologia` e il
   codice errore `TIPOLOGIA_SOL_NON_VALIDA` restano invariati per non rompere il
   contratto OpenAPI gia' pubblicato.
+- Q: Dove viene definita la lista di Uffici e la loro proprieta' sui tipi documento?
+  -> A: Nello stesso file dove gia' vive `tipi_documento:`
+  (`infra/local/postgres/seed-demo-catalog.yaml`, o un successore rinominato quando
+  arrivera' un secondo tipo documento reale, dato che il nome attuale dichiara "seed
+  demo" mentre contiene gia' nomenclatura GEBAN reale): nuova sezione `uffici:` e
+  nuovo campo `ufficio:` su ogni voce di `tipi_documento:`. Le Applicazioni/profili
+  restano in `infra/local/integration-profiles.local.yaml`, invariato.
+- Q: Vale la pena implementare gia' un'interfaccia web di amministrazione per creare
+  Uffici/tipi documento/associare Applicazioni? -> A: No, non in questo incremento
+  (confermato col product owner). Priorita' dichiarata: produzione GEBAN prima, resto
+  dopo; un'interfaccia admin e' scope di frontend (`007`, non pianificata) e di un
+  nuovo modello di autorizzazione amministrativa non ancora definito. Nessun costo di
+  rifacimento per rimandarla: la migrazione a tabelle Postgres
+  (`DEC-001-CONFIG-PROFILO-GEBAN`) e' gia' pensata perche' una futura interfaccia
+  scriva sulle stesse tabelle. Da riconsiderare quando arrivera' un secondo
+  Ufficio/tipo documento reale.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -294,6 +310,49 @@ non pubblicati, payload errati e richieste incoerenti.
    **When** il servizio risponde, **Then** l'errore impedisce la validazione operativa.
 3. **Given** la richiesta non contiene il contesto minimo necessario, **When** il servizio
    risponde, **Then** l'errore indica quali informazioni sono mancanti o non coerenti.
+
+---
+
+### User Story 5 - Applicare il perimetro contrattuale del profilo (Priority: P1)
+
+*(secondo incremento, 2026-09-14, FR-025..FR-027)* Come servizio GEMODO, voglio
+verificare che ogni richiesta catalogo/validazione sia dentro il perimetro
+contrattuale del profilo di integrazione del chiamante, cosi' che un sistema
+richiedente (es. GEBAN) non possa consultare o generare documenti di un tipo
+documento, categoria, tipologia o versione modello che non gli e' stata concessa,
+anche se il suo token ha un ruolo applicativo valido.
+
+**Why this priority**: senza questo controllo, qualunque chiamante con un JWT valido
+e ruolo `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` puo' oggi interrogare dati di
+qualunque profilo, non solo del proprio — un rischio bloccante prima di autorizzare
+generazione reale per GEBAN o l'arrivo di un secondo sistema richiedente
+(`DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN`).
+
+**Independent Test**: dato un profilo GEBAN con un perimetro noto (tipi documento,
+categorie, tipologie, modelli ammessi), la storia e' verificabile chiamando le API
+catalogo/validazione sia con valori nel perimetro sia fuori, e controllando che la
+risposta distingua i due casi.
+
+**Acceptance Scenarios**:
+
+1. **Given** il profilo del chiamante ha `BANDO_CONCORSO` nel proprio
+   `tipi_documento_ammessi`, **When** richiede il catalogo per `BANDO_CONCORSO`,
+   **Then** la richiesta procede normalmente (comportamento invariato rispetto al
+   primo incremento).
+2. **Given** il profilo del chiamante NON ha un dato tipo documento, categoria o
+   tipologia nel proprio perimetro, **When** lo richiede, **Then** il servizio
+   risponde con l'errore funzionale `PROFILO_INTEGRAZIONE_NON_ABILITATO`, non con un
+   elenco vuoto.
+3. **Given** il profilo del chiamante ha una categoria/tipologia nel proprio
+   perimetro ma nessun modello pubblicato per quella combinazione, **When** la
+   richiede, **Then** il servizio risponde con un elenco vuoto (200), non con
+   `PROFILO_INTEGRAZIONE_NON_ABILITATO` — le due condizioni restano distinguibili.
+4. **Given** il profilo del chiamante ha uno specifico `modello_versione_id` concesso
+   esplicitamente tramite `modelli_versioni_ammessi`, anche se il tipo documento
+   proprietario non e' quello "principale" del profilo, **When** richiede
+   contratto dati o validazione per quel `modello_versione_id`, **Then** la
+   richiesta e' autorizzata (concessione cross-ufficio, `DEC-001-UFFICIO-
+   PROPRIETARIO`).
 
 ### Edge Cases
 
