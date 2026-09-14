@@ -198,6 +198,30 @@ decisions:
     fase_bloccante: PLAN
     data_ultima_revisione: 2026-09-14
 
+  - id: DEC-002-GESTORE-UFFICIO-MAPPING
+    titolo: Come si risolve l'Ufficio del gestore modelli chiamante
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: APERTA
+    assunzione_provvisoria: >
+      nessuna assunzione confermata. Trovato 2026-09-14 riallineando la 002 a
+      DEC-001-UFFICIO-PROPRIETARIO: oggi il ruolo Keycloak GEMODO_MODELLI_GESTORE e'
+      un ruolo client piatto, senza nessun concetto di Ufficio associato — un gestore
+      con quel ruolo potrebbe in teoria scrivere su categorie/tipologie/modelli di
+      qualunque tipo documento, non solo quelli del proprio Ufficio. Ipotesi di
+      lavoro non confermata: un meccanismo ruolo/gruppo Keycloak -> Ufficio analogo
+      al role_mappings gia' usato per l'ACE/GEBAN in backend/app/common/security.py
+      (006), ma questo richiede design esplicito e conferma del product owner prima
+      di generare task di scrittura per la 002.
+    impatto: >
+      bloccante per l'implementazione di qualunque endpoint di scrittura della 002
+      (FR-014): senza questo meccanismo non si puo' distinguere un gestore
+      dell'Ufficio Reclutamento da un gestore di un futuro Ufficio Contratti.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-14
+
   - id: DEC-001-UFFICIO-PROPRIETARIO
     titolo: Distinzione Ufficio (proprietario) da Applicazione (consumatore)
     owner_spec: specs/001-catalogo-contratto-geban
