@@ -290,7 +290,7 @@ decisions:
       tipologie_ammessi, modelli_versioni_ammessi gia' modellati su
       ProfiloDiIntegrazione). La risposta deve distinguere esplicitamente "fuori dal
       perimetro contrattuale del chiamante" (errore funzionale, codice
-      FUORI_PERIMETRO_PROFILO) da "nel perimetro ma senza ancora un modello pubblicato"
+      PROFILO_INTEGRAZIONE_NON_ABILITATO) da "nel perimetro ma senza ancora un modello pubblicato"
       (elenco vuoto, comportamento gia' esistente e mantenuto invariato per quel caso).
       Rischio residuo tracciato: il catalogo oggi non applica ancora questa
       distinzione (vedi DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN); resta da progettare in

@@ -324,7 +324,9 @@ Common error codes:
   `TipologiaDocumento` configurata per il tipo documento richiesto. Il nome del codice
   resta invariato per compatibilita' col contratto OpenAPI gia' pubblicato, anche se
   l'entita' sottostante non si chiama piu' `TipologiaBandoSOL`.
-- `FUORI_PERIMETRO_PROFILO` (FR-027, nuovo): tipo documento, categoria, tipologia o
+- `PROFILO_INTEGRAZIONE_NON_ABILITATO` (FR-027; gia' descritto in
+  `infra/openapi/errors.md`, owner `006`, mai raggiunto da codice reale prima di
+  questo incremento): tipo documento, categoria, tipologia o
   modello_versione_id richiesti non sono nel perimetro ammesso dal profilo del
   chiamante risolto — distinto da un elenco vuoto (nel perimetro, nessun modello
   pubblicato ancora).

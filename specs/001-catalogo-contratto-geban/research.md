@@ -138,22 +138,131 @@ allineamento con GEBAN.
 - Passare a identificativo stringa per coerenza con i manifest demo `009`: scartato per
   ora, e' un cambio breaking senza un requisito che lo richieda esplicitamente.
 
-## Decision: profilo GEBAN e autorizzazione fine restano fuori scope
+## Decision: profilo GEBAN e autorizzazione fine restano fuori scope *(primo incremento; superata dal secondo incremento sotto)*
 
 **Rationale**: `DEC-001-PROFILO-GEBAN` e le decisioni collegate
 (`DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-RELAZIONE-PROFILO-CATALOGO`,
-`DEC-001-API-PROFILO-GEBAN`) sono sospese esplicitamente per il primo incremento
-produttivo della `001`. Il catalogo di questa feature continua a filtrare solo per
-stato di pubblicazione, contesto, tipologia e versione modello; l'autorizzazione fine
-per sistema richiedente e profilo di integrazione resta responsabilita' della `006` e
-non entra qui come assunzione implicita.
+`DEC-001-API-PROFILO-GEBAN`) erano sospese esplicitamente per il primo incremento
+produttivo della `001`. Il catalogo del primo incremento filtra solo per stato di
+pubblicazione, contesto, tipologia e versione modello; l'autorizzazione fine per
+sistema richiedente e profilo di integrazione resta implementata a partire dal
+secondo incremento (vedi sezione dedicata sotto, decisioni ora `CONFERMATA`).
 
 **Alternatives considered**:
 
-- Implementare gia' un filtro per profilo GEBAN in questa feature: scartato, le
-  decisioni da cui dipende (formato profilo, relazione con il catalogo, API dedicate)
-  non sono ancora chiuse; implementarlo ora significherebbe costruire su assunzioni non
-  confermate.
+- Implementare gia' un filtro per profilo GEBAN nel primo incremento: scartato allora,
+  le decisioni da cui dipende (formato profilo, relazione con il catalogo, API
+  dedicate) non erano ancora chiuse; implementarlo avrebbe significato costruire su
+  assunzioni non confermate.
+
+---
+
+## Secondo incremento (2026-09-14): perimetro per-profilo, Ufficio, registro contratti dati
+
+Le decisioni sotto sono `CONFERMATA` in `docs/decision-register.yaml` (readiness gate
+verde per PLAN/TASKS sulla `001`). Riguardano il design, non ancora l'implementazione:
+`tasks.md` di questo incremento resta da generare.
+
+### Decision: Ufficio come entita' separata da ProfiloDiIntegrazione
+
+**Rationale** (`DEC-001-UFFICIO-PROPRIETARIO`): ownership (chi puo' autorare
+categorie/tipologie/contratti dati/modelli di un tipo documento) e autorizzazione al
+consumo (chi puo' consultare/generare, es. GEBAN) sono due dimensioni indipendenti. Un
+singolo profilo consumer (GEBAN) potra' essere autorizzato a piu' tipi documento
+posseduti da Uffici diversi (es. `BANDO_CONCORSO` di Ufficio Reclutamento e, in
+futuro, `GRADUATORIA_CONCORSO` di un ufficio diverso — coerente con Principio III
+della costituzione, che nomina esplicitamente le graduatorie fra i tipi documento
+futuri attesi). Un `TipoDocumento` riferisce esattamente un `Ufficio` proprietario;
+`ProfiloDiIntegrazione.tipi_documento_ammessi` (gia' una lista, `009`) referenzia
+liberamente tipi documento indipendentemente da chi li possiede.
+
+**Alternatives considered**:
+
+- Flag `tipo_integrazione: APPLICAZIONE|UFFICIO` su `ProfiloDiIntegrazione`: scartato,
+  mescolava ownership e consumo nella stessa entita', impedendo il caso GEBAN
+  multi-tipo-documento con proprietari diversi descritto sopra.
+- Nessuna entita' Ufficio, proprieta' implicita nel codice: scartato, non scala oltre
+  GEBAN senza redesign quando arrivera' un secondo sistema con propri Ufficio/tipo
+  documento.
+
+### Decision: registro contratti dati scoped per tipo documento
+
+**Rationale** (`DEC-001-REGISTRO-CONTRATTI-DATI`): `contratti_dati_ammessi` su
+`ProfiloDiIntegrazione` (`009`) referenzia oggi una stringa priva di definizione
+(`bando-concorso-common-fields-v1`). Si introduce un registro di contratti dati
+riusabili, scoped per `TipoDocumento` (proprieta' ereditata dall'Ufficio, non dal
+profilo consumer), stessa forma di `ModelloCampoRichiesto`. Il builder (`002`/`003`)
+vincolera' i campi che un gestore puo' dichiarare in un modello a quelli ammessi dal
+contratto dati del tipo documento.
+
+**Alternatives considered**:
+
+- Lasciare `contratti_dati_ammessi` come riferimento libero non risolto: scartato,
+  e' esattamente l'assunzione silenziosa che la costituzione (Contract-First
+  Integration) e FR-018 vietano.
+- Un contratto dati per singolo profilo consumer invece che per tipo documento:
+  scartato, impedirebbe la condivisione di un contratto fra piu' Applicazioni
+  autorizzate allo stesso tipo documento.
+
+### Decision: generalizzare `TipologiaBandoSOL` a `TipologiaDocumento` ora
+
+**Rationale** (`DEC-001-GENERALIZZAZIONE-TIPOLOGIA`): la tabella `tipologia_bando_sol`
+era globale (non scoped per tipo documento) e nominata/modellata specificamente per
+l'integrazione GEBAN-SOL (`codice_sol` obbligatorio). Rinominata subito, su richiesta
+esplicita del product owner, invece che rimandata a quando ci sara' piu' codice sopra
+da riscrivere: diventa `tipologia_documento`, scoped per `tipo_documento_id` (come gia'
+`categoria_documento`), con `riferimento_esterno` opzionale. Il parametro pubblico
+`codice_tipologia` e il codice errore `TIPOLOGIA_SOL_NON_VALIDA` restano invariati:
+nessun impatto sul contratto OpenAPI gia' pubblicato.
+
+**Alternatives considered**:
+
+- Rimandare la generalizzazione a quando arrivera' un secondo tipo documento reale:
+  scartato su richiesta esplicita, il costo di un rename cresce con la quantita' di
+  codice che dipende dal nome/forma attuali (repository, service, test, seed, doc).
+
+### Decision: profili/uffici migrano da YAML-in-memoria a tabelle Postgres
+
+**Rationale** (`DEC-001-CONFIG-PROFILO-GEBAN`): oggi `SistemaRichiedente`/
+`ProfiloDiIntegrazione` sono solo YAML letto e cachato in memoria di processo
+(`_load_sistemi_richiedenti_cached`, `@lru_cache` senza scadenza in
+`backend/app/common/security.py`) — mai persistito. Il file YAML diventa il seed
+iniziale che popola vere tabelle Postgres (stesso pattern gia' in uso per il catalogo,
+migration `0005`-`0007`: rilegge lo YAML, upsert, disattiva le righe non piu' presenti).
+`security.py` legge dalle tabelle invece che dalla cache eterna del file. Un futuro
+punto di modifica (interfaccia web di amministrazione profili/uffici) scrivera' sulle
+stesse tabelle, senza richiedere un cambio di schema in quel momento.
+
+**Alternatives considered**:
+
+- Mantenere lo YAML in memoria e aggiungere un TTL alla cache: scartato, risolve solo
+  parzialmente la staleness e non prepara il terreno per un futuro editor.
+- Passare subito a una UI di amministrazione: scartato per questo incremento, fuori
+  scope rispetto all'obiettivo "produzione con GEBAN prima, resto dopo" confermato dal
+  product owner.
+
+### Decision: enforcement del perimetro dentro le route esistenti
+
+**Rationale** (`DEC-001-RELAZIONE-PROFILO-CATALOGO`, `DEC-001-API-PROFILO-GEBAN`,
+`DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN`): le route catalogo/validazione
+(`backend/app/catalog/api.py`) oggi risolvono `PrincipalGEMODO` solo per il controllo
+di ruolo JWT grezzo e lo scartano (`_: PrincipalGEMODO`). Devono invece risolvere il
+profilo di integrazione del chiamante e verificare che tipo documento, categoria,
+tipologia e `modello_versione_id` richiesti siano nel suo perimetro. Nessun nuovo
+endpoint dedicato al profilo: la verifica entra nelle route esistenti. Attiva un
+codice errore funzionale gia' descritto in `infra/openapi/errors.md` ma mai raggiunto
+da codice reale (`PROFILO_INTEGRAZIONE_NON_ABILITATO`, owner `006`, vedi
+`data-model.md`), distinto dall'elenco vuoto (nel perimetro, nessun modello
+pubblicato).
+
+**Alternatives considered**:
+
+- Endpoint dedicati per-profilo separati da quelli generali: scartato
+  (`DEC-001-API-PROFILO-GEBAN`), duplicherebbe la superficie API senza necessita'.
+- Riusare `TIPOLOGIA_SOL_NON_VALIDA`/`CONTESTO_NON_VALIDO` invece di un codice nuovo:
+  scartato, confonderebbe "codice inesistente nel catalogo" con "codice esistente ma
+  fuori dal perimetro contrattuale del chiamante" — due cause diverse che chi integra
+  deve poter distinguere.
 
 ## Decision: protezione JWT Keycloak minima nelle API operative della 001
 

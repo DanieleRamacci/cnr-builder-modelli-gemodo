@@ -29,6 +29,22 @@ scadenza, client tecnico `geban-backend` e ruoli `DOCUMENTI_GENERATORE` /
 `DOCUMENTI_VIEWER`). Audit completo, autorizzazioni fini per profilo GEBAN, builder e
 workflow sicurezza restano nella `006`.
 
+**Aggiornamento 2026-09-14 (secondo incremento)**: riprende `DEC-001-PROFILO-GEBAN` e
+le decisioni collegate (ora `CONFERMATA`, vedi `research.md` e `data-model.md`
+aggiornati). Introduce: enforcement del perimetro contrattuale per profilo di
+integrazione dentro le route catalogo/validazione esistenti (FR-025..FR-027); un
+registro di contratti dati riusabili scoped per tipo documento (FR-028..FR-029); la
+distinzione fra `Ufficio` (proprietario di un tipo documento, autora categorie/
+tipologie/contratti dati/modelli) e `Applicazione`/`ProfiloDiIntegrazione` (consuma,
+indipendentemente da chi possiede — FR-031); la generalizzazione di
+`TipologiaBandoSOL` a `TipologiaDocumento`, scoped per tipo documento invece che
+globale; e il passaggio del manifest profili/uffici da YAML-in-memoria a tabelle
+Postgres seedate dal file (FR-030). Ambito esplicitamente escluso da questo
+incremento (confermato dal product owner): pubblicazione/aggiornamento a caldo
+(resta file + deploy), interfaccia self-service per un secondo Ufficio reale, e
+generalizzazione oltre le due dimensioni categoria/tipologia — tutti da riprendere
+quando servira' un secondo tipo documento reale oltre `BANDO_CONCORSO`.
+
 ## Technical Context
 
 **Language/Version**: Python 3.12+
@@ -64,12 +80,28 @@ a una tipologia GEBAN/SOL configurata (FR-020); campi con `lingua: EN` sono obbl
 solo se `bando_inglese: true` (FR-021, FR-022); le route operative richiedono JWT
 Keycloak valido con audience `gemodo-backend`, client `geban-backend` per il canale GEBAN
 e ruolo coerente (`DOCUMENTI_VIEWER` per consultazione, `DOCUMENTI_GENERATORE` per
-validazione); profilo GEBAN versionato e autorizzazione fine restano fuori scope
-(`DEC-001-PROFILO-GEBAN`, owner `006`)
+validazione).
+
+**Constraints (secondo incremento, 2026-09-14)**: ogni richiesta catalogo/validazione
+deve risolvere il profilo di integrazione del chiamante e verificare tipo documento,
+categoria, tipologia e `modello_versione_id` contro il suo perimetro ammesso
+(FR-025..FR-027), con errore `PROFILO_INTEGRAZIONE_NON_ABILITATO` distinto dall'elenco vuoto; ogni
+`TipoDocumento` deve riferire esattamente un `Ufficio` proprietario (FR-031); ogni
+riferimento in `contratti_dati_ammessi` deve corrispondere a un contratto dati
+esistente nel registro, altrimenti il caricamento fallisce (FR-029); nessun meccanismo
+di aggiornamento a runtime della configurazione profili/uffici senza deploy (FR-030);
+`codice_tipologia` e il codice errore `TIPOLOGIA_SOL_NON_VALIDA` restano invariati nel
+contratto pubblico nonostante il rename interno `TipologiaBandoSOL` ->
+`TipologiaDocumento`.
 
 **Scale/Scope**: primo incremento backend per catalogo, contratto dati, validazione e
 protezione JWT minima delle API; fuori scope builder frontend, generazione PDF
-dettagliata, storage documentale, audit completo e autorizzazioni fini per profilo
+dettagliata, storage documentale, audit completo. Secondo incremento (2026-09-14):
+enforcement del perimetro per profilo, Ufficio proprietario, registro contratti dati,
+generalizzazione tipologia — ancora fuori scope: self-service builder per un secondo
+Ufficio reale, pagina admin per creare profili/uffici, grant cross-ufficio a caldo
+(tutti rimandati a quando servira' un secondo tipo documento reale, per decisione
+esplicita del product owner)
 
 ## Constitution Check
 
@@ -82,6 +114,16 @@ dettagliata, storage documentale, audit completo e autorizzazioni fini per profi
 | Configurable Document Models | Tipi, categorie, modelli, versioni e campi richiesti sono dati persistiti/configurati. | PASS |
 | Versioning, Traceability, Reproducibility | Le API operative usano `modello_versione_id`; validazione verifica stato pubblicato corrente. | PASS |
 | Security, Audit, Controlled AI | La feature implementa JWT Bearer Keycloak minimo sulle API operative; audit completo e autorizzazioni fini restano in spec 006. | PASS |
+
+### Constitution Check - secondo incremento (2026-09-14)
+
+| Principle | Check | Result |
+|---|---|---|
+| Boundary Ownership | Il perimetro per-profilo/Ufficio resta interno a GEMODO; nessuna nuova lettura/scrittura verso GEBAN. | PASS |
+| Contract-First Integration | Nuovo codice errore `PROFILO_INTEGRAZIONE_NON_ABILITATO` documentato in `data-model.md`; contratto OpenAPI pubblico va aggiornato prima dell'implementazione (`DEC-001-API-PROFILO-GEBAN`), non durante. | PASS (azione richiesta prima dei task) |
+| Configurable Document Models | Registro contratti dati e Ufficio sono dati configurati/persistiti, non hard-coded; la costituzione nomina esplicitamente graduatorie fra i tipi documento futuri attesi, coerente con la generalizzazione fatta ora. | PASS |
+| Versioning, Traceability, Reproducibility | Nessun impatto: `modello_versione_id` e stato versione restano centrali; il rename `TipologiaDocumento` non tocca identificativi pubblici. | PASS |
+| Security, Audit, Controlled AI | Collega l'autorizzazione applicativa (006, gia' implementata) al perimetro catalogo (001, non ancora); backend continua a essere l'unico punto di enforcement autoritativo. | PASS |
 
 ## Project Structure
 
@@ -188,3 +230,31 @@ Output:
 | Configurable Document Models | Entita' supportano modelli e campi configurabili. | PASS |
 | Versioning, Traceability, Reproducibility | `modello_versione_id` e stato versione sono centrali nel modello dati. | PASS |
 | Security, Audit, Controlled AI | Le API operative della `001` includono validazione JWT Keycloak minima coerente con `SEC-006-001`; audit completo e profili restano alla `006`. | PASS |
+
+## Phase 0/1 - Secondo incremento (2026-09-14)
+
+Output:
+
+- [research.md](./research.md), sezione "Secondo incremento (2026-09-14)": 6 nuove
+  decisioni (Ufficio, registro contratti dati, generalizzazione tipologia, profili su
+  tabelle DB, enforcement nelle route esistenti), tutte `CONFERMATA` nel registro.
+- [data-model.md](./data-model.md): entita' `Ufficio`, `TipologiaDocumento` (rinominata
+  da `TipologiaBandoSOL`), `RegistroContrattiDati`, `ProfiloDiIntegrazione`
+  (riferimento), nuovo codice errore `PROFILO_INTEGRAZIONE_NON_ABILITATO`, relazioni aggiornate.
+
+**Non ancora prodotto per questo incremento** (da fare durante la generazione dei
+task, quando le scelte implementative esatte — nomi endpoint di dependency injection,
+schema di risposta errore — saranno fissate):
+
+- Aggiornamento di `contracts/geban-catalog-api.openapi.yaml` con `PROFILO_INTEGRAZIONE_NON_ABILITATO`.
+- Nuovi scenari in `quickstart.md` per il perimetro per-profilo e la distinzione
+  Ufficio/Applicazione.
+- Migration Alembic (`0008` per il rename tipologia, migration successive per le
+  tabelle profili/uffici) e modifica di `backend/app/common/security.py` per leggere
+  dal DB invece che dallo YAML in cache.
+
+Questo e' un ambito di lavoro deliberatamente lasciato a `tasks.md`, non un buco nel
+piano: la costituzione richiede contratti espliciti "prima dell'implementazione", non
+prima della pianificazione — le decisioni architetturali (chi possiede cosa, come si
+autorizza, come si generalizza) sono chiuse; i dettagli di wire format restano legati
+alla sequenza dei task.
