@@ -52,15 +52,8 @@ catalogo:
       nome: Bando di concorso
       spec_owner: specs/001-catalogo-contratto-geban
 
+  # Profili professionali GEBAN (nomenclatura confermata dal team GEBAN, 2026-09-14).
   categorie:
-    - codice: CTER
-      tipo_documento: BANDO_CONCORSO
-      nome: Collaboratore Tecnico Enti di Ricerca
-      spec_owner: specs/002-builder-modelli
-    - codice: OPERATORE_TECNICO
-      tipo_documento: BANDO_CONCORSO
-      nome: Operatore tecnico
-      spec_owner: specs/002-builder-modelli
     - codice: RICERCATORE
       tipo_documento: BANDO_CONCORSO
       nome: Ricercatore
@@ -69,64 +62,96 @@ catalogo:
       tipo_documento: BANDO_CONCORSO
       nome: Tecnologo
       spec_owner: specs/002-builder-modelli
-    - codice: FUNZIONARIO_AMMINISTRATIVO
+    - codice: FUNZIONARIO_AMMINISTRAZIONE
       tipo_documento: BANDO_CONCORSO
-      nome: Funzionario amministrativo
+      nome: Funzionario di Amministrazione
+      spec_owner: specs/002-builder-modelli
+    - codice: COLLABORATORE_TECNICO_ER
+      tipo_documento: BANDO_CONCORSO
+      nome: Collaboratore Tecnico E.R.
+      spec_owner: specs/002-builder-modelli
+    - codice: COLLABORATORE_AMMINISTRAZIONE
+      tipo_documento: BANDO_CONCORSO
+      nome: Collaboratore di Amministrazione
+      spec_owner: specs/002-builder-modelli
+    - codice: OPERATORE_TECNICO
+      tipo_documento: BANDO_CONCORSO
+      nome: Operatore Tecnico
+      spec_owner: specs/002-builder-modelli
+    - codice: OPERATORE_AMMINISTRAZIONE
+      tipo_documento: BANDO_CONCORSO
+      nome: Operatore di Amministrazione
       spec_owner: specs/002-builder-modelli
 
   classificazioni:
     - tipo_documento: BANDO_CONCORSO
       codice_tipologia: CP
-      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+      categorie: [COLLABORATORE_TECNICO_ER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRAZIONE]
     - tipo_documento: BANDO_CONCORSO
       codice_tipologia: TD
-      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO]
+      categorie: [COLLABORATORE_TECNICO_ER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO]
     - tipo_documento: BANDO_CONCORSO
       codice_tipologia: TI
-      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+      categorie: [COLLABORATORE_TECNICO_ER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRAZIONE]
     - tipo_documento: BANDO_CONCORSO
-      codice_tipologia: IR
+      codice_tipologia: RS
       categorie: [RICERCATORE, TECNOLOGO]
     - tipo_documento: BANDO_CONCORSO
       codice_tipologia: MOB
-      categorie: [CTER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRATIVO]
+      categorie: [COLLABORATORE_TECNICO_ER, OPERATORE_TECNICO, RICERCATORE, TECNOLOGO, FUNZIONARIO_AMMINISTRAZIONE]
 
-  # Tipologie/procedure bando esposte a GEBAN. Il codice SOL resta metadato interno:
-  # se una procedura non ha ancora il folder definitivo, aggiornare solo questo file
-  # e riallineare il seed DB, senza cambiare contratto API.
+  # Tipologie/procedure bando esposte a GEBAN (nomenclatura confermata dal team GEBAN,
+  # 2026-09-14). Il codice SOL resta metadato interno: se una procedura non ha ancora
+  # il folder definitivo, aggiornare solo questo file e riallineare il seed DB, senza
+  # cambiare contratto API.
   tipologie_sol:
-    - codice: CP
-      codice_sol: "F:jconon_call_tind:folder_concorsi_pubblici"
-      nome: Concorso pubblico
+    - codice: TDPNRR
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Tempo Determinato PNRR
+    - codice: CD
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Comandi e Distacchi
+    - codice: DIR
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Direttori
     - codice: TD
       codice_sol: "F:jconon_call_tdet:folder"
-      nome: Tempo determinato
+      nome: Tempo Determinato
+    - codice: CP
+      codice_sol: "F:jconon_call_tind:folder_concorsi_pubblici"
+      nome: Concorsi Pubblici
+    - codice: RS
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Reclutamento Speciale
+    - codice: CATP
+      codice_sol: "DA_CONFIGURARE_IN_SOL"
+      nome: Categorie Protette
     - codice: TI
       codice_sol: "F:jconon_call_tind:folder"
-      nome: Tempo indeterminato
-    - codice: IR
+      nome: Tempo Indeterminato
+    - codice: SDIP
       codice_sol: "DA_CONFIGURARE_IN_SOL"
-      nome: Incarichi di ricerca
+      nome: Selezioni per dipendenti CNR/Candidature
     - codice: MOB
       codice_sol: "F:jconon_call_mobility:folder"
-      nome: Mobilita'
+      nome: Mobilità
 
   modelli:
     - modello_versione_id: demo-bando-concorso-standard-v1
       public_id: 1
       tipo_documento: BANDO_CONCORSO
-      categoria: CTER
+      categoria: COLLABORATORE_TECNICO_ER
       codice_tipologia: TD
-      nome: Bando tempo determinato CTER demo
+      nome: Bando tempo determinato Collaboratore Tecnico E.R. demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
     - modello_versione_id: demo-bando-concorso-cp-cter-v1
       public_id: 3
       tipo_documento: BANDO_CONCORSO
-      categoria: CTER
+      categoria: COLLABORATORE_TECNICO_ER
       codice_tipologia: CP
-      nome: Bando concorso pubblico CTER demo
+      nome: Bando concorso pubblico Collaboratore Tecnico E.R. demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -160,9 +185,9 @@ catalogo:
     - modello_versione_id: demo-bando-concorso-cp-funzionario-amministrativo-v1
       public_id: 7
       tipo_documento: BANDO_CONCORSO
-      categoria: FUNZIONARIO_AMMINISTRATIVO
+      categoria: FUNZIONARIO_AMMINISTRAZIONE
       codice_tipologia: CP
-      nome: Bando concorso pubblico Funzionario amministrativo demo
+      nome: Bando concorso pubblico Funzionario di Amministrazione demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -196,9 +221,9 @@ catalogo:
     - modello_versione_id: demo-bando-concorso-ti-cter-v1
       public_id: 11
       tipo_documento: BANDO_CONCORSO
-      categoria: CTER
+      categoria: COLLABORATORE_TECNICO_ER
       codice_tipologia: TI
-      nome: Bando tempo indeterminato CTER demo
+      nome: Bando tempo indeterminato Collaboratore Tecnico E.R. demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -232,9 +257,9 @@ catalogo:
     - modello_versione_id: demo-bando-concorso-ti-funzionario-amministrativo-v1
       public_id: 15
       tipo_documento: BANDO_CONCORSO
-      categoria: FUNZIONARIO_AMMINISTRATIVO
+      categoria: FUNZIONARIO_AMMINISTRAZIONE
       codice_tipologia: TI
-      nome: Bando tempo indeterminato Funzionario amministrativo demo
+      nome: Bando tempo indeterminato Funzionario di Amministrazione demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -242,8 +267,8 @@ catalogo:
       public_id: 16
       tipo_documento: BANDO_CONCORSO
       categoria: RICERCATORE
-      codice_tipologia: IR
-      nome: Bando incarichi di ricerca Ricercatore demo
+      codice_tipologia: RS
+      nome: Bando reclutamento speciale Ricercatore demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -251,17 +276,17 @@ catalogo:
       public_id: 17
       tipo_documento: BANDO_CONCORSO
       categoria: TECNOLOGO
-      codice_tipologia: IR
-      nome: Bando incarichi di ricerca Tecnologo demo
+      codice_tipologia: RS
+      nome: Bando reclutamento speciale Tecnologo demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
     - modello_versione_id: demo-bando-concorso-mob-cter-v1
       public_id: 18
       tipo_documento: BANDO_CONCORSO
-      categoria: CTER
+      categoria: COLLABORATORE_TECNICO_ER
       codice_tipologia: MOB
-      nome: Bando mobilita CTER demo
+      nome: Bando mobilita Collaboratore Tecnico E.R. demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
@@ -295,16 +320,16 @@ catalogo:
     - modello_versione_id: demo-bando-concorso-mob-funzionario-amministrativo-v1
       public_id: 22
       tipo_documento: BANDO_CONCORSO
-      categoria: FUNZIONARIO_AMMINISTRATIVO
+      categoria: FUNZIONARIO_AMMINISTRAZIONE
       codice_tipologia: MOB
-      nome: Bando mobilita Funzionario amministrativo demo
+      nome: Bando mobilita Funzionario di Amministrazione demo
       stato: PUBBLICATO
       formato_documentale_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
       utilizzabile_da_mock_geban: true
     - modello_versione_id: demo-bando-concorso-html-libero-non-valido
       public_id: 2
       tipo_documento: BANDO_CONCORSO
-      categoria: CTER
+      categoria: COLLABORATORE_TECNICO_ER
       codice_tipologia: TD
       nome: Bando demo non pubblicabile
       stato: BOZZA

@@ -15,13 +15,17 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
-- Database migrato (baseline `009` + migration proprie di questa feature).
+- Database migrato (baseline `009` + migration proprie di questa feature, inclusa la
+  `0007` che allinea la nomenclatura ai codici confermati dal team GEBAN il 2026-09-14).
 - Seed demo con:
   - tipo documento `BANDO_CONCORSO`;
-  - profili professionali `CTER`, `OPERATORE_TECNICO`, `RICERCATORE`, `TECNOLOGO`,
-    `FUNZIONARIO_AMMINISTRATIVO`;
-  - tipologie/procedure bando GEBAN/SOL `CP`, `TD`, `TI`, `IR`, `MOB` con codice SOL
-    interno configurato in `infra/local/postgres/seed-demo-catalog.yaml`;
+  - profili professionali `RICERCATORE`, `TECNOLOGO`, `FUNZIONARIO_AMMINISTRAZIONE`,
+    `COLLABORATORE_TECNICO_ER`, `COLLABORATORE_AMMINISTRAZIONE`, `OPERATORE_TECNICO`,
+    `OPERATORE_AMMINISTRAZIONE`;
+  - tipologie/procedure bando GEBAN/SOL `TDPNRR`, `CD`, `DIR`, `TD`, `CP`, `RS`, `CATP`,
+    `TI`, `SDIP`, `MOB` con codice SOL interno configurato in
+    `infra/local/postgres/seed-demo-catalog.yaml` (i codici non ancora associati a una
+    procedura SOL reale usano il placeholder `DA_CONFIGURARE_IN_SOL`);
   - albero di classificazione tipo documento -> tipologia/procedura bando -> profilo;
   - una versione modello `PUBBLICATO` per ogni combinazione tipologia/profilo
     configurata, tutte basate sullo stesso modello temporaneo;
@@ -41,27 +45,32 @@ Combinazioni demo pubblicate:
 
 | Tipologia | Profilo | `modello_versione_id` |
 |---|---|---|
-| TD | CTER | 1 |
-| CP | CTER | 3 |
+| TD | COLLABORATORE_TECNICO_ER | 1 |
+| CP | COLLABORATORE_TECNICO_ER | 3 |
 | CP | OPERATORE_TECNICO | 4 |
 | CP | RICERCATORE | 5 |
 | CP | TECNOLOGO | 6 |
-| CP | FUNZIONARIO_AMMINISTRATIVO | 7 |
+| CP | FUNZIONARIO_AMMINISTRAZIONE | 7 |
 | TD | OPERATORE_TECNICO | 8 |
 | TD | RICERCATORE | 9 |
 | TD | TECNOLOGO | 10 |
-| TI | CTER | 11 |
+| TI | COLLABORATORE_TECNICO_ER | 11 |
 | TI | OPERATORE_TECNICO | 12 |
 | TI | RICERCATORE | 13 |
 | TI | TECNOLOGO | 14 |
-| TI | FUNZIONARIO_AMMINISTRATIVO | 15 |
-| IR | RICERCATORE | 16 |
-| IR | TECNOLOGO | 17 |
-| MOB | CTER | 18 |
+| TI | FUNZIONARIO_AMMINISTRAZIONE | 15 |
+| RS | RICERCATORE | 16 |
+| RS | TECNOLOGO | 17 |
+| MOB | COLLABORATORE_TECNICO_ER | 18 |
 | MOB | OPERATORE_TECNICO | 19 |
 | MOB | RICERCATORE | 20 |
 | MOB | TECNOLOGO | 21 |
-| MOB | FUNZIONARIO_AMMINISTRATIVO | 22 |
+| MOB | FUNZIONARIO_AMMINISTRAZIONE | 22 |
+
+Le combinazioni tipologia/profilo non elencate sopra (es. `TDPNRR`, `CD`, `DIR`, `CATP`,
+`SDIP`, o le categorie `COLLABORATORE_AMMINISTRAZIONE`/`OPERATORE_AMMINISTRAZIONE`) sono
+codici validi nel catalogo ma non hanno ancora un modello demo pubblicato: una ricerca
+catalogo su quei valori risponde 200 con `modelli: []`, non un errore.
 
 ## Scenario 0 - Accesso non autenticato
 
@@ -85,7 +94,7 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=CTER&codice_tipologia=TD&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=COLLABORATORE_TECNICO_ER&codice_tipologia=TD&modalita=OPERATIVA
 ```
 
 Risultato atteso:
@@ -212,14 +221,14 @@ Risultato atteso:
 Richiesta:
 
 ```http
-GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=CTER&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=COLLABORATORE_TECNICO_ER&codice_tipologia=XX_NON_VALIDA&modalita=OPERATIVA
 ```
 
 Risultato atteso:
 
 - risposta di errore funzionale, non un elenco vuoto;
 - codice errore `TIPOLOGIA_SOL_NON_VALIDA`;
-- le tipologie/procedure ammesse nel perimetro iniziale sono CP, TD, TI, IR, MOB
+- le tipologie/procedure ammesse sono TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB
   (vedi `infra/local/postgres/seed-demo-catalog.yaml`).
 
 ## Scenario 9 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
@@ -277,3 +286,15 @@ uv run pytest -m "not e2e" -q -rs
 ```
 
 Esito registrato: `126 passed, 12 deselected`.
+
+Riallineamento nomenclatura GEBAN (categorie/tipologie) verificato il 2026-09-14 con
+Postgres reale (migration `0001`-`0007` eseguite su un DB scratch, incluso il percorso
+di aggiornamento da uno stato gia' migrato con la nomenclatura precedente):
+
+```bash
+cd backend
+DATABASE_URL=postgresql+psycopg://<user>@localhost:5432/<db> uv run pytest -m "not e2e" -q
+DATABASE_URL=postgresql+psycopg://<user>@localhost:5432/<db> uv run pytest -m "e2e" -q
+```
+
+Esito registrato: `140 passed, 12 deselected` (non-e2e) e `12 passed` (e2e).

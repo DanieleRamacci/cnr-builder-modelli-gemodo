@@ -58,8 +58,16 @@ def profilo_geban_attivo(
         tipi_documento_ammessi=tipi_documento_ammessi
         if tipi_documento_ammessi is not None
         else ["BANDO_CONCORSO"],
-        categorie_ammessi=["CTER"],
-        tipologie_ammessi=["CP", "TD", "TI", "IR", "MOB"],
+        categorie_ammessi=[
+            "RICERCATORE",
+            "TECNOLOGO",
+            "FUNZIONARIO_AMMINISTRAZIONE",
+            "COLLABORATORE_TECNICO_ER",
+            "COLLABORATORE_AMMINISTRAZIONE",
+            "OPERATORE_TECNICO",
+            "OPERATORE_AMMINISTRAZIONE",
+        ],
+        tipologie_ammessi=["TDPNRR", "CD", "DIR", "TD", "CP", "RS", "CATP", "TI", "SDIP", "MOB"],
         modelli_versioni_ammessi=["demo-bando-concorso-standard-v1"],
         contratti_dati_ammessi=["bando-concorso-common-fields-v1"],
         permessi_operativi=permessi

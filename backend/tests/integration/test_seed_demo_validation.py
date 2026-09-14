@@ -70,7 +70,7 @@ def test_real_seed_catalog_typologies_cover_configured_geban_procedures(loaded_s
     _, catalogo = loaded_seed_catalog
     codici = {t["codice"] for t in catalogo["tipologie_sol"]}
 
-    assert codici == {"CP", "TD", "TI", "IR", "MOB"}
+    assert codici == {"TDPNRR", "CD", "DIR", "TD", "CP", "RS", "CATP", "TI", "SDIP", "MOB"}
 
 
 def test_seed_with_sensitive_data_is_rejected():

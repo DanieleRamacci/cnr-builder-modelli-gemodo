@@ -17,7 +17,7 @@ class FakeCatalogService:
     def list_profili(self, codice_tipo_documento: str) -> ProfiloDocumentoListResponse:
         return ProfiloDocumentoListResponse(
             tipo_documento=codice_tipo_documento,
-            profili=[ProfiloDocumentoSchema(codice="CTER", descrizione="Collaboratore Tecnico Enti di Ricerca")],
+            profili=[ProfiloDocumentoSchema(codice="COLLABORATORE_TECNICO_ER", descrizione="Collaboratore Tecnico E.R.")],
         )
 
     def get_classificazione(self, codice_tipo_documento: str) -> ClassificazioneCatalogoResponse:
@@ -26,9 +26,9 @@ class FakeCatalogService:
             tipologie=[
                 TipologiaCatalogoSchema(
                     codice="TD",
-                    descrizione="Tempo determinato",
+                    descrizione="Tempo Determinato",
                     profili=[
-                        ProfiloDocumentoSchema(codice="CTER", descrizione="Collaboratore Tecnico Enti di Ricerca")
+                        ProfiloDocumentoSchema(codice="COLLABORATORE_TECNICO_ER", descrizione="Collaboratore Tecnico E.R.")
                     ],
                 )
             ],
@@ -47,7 +47,7 @@ def test_list_profili_documento_returns_contract_response(monkeypatch):
     assert response.status_code == 200
     assert response.json() == {
         "tipo_documento": "BANDO_CONCORSO",
-        "profili": [{"codice": "CTER", "descrizione": "Collaboratore Tecnico Enti di Ricerca"}],
+        "profili": [{"codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R."}],
     }
 
 
@@ -83,8 +83,8 @@ def test_get_classificazione_documento_returns_tree(monkeypatch):
         "tipologie": [
             {
                 "codice": "TD",
-                "descrizione": "Tempo determinato",
-                "profili": [{"codice": "CTER", "descrizione": "Collaboratore Tecnico Enti di Ricerca"}],
+                "descrizione": "Tempo Determinato",
+                "profili": [{"codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R."}],
             }
         ],
     }

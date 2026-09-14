@@ -29,13 +29,13 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
             classificazione = service.get_classificazione("BANDO_CONCORSO")
             modelli = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="CTER",
+                categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
                 modalita=ModalitaCatalogo.OPERATIVA,
             )
             modelli_cp = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="CTER",
+                categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="CP",
                 modalita=ModalitaCatalogo.OPERATIVA,
             )
@@ -43,9 +43,9 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
         engine.dispose()
 
     assert [item.codice for item in tipi.items] == ["BANDO_CONCORSO"]
-    assert "CTER" in [item.codice for item in profili.profili]
+    assert "COLLABORATORE_TECNICO_ER" in [item.codice for item in profili.profili]
     td = next(item for item in classificazione.tipologie if item.codice == "TD")
-    assert "CTER" in [item.codice for item in td.profili]
+    assert "COLLABORATORE_TECNICO_ER" in [item.codice for item in td.profili]
     assert len(modelli.modelli) == 1
     assert modelli.modelli[0].modello_versione_id == 1
     assert modelli.modelli[0].stato == "PUBBLICATO"
@@ -99,7 +99,7 @@ def test_catalog_service_filters_historical_models_by_publication_dates(postgres
             service = CatalogService(session)
             matching = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="CTER",
+                categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
                 modalita=ModalitaCatalogo.STORICO,
                 pubblicato_da=date.fromisoformat("2026-07-01"),
@@ -107,7 +107,7 @@ def test_catalog_service_filters_historical_models_by_publication_dates(postgres
             )
             not_matching = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
-                categoria="CTER",
+                categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
                 modalita=ModalitaCatalogo.STORICO,
                 pubblicato_da=date.fromisoformat("2026-08-01"),

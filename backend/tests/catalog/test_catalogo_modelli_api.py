@@ -43,7 +43,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
         with TestClient(app) as client:
             response = client.get(
                 "/api/v1/catalogo/modelli",
-                params={"tipo_documento": "BANDO_CONCORSO", "profilo": "CTER", "codice_tipologia": "TD"},
+                params={"tipo_documento": "BANDO_CONCORSO", "profilo": "COLLABORATORE_TECNICO_ER", "codice_tipologia": "TD"},
             )
     finally:
         app.dependency_overrides.clear()
@@ -52,7 +52,7 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     body = response.json()
     assert body["modalita"] == "OPERATIVA"
     assert body["tipo_documento"] == "BANDO_CONCORSO"
-    assert body["profilo"] == "CTER"
+    assert body["profilo"] == "COLLABORATORE_TECNICO_ER"
     assert body["codice_tipologia"] == "TD"
     assert body["modelli"][0]["modello_versione_id"] == 11
     assert body["modelli"][0]["stato"] == "PUBBLICATO"

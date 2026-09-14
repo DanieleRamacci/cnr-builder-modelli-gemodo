@@ -8,7 +8,7 @@ l'implementazione. Non sostituisce i test automatici.
 - backend avviato con database PostgreSQL migrato;
 - JWT Bearer Keycloak valido per audience `gemodo-backend`;
 - ruolo `GEMODO_MODELLI_GESTORE` per gli scenari modificativi;
-- seed minimo con tipo documento `BANDO_CONCORSO` e categoria `CTER`.
+- seed minimo con tipo documento `BANDO_CONCORSO` e categoria `COLLABORATORE_TECNICO_ER`.
 
 ## Scenario 1 - Creazione modello con variante default
 
@@ -25,8 +25,8 @@ Expected:
 
 ## Scenario 2 - Variante duplicata nello stesso contesto
 
-1. Creare un modello `BANDO_CTER_TI` con tipo `BANDO_CONCORSO`, categoria `CTER`,
-   tipologia `TI`, variante `STANDARD`.
+1. Creare un modello `BANDO_CTER_TI` con tipo `BANDO_CONCORSO`, categoria
+   `COLLABORATORE_TECNICO_ER`, tipologia `TI`, variante `STANDARD`.
 2. Provare a creare un secondo modello con la stessa combinazione
    tipo/categoria/tipologia/variante.
 

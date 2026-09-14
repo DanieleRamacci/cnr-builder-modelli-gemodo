@@ -63,7 +63,7 @@ class ClassificazioneCatalogoResponse(BaseModel):
                         "codice": "TD",
                         "descrizione": "Tempo determinato",
                         "profili": [
-                            {"codice": "CTER", "descrizione": "Collaboratore Tecnico Enti di Ricerca"}
+                            {"codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R."}
                         ],
                     }
                 ],
@@ -93,7 +93,7 @@ class ModelloSearchResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "tipo_documento": "BANDO_CONCORSO",
-                "profilo": "CTER",
+                "profilo": "COLLABORATORE_TECNICO_ER",
                 "codice_tipologia": "TD",
                 "modalita": "OPERATIVA",
                 "modelli": [
