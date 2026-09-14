@@ -4,7 +4,10 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft - aggiornata 2026-07-29 con le decisioni propagate da `009-fondamenta-mock-test-qualita`
+**Status**: Implementata (primo incremento) - estesa 2026-09-14 con FR-025..FR-030 per
+riprendere il perimetro contrattuale per-profilo e il registro contratti dati
+(`DEC-001-PROFILO-GEBAN` e decisioni collegate, ora `ASSUNTA_PROVVISORIA`); design in
+`plan.md` e task da generare prima dell'implementazione di questo incremento.
 
 **Input**: User description: "Partendo da PROPOSTA-servizio-gestione-modelli-bando.md, crea la prima specifica solo per Catalogo modelli e contratto dati verso GEBAN. Includi attori, flusso GEBAN, modelli pubblicati, campi richiesti, validazione payload, errori e acceptance criteria. Escludi builder frontend, generazione PDF dettagliata e sicurezza dettagliata."
 
@@ -105,6 +108,61 @@ conseguenza nella stessa sessione.
   (`DOCUMENTI_GENERATORE` per validazione operativa, `DOCUMENTI_VIEWER` o
   `DOCUMENTI_GENERATORE` per consultazione catalogo/campi). Audit completo,
   autorizzazioni fini per profilo e workflow sicurezza restano nella `006`.
+
+### Session 2026-09-14 (riprese `DEC-001-PROFILO-GEBAN` e decisioni collegate)
+
+Questa sessione riprende le decisioni sospese dalla Session 2026-07-31 sul profilo
+GEBAN versionato, a seguito di una verifica end-to-end del flusso di autorizzazione e
+di un allineamento nomenclatura con GEBAN. Le decisioni passano da `SOSPESA`/`APERTA`
+ad `ASSUNTA_PROVVISORIA` in `docs/decision-register.yaml` (dettaglio owner/impatto
+li'); il design puntuale resta da completare in `plan.md` prima di generare nuovi task.
+
+- Q: La lista di categorie/tipologie GEBAN nel catalogo (`DEC-001-CATEGORIE-INIZIALI`)
+  era allineata alla nomenclatura confermata da GEBAN? -> A: No. Il catalogo seed
+  usava ancora `CTER`/`FUNZIONARIO_AMMINISTRATIVO` e solo 5 tipologie/procedure su 10
+  attese. Corretto (2026-09-14): 7 profili (RICERCATORE, TECNOLOGO,
+  FUNZIONARIO_AMMINISTRAZIONE, COLLABORATORE_TECNICO_ER, COLLABORATORE_AMMINISTRAZIONE,
+  OPERATORE_TECNICO, OPERATORE_AMMINISTRAZIONE) e 10 tipologie (TDPNRR, CD, DIR, TD, CP,
+  RS, CATP, TI, SDIP, MOB), con migration di riallineamento
+  `backend/alembic/versions/0007_riallinea_nomenclatura_geban.py` (`DEC-001-CATEGORIE-
+  INIZIALI` resta `CONFERMATA`).
+- Q: L'allow-list del profilo di integrazione (`categorie_ammessi`, `tipologie_ammessi`,
+  `modelli_versioni_ammessi`, introdotta dalla `009`) e' gia' un cancello applicato
+  dalle API catalogo/validazione? -> A: No. E' un dato modellato (`ProfiloDiIntegrazione`,
+  `is_operazione_autorizzata()`) ma mai collegato alle route reali: l'unico chiamante
+  di `is_operazione_autorizzata()` in tutto il repo e' il fixture di test
+  `backend/tests/support/fake_gemodo_client.py`; le route vere
+  (`backend/app/catalog/api.py`) risolvono il principal solo per il controllo di
+  ruolo JWT grezzo e lo scartano subito dopo (`_: PrincipalGEMODO`). Qualunque
+  chiamante con ruolo `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` puo' oggi interrogare
+  categorie/tipologie/modelli di qualunque profilo, non solo del proprio
+  (`DEC-001-RELAZIONE-PROFILO-CATALOGO`, `DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN`,
+  assunte provvisoriamente). Direzione presa: applicare l'enforcement dentro le route
+  gia' esistenti (non nuovi endpoint, `DEC-001-API-PROFILO-GEBAN`), con risposta che
+  distingue esplicitamente "categoria/tipologia fuori dal perimetro contrattuale del
+  chiamante" (errore funzionale) da "nel perimetro ma senza ancora un modello
+  pubblicato" (elenco vuoto, comportamento gia' esistente e da mantenere invariato per
+  quel caso).
+- Q: Il contratto dati, oggi definito solo per singola versione modello
+  (`ModelloCampoRichiesto`, FR-007..FR-010), deve diventare un registro riusabile per
+  sistema richiedente? -> A: Si (`DEC-001-REGISTRO-CONTRATTI-DATI`, nuova decisione,
+  assunta provvisoriamente). `contratti_dati_ammessi` su `ProfiloDiIntegrazione`
+  referenzia oggi una stringa senza alcuna definizione a supporto (es.
+  `bando-concorso-common-fields-v1`, presente solo come valore letterale in
+  `infra/local/integration-profiles.local.yaml` e in un fixture di test, mai risolta
+  da codice). Va introdotto un registro dei contratti dati di proprieta' di un
+  sistema richiedente (non specifico a GEBAN, coerente con `SistemaRichiedente` gia'
+  modellato come lista estendibile), che vincoli quali campi il builder (`002`/`003`)
+  potra' far inserire in un modello legato a quel sistema.
+- Q: Come si pubblica un aggiornamento del profilo/contratto di un sistema richiedente
+  in produzione? -> A: Resta un file versionato nel repository, aggiornato solo via
+  build e deploy, senza requisito di ricaricamento a caldo (`DEC-001-CONFIG-PROFILO-
+  GEBAN`, assunta provvisoriamente, confermato col product owner). Va pero' evitato di
+  montare quel file come volume esterno modificabile fuori dal processo di deploy: la
+  cache in-process (`lru_cache` su `_load_sistemi_richiedenti_cached` in
+  `backend/app/common/security.py`) non si accorgerebbe di una modifica fatta cosi',
+  e continuerebbe a servire la versione precedente finche' il processo non viene
+  riavviato.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -338,11 +396,36 @@ non pubblicati, payload errati e richieste incoerenti.
   fuori scope del primo incremento produttivo di questa feature e appartiene alla `006`/`002` finche'
   `DEC-001-PROFILO-GEBAN`, `DEC-001-CONFIG-PROFILO-GEBAN`,
   `DEC-001-RELAZIONE-PROFILO-CATALOGO` e `DEC-001-API-PROFILO-GEBAN` non vengono
-  riprese.
+  riprese. **Riprese 2026-09-14** (Session 2026-09-14): le decisioni sono ora
+  `ASSUNTA_PROVVISORIA` con la direzione descritta in FR-025..FR-030; restano da
+  completare design (`plan.md`) e implementazione prima che l'enforcement per-profilo
+  sia effettivo.
 - **FR-024**: La `001` MUST implementare come baseline funzionale i profili iniziali
   e i campi comuni GEBAN indicati nella documentazione fornita dai colleghi GEBAN e gia'
   tracciati negli artefatti di progetto; tali contenuti MUST restare configurabili e
   versionabili come dati del catalogo/contratto, non hard-coded nella logica.
+- **FR-025**: Le API catalogo e validazione MUST risolvere il profilo di integrazione
+  attivo del chiamante autenticato a partire dal `client_id`/contesto gia' presenti nel
+  JWT, invece di scartarlo dopo il solo controllo di ruolo.
+- **FR-026**: Il servizio MUST verificare che tipo documento, categoria, tipologia e
+  `modello_versione_id` richiesti siano ammessi dal profilo di integrazione risolto per
+  il chiamante.
+- **FR-027**: Quando una categoria, tipologia o versione modello richiesta non e'
+  ammessa dal profilo del chiamante, il servizio MUST restituire un errore funzionale
+  distinto, diverso dal risultato restituito quando la stessa categoria/tipologia e'
+  ammessa ma non ha ancora un modello pubblicato (elenco vuoto).
+- **FR-028**: Il servizio MUST fornire un registro dei contratti dati riusabili, ciascuno
+  di proprieta' di un sistema richiedente, che definisce l'insieme di campi che un
+  modello legato a quel sistema puo' dichiarare; il registro MUST supportare piu'
+  sistemi richiedenti oltre GEBAN senza modifiche strutturali.
+- **FR-029**: Il profilo di integrazione di un sistema richiedente MUST referenziare
+  uno o piu' contratti dati del registro tramite `contratti_dati_ammessi`; il servizio
+  MUST rifiutare in fase di caricamento un riferimento a un contratto dati che non
+  esiste nel registro, invece di ignorarlo silenziosamente.
+- **FR-030**: La configurazione dei profili di integrazione e dei contratti dati MUST
+  restare un artefatto versionato nel repository; il servizio MUST NOT richiedere o
+  offrire un meccanismo di aggiornamento a runtime che modifichi questa configurazione
+  senza un nuovo deploy del servizio.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -361,7 +444,19 @@ non pubblicati, payload errati e richieste incoerenti.
 - **Campo Richiesto**: elemento del contratto dati, con codice, etichetta, tipo,
   obbligatorieta', ordine e vincoli.
 - **Contratto Dati**: insieme dei campi e delle regole che GEBAN usa per costruire la
-  maschera e preparare il payload.
+  maschera e preparare il payload; e' l'insieme di campi dichiarato da una specifica
+  versione modello (livello 1, gia' implementato tramite `Campo Richiesto`).
+- **Profilo Di Integrazione**: perimetro contrattuale di un sistema richiedente
+  (es. GEBAN): client tecnici ammessi, tipi documento/categorie/tipologie/versioni
+  modello e contratti dati che quel sistema puo' usare, operazioni abilitate. Introdotto
+  dalla `009`, oggi modellato ma non ancora applicato dalle API di questa feature
+  (`DEC-001-RELAZIONE-PROFILO-CATALOGO`).
+- **Registro Contratti Dati**: nuova entita' (livello 2, `DEC-001-REGISTRO-CONTRATTI-
+  DATI`), di proprieta' di un sistema richiedente: raccoglie i contratti dati riusabili
+  e versionati (stessa forma del Contratto Dati di livello 1: campi con codice,
+  etichetta, tipo, obbligatorieta', lingua) che i profili di quel sistema possono
+  referenziare tramite `contratti_dati_ammessi`, e che vincolano cosa il builder
+  (`002`/`003`) permette di inserire in un modello legato a quel sistema.
 - **Payload Di Validazione**: dati inviati da GEBAN per verificare la conformita' al
   contratto della versione modello selezionata.
 - **Errore Di Validazione**: errore funzionale associato a un campo o alla richiesta,
@@ -377,11 +472,14 @@ Le decisioni che riguardano questa feature vivono nel registro centrale
 copie divergano nel tempo. Voci con `owner_spec: specs/001-catalogo-contratto-geban` o
 `specs/001-catalogo-contratto-geban` in `spec_interessate`:
 
-`DEC-001-TIPOLOGIE-SOL` (confermata), `DEC-001-CATEGORIE-INIZIALI`,
-`DEC-006-CONFINE-KEYCLOAK-GEMODO`, `DEC-001-PROFILO-GEBAN`,
-`DEC-001-CONFIG-PROFILO-GEBAN`, `DEC-001-IDENTIFICATIVI-MODELLO`,
-`DEC-001-RELAZIONE-PROFILO-CATALOGO`, `DEC-001-API-PROFILO-GEBAN`,
-`DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN`, `DEC-001-VERSIONAMENTO-MAPPING-CAMPI`,
+`DEC-001-TIPOLOGIE-SOL` (confermata), `DEC-001-CATEGORIE-INIZIALI` (confermata),
+`DEC-006-CONFINE-KEYCLOAK-GEMODO`, `DEC-001-PROFILO-GEBAN` (assunta provvisoria),
+`DEC-001-CONFIG-PROFILO-GEBAN` (assunta provvisoria), `DEC-001-IDENTIFICATIVI-MODELLO`,
+`DEC-001-RELAZIONE-PROFILO-CATALOGO` (assunta provvisoria),
+`DEC-001-API-PROFILO-GEBAN` (assunta provvisoria),
+`DEC-001-REGISTRO-CONTRATTI-DATI` (assunta provvisoria, nuova 2026-09-14),
+`DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN` (assunta provvisoria),
+`DEC-001-VERSIONAMENTO-MAPPING-CAMPI`,
 `DEC-003-FORMATO-CAMPI-COMPLESSI`, `DEC-001-LINGUA-IT-EN` (confermata),
 `DEC-001-CAMPI-COMUNI-GEBAN`, `DEC-001-BANDO-MULTIPLO` (confermata),
 `DEC-001-RIBANDO` (confermata).

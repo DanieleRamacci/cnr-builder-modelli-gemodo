@@ -61,11 +61,16 @@ decisions:
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
-      categorie iniziali da implementare nella 001 secondo la documentazione fornita dai
-      colleghi GEBAN e gli artefatti di progetto gia' presenti; devono restare dati
-      configurabili/versionabili del catalogo, non valori hard-coded nella logica.
+      categorie iniziali implementate nella 001 secondo la documentazione fornita dai
+      colleghi GEBAN (2026-09-14): 7 profili professionali (RICERCATORE, TECNOLOGO,
+      FUNZIONARIO_AMMINISTRAZIONE, COLLABORATORE_TECNICO_ER,
+      COLLABORATORE_AMMINISTRAZIONE, OPERATORE_TECNICO, OPERATORE_AMMINISTRAZIONE) e 10
+      tipologie/procedure bando (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB), dati
+      configurabili/versionabili in infra/local/postgres/seed-demo-catalog.yaml, non
+      hard-coded nella logica. Migration di riallineamento: backend/alembic/versions/
+      0007_riallinea_nomenclatura_geban.py.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-31
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-005-IDEMPOTENZA-RIGENERAZIONE
     titolo: Regole definitive di idempotenza e rigenerazione
@@ -150,19 +155,22 @@ decisions:
       - specs/004-generazione-documenti-pdf
       - specs/006-sicurezza-autorizzazioni-audit
       - specs/009-fondamenta-mock-test-qualita
-    stato: SOSPESA
+    stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
-      sospesa per il primo incremento produttivo della 001: il catalogo non filtra per profilo GEBAN versionato,
-      ma solo per stato PUBBLICATO, contesto richiesto, tipologia GEBAN/SOL configurata
-      e modello_versione_id. La gestione ibrida del profilo GEBAN resta direzione
-      attesa per un incremento successivo, dopo allineamento di 002 e 006.
+      direzione presa 2026-09-14: il catalogo applichera' un enforcement esplicito per
+      profilo di integrazione (vedi DEC-001-RELAZIONE-PROFILO-CATALOGO) dentro le route
+      gia' esistenti, senza nuovi endpoint dedicati (vedi DEC-001-API-PROFILO-GEBAN), e
+      i contratti dati che un profilo puo' usare vivranno in un registro multi-tenant
+      dedicato (vedi DEC-001-REGISTRO-CONTRATTI-DATI). Il profilo/contratto di ogni
+      sistema richiedente resta un file versionato nel repo, aggiornato solo via
+      build+deploy (vedi DEC-001-CONFIG-PROFILO-GEBAN), non un dato gestito a runtime.
     impatto: >
-      rischio residuo tracciato: il primo incremento 001 non impedisce ancora a livello
-      di catalogo l'uso di modelli tramite profilo GEBAN versionato; questa limitazione
-      e' accettata perche' l'autorizzazione fine resta fuori scope e sara' ripresa con
-      builder/profili e sicurezza applicativa.
+      rischio residuo tracciato: la direzione e' presa ma non ancora progettata in
+      dettaglio (schema, punto di enforcement, nuovi codici errore) ne' implementata;
+      il catalogo oggi non impedisce ancora l'uso di modelli fuori dal profilo GEBAN.
+      Va completato il design in plan.md/data-model.md prima di generare i task.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-31
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-001-CONFIG-PROFILO-GEBAN
     titolo: Configurazione del profilo GEBAN
@@ -170,17 +178,23 @@ decisions:
     spec_interessate:
       - specs/002-builder-modelli
       - specs/009-fondamenta-mock-test-qualita
-    stato: SOSPESA
+    stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
-      sospesa per il primo incremento produttivo della 001: non viene scelto ora se il profilo GEBAN sara' file
-      versionato o dato gestito nel builder; nessun task 001 implementa configurazione,
-      stati, pubblicazione o archiviazione del profilo.
+      confermato 2026-09-14 col product owner: il profilo/contratto di ogni sistema
+      richiedente (GEBAN e futuri altri) resta un file versionato nel repository, non
+      un dato gestito a runtime dal builder. Non serve pubblicazione live: ogni
+      aggiornamento richiede commit, build immagine e deploy. Questo e' gia' garantito
+      meccanicamente oggi (backend/Dockerfile fa COPY infra/ nell'immagine; ogni deploy
+      avvia un processo nuovo, azzerando la cache lru_cache di
+      _load_sistemi_richiedenti_cached in backend/app/common/security.py) a patto di
+      non montare mai il file come volume esterno modificabile senza rebuild.
     impatto: >
-      rischio residuo tracciato: la configurazione definitiva del profilo GEBAN resta
-      aperta per 002/006 e per un incremento successivo; il primo incremento 001 espone catalogo e
-      contratto dati senza profilo dedicato.
+      rischio residuo: nessuna barriera esplicita impedisce in futuro di montare il
+      file come volume esterno (renderebbe la lru_cache una trappola di staleness
+      silenziosa); da documentare come vincolo esplicito del deploy, non solo come
+      comportamento implicito del Dockerfile attuale.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-31
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-001-IDENTIFICATIVI-MODELLO
     titolo: Identificativi e mapping modello GEBAN-GEMODO
@@ -210,50 +224,101 @@ decisions:
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/002-builder-modelli
-    stato: SOSPESA
+    stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
-      sospesa per il primo incremento produttivo della 001: la relazione esatta tra profilo, tipo documento,
-      categoria, sottocategoria, tipologia, variante, modello e versione modello non
-      viene modellata nel primo incremento catalogo/contratto.
+      direzione presa 2026-09-14: le API catalogo/validazione devono risolvere il
+      profilo di integrazione attivo del chiamante (oggi disponibile in
+      PrincipalGEMODO/client_id ma scartato dalle route con `_: PrincipalGEMODO`, vedi
+      backend/app/catalog/api.py) e verificare che tipo documento, categoria, tipologia
+      e modello_versione_id richiesti siano ammessi dal profilo (categorie_ammessi,
+      tipologie_ammessi, modelli_versioni_ammessi gia' modellati su
+      ProfiloDiIntegrazione). La risposta MUST distinguere esplicitamente "fuori dal
+      perimetro contrattuale del chiamante" (errore funzionale) da "nel perimetro ma
+      senza ancora un modello pubblicato" (elenco vuoto, comportamento gia' esistente
+      e da mantenere invariato per quel caso).
     impatto: >
-      rischio residuo tracciato: il catalogo del primo incremento non applica ancora restrizioni o
-      derivazioni da profilo; la relazione profilo/catalogo va definita prima di
-      implementare filtri per profilo o builder di profili.
+      rischio residuo tracciato: il catalogo oggi non applica ancora questa
+      distinzione (vedi DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN); resta da progettare in
+      plan.md il punto esatto di enforcement (dependency FastAPI dedicata vs logica nel
+      service layer) e il/i nuovo/i codice/i errore, prima di implementare filtri per
+      profilo o builder di profili.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-31
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-001-API-PROFILO-GEBAN
     titolo: API specifiche per profilo GEBAN
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/006-sicurezza-autorizzazioni-audit
-    stato: SOSPESA
+    stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
-      sospesa per il primo incremento produttivo della 001: non vengono introdotti endpoint dedicati al profilo
-      GEBAN; restano solo catalogo, campi richiesti e validazione payload gia' previsti
-      dal contratto OpenAPI della 001.
+      direzione presa 2026-09-14: l'enforcement per profilo viene applicato dentro le
+      route catalogo/validazione gia' esistenti; non si introducono endpoint dedicati
+      al profilo GEBAN. Resta pero' un cambio del contratto OpenAPI della 001, perche'
+      introduce nuovi codici errore funzionali (distinzione fuori-perimetro vs nel
+      perimetro senza modello) da documentare esplicitamente, non un'estensione
+      silenziosa.
     impatto: >
-      rischio residuo tracciato: eventuali endpoint filtrati per profilo richiederanno
-      una revisione esplicita del contratto OpenAPI e non devono essere aggiunti come
-      estensione silenziosa durante il primo incremento.
+      rischio residuo: il contratto OpenAPI pubblicato (specs/001-catalogo-contratto-
+      geban/contracts/geban-catalog-api.openapi.yaml) va aggiornato in modo
+      coordinato con GEBAN quando i nuovi codici errore vengono introdotti.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-07-31
+    data_ultima_revisione: 2026-09-14
+
+  - id: DEC-001-REGISTRO-CONTRATTI-DATI
+    titolo: Registro multi-tenant dei contratti dati per sistema richiedente
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/009-fondamenta-mock-test-qualita
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      trovato 2026-09-14: `contratti_dati_ammessi` su ProfiloDiIntegrazione (es.
+      "bando-concorso-common-fields-v1" in infra/local/integration-profiles.local.yaml)
+      e' oggi solo una stringa senza nessuna definizione a supporto: nessun file,
+      tabella o validazione la risolve. Direzione presa: introdurre un registro dei
+      contratti dati, di proprieta' di un sistema richiedente (non specifico a GEBAN,
+      coerente con SistemaRichiedente gia' modellato come lista estendibile); ogni
+      contratto dati del registro definisce l'insieme di campi (stessa forma di Campo
+      Richiesto/campo_modello: codice, etichetta, tipo, obbligatorieta', lingua) che un
+      modello legato a quel sistema puo' dichiarare. Il builder (002/003, non ancora
+      implementato) dovra' vincolare la creazione di campi modello ai contratti dati
+      ammessi dal profilo del sistema per cui il modello viene creato.
+    impatto: >
+      bloccante per 002/003: senza questo registro il builder non ha modo di limitare
+      cosa un gestore puo' inserire in un modello per un dato sistema richiedente.
+      Restano da progettare in plan.md/data-model.md: schema esatto dell'entita', dove
+      persiste (file YAML versionato come il resto del catalogo seed, coerente con
+      DEC-001-CONFIG-PROFILO-GEBAN, oppure tabella DB), e come il builder la applica.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN
     titolo: Autorizzazioni del profilo GEBAN
     owner_spec: specs/006-sicurezza-autorizzazioni-audit
     spec_interessate:
       - specs/001-catalogo-contratto-geban
-    stato: APERTA
+    stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
-      nessuna assunzione proposta; da definire ruoli, claim, audience e client che
-      autorizzano GEBAN a usare solo profili/modelli consentiti, impedendo l'uso da
-      chiamanti non GEBAN, prima dell'implementazione sicurezza/audit.
+      aggiornato 2026-09-14: la parte ruoli/claim/audience/client e' implementata e
+      confermata dalla 006 (JWT, aud=gemodo-backend, client geban-backend/
+      geri-angular-public, ruoli diretti e ruoli ACE mappati via role_mappings — vedi
+      backend/app/common/security.py). Resta pero' NON collegata al perimetro
+      catalogo/modelli: la funzione is_operazione_autorizzata() e le liste
+      categorie_ammessi/tipologie_ammessi/modelli_versioni_ammessi di
+      ProfiloDiIntegrazione oggi hanno un solo chiamante in tutto il repo,
+      backend/tests/support/fake_gemodo_client.py (un fixture di test), non le route
+      reali. Qualunque chiamante con ruolo DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE puo'
+      oggi interrogare categorie/tipologie/modelli di qualunque profilo, non solo del
+      proprio.
     impatto: >
-      da definire ruoli, claim, audience e client che autorizzano GEBAN a usare solo
-      profili/modelli consentiti, impedendo l'uso da chiamanti non GEBAN.
+      da risolvere insieme a DEC-001-RELAZIONE-PROFILO-CATALOGO prima di andare in
+      produzione con generazione reale per GEBAN: senza questo collegamento un futuro
+      secondo sistema richiedente potrebbe leggere/generare documenti di proprieta' di
+      GEBAN (o viceversa) usando solo un JWT con ruolo applicativo valido.
     fase_bloccante: IMPLEMENTAZIONE
-    data_ultima_revisione: 2026-07-07
+    data_ultima_revisione: 2026-09-14
 
   - id: DEC-001-VERSIONAMENTO-MAPPING-CAMPI
     titolo: Versionamento mapping campi e versione modello
