@@ -5,8 +5,8 @@
 **Created**: 2026-06-19
 
 **Status**: Updated after clarification - riallineata 2026-09-14 a `DEC-001-UFFICIO-
-PROPRIETARIO`/`DEC-001-REGISTRO-CONTRATTI-DATI`; `DEC-002-GESTORE-UFFICIO-MAPPING`
-resta aperta, `data-model.md`/`plan.md`/`tasks.md` ancora da riallineare
+PROPRIETARIO`/`DEC-001-REGISTRO-CONTRATTI-DATI`/`DEC-002-GESTORE-UFFICIO-MAPPING`
+(tutte `CONFERMATA`); `data-model.md`/`plan.md`/`tasks.md` ancora da riallineare
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §2, §4, §8.2-§8.6, §10 e §16.3.
 
@@ -68,13 +68,16 @@ Risolve le implicazioni concrete della sessione precedente per questa spec.
   (`DEC-001-REGISTRO-CONTRATTI-DATI`); il builder MUST rifiutare un campo non
   presente nel contratto dati ammesso per quel tipo documento, non accettarlo come
   campo libero.
-- Q: Come si risolve a quale Ufficio appartiene il gestore che chiama (`client_id`/
-  ruolo Keycloak non porta oggi nessun concetto di Ufficio)? -> A: Decisione ancora
-  aperta (`DEC-002-GESTORE-UFFICIO-MAPPING`, nuova, `APERTA`): la direzione piu'
-  coerente con quanto gia' fatto per l'ACE/GEBAN (`006`, mapping ruolo esterno ->
-  permesso GEMODO tramite `role_mappings` configurabili) e' un meccanismo analogo
-  ruolo/gruppo Keycloak -> Ufficio, ma non e' stata confermata col product owner e va
-  chiusa prima di generare i task implementativi che toccano scrittura.
+- Q: Come si risolve a quale Ufficio appartiene il gestore che chiama? -> A:
+  Confermato (`DEC-002-GESTORE-UFFICIO-MAPPING`). Nessun meccanismo GEMODO separato
+  (login o gruppo Keycloak dedicato): il gestore arriva dallo stesso token
+  ACE/contesto gia' costruito per il consumo GEBAN (`contexts.<app>.roles`) — chi ha
+  `ROLE_MANAGER#geban` (gia' mappato a `GEMODO_MODELLI_GESTORE`) e' il gestore. Ogni
+  voce di `role_mappings` il cui `internal_permissions` include
+  `GEMODO_MODELLI_GESTORE` guadagna un campo esplicito `ufficio:` che dichiara a
+  quale Ufficio quel ruolo da' diritto di scrittura, configurato a mano dall'admin
+  GEMODO in coordinamento con chi gestisce ACE/Keycloak — stesso processo operativo
+  gia' in uso oggi per `role_mappings`, nessuna interfaccia self-service.
 
 ## Out of Scope
 
@@ -201,10 +204,10 @@ versione pubblicata valida appare nel catalogo.
 - **FR-012**: Le API interne builder MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; le letture richiedono ruolo `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, le scritture e transizioni richiedono `GEMODO_MODELLI_GESTORE`.
 - **FR-013**: Il sistema MUST restituire errori stabili `ACCESSO_NON_AUTENTICATO` e `ACCESSO_NON_AUTORIZZATO` quando autenticazione o autorizzazione builder falliscono.
 - **FR-014**: *(nuovo 2026-09-14)* Il sistema MUST risolvere l'Ufficio a cui e' scoped
-  il gestore chiamante e MUST rifiutare con `PROFILO_INTEGRAZIONE_NON_ABILITATO`
-  qualunque scrittura (categoria, tipologia, modello, versione) su un tipo documento
-  non posseduto da quell'Ufficio. Il meccanismo di risoluzione gestore -> Ufficio
-  resta una decisione aperta (`DEC-002-GESTORE-UFFICIO-MAPPING`).
+  il gestore chiamante dal contesto/ruolo ACE del token (stesso meccanismo del
+  consumo GEBAN, `DEC-002-GESTORE-UFFICIO-MAPPING`, confermata) e MUST rifiutare con
+  `PROFILO_INTEGRAZIONE_NON_ABILITATO` qualunque scrittura (categoria, tipologia,
+  modello, versione) su un tipo documento non posseduto da quell'Ufficio.
 - **FR-015**: *(nuovo 2026-09-14)* Quando un gestore aggiunge un campo al contratto
   dati di una versione modello, il sistema MUST verificare che il campo sia presente
   nel Registro Contratti Dati ammesso per il tipo documento del modello, e MUST

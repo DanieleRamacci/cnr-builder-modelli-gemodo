@@ -201,6 +201,13 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
   (`DEC-001-CONFIG-PROFILO-GEBAN`) e' gia' pensata perche' una futura interfaccia
   scriva sulle stesse tabelle. Da riconsiderare quando arrivera' un secondo
   Ufficio/tipo documento reale.
+- Q: Come si risolve a quale Ufficio appartiene un gestore modelli (rilevante per la
+  `002`, propagato qui perche' tocca `role_mappings` gia' documentato in questa
+  spec)? -> A: Confermato (`DEC-002-GESTORE-UFFICIO-MAPPING`). Nessun meccanismo
+  separato: il gestore arriva dallo stesso token ACE/contesto del consumo GEBAN. Le
+  voci di `role_mappings` il cui `internal_permissions` include
+  `GEMODO_MODELLI_GESTORE` guadagnano un campo `ufficio:` esplicito, configurato a
+  mano dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak.
 
 ## User Scenarios & Testing *(mandatory)*
 

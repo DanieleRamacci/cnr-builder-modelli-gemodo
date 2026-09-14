@@ -204,21 +204,23 @@ decisions:
     spec_interessate:
       - specs/001-catalogo-contratto-geban
       - specs/006-sicurezza-autorizzazioni-audit
-    stato: APERTA
-    assunzione_provvisoria: >
-      nessuna assunzione confermata. Trovato 2026-09-14 riallineando la 002 a
-      DEC-001-UFFICIO-PROPRIETARIO: oggi il ruolo Keycloak GEMODO_MODELLI_GESTORE e'
-      un ruolo client piatto, senza nessun concetto di Ufficio associato — un gestore
-      con quel ruolo potrebbe in teoria scrivere su categorie/tipologie/modelli di
-      qualunque tipo documento, non solo quelli del proprio Ufficio. Ipotesi di
-      lavoro non confermata: un meccanismo ruolo/gruppo Keycloak -> Ufficio analogo
-      al role_mappings gia' usato per l'ACE/GEBAN in backend/app/common/security.py
-      (006), ma questo richiede design esplicito e conferma del product owner prima
-      di generare task di scrittura per la 002.
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
     impatto: >
-      bloccante per l'implementazione di qualunque endpoint di scrittura della 002
-      (FR-014): senza questo meccanismo non si puo' distinguere un gestore
-      dell'Ufficio Reclutamento da un gestore di un futuro Ufficio Contratti.
+      confermato 2026-09-14 col product owner: nessun meccanismo GEMODO separato
+      (login o gruppo Keycloak dedicato ai gestori). Il gestore modelli arriva dallo
+      stesso token ACE/contesto gia' costruito per il consumo GEBAN
+      (contexts.<app>.roles, backend/app/common/security.py): chi ha ROLE_MANAGER#geban
+      (gia' mappato oggi a GEMODO_MODELLI_GESTORE in role_mappings) e' il gestore.
+      Ogni voce di role_mappings il cui internal_permissions include
+      GEMODO_MODELLI_GESTORE (scope: builder) guadagna un campo esplicito ufficio:
+      che dichiara a quale Ufficio quel ruolo/contesto da' diritto di scrittura —
+      niente inferenza implicita dal profilo/sistema richiedente a cui la mapping
+      appartiene. La configurazione di questa associazione resta manuale, fatta
+      dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak, stesso
+      identico processo operativo gia' in uso per configurare role_mappings oggi
+      (nessuna interfaccia self-service, coerente con DEC-001-CONFIG-PROFILO-GEBAN).
     fase_bloccante: PLAN
     data_ultima_revisione: 2026-09-14
 

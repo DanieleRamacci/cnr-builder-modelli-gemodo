@@ -40,6 +40,14 @@
   Rilevante per questa spec perche' distingue l'autorizzazione di scrittura
   (Ufficio proprietario) da quella di lettura/generazione (profilo consumer, gia'
   ambito di questa spec).
+- Q: Come si autorizza un gestore modelli (`002`, `GEMODO_MODELLI_GESTORE`) a
+  scrivere solo per il proprio Ufficio? -> A: Confermato (`DEC-002-GESTORE-UFFICIO-
+  MAPPING`). Nessun meccanismo di autorizzazione nuovo: il gestore arriva dallo
+  stesso `contexts.<app>.roles` ACE gia' costruito per il consumo. `role_mappings`
+  (schema in `009`) guadagna un campo `ufficio:` sulle voci il cui
+  `internal_permissions` include `GEMODO_MODELLI_GESTORE`, configurato a mano
+  dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak — stesso
+  processo operativo gia' in uso per configurare `role_mappings` oggi.
 
 ### Session 2026-09-14
 

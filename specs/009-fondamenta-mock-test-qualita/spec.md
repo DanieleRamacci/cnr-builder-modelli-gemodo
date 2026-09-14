@@ -59,6 +59,12 @@ Decisioni confermate nella `001` (`docs/decision-register.yaml`) che raffinano
   `ProfiloDiIntegrazione` (definito in questa spec) referenzia ora un registro reale di
   contratti dati scoped per tipo documento (proprieta' dell'Ufficio), non piu' una
   stringa senza definizione a supporto.
+- `DEC-002-GESTORE-UFFICIO-MAPPING` (confermata riallineando la `002`): lo schema
+  `RoleMapping` di `ProfiloDiIntegrazione.role_mappings`, definito in questa spec,
+  guadagna un campo `ufficio:` sulle voci il cui `internal_permissions` include
+  `GEMODO_MODELLI_GESTORE` — dichiara a quale Ufficio quel ruolo/contesto ACE da'
+  diritto di scrittura nel builder (`002`), configurato a mano come le altre voci di
+  `role_mappings`.
 
 ## User Scenarios & Testing *(mandatory)*
 
