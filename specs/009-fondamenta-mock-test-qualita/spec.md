@@ -38,6 +38,28 @@
 - Q: Come deve essere salvata la struttura visuale del documento senza builder nella prima fase e con builder in futuro? -> A: Il modello deve usare una sorgente documentale strutturata e versionata, composta da pagina, margini, regioni, blocchi ammessi, posizionamenti controllati, stili consentiti, asset, tabelle, firme e placeholder. L'utente del builder futuro non scrive HTML o CSS libero: lavora in un editor visuale limitato tipo word processor controllato; GEMODO salva e valida la struttura, poi il renderer produce internamente il formato necessario al PDF.
 - Q: Il progetto deve prevedere Swagger/OpenAPI e documentazione navigabile per API e riuso open source/PA? -> A: Si. Ogni API pubblica o di integrazione deve avere contratto OpenAPI versionato, esempi JSON di successo/errore, catalogo errori, note di autenticazione/autorizzazione e documentazione interattiva locale/test tramite Swagger UI e ReDoc o equivalente. Il repository deve inoltre avere documentazione testuale navigabile per setup, sviluppo, produzione, architettura, sicurezza, contributi, segnalazione vulnerabilita' e riuso da parte di altre PA.
 
+### Session 2026-09-14 (propagazione da `001`)
+
+Decisioni confermate nella `001` (`docs/decision-register.yaml`) che raffinano
+`SistemaRichiedente`/`ProfiloDiIntegrazione`, introdotti in questa spec:
+
+- `DEC-001-UFFICIO-PROPRIETARIO`: raffina la risposta della sessione 2026-07-28 su
+  "operatori umani GEMODO vs applicazioni chiamanti". Non e' solo GEMODO/GEBAN: un
+  `Ufficio` (nuova entita', potenzialmente anche staff di un ufficio esterno come un
+  futuro "ufficio contratti", non solo personale GEMODO) possiede uno o piu' tipi
+  documento e ne autora categorie/tipologie/contratti dati/modelli; un'Applicazione
+  (`ProfiloDiIntegrazione`, es. GEBAN) e' autorizzata a consumarli indipendentemente
+  da quale Ufficio li possiede.
+- `DEC-001-CONFIG-PROFILO-GEBAN`: il manifest di `SistemaRichiedente`/
+  `ProfiloDiIntegrazione` (oggi solo YAML caricato in memoria via
+  `load_sistemi_richiedenti`, mai persistito) diventa il seed che popola vere tabelle
+  Postgres, cosi' un futuro punto di modifica (interfaccia web) scriva sulle stesse
+  tabelle senza richiedere un nuovo schema.
+- `DEC-001-REGISTRO-CONTRATTI-DATI`: `contratti_dati_ammessi` su
+  `ProfiloDiIntegrazione` (definito in questa spec) referenzia ora un registro reale di
+  contratti dati scoped per tipo documento (proprieta' dell'Ufficio), non piu' una
+  stringa senza definizione a supporto.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Preparare fondamenta tecniche (Priority: P1)

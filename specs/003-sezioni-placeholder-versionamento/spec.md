@@ -22,6 +22,13 @@
 
 - Q: Quale formato visuale deve usare il modello documentale? -> A: Editor visuale controllato, non HTML libero; struttura `GEMODO_DOCUMENT_V1` versionata con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati.
 
+### Session 2026-09-14 (propagazione da `001`)
+
+- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`):
+  l'editor sezioni opera sempre su una versione modello che appartiene, tramite il suo
+  tipo documento, a un Ufficio proprietario. L'autorizzazione a modificare sezioni di
+  un modello resta quella del gestore scoped a quell'Ufficio, non un permesso globale.
+
 ## Out of Scope
 
 - Frontend editor visuale, coperto dalla spec `007`.

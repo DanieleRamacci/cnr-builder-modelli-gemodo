@@ -12,6 +12,35 @@
 
 ## Clarifications
 
+### Session 2026-09-14 (seconda sessione, perimetro contrattuale e propagazione da `001`)
+
+- Q: `DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN` (owner di questa spec) e' risolta? -> A:
+  **Confermata**, in due parti. La parte ruoli/claim/audience/client e' implementata
+  (vedi sessione sotto: JWT, `aud=gemodo-backend`, client `geban-backend`/
+  `geri-angular-public`, ruoli diretti e ruoli ACE mappati via `role_mappings` in
+  `backend/app/common/security.py`). La parte "impedire l'uso da chiamanti non
+  autorizzati al profilo" era invece scoperta: verificato che
+  `is_operazione_autorizzata()` e le liste `categorie_ammessi`/`tipologie_ammessi`/
+  `modelli_versioni_ammessi` di `ProfiloDiIntegrazione` hanno un solo chiamante in
+  tutto il repo (`backend/tests/support/fake_gemodo_client.py`, un fixture di test),
+  non le route reali — qualunque chiamante con ruolo
+  `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` puo' oggi interrogare categorie/tipologie/
+  modelli di qualunque profilo. La direzione per chiuderlo e' confermata nella `001`
+  (`DEC-001-RELAZIONE-PROFILO-CATALOGO`): enforcement dentro le route
+  catalogo/validazione gia' esistenti, con errore distinto per "fuori perimetro" vs
+  "nel perimetro senza modello". Non ancora implementato.
+- Q: Servono endpoint dedicati al profilo GEBAN? -> A: No (`DEC-001-API-PROFILO-GEBAN`,
+  confermata nella `001`). L'enforcement per profilo resta dentro le route esistenti;
+  introduce pero' nuovi codici errore funzionali nel contratto OpenAPI della `001`, da
+  coordinare con GEBAN quando implementati.
+- Q: Il registro contratti dati (`contratti_dati_ammessi`) e' di proprieta' di GEBAN o
+  di un concetto piu' generale? -> A: Di un tipo documento, ereditata dall'Ufficio che
+  lo possiede (`DEC-001-REGISTRO-CONTRATTI-DATI` e `DEC-001-UFFICIO-PROPRIETARIO`,
+  confermate nella `001`) — non del sistema richiedente/applicazione che lo consuma.
+  Rilevante per questa spec perche' distingue l'autorizzazione di scrittura
+  (Ufficio proprietario) da quella di lettura/generazione (profilo consumer, gia'
+  ambito di questa spec).
+
 ### Session 2026-09-14
 
 - Q: Il client reale GEBAN per l'integrazione e' `geban-backend` o un client ACE gia'

@@ -22,6 +22,27 @@
 
 - Q: Quale workflow stati e ruoli di pubblicazione deve usare la prima release della 002? -> A: Stati separati `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare e pubblicare senza separazione obbligatoria revisore/approvatore.
 
+### Session 2026-09-14 (propagazione da `001`)
+
+Decisioni confermate nella `001` (`docs/decision-register.yaml`) che impattano il
+design del builder quando verra' pianificato:
+
+- `DEC-001-UFFICIO-PROPRIETARIO`: `GEMODO_MODELLI_GESTORE` non e' un ruolo globale.
+  Il builder MUST autorizzare creazione/modifica di categorie, tipologie, contratti
+  dati e modelli solo per i tipi documento posseduti dall'Ufficio a cui il gestore
+  chiamante e' scoped, non per qualunque tipo documento.
+- `DEC-001-REGISTRO-CONTRATTI-DATI`: il builder MUST vincolare i campi che un gestore
+  puo' inserire in un modello ai contratti dati ammessi per il tipo documento di quel
+  modello (registro scoped per tipo documento, non per singolo sistema richiedente).
+- `DEC-001-GENERALIZZAZIONE-TIPOLOGIA`: la seconda dimensione di classificazione
+  (`TipologiaDocumento`, ex `TipologiaBandoSOL`) e' scoped per tipo documento; il
+  builder non deve assumere un vocabolario di tipologie condiviso fra tipi documento
+  diversi.
+- `DEC-001-CONFIG-PROFILO-GEBAN`: profili/uffici/contratti dati vivono in tabelle
+  Postgres popolate inizialmente da file versionato; un'eventuale interfaccia
+  self-service del builder per la creazione di profili/uffici scrivera' sulle stesse
+  tabelle.
+
 ## Out of Scope
 
 - Frontend builder e consultazione grafica, coperti dalla spec `007`.

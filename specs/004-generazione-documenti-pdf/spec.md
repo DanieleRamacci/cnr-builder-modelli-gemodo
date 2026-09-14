@@ -17,6 +17,15 @@
 - Q: Qual e' il confine con storage e idempotenza? -> A: Questa spec copre produzione deterministica del documento, distinzione bozza/ufficiale, metadati e fallimenti di rendering; conservazione, download, stato consultabile e regole di retry/idempotenza restano nella spec `005-storage-idempotenza-consultazione`.
 - Q: Qual e' il confine con sicurezza e audit? -> A: Questa spec richiede che generazione e fallimenti siano auditabili e associati ad attore o client; ruoli, token e regole autorizzative sono definiti nella spec `006-sicurezza-autorizzazioni-audit`.
 
+### Session 2026-09-14 (propagazione da `001`)
+
+- `DEC-001-PROFILO-GEBAN` (confermata in `docs/decision-register.yaml`): la
+  generazione documento richiede che il `modello_versione_id` richiesto sia nel
+  perimetro ammesso del profilo del chiamante (proprio o concesso da un altro Ufficio
+  proprietario, vedi `DEC-001-UFFICIO-PROPRIETARIO`), non solo che il token abbia il
+  ruolo `DOCUMENTI_GENERATORE`. Un chiamante autenticato ma fuori perimetro deve
+  ricevere un errore funzionale distinto, non generare il documento.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generare una bozza documento (Priority: P1)

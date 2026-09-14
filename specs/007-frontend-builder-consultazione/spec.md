@@ -17,6 +17,16 @@
 - Q: Le autorizzazioni sono applicate dal frontend? -> A: Il frontend abilita, nasconde o disabilita azioni in base a ruolo e contesto, ma il controllo autoritativo resta sempre nel servizio backend secondo la spec sicurezza.
 - Q: Il design visuale e lo stack frontend fanno parte di questa spec? -> A: No. Questa spec definisce funzioni, flussi e stati utente; stack e dettagli visuali saranno definiti nel piano tecnico.
 
+### Session 2026-09-14 (propagazione da `001`)
+
+- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`): oltre
+  a GEBAN (un'Applicazione che non usa il frontend, gia' chiarito sopra), il frontend
+  GEMODO puo' avere utenti umani di un Ufficio proprietario (es. un futuro ufficio
+  contratti) che accedono via SSO CNR per creare/gestire in autonomia categorie,
+  tipologie, contratti dati e modelli dei tipi documento posseduti dal proprio
+  Ufficio. Questo e' distinto dal caso GEBAN gia' descritto ed e' da considerare
+  quando questa spec verra' pianificata in dettaglio.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Gestire modelli da interfaccia builder (Priority: P1)
