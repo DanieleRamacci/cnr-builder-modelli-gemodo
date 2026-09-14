@@ -200,6 +200,52 @@ La configurazione Keycloak resta separata: il mapper ACE va aggiunto al client c
 il token, non al resource server `gemodo-backend`. GEMODO poi legge il token ricevuto e
 applica la mappa sopra.
 
+### Come Leggere Il Token ACE/GEBAN
+
+Nel token di esempio ricevuto dal team GEBAN ci sono tre informazioni distinte, tutte
+utili ma con significato diverso:
+
+```json
+{
+  "aud": ["oauth2-resource", "gemodo-backend", "account"],
+  "azp": "geri-angular-public",
+  "resource_access": {
+    "gemodo-backend": {
+      "roles": ["DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"]
+    }
+  },
+  "contexts": {
+    "geban": {
+      "roles": ["ROLE_COORDINATOR#geban"]
+    }
+  }
+}
+```
+
+- `aud` indica i destinatari/resource server del token. Per GEMODO e' obbligatorio che
+  contenga `gemodo-backend`; nell'esempio e' gia' presente, quindi il token e' destinato
+  anche alle API GEMODO.
+- `azp` indica il client che ha ottenuto/emesso il token per l'applicazione chiamante. Nel
+  flusso reale indicato dai colleghi puo' essere `geri-angular-public` o un client ACE
+  equivalente censito nel profilo di integrazione GEMODO.
+- `resource_access.gemodo-backend.roles` contiene ruoli GEMODO diretti assegnati/mappati
+  in Keycloak sul client `gemodo-backend`. Sono gia' permessi applicativi GEMODO e non
+  dipendono dal claim ACE `contexts`.
+- `contexts.geban.roles` contiene ruoli applicativi ACE/GEBAN dell'utente. GEMODO non li
+  usa direttamente negli endpoint: li traduce tramite `role_mappings` nel profilo di
+  integrazione.
+
+La configurazione finale supporta entrambe le fonti di autorizzazione:
+
+```text
+resource_access.gemodo-backend.roles -> permessi GEMODO diretti
+contexts.geban.roles -> mapping configurato -> permessi GEMODO derivati
+```
+
+Il controllo `aud=gemodo-backend` resta obbligatorio in entrambi i casi. La presenza di
+ruoli GEMODO diretti o di ruoli ACE/GEBAN non sostituisce la verifica che il token sia
+destinato alle API GEMODO.
+
 ## Flusso 1 - Utente Che Usa Il Builder GEMODO
 
 ```text
