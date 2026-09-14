@@ -1,0 +1,96 @@
+schema: gemodo.authorization-mapping.v1
+description: >
+  Contratto di configurazione per client ammessi, contesti ACE e mapping ruoli esterni
+  verso permessi applicativi GEMODO.
+root:
+  sistemi_richiedenti:
+    type: array
+    required: true
+    items:
+      codice:
+        type: string
+        example: GEBAN
+      nome:
+        type: string
+      stato:
+        type: string
+        allowed: [ATTIVO, SOSPESO, DISMESSO]
+      client_applicativi:
+        type: array
+        items:
+          client_id:
+            type: string
+            example: geri-angular-public
+          audience_attesa:
+            type: string
+            example: gemodo-backend
+          ruoli_claim_richiesti:
+            type: array
+            items: string
+            description: Ruoli GEMODO diretti accettati da resource_access.gemodo-backend.roles.
+          token_contexts:
+            type: array
+            items: string
+            example: [geban]
+            description: Contesti ACE leggibili dal claim contexts.
+          sistemi_abilitati:
+            type: array
+            items: string
+          stato:
+            type: string
+            allowed: [ATTIVO, SOSPESO, DISMESSO]
+          gestisce_credenziali:
+            type: boolean
+      profili_integrazione:
+        type: array
+        items:
+          codice:
+            type: string
+            example: GEBAN_RECLUTAMENTO_V1
+          sistema_richiedente:
+            type: string
+            example: GEBAN
+          versione:
+            type: string
+          stato:
+            type: string
+            allowed: [ATTIVO, SOSPESO, DISMESSO]
+          client_ammessi:
+            type: array
+            items: string
+          tipi_documento_ammessi:
+            type: array
+            items: string
+          categorie_ammessi:
+            type: array
+            items: string
+          tipologie_ammessi:
+            type: array
+            items: string
+          permessi_operativi:
+            type: array
+            items: string
+          role_mappings:
+            type: array
+            items:
+              token_context:
+                type: string
+                example: geban
+              external_role:
+                type: string
+                example: ROLE_MANAGER#geban
+              internal_permissions:
+                type: array
+                items: string
+                example: [DOCUMENTI_GENERATORE, DOCUMENTI_VIEWER, GEMODO_MODELLI_GESTORE]
+              scope:
+                type: array
+                items: string
+                optional: true
+                example: [generazione, builder]
+security_rules:
+  - audience_attesa MUST be present in the validated JWT aud claim.
+  - client_id MUST match the validated JWT azp claim for ACE/frontend flows or the
+    configured technical client id for client-credentials flows.
+  - role_mappings MUST never grant permissions for unknown external roles.
+  - GEMODO_MODELLI_GESTORE MUST initially be derivable only from ROLE_MANAGER#geban.

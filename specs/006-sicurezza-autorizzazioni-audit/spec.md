@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft - SEC-006-001 e SEC-006-002 risolte
+**Status**: Draft - aggiornata 2026-09-14 con modalita' ACE/context roles
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §12, §8.11 e §12.9.
 
@@ -12,9 +12,50 @@
 
 ## Clarifications
 
+### Session 2026-09-14
+
+- Q: Il client reale GEBAN per l'integrazione e' `geban-backend` o un client ACE gia'
+  esistente? -> A: Il team GEBAN ha indicato l'uso del client CNR/ACE che emette token
+  dal realm `cnr` su `https://sso.test.si.cnr.it/auth/realms/cnr`; negli esempi ricevuti
+  il client chiamante risulta `geri-angular-public`, il token contiene audience
+  `gemodo-backend`, ruoli GEMODO in `resource_access.gemodo-backend.roles` e ruoli ACE
+  nel claim `contexts.geban.roles`. Il client `geban-backend` resta valido come doppio
+  tecnico di test/CI, ma l'integrazione reale deve supportare client ACE configurati e
+  autorizzati.
+- Q: GEMODO deve usare direttamente i ruoli ACE/GEBAN o continuare a usare solo ruoli
+  client `gemodo-backend`? -> A: GEMODO deve continuare a ragionare internamente con
+  permessi applicativi propri (`DOCUMENTI_VIEWER`, `DOCUMENTI_GENERATORE`,
+  `GEMODO_MODELLI_VIEWER`, `GEMODO_MODELLI_GESTORE`, ecc.) ma puo' derivarli anche da
+  ruoli esterni presenti nel token ACE tramite una mappa configurabile per contesto
+  applicativo. I ruoli ACE non devono essere hard-coded nelle autorizzazioni endpoint.
+- Q: Quali ruoli ACE/GEBAN autorizzano la creazione/generazione di documenti? -> A:
+  `ROLE_GESTORE#geban`, `ROLE_MANAGER#geban`, `ROLE_COORDINATOR#geban` e
+  `ROLE_USER#geban` abilitano la generazione/creazione di documenti nel flusso GEBAN,
+  mappandosi al permesso GEMODO `DOCUMENTI_GENERATORE`; per la sola consultazione possono
+  mappare anche a `DOCUMENTI_VIEWER`.
+- Q: Quale ruolo ACE/GEBAN puo' creare o gestire modelli nel builder GEMODO? -> A: Solo
+  `ROLE_MANAGER#geban` puo' essere mappato a un permesso di gestione modelli
+  (`GEMODO_MODELLI_GESTORE`) per il perimetro GEBAN. Gli altri ruoli GEBAN non devono
+  abilitare creazione, modifica, pubblicazione o archiviazione modelli.
+- Q: L'audience `gemodo-backend` resta obbligatoria se si leggono i ruoli ACE? -> A: Si.
+  Ogni token accettato dalle API GEMODO deve contenere audience `gemodo-backend`; il
+  claim `contexts.geban.roles` prova il contesto/ruolo GEBAN, ma non sostituisce la
+  destinazione del token verso GEMODO.
+- Q: Come deve essere configurato il mapper ACE indicato dal team GEBAN? -> A: Sul client
+  che emette il token verso GEMODO deve essere aggiunto o verificato un mapper ACE con
+  contesto `geban`, `Add to access token` attivo e `Add to ID token`/`userinfo` non
+  necessari. Il mapper deve produrre il claim `contexts.geban.roles`; se il client serve
+  piu' applicativi, GEMODO considera solo i contesti presenti nella propria mappa
+  autorizzativa.
+- Q: Come si gestiscono altri applicativi o futuri tipi documento? -> A: La lettura dei
+  ruoli esterni deve essere generalizzata per contesto (`contexts.<app>.roles`) e
+  regolata da mapping configurabile che indichi sistema richiedente, contesto token,
+  ruolo esterno, permesso GEMODO derivato e, dove necessario, tipo documento o API
+  abilitate. Nuovi applicativi o ruoli non devono richiedere modifiche sparse al codice.
+
 ### Session 2026-07-29
 
-- Q SEC-006-001: Come deve arrivare l'identita' utente da GEBAN a GEMODO nelle chiamate operative? -> A: **Risolto.** GEBAN chiama GEMODO con un token tecnico Keycloak (client credentials) del client `geban-backend`, con ruolo applicativo `DOCUMENTI_GENERATORE` assegnato al client stesso. L'identita' dell'utente reale e il contesto GEBAN (bando, azioni autorizzate) viaggiano nel payload della richiesta come dati applicativi e di audit, non come claim del token. L'autorizzazione resta sempre basata sul token verificato (client + ruolo), mai sul payload. Il token delegato/token exchange (identita' utente reale nel JWT) resta documentato come possibile evoluzione futura se un requisito di audit piu' stringente lo richiedera', ma non e' necessario per la prima release: evita una dipendenza da funzionalita' Keycloak non standard e da sviluppo aggiuntivo lato backend GEBAN.
+- Q SEC-006-001: Come deve arrivare l'identita' utente da GEBAN a GEMODO nelle chiamate operative? -> A: **Risolto.** GEBAN chiama GEMODO con un token tecnico Keycloak (client credentials) del client `geban-backend`, con ruolo applicativo `DOCUMENTI_GENERATORE` assegnato al client stesso. L'identita' dell'utente reale e il contesto GEBAN (bando, azioni autorizzate) viaggiano nel payload della richiesta come dati applicativi e di audit, non come claim del token. L'autorizzazione resta sempre basata sul token verificato (client + ruolo), mai sul payload. Il token delegato/token exchange (identita' utente reale nel JWT) resta documentato come possibile evoluzione futura se un requisito di audit piu' stringente lo richiedera', ma non e' necessario per la prima release: evita una dipendenza da funzionalita' Keycloak non standard e da sviluppo aggiuntivo lato backend GEBAN. Questa decisione e' estesa dalla sessione 2026-09-14 per includere token ACE reali con ruoli in `contexts.geban.roles`.
 - Q: Dove vengono gestiti utenti e ruoli applicativi? -> A: Utenti e assegnazione ruoli sono gestiti in Keycloak, non in GEMODO. GEMODO legge i ruoli dal JWT e applica autorizzazioni backend. Per il builder usa ruoli GEMODO; per chiamate da GEBAN usa ruoli/claim di generazione o consultazione.
 - Q: Come trattare revisione e approvazione modello rispetto ai ruoli builder? -> A: La prima versione deve supportare il flusso minimo con gestore abilitato anche alla pubblicazione; la specifica riserva pero' ruoli separati di revisore e approvatore, attivabili se il processo CNR richiede separazione dei compiti prima dell'implementazione.
 - Q: Il contesto autorizzativo nel payload puo' sostituire il JWT? -> A: No. Il payload puo' arricchire audit e contesto applicativo, ma autenticazione e autorizzazione derivano sempre dal token e dai claim verificabili (client chiamante e ruolo), mai dal contenuto del payload.
@@ -71,6 +112,17 @@ generare documenti.
    valido, **Then** GEMODO abilita solo le azioni previste da quel ruolo.
 6. **Given** il processo richiede approvatore separato, **When** un gestore tenta di
    pubblicare una versione, **Then** il servizio richiede un ruolo approvativo distinto.
+7. **Given** un token ACE valido contiene `contexts.geban.roles` con
+   `ROLE_COORDINATOR#geban`, **When** viene richiesta una generazione documento GEBAN,
+   **Then** GEMODO deriva il permesso `DOCUMENTI_GENERATORE` tramite mapping configurato
+   e autorizza la richiesta solo se audience, client e contesto sono coerenti.
+8. **Given** un token ACE valido contiene `contexts.geban.roles` con `ROLE_USER#geban`,
+   **When** l'utente tenta di accedere al builder modelli, **Then** GEMODO non abilita
+   creazione, modifica, pubblicazione o archiviazione modelli.
+9. **Given** un token ACE valido contiene `contexts.geban.roles` con
+   `ROLE_MANAGER#geban`, **When** l'utente accede al builder modelli per il perimetro
+   GEBAN, **Then** GEMODO puo' derivare il permesso `GEMODO_MODELLI_GESTORE` tramite
+   mapping configurato.
 
 ---
 
@@ -104,6 +156,13 @@ target e timestamp.
 - Token con ruolo `DOCUMENTI_GENERATORE` ma client chiamante diverso da `geban-backend`.
 - Token con ruolo GEBAN di generazione usato per accedere al builder GEMODO.
 - Token con ruolo GEMODO builder usato per generare documenti dal flusso GEBAN.
+- Token ACE con audience corretta ma senza `contexts.geban.roles`.
+- Token ACE con `contexts.geban.roles` valido ma senza audience `gemodo-backend`.
+- Token ACE con piu' contesti (`geri`, `geban`, altri): GEMODO considera solo i contesti
+  configurati per il sistema richiedente o per il builder.
+- Ruolo ACE nuovo o rinominato non presente nella mappa configurata.
+- Ruolo ACE GEBAN di generazione usato per gestire modelli senza mapping esplicito.
+- Client ACE diverso da quello ammesso che presenta un claim `contexts.geban.roles`.
 - Contesto GEBAN non coerente con l'azione richiesta.
 - Contesto autorizzativo nel payload coerente con la richiesta ma non supportato da claim
   verificabili nel token.
@@ -117,8 +176,15 @@ target e timestamp.
 - **FR-001**: Tutte le API protette MUST richiedere identita' verificabile.
 - **FR-002**: Il servizio MUST verificare chiamante, audience, scadenza e ruoli o claim contestuali.
 - **FR-003**: Il servizio MUST distinguere utenti builder, sistema GEBAN e client tecnici.
-- **FR-003a**: Per le operazioni di generazione richieste da GEBAN, il servizio MUST ricevere un token tecnico Keycloak (client credentials) con audience GEMODO, client chiamante `geban-backend` e ruolo applicativo `DOCUMENTI_GENERATORE` (o `DOCUMENTI_VIEWER` per consultazione); l'identita' dell'utente reale e il contesto GEBAN viaggiano nel payload della richiesta come dati applicativi e di audit, non come claim del token.
-- **FR-003b**: Il servizio MUST considerare non valida una chiamata di generazione da GEBAN se il token non identifica il client chiamante autorizzato `geban-backend` e il ruolo applicativo richiesto; il servizio MUST inoltre rifiutare la richiesta se il payload non contiene un contesto utente/GEBAN coerente con l'azione richiesta, anche se il token e' valido.
+- **FR-003a**: Per le operazioni di generazione richieste da GEBAN, il servizio MUST
+  ricevere un token Keycloak con audience GEMODO, client chiamante autorizzato e permesso
+  applicativo `DOCUMENTI_GENERATORE` (o `DOCUMENTI_VIEWER` per consultazione) ricavabile
+  da ruoli client GEMODO o da mapping configurato di ruoli esterni ACE/GEBAN.
+- **FR-003b**: Il servizio MUST considerare non valida una chiamata di generazione da
+  GEBAN se il token non identifica un client chiamante autorizzato (`geban-backend` di
+  test/CI o client ACE reale configurato) e un ruolo/permesso applicativo richiesto; il
+  servizio MUST inoltre rifiutare la richiesta se il payload non contiene un contesto
+  utente/GEBAN coerente con l'azione richiesta, anche se il token e' valido.
 - **FR-003c**: GEMODO MUST NOT gestire utenti, password o assegnazione ufficiale dei ruoli applicativi; tali responsabilita' restano in Keycloak o nel sistema identita' collegato.
 - **FR-003d**: GEMODO MUST leggere dal JWT i ruoli applicativi e applicare autorizzazioni lato backend in base al canale: ruoli GEMODO per builder, ruoli/claim GEBAN per generazione e consultazione documenti.
 - **FR-004**: Il servizio MUST applicare autorizzazioni lato backend.
@@ -128,6 +194,23 @@ target e timestamp.
 - **FR-005c**: `DOCUMENTI_GENERATORE` MUST essere usato per richieste di generazione documenti provenienti dal flusso GEBAN; non abilita la gestione del builder GEMODO.
 - **FR-005d**: Se i ruoli approvativi separati vengono attivati, pubblicazione e archiviazione MUST essere consentite solo a `GEMODO_ADMIN` o `GEMODO_MODELLI_APPROVATORE`; la richiesta di revisione MUST restare consentita a `GEMODO_ADMIN`, `GEMODO_MODELLI_GESTORE` o `GEMODO_MODELLI_REVISORE` secondo il workflow definito.
 - **FR-005e**: Tutti i ruoli applicativi GEMODO MUST essere definiti come ruoli client sul client `gemodo-backend` in Keycloak (`resource_access.gemodo-backend.roles`), MUST NOT essere definiti come ruoli realm, per evitare collisioni di nomi nel realm Keycloak condiviso con altre applicazioni CNR.
+- **FR-005f**: Il servizio MUST supportare mapping configurabile da ruoli esterni presenti
+  in claim di contesto (`contexts.<app>.roles`) verso permessi applicativi GEMODO, senza
+  hardcodare i ruoli esterni nelle singole API.
+- **FR-005g**: Per il contesto `geban`, i ruoli esterni `ROLE_GESTORE#geban`,
+  `ROLE_MANAGER#geban`, `ROLE_COORDINATOR#geban` e `ROLE_USER#geban` MUST poter derivare
+  il permesso `DOCUMENTI_GENERATORE` per la generazione documenti GEBAN quando client,
+  audience e contesto sono validi.
+- **FR-005h**: Per il builder modelli nel perimetro GEBAN, solo `ROLE_MANAGER#geban` MAY
+  derivare il permesso `GEMODO_MODELLI_GESTORE`; gli altri ruoli GEBAN di generazione
+  documenti MUST NOT abilitare gestione modelli.
+- **FR-005i**: Un token con ruoli esterni ACE/GEBAN MUST contenere audience
+  `gemodo-backend`; la presenza di `contexts.geban.roles` senza audience GEMODO non e'
+  sufficiente per accedere alle API GEMODO.
+- **FR-005j**: La configurazione di client ammessi e mapping ruoli esterni MUST poter
+  rappresentare piu' applicativi sorgente, indicando per ciascuno contesto token,
+  sistema richiedente, ruoli esterni riconosciuti, permessi GEMODO derivati e perimetro
+  funzionale autorizzato.
 - **FR-006**: Il servizio MUST auditare creazione, modifica, revisione, pubblicazione e archiviazione modello.
 - **FR-007**: Il servizio MUST auditare validazioni fallite, generazioni, download ed errori autorizzativi.
 - **FR-008**: Nessun segreto, token o credenziale MUST essere esposto in log, audit o risposte applicative.
@@ -145,6 +228,11 @@ target e timestamp.
 - **Ruolo GEMODO**: ruolo applicativo letto dal JWT e valido per le funzionalita' interne GEMODO.
 - **Ruolo/Claim GEBAN**: ruolo o claim contestuale letto dal JWT delegato e valido per generazione, download o consultazione nel flusso GEBAN.
 - **Contesto GEBAN**: contesto operativo passato da GEBAN.
+- **Contesto Token Esterno**: claim verificabile nel token, ad esempio
+  `contexts.geban.roles`, che identifica ruoli del chiamante in un applicativo sorgente.
+- **Mapping Ruoli Esterni**: configurazione che trasforma ruoli di un contesto esterno in
+  permessi applicativi GEMODO, limitandoli per sistema richiedente, API o tipo documento
+  quando necessario.
 - **Contesto Autorizzativo Payload**: dati di supporto inviati da GEBAN per audit e
   coerenza applicativa, non sostitutivi del token.
 - **API Tecnica Censita**: operazione server-to-server esplicitamente autorizzata per
@@ -164,6 +252,14 @@ target e timestamp.
   client secret, password o credenziali tecniche.
 - **SC-005**: Il 100% delle chiamate tecniche accettate e' riconducibile a una API censita
   per `SYSTEM_GEBAN` o client equivalente.
+- **SC-006**: Il 100% dei token ACE accettati per GEBAN contiene audience
+  `gemodo-backend`, client chiamante ammesso e almeno un ruolo riconosciuto in
+  `contexts.geban.roles` o in `resource_access.gemodo-backend.roles`.
+- **SC-007**: Nessun ruolo ACE/GEBAN diverso da `ROLE_MANAGER#geban` abilita operazioni di
+  gestione modelli nei test autorizzativi.
+- **SC-008**: L'aggiunta di un nuovo applicativo sorgente o di un nuovo ruolo esterno
+  richiede solo aggiornamento della configurazione di mapping e della documentazione
+  operativa, non cambiamenti di contratto pubblico.
 
 ## Assumptions
 
@@ -177,13 +273,22 @@ target e timestamp.
   inattivi; potranno essere attivati in futuro senza cambiare il contratto API se il
   processo CNR richiedera' un'approvazione da parte di altri soggetti oltre al gestore.
 - La modalita' token tecnico (client credentials) GEBAN -> GEMODO con contesto utente nel
-  payload e' la modalita' definitiva per la prima release (`SEC-006-001`, risolta il
-  2026-07-29); il token delegato/token exchange resta possibile evoluzione futura, non
-  bloccante.
-- Eventuali integrazioni future non fanno parte del perimetro operativo di questa spec.
+  payload resta supportata per test/CI (`SEC-006-001`, risolta il 2026-07-29); il token
+  delegato/token exchange resta possibile evoluzione futura, non bloccante.
+- Il flusso ACE indicato dal team GEBAN estende `SEC-006-001`: il client tecnico di test
+  `geban-backend` resta supportato, mentre i token ACE reali possono portare identita' e
+  ruoli utente nel claim `contexts.geban.roles`.
+- Per i token ACE ricevuti dal team GEBAN, l'issuer resta
+  `https://sso.test.si.cnr.it/auth/realms/cnr` e l'audience GEMODO attesa resta
+  `gemodo-backend`.
+- Il client id ACE effettivo e' case-sensitive e deve essere censito tra i client
+  chiamanti ammessi; gli esempi ricevuti mostrano `azp` pari a `geri-angular-public`.
+- Eventuali integrazioni future sono incluse solo come requisito di configurabilita' del
+  mapping ruoli esterni, non come implementazione di regole specifiche gia' note.
 
 ## Deferred Decisions
 
 Nessuna decisione bloccante differita al momento. `SEC-006-001` e `SEC-006-002` sono
-risolte; eventuali estensioni future (token delegato, separazione revisore/approvatore)
-restano documentate come evoluzioni non bloccanti, non come decisioni aperte.
+risolte; la modalita' ACE/context roles e' ora parte del perimetro della spec. Restano da
+confermare durante il planning i nomi esatti dei client ACE da ammettere nei diversi
+ambienti e il formato operativo della configurazione di mapping.

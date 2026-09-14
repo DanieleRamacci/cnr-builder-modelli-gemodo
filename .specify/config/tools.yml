@@ -1,0 +1,174 @@
+tools:
+  codegraph:
+    enabled: true
+    required: false
+    purpose:
+    - impact_analysis
+    - dependency_graph
+    - context_reduction
+    install_check:
+      type: command_available
+      command: codegraph
+    agent_configuration_check:
+      type: any_path_exists
+      paths:
+      - .mcp.json
+      - .codex/config.toml
+      - .claude/settings.json
+      - CLAUDE.md
+    project_check:
+      type: any_path_exists
+      paths:
+      - .codegraph
+      - codegraph.yml
+      - codegraph.yaml
+    index_check:
+      type: any_path_exists
+      paths:
+      - .codegraph/index
+      - .codegraph/index.json
+      - .codegraph/db
+      - .codegraph/codegraph.db
+    initialize:
+      command: codegraph init
+      automatic: false
+    roles:
+    - reviewer
+    - impact_analysis
+    - context_reduction
+    use_when:
+    - dependency analysis is needed
+    - caller/callee analysis is needed
+    - shared backend components changed
+    - possible regression impact is unclear
+    - security-sensitive flow changed
+    - repository context is too large to inspect by broad file reads
+    avoid_when:
+    - repository is not initialized for CodeGraph
+    - change is documentation-only
+  rtk:
+    enabled: false
+    required: false
+    purpose: []
+    install_check:
+      type: command_available
+      command: rtk
+    agent_configuration_check:
+      type: none
+    project_check:
+      type: none
+    index_check:
+      type: none
+    initialize:
+      command: rtk init
+      automatic: false
+    roles: []
+    use_when: []
+    avoid_when: []
+  headroom:
+    enabled: false
+    required: false
+    purpose: []
+    install_check:
+      type: command_available
+      command: headroom
+    agent_configuration_check:
+      type: none
+    project_check:
+      type: none
+    index_check:
+      type: none
+    initialize:
+      command: headroom init
+      automatic: false
+    roles: []
+    use_when: []
+    avoid_when: []
+  tokensave:
+    enabled: true
+    required: false
+    purpose:
+    - context_reduction
+    - token_budget
+    install_check:
+      type: command_available
+      command: tokensave
+    agent_configuration_check:
+      type: any_path_exists
+      paths:
+      - .mcp.json
+      - .claude/settings.json
+      - .claude/rules/tokensave.md
+    project_check:
+      type: path_exists
+      path: .tokensave/config.json
+    index_check:
+      type: path_exists
+      path: .tokensave/tokensave.db
+    initialize:
+      command: tokensave init
+      automatic: false
+    roles:
+    - implementer
+    - reviewer
+    - context_reduction
+    use_when:
+    - implementation or review needs repository context larger than the active token
+      budget
+    - summarizing or selecting relevant files can reduce context without losing required
+      evidence
+    - repeated reads of large files or broad diffs would waste review budget
+    avoid_when:
+    - task is limited to a small, already identified file set
+    - exact source text is required and summarization would hide important details
+    - tool is not installed, configured, or initialized
+  caveman:
+    enabled: false
+    required: false
+    purpose: []
+    install_check:
+      type: command_available
+      command: caveman
+    agent_configuration_check:
+      type: none
+    project_check:
+      type: none
+    index_check:
+      type: none
+    initialize:
+      command: caveman init
+      automatic: false
+    roles: []
+    use_when: []
+    avoid_when: []
+  adev:
+    enabled: true
+    required: true
+    purpose:
+    - quality_gate
+    - spec_kit_extension
+    - independent_review
+    install_check:
+      type: command_available
+      command: adev
+    agent_configuration_check:
+      type: none
+    project_check:
+      type: path_exists
+      path: .specify/extensions/adev-quality/extension.yml
+    index_check:
+      type: none
+    initialize:
+      command: adev adopt . --apply
+      automatic: false
+    roles:
+    - quality_gate
+    - reviewer
+    - spec_kit_extension
+    use_when:
+    - Spec Kit after_implement hook runs the independent quality gate
+    - deterministic project readiness or review diagnostics are needed
+    - manual fallback review is needed outside the hook
+    avoid_when:
+    - using Spec Kit feature planning commands that do not need the quality gate
+    - adev is not installed on PATH

@@ -33,7 +33,10 @@
 
 - Draft di copertura. Keycloak/JWT e' un vincolo di costituzione/proposta, non una scelta nuova.
 - Documento operativo collegato: `keycloak-jwt.md`.
-- Decisione `SEC-006-001` **risolta il 2026-07-29**: token tecnico Keycloak (client credentials) `geban-backend` con ruolo `DOCUMENTI_GENERATORE`; utente reale e contesto GEBAN nel payload solo per audit, mai nel token.
+- Decisione `SEC-006-001` **risolta il 2026-07-29** e aggiornata il 2026-09-14: token
+  tecnico Keycloak `geban-backend` mantenuto per test/CI; integrazione reale GEBAN
+  supportata anche con token ACE, audience `gemodo-backend` e ruoli in
+  `contexts.geban.roles`.
 - Utenti, password e assegnazione ruoli restano in Keycloak; GEMODO consuma JWT e applica autorizzazioni backend.
 - Validazione aggiornata il 2026-06-22 dopo estensione requisiti su matrice ruoli, audit
   minimo, API tecniche censite e AI/MCP.
@@ -41,5 +44,13 @@
   gestore, revisore e approvatore nella prima release; la pubblicazione fatta da
   `GEMODO_MODELLI_GESTORE` vale come approvazione. Ruoli revisore/approvatore restano
   riservati e inattivi per un'eventuale attivazione futura.
+- Aggiornamento 2026-09-14: la spec include la modalita' ACE/context roles per GEBAN.
+  I token ACE devono avere issuer `https://sso.test.si.cnr.it/auth/realms/cnr`,
+  audience `gemodo-backend`, client chiamante censito e ruoli in `contexts.geban.roles`
+  mappati a permessi GEMODO.
+- Mapping iniziale GEBAN confermato: `ROLE_GESTORE#geban`, `ROLE_MANAGER#geban`,
+  `ROLE_COORDINATOR#geban` e `ROLE_USER#geban` possono derivare
+  `DOCUMENTI_GENERATORE`; solo `ROLE_MANAGER#geban` puo' derivare
+  `GEMODO_MODELLI_GESTORE` per il builder nel perimetro GEBAN.
 - Nessuna decisione bloccante differita al momento; la feature puo' passare alla
   pianificazione.

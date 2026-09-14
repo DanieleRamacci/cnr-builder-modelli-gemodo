@@ -20,6 +20,26 @@
       },
       "registered_skills": [],
       "installed_at": "2026-06-19T09:53:42.425296+00:00"
+    },
+    "adev-quality": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:8f51948a9efc6df307ee29beba639e384615b3ebeac77f6c45944ff5ccdaf49c",
+      "enabled": true,
+      "priority": 5,
+      "registered_commands": {
+        "agy": [
+          "speckit.adev-quality.review"
+        ],
+        "codex": [
+          "speckit.adev-quality.review"
+        ],
+        "zed": [
+          "speckit.adev-quality.review"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-08-31T12:32:53.952003+00:00"
     }
   }
 }

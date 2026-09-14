@@ -1,0 +1,128 @@
+{
+  "reviewer_id": "primary",
+  "valid": true,
+  "message": "Claude Code reviewer completed",
+  "findings": [
+    {
+      "severity": "HIGH",
+      "finding_type": "application",
+      "category": "missing_requirement",
+      "title": "Historical catalog mode never returns archived model versions",
+      "path": "backend/app/catalog/repository.py",
+      "line": 84,
+      "evidence": "_published_versions_stmt() applies `where(ModelloDocumentoVersione.stato == STATO_PUBBLICATO)` unconditionally, even when historical=True (only pubblicato_da/pubblicato_a filters are added). FR-006a MUST support a historical mode that \"restituisce versioni archiviate\", US1 Acceptance Scenario 4 and SC-007 require retrieving ARCHIVIATO versions via storico, and data-model.md State Rules state \"Le versioni precedenti della stessa variante sono ARCHIVIATO e disponibili solo nello storico\". The DB index uq_modello_versione_pubblicata_corrente forces a superseded version to ARCHIVIATO, after which it is invisible in every endpoint. Seed migrations 0004/0006 create only PUBBLICATO/BOZZA versions and no test exercises an archived version; contracts/geban-catalog-api.openapi.yaml ModelloCatalogo.stato enum is `[PUBBLICATO]` only, contradicting the spec.",
+      "recommendation": "In historical mode include ARCHIVIATO (and per data-model SOSPESO) versions instead of restricting to PUBBLICATO; seed at least one ARCHIVIATO demo version; widen the OpenAPI stato enum; add an integration test asserting storico returns a superseded ARCHIVIATO version while campi-richiesti/valida keep rejecting it (SC-007).",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "HIGH",
+      "finding_type": "application",
+      "category": "validation",
+      "title": "Payload validation ignores declared field constraints (vincoli)",
+      "path": "backend/app/validation/service.py",
+      "line": 55,
+      "evidence": "validate_payload() only checks not-found, not-published, extra fields, required presence and JSON type via _matches_type(); it never reads ModelloCampoRichiesto.validazione. Seed migrations 0004/0006 populate real constraints ({\"minLength\": 1} on codice_bando/titolo_it/sede_prescelta_it/titolo_en, {\"minimum\": 1} on numero_posti) and catalog/service.py exposes them in the contract JSON schema, but the server accepts `numero_posti: 0` or `codice_bando: \"\"` with `{\"valido\": true, \"errori\": []}`. FR-011/FR-012 require validation of \"vincoli dichiarati\" and \"coerenza con la versione modello pubblicata\"; SC-003 depends on it. This defeats the stated purpose of US3 (blocking incoherent data before generation).",
+      "recommendation": "After the type check, validate each value against field.validazione (minLength/maxLength/minimum/maximum/pattern/enum) and/or the generated JSON schema, emitting TIPO_NON_VALIDO or a dedicated VINCOLO_NON_RISPETTATO code aligned with infra/openapi/errors.md; add tests for numero_posti=0 and empty required strings.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "HIGH",
+      "finding_type": "application",
+      "category": "insufficient_test",
+      "title": "All P1 payload-validation and catalog-service tests skipped in deterministic run",
+      "path": "backend/tests/validation/test_validazione_payload_api.py",
+      "line": 51,
+      "evidence": "regression_results show `test_validazione_payload_api.py sssssssss` (9/9 skipped) and `test_catalog_service_integration.py sssss` (5/5 skipped) \u2014 14 skipped \u2014 because tests/support/postgres.py skips when Docker/Testcontainers is unavailable and DATABASE_URL is unset. The always-run catalog tests (test_catalogo_modelli_api.py, test_campi_richiesti_api.py, test_catalogo_tipologia_sol.py, etc.) all install a FakeCatalogService via dependency_overrides and never exercise real logic; test_catalogo_tipologia_sol.py asserts on a fake that unconditionally raises TIPOLOGIA_SOL_NON_VALIDA. No Docker-free test covers CatalogService/PayloadValidationService/repository, so FR-003/FR-004/FR-011..FR-015/FR-012a/FR-020/FR-021/FR-022 have zero deterministic coverage in the gate environment.",
+      "recommendation": "Add a portable fallback (SQLite engine or an in-memory fake repository) or direct unit tests for PayloadValidationService and CatalogService so the P1 requirements are verified without Docker; alternatively provision PostgreSQL in the quality-gate environment and treat skips of these modules as gate failures.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "HIGH",
+      "finding_type": "workflow",
+      "category": "regression",
+      "title": "Deterministic regression command exits non-zero (exit_code 1)",
+      "path": "backend/pytest.ini",
+      "line": 8,
+      "evidence": "regression_results: command `uv --directory backend run pytest -m \"not e2e\"` reports `116 passed, 14 skipped, 12 deselected` but exit_code is 1. pytest.ini sets `filterwarnings = error`; stderr shows an ExceptionGroup of PytestUnraisableExceptionWarning for `unclosed <socket.socket ... family=AF_UNIX>` raised in pytest_unconfigure/collect_unraisable \u2014 the Testcontainers/Docker fallback path in tests/support/postgres.py leaves sockets open when Docker is absent, and filterwarnings=error escalates them to a fatal error at teardown. The ADEV quality gate's PASS/FAIL depends on deterministic test results, so the regression command as configured fails in any Docker-less environment (CI, reviewer sandbox).",
+      "recommendation": "Close the leaked Docker/Testcontainers client sockets in tests/support/postgres.py teardown (or guard the import/instantiation), or narrow filterwarnings so third-party teardown ResourceWarnings are not escalated; ensure the gate treats a non-zero pytest exit as FAIL and re-run with the leak fixed.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "application",
+      "category": "edge_case",
+      "title": "Empty value satisfies required-field check",
+      "path": "backend/app/validation/service.py",
+      "line": 51,
+      "evidence": "`value_present = field.codice in request.dati and request.dati[field.codice] is not None`. An empty string \"\" (or [] / {}) for a mandatory field is treated as present and passes _matches_type, so validate_payload returns valido=true. spec.md Edge Cases explicitly lists \"Il payload contiene valori vuoti per campi obbligatori\" as a case that must be handled; it currently is not.",
+      "recommendation": "Treat empty string / empty collection as absent for required fields (or reject explicitly with CAMPO_OBBLIGATORIO / CAMPO_INGLESE_MANCANTE) and add regression tests.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "application",
+      "category": "edge_case",
+      "title": "Complex array/object fields are not structurally validated",
+      "path": "backend/app/validation/service.py",
+      "line": 130,
+      "evidence": "_matches_type() for `array` returns only isinstance(value, list) and for `object` only isinstance(value, dict). FR-008a requires a structured JSON sub-schema (sotto-campi, tipi, obbligatorieta', ordine, vincoli) and spec.md Edge Cases require rejecting array/object payloads with missing sub-fields, wrong sub-types or extra sub-fields. ModelloCampoRichiesto has no sub-field schema column and validate_payload performs no nested validation, so any dict/list passes regardless of internal shape.",
+      "recommendation": "Model a sub-schema for array/object fields (data-model + campo_modello column) and validate nested structure (sub-field presence, types, additionalProperties=false) during payload validation per FR-008a.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "finding_type": "workflow",
+      "category": "other",
+      "title": "tasks.md marks tasks complete for artifacts that do not exist",
+      "path": "specs/001-catalogo-contratto-geban/tasks.md",
+      "line": 211,
+      "evidence": "T053/T054 are [x] but reference backend/tests/validation/test_validazione_bando_inglese.py, which is absent (the bando_inglese scenarios live in test_validazione_payload_api.py). T065 is [x] for backend/app/validation/errors.py and T066 for backend/app/catalog/errors.py, neither of which exists \u2014 the error codes were consolidated into backend/app/common/errors.py. Traceability between tasks.md and the repository is inaccurate.",
+      "recommendation": "Update tasks.md to point at the real files (test_validazione_payload_api.py, app/common/errors.py) or add the referenced modules, so completed-task claims match the tree.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "finding_type": "workflow",
+      "category": "other",
+      "title": "quickstart test evidence not reproducible in the gate",
+      "path": "specs/001-catalogo-contratto-geban/quickstart.md",
+      "line": 279,
+      "evidence": "The \"Verifica Test\" section records `126 passed, 12 deselected` for `uv run pytest -m \"not e2e\"` on 2026-07-31, but the deterministic re-run in regression_results yields `116 passed, 14 skipped, 12 deselected` and exit_code 1. The recorded evidence overstates portable coverage and hides that 14 P1 tests are environment-gated.",
+      "recommendation": "Record the command's exit status and skip count, note the Docker/PostgreSQL prerequisite, and update the figure after adding Docker-free coverage.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "finding_type": "application",
+      "category": "security",
+      "title": "Auth bypass toggle has no environment guard",
+      "path": "backend/app/common/security.py",
+      "line": 111,
+      "evidence": "require_principal() returns mock_principal() whenever settings.gemodo_use_mock_principal is true, and mock_principal grants roles DOCUMENTI_VIEWER,DOCUMENTI_GENERATORE (settings.py default GEMODO_MOCK_ROLES) with client geban-backend. The flag defaults to False and quickstart documents it as local/test only, but a single env var (GEMODO_USE_MOCK_PRINCIPAL=true) disables all JWT signature/issuer/audience/role checks with no assertion that the runtime is non-production.",
+      "recommendation": "Gate the mock principal behind an explicit non-production environment check (e.g. refuse to start with mock enabled unless an APP_ENV=local/test is also set) and log a prominent warning when it is active.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "INFO",
+      "finding_type": "workflow",
+      "category": "other",
+      "title": "Feature 009 implemented but never passed the independent gate",
+      "path": ".adev/review-ledger.json",
+      "line": 1,
+      "evidence": "feature_inventory lists specs/002..009 as review_status PENDING / needs_review true. specs/009-fondamenta-mock-test-qualita is implemented (backend/app/quality/*, contract+integration tests passing in regression_results) yet has last_verdict null; specs/002-008 are spec-only with no backend implementation. Only 001 is READY.",
+      "recommendation": "Run the independent quality gate for 009 (its shipped code underpins 001's seed/tests) and keep 002-008 flagged as not-yet-implemented rather than merely unreviewed.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "INFO",
+      "finding_type": "tooling",
+      "category": "dependency_impact",
+      "title": "tokensave index stale and served from main, not the review branch",
+      "path": ".tokensave/branch-meta.json",
+      "line": 1,
+      "evidence": "tokensave_status: \"Index last synced 1d 1h ago\" and \"branch 'chore/adopt-adev-standard' is not tracked \u2014 serving from 'main'\". tokensave/codegraph are optional (required:false) so non-blocking. The branch diff only touches .specify/, .adev/, AGENTS.md, .claude/, .codex/, .mcp.json, so backend code is identical to main and dependency-impact analysis is effectively unaffected, but graph queries do not reflect the exact branch state.",
+      "recommendation": "Note the limitation; if graph-assisted impact analysis is needed for this branch, run `tokensave branch add chore/adopt-adev-standard` / `tokensave sync` first (with user consent).",
+      "reviewer_id": "primary"
+    }
+  ]
+}

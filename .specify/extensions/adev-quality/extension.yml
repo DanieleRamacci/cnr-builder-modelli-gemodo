@@ -1,0 +1,32 @@
+schema_version: "1.0"
+
+extension:
+  id: adev-quality
+  name: "AI Development Standard Quality Gate"
+  version: "0.1.0"
+  description: "Adds independent verification after implementation without replacing Spec Kit core commands."
+  author: ai-dev-standard
+  repository: ai-dev-standard
+  license: MIT
+
+requires:
+  speckit_version: ">=0.2.0"
+
+provides:
+  commands:
+    - name: speckit.adev-quality.review
+      file: commands/speckit.adev-quality.review.md
+      description: "Run the independent review quality gate"
+
+hooks:
+  after_implement:
+    command: "speckit.adev-quality.review"
+    priority: 5
+    optional: false
+    description: "Run independent quality review before a feature can be considered complete."
+tags:
+  - quality
+  - review
+  - ai-dev-standard
+defaults:
+  review_config: ".specify/config/review.yml"

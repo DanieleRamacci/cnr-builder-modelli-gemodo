@@ -1,0 +1,94 @@
+{
+  "schema": "adev.review_report.v1",
+  "created_at": "2026-09-01T13:39:01.750572+00:00",
+  "mode": "cross_model",
+  "verdict": "FAIL",
+  "reasons": [
+    "failed regression command: commands:uv --directory backend run pytest -m \"not e2e\"",
+    "blocking findings: 1"
+  ],
+  "run_directory": ".adev/reviews/run-20260901T133503Z",
+  "reviewers": [
+    {
+      "reviewer_id": "primary",
+      "provider": "claude_code",
+      "session_id": "49acd11e12524f0887dd9fb5c4eae33c",
+      "isolated": true,
+      "valid": true,
+      "message": "Claude Code reviewer completed",
+      "finding_count": 6,
+      "artifact": ".adev/reviews/run-20260901T133503Z/review-primary.json"
+    }
+  ],
+  "regression_results": [
+    {
+      "category": "commands",
+      "command": "uv --directory backend run pytest -m \"not e2e\"",
+      "exit_code": 1,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0\nrootdir: /Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend\nconfigfile: pytest.ini\ntestpaths: tests\nplugins: anyio-4.14.2\ncollected 142 items / 12 deselected / 130 selected\n\ntests/catalog/test_campi_richiesti_api.py ..                             [  1%]\ntests/catalog/test_catalog_service_integration.py sssss                  [  5%]\ntests/catalog/test_catalogo_categorie_api.py ...                         [  7%]\ntests/catalog/test_catalogo_modelli_api.py ...                           [ 10%]\ntests/catalog/test_catalogo_tipi_documento_api.py .                      [ 10%]\ntests/catalog/test_catalogo_tipologia_sol.py .                           [ 11%]\ntests/common/test_api_error_response.py ..                               [ 13%]\ntests/common/test_security_jwt.py .......                                [ 18%]\ntests/contract/test_mock_geban_scenarios_contract.py ........            [ 24%]\ntests/contract/test_open_decisions_contract.py ...................       [ 39%]\ntests/contract/test_quality_readiness_contract.py ..........             [ 46%]\ntests/integration/test_coverage_matrix.py ............................   [ 68%]\ntests/integration/test_environment_verification.py ...........           [ 76%]\ntests/integration/test_open_decision_gates.py .........                  [ 83%]\ntests/integration/test_seed_demo_validation.py ............              [ 93%]\ntests/validation/test_validazione_payload_api.py sssssssss               [100%]\n\n================ 116 passed, 14 skipped, 12 deselected in 1.67s ================\n",
+      "stderr": "  + Exception Group Traceback (most recent call last):\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/bin/pytest\", line 10, in <module>\n  |     sys.exit(_console_main())\n  |              ^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 253, in _console_main\n  |     code = _main(prog=_get_prog_name(sys.argv))\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 229, in _main\n  |     ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)\n  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_hooks.py\", line 512, in __call__\n  |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n  |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_callers.py\", line 167, in _multicall\n  |     raise exception\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_callers.py\", line 121, in _multicall\n  |     res = hook_impl.function(*args)\n  |           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 377, in pytest_cmdline_main\n  |     return wrap_session(config, _main)\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 372, in wrap_session\n  |     config._ensure_unconfigure()\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 1212, in _ensure_unconfigure\n  |     self.hook.pytest_unconfigure(config=self)\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_hooks.py\", line 512, in __call__\n  |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n  |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_callers.py\", line 167, in _multicall\n  |     raise exception\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/pluggy/_callers.py\", line 121, in _multicall\n  |     res = hook_impl.function(*args)\n  |           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 173, in pytest_unconfigure\n  |     collect_unraisable(config)\n  |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 81, in collect_unraisable\n  |     raise ExceptionGroup(\"multiple unraisable exception warnings\", errors)\n  | ExceptionGroup: multiple unraisable exception warnings (2 sub-exceptions)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 33, in gc_collect_harder\n    |     gc.collect()\n    | ResourceWarning: unclosed <socket.socket fd=12, family=1, type=1, proto=0>\n    | \n    | The above exception was the direct cause of the following exception:\n    | \n    | Traceback (most recent call last):\n    |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 67, in collect_unraisable\n    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))\n    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <socket.socket fd=12, family=1, type=1, proto=0>\nEnable tracemalloc to get traceback where the object was allocated.\nSee https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.\n    +---------------- 2 ----------------\n    | Traceback (most recent call last):\n    |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 33, in gc_collect_harder\n    |     gc.collect()\n    | ResourceWarning: unclosed <socket.socket fd=11, family=1, type=1, proto=0>\n    | \n    | The above exception was the direct cause of the following exception:\n    | \n    | Traceback (most recent call last):\n    |   File \"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py\", line 67, in collect_unraisable\n    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))\n    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <socket.socket fd=11, family=1, type=1, proto=0>\nEnable tracemalloc to get traceback where the object was allocated.\nSee https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.\n    +------------------------------------\n"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "HIGH",
+      "category": "regression",
+      "title": "Configured regression command exits non-zero (fails the quality gate)",
+      "path": "backend/pytest.ini",
+      "line": 9,
+      "evidence": "regression_results[0]: `uv --directory backend run pytest -m \"not e2e\"` returns exit_code 1. stdout shows `116 passed, 14 skipped` but stderr shows pytest `_ensure_unconfigure` raising `ExceptionGroup: multiple unraisable exception warnings` -> `PytestUnraisableExceptionWarning: Exception ignored in: <socket.socket fd=12 ...>` / `fd=11` (`ResourceWarning: unclosed <socket.socket ...>`). `pytest.ini` line 8-9 sets `filterwarnings = error`, so the GC-time ResourceWarning from leaked clients is escalated to a fatal error and the process exits 1. `.specify/config/review.yml` line 18 sets `fail_on.failed_regression: true`, so this evidence forces the gate to FAIL closed.",
+      "recommendation": "Fix the socket leak (see next finding) so the suite exits 0, or scope `filterwarnings` to not escalate `PytestUnraisableExceptionWarning`/`ResourceWarning` at teardown. Do not accept the gate as green while the sole configured regression command returns exit 1; the 116-passed summary and the exit code are inconsistent and must be reconciled before this evidence can support a PASS.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "insufficient_test",
+      "title": "API tests instantiate TestClient without closing it, leaking sockets",
+      "path": "backend/tests/catalog/test_catalogo_modelli_api.py",
+      "line": 43,
+      "evidence": "`TestClient(app).get(...)` is created inline and discarded, never `.close()`d nor used as `with TestClient(app) as client:`. Same pattern in test_catalogo_categorie_api.py:42,61,73, test_catalogo_tipologia_sol.py:23, test_catalogo_tipi_documento_api.py:21, test_campi_richiesti_api.py:52,76, common/test_api_error_response.py:11,24, common/test_security_jwt.py:98, and validation/test_validazione_payload_api.py:25 (fixture `yield TestClient(app)` also never closes). Starlette's TestClient wraps an httpx.Client plus an anyio portal; not closing it leaks the transport and the event-loop AF_UNIX socketpair seen in the regression stderr (family=1 sockets), which under `filterwarnings=error` breaks the suite exit status.",
+      "recommendation": "Introduce a shared fixture `with TestClient(app) as client: yield client` (or context-manage each call site) so transports/portals are closed deterministically; this removes the ResourceWarning and stabilizes the regression command's exit code.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "dependency_impact",
+      "title": "Committed agent hooks hardcode /opt/homebrew/bin/tokensave, breaking non-Homebrew/CI environments",
+      "path": ".claude/settings.json",
+      "line": 16,
+      "evidence": "New untracked files that would be committed (no `.gitignore` entry for `.claude/`, `.codex/`, `.mcp.json`): `.claude/settings.json` lines 16, 29, 43 and `.mcp.json` line 12 invoke `/opt/homebrew/bin/tokensave` (Homebrew Apple-Silicon path). On Linux, Intel macOS (`/usr/local/bin`), or any machine without tokensave, the UserPromptSubmit/PreToolUse/Stop hooks and the tokensave MCP server fail to spawn. `.mcp.json` uses a bare `codegraph` command but not for tokensave. Constitution VI requires the repo be reusable by other administrations without local machine state.",
+      "recommendation": "Invoke `tokensave` by bare name via PATH (as done for `codegraph`), make the hooks tolerate a missing binary, and/or gitignore machine-local agent settings so only portable config is version-controlled.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "missing_requirement",
+      "title": "Non-optional after_implement hook runs `adev review` with no availability check or fallback",
+      "path": ".specify/extensions/adev-quality/extension.yml",
+      "line": 25,
+      "evidence": "`.specify/extensions.yml` and `.specify/extensions/adev-quality/extension.yml` register the `after_implement` hook `speckit.adev-quality.review` with `optional: false` / `enabled: true`. The skill (.agents/skills/speckit-adev-quality-review/SKILL.md:20-24) and command (.specify/extensions/adev-quality/commands/speckit.adev-quality.review.md:15-17) only run `adev review`. `.specify/config/tools.yml` enumerates codegraph/tokensave/rtk/headroom/caveman but never `adev` itself, so there is no deterministic install check for the binary the blocking hook depends on. Any contributor running `implement` without `adev` on PATH hits a non-optional hook failure.",
+      "recommendation": "Add an `adev` entry (install_check: command_available) to tools.yml, document it as a required dev dependency in the standard docs, or set the hook `optional: true` until the toolchain is guaranteed in every environment that runs the workflow.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "category": "dependency_impact",
+      "title": "Feature-completion gate hard-depends on external codex and claude CLIs and specific model ids",
+      "path": ".specify/config/review.yml",
+      "line": 6,
+      "evidence": "review.yml lines 4-13 and 39-49 pin `developer.provider: codex_cli` model `gpt-5`, reviewer `provider: claude_code` model `sonnet`, requiring `command: codex` and `command: claude` on PATH with `timeout_seconds: 900`. With `fail_on.malformed_report: true` and `security_review: true`, a missing provider CLI produces a malformed report and a hard FAIL, coupling 'feature complete' to two external CLIs and named models that are not checked anywhere.",
+      "recommendation": "Document the required reviewer/developer CLIs and models in the standard config or tools.yml, and/or allow a degraded static-only review mode so the gate fails with a clear 'provider missing' signal instead of 'malformed report'.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "category": "other",
+      "title": "Review run artifacts under .adev/ are not gitignored; absolute paths and duplicated constitution would be committed",
+      "path": ".gitignore",
+      "line": 30,
+      "evidence": ".gitignore has no `.adev/` entry. `.adev/reviews/run-20260901T133503Z/sessions/primary/request.json` embeds the absolute developer path `/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando`, a full copy of `.specify/memory/constitution.md`, and captured pytest stdout/stderr. `git add -A` would version per-run review state (churn + local-path leakage). `.specify/extensions/.registry` also has no trailing newline.",
+      "recommendation": "Add `.adev/reviews/` (or `.adev/`) to `.gitignore`, keep only durable standard config under version control, and add the trailing newline to `.specify/extensions/.registry`.",
+      "reviewer_id": "primary"
+    }
+  ]
+}

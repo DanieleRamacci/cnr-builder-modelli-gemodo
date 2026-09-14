@@ -1,0 +1,26 @@
+standard:
+  name: ai-dev-standard
+  version: 0.1.0
+  workflow:
+  - constitution
+  - specify
+  - clarify
+  - plan
+  - tasks
+  - analyze
+  - implement
+  - review
+  - converge
+  source:
+    repository: ai-dev-standard
+    managed_by: adev
+  legacy_workflow:
+  - constitution
+  - specify
+  - clarify
+  - plan
+  - tasks
+  - analyze
+  - implement
+  - review
+  - converge

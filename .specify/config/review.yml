@@ -1,0 +1,49 @@
+review:
+  enabled: true
+  mode: cross_model
+  developer:
+    provider: codex_cli
+    model: gpt-5
+  reviewers:
+    - id: primary
+      provider: claude_code
+      model: sonnet
+      roles:
+        - correctness
+        - regression
+        - security
+  fail_on:
+    severities:
+      - CRITICAL
+      - HIGH
+    failed_regression: true
+    malformed_report: true
+  security_review: true
+  regression_tests:
+    lint: []
+    typecheck: []
+    unit: []
+    integration: []
+    e2e: []
+    security: []
+    commands:
+      - uv --directory backend run pytest -m "not e2e"
+  report:
+    directory: .adev/reviews
+    format: json
+
+providers:
+  static:
+    type: static
+    instructions: "Deterministic local checks for obvious security, regression, and partial-implementation risks."
+  claude_code:
+    type: claude_code
+    command: claude
+    model: sonnet
+    timeout_seconds: 900
+    extra_args: []
+  codex_cli:
+    type: codex_cli
+    command: codex
+    timeout_seconds: 900
+    extra_args: []

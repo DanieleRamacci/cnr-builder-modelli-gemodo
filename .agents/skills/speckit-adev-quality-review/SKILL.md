@@ -1,0 +1,1 @@
+../../../.specify/extensions/adev-quality/.specify-dev/agent-commands/zed/speckit-adev-quality-review/SKILL.md

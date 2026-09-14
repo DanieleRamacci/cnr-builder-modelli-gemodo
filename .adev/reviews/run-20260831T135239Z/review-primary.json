@@ -1,0 +1,6 @@
+{
+  "reviewer_id": "primary",
+  "valid": false,
+  "message": "Ignoring 84 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando\"].hasTrustDialogAccepted: true in /Users/danieleramacci/.claude.json.\n",
+  "findings": []
+}
