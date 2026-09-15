@@ -176,6 +176,26 @@ del sistema esterno non deve bloccare la consultazione dei modelli gia' pubblica
   via documentazione statica come oggi) prima che il flusso end-to-end funzioni:
   dipendenza dal team GEBAN, da coordinare.
 
+## Esempio Concreto: Contratto Di Discovery Per GEBAN
+
+[`0001-esempio-discovery-geban.json`](./0001-esempio-discovery-geban.json) e' un
+esempio della risposta attesa dall'endpoint di discovery che GEBAN dovra' esporre
+per `BANDO_CONCORSO` (passo 2 del flusso in §4), verificato il 2026-09-15 contro gli
+endpoint di test reali (`https://geban-service.test.si.cnr.it/api/v1/profili`,
+`/api/v1/tipoSols`) per i codici tipologia/profilo. Da consegnare al team GEBAN come
+riferimento per l'implementazione. Contiene marcatori `_confermato: true/false` per
+distinguere cosa e' verificato sui dati reali da cosa e' ancora una proposta di
+GEMODO:
+
+- **Confermato**: i 10 codici tipologia e i 7 codici profilo (nomenclatura gia'
+  allineata dalla migration `0007`).
+- **Da confermare con GEBAN**: le combinazioni tipologia-profilo esatte (oggi solo
+  proposte, riprese da `infra/local/postgres/seed-demo-catalog.yaml`; 5 tipologie
+  su 10 non hanno ancora nessuna combinazione proposta); e se il campo `livello`
+  (trovato come `livelliPossibili`/`livelloBase` su `/api/v1/profili`, non presente
+  nel contratto dati odierno) debba entrare nel contratto come campo dipendente dal
+  profilo scelto, invece che generico come gli altri.
+
 ## Prossimi Passi
 
 Non ancora eseguiti in questa sessione (deliberatamente, per confermare prima

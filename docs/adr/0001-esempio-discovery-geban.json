@@ -1,0 +1,85 @@
+{
+  "_comment": "Esempio della risposta attesa dall'endpoint di discovery che GEBAN dovra' esporre per il tipo documento BANDO_CONCORSO (ADR 0001, docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md). Da consegnare al team GEBAN come riferimento per implementare l'endpoint, non e' un file di configurazione letto da GEMODO. Campi con '_confermato' true sono verificati sugli endpoint di test reali (https://geban-service.test.si.cnr.it/api/v1/profili, /api/v1/tipoSols) il 2026-09-15; campi con '_confermato' false sono una proposta di GEMODO ancora da validare con GEBAN.",
+  "tipo_documento": "BANDO_CONCORSO",
+  "validita": "2026-09-15T00:00:00Z",
+  "_comment_validita": "Timestamp di riferimento della classificazione: GEMODO lo mostra insieme a ogni modello creato (DEC-001-VERSIONING-RIFERIMENTI-ESTERNI). Proposta: GEBAN lo aggiorna ogni volta che cambia categorie/tipologie.",
+
+  "tipologie": [
+    {
+      "codice": "TDPNRR", "descrizione": "Tempo Determinato PNRR", "_confermato": true,
+      "profili": [], "_comment": "combinazione tipologia-profilo NON verificata con GEBAN, proposta vuota da compilare insieme a loro"
+    },
+    { "codice": "CD", "descrizione": "Comandi e Distacchi", "_confermato": true, "profili": [] },
+    { "codice": "DIR", "descrizione": "Direttori", "_confermato": true, "profili": [] },
+    {
+      "codice": "TD", "descrizione": "Tempo Determinato", "_confermato": true,
+      "profili": [
+        { "codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R.", "livelli_possibili": ["IV", "V", "VI"], "livello_base": "VI" },
+        { "codice": "OPERATORE_TECNICO", "descrizione": "Operatore Tecnico", "livelli_possibili": ["VI", "VII", "VIII"], "livello_base": "VIII" },
+        { "codice": "RICERCATORE", "descrizione": "Ricercatore", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "TECNOLOGO", "descrizione": "Tecnologo", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" }
+      ],
+      "_comment": "proposta basata su infra/local/postgres/seed-demo-catalog.yaml, non ancora confermata da GEBAN"
+    },
+    {
+      "codice": "CP", "descrizione": "Concorsi Pubblici", "_confermato": true,
+      "profili": [
+        { "codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R.", "livelli_possibili": ["IV", "V", "VI"], "livello_base": "VI" },
+        { "codice": "OPERATORE_TECNICO", "descrizione": "Operatore Tecnico", "livelli_possibili": ["VI", "VII", "VIII"], "livello_base": "VIII" },
+        { "codice": "RICERCATORE", "descrizione": "Ricercatore", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "TECNOLOGO", "descrizione": "Tecnologo", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "FUNZIONARIO_AMMINISTRAZIONE", "descrizione": "Funzionario di Amministrazione", "livelli_possibili": ["IV", "V"], "livello_base": "V" }
+      ],
+      "_comment": "proposta basata su seed-demo-catalog.yaml, non ancora confermata da GEBAN"
+    },
+    { "codice": "RS", "descrizione": "Reclutamento Speciale", "_confermato": true,
+      "profili": [
+        { "codice": "RICERCATORE", "descrizione": "Ricercatore", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "TECNOLOGO", "descrizione": "Tecnologo", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" }
+      ],
+      "_comment": "proposta, non ancora confermata da GEBAN"
+    },
+    { "codice": "CATP", "descrizione": "Categorie Protette", "_confermato": true, "profili": [] },
+    {
+      "codice": "TI", "descrizione": "Tempo Indeterminato", "_confermato": true,
+      "profili": [
+        { "codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R.", "livelli_possibili": ["IV", "V", "VI"], "livello_base": "VI" },
+        { "codice": "OPERATORE_TECNICO", "descrizione": "Operatore Tecnico", "livelli_possibili": ["VI", "VII", "VIII"], "livello_base": "VIII" },
+        { "codice": "RICERCATORE", "descrizione": "Ricercatore", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "TECNOLOGO", "descrizione": "Tecnologo", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "FUNZIONARIO_AMMINISTRAZIONE", "descrizione": "Funzionario di Amministrazione", "livelli_possibili": ["IV", "V"], "livello_base": "V" }
+      ],
+      "_comment": "proposta basata su seed-demo-catalog.yaml, non ancora confermata da GEBAN"
+    },
+    { "codice": "SDIP", "descrizione": "Selezioni per dipendenti CNR/Candidature", "_confermato": true, "profili": [] },
+    {
+      "codice": "MOB", "descrizione": "Mobilita'", "_confermato": true,
+      "profili": [
+        { "codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R.", "livelli_possibili": ["IV", "V", "VI"], "livello_base": "VI" },
+        { "codice": "OPERATORE_TECNICO", "descrizione": "Operatore Tecnico", "livelli_possibili": ["VI", "VII", "VIII"], "livello_base": "VIII" },
+        { "codice": "RICERCATORE", "descrizione": "Ricercatore", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "TECNOLOGO", "descrizione": "Tecnologo", "livelli_possibili": ["I", "II", "III"], "livello_base": "III" },
+        { "codice": "FUNZIONARIO_AMMINISTRAZIONE", "descrizione": "Funzionario di Amministrazione", "livelli_possibili": ["IV", "V"], "livello_base": "V" }
+      ],
+      "_comment": "proposta basata su seed-demo-catalog.yaml, non ancora confermata da GEBAN"
+    }
+  ],
+  "_comment_tipologie": "I 10 codici tipologia e i 7 codici profilo sono verificati sugli endpoint reali di GEBAN (_confermato: true). Le COMBINAZIONI tipologia-profilo (quale profilo e' ammesso sotto quale tipologia) NON sono mai state confermate da GEBAN: qui uso come proposta di partenza le stesse combinazioni gia' in infra/local/postgres/seed-demo-catalog.yaml. TDPNRR, CD, DIR, CATP, SDIP hanno 'profili: []' perche' non abbiamo nessuna proposta di combinazione per loro: vanno compilate insieme a GEBAN, non lasciate vuote in produzione.",
+
+  "campi": [
+    { "codice": "codice_bando", "etichetta": "Codice bando", "tipo": "string", "lingua": "IT", "obbligatorio": true, "ordine": 1, "descrizione": "Identificativo funzionale del bando", "validazione": { "minLength": 1 }, "_confermato": true },
+    { "codice": "titolo_it", "etichetta": "Titolo", "tipo": "string", "lingua": "IT", "obbligatorio": true, "ordine": 2, "descrizione": "Titolo italiano del bando", "validazione": { "minLength": 1 }, "_confermato": true },
+    { "codice": "descrizione_ridotta_it", "etichetta": "Descrizione ridotta", "tipo": "string", "lingua": "IT", "obbligatorio": false, "ordine": 3, "descrizione": "Sintesi italiana del bando", "validazione": null, "_confermato": true },
+    { "codice": "sede_prescelta_it", "etichetta": "Sede", "tipo": "string", "lingua": "IT", "obbligatorio": true, "ordine": 4, "descrizione": "Sede associata alla procedura", "validazione": { "minLength": 1 }, "_confermato": true },
+    { "codice": "numero_posti", "etichetta": "Numero posti", "tipo": "number", "lingua": "IT", "obbligatorio": true, "ordine": 5, "descrizione": "Numero dei posti previsti", "validazione": { "minimum": 1 }, "_confermato": true },
+    { "codice": "titolo_en", "etichetta": "Title", "tipo": "string", "lingua": "EN", "obbligatorio": true, "ordine": 6, "descrizione": "Titolo inglese del bando", "validazione": { "minLength": 1 }, "_confermato": true },
+    {
+      "codice": "livello", "etichetta": "Livello", "tipo": "enum", "lingua": "IT", "obbligatorio": true, "ordine": 7,
+      "descrizione": "Livello professionale del bando",
+      "validazione": { "fonte_opzioni": "profilo.livelli_possibili", "default": "profilo.livello_base" },
+      "_confermato": false,
+      "_comment": "PROPOSTA NON CONFERMATA: /api/v1/profili restituisce livelliPossibili/livelloBase per profilo (es. Ricercatore I/II/III). Se un bando richiede davvero questo dato, e' un campo che varia per profilo, non un campo generico come gli altri sei sopra - da confermare con GEBAN prima di considerarlo parte del contratto."
+    }
+  ],
+  "_comment_campi": "I primi 6 campi sono gia' quelli usati oggi da GEMODO (stessa forma di backend/alembic/versions/0005_classificazione_catalogo_geban.py CAMPI_DEMO) e sono generici per tutto BANDO_CONCORSO, indipendenti dal profilo scelto. Il settimo campo (livello) e' una proposta per gestire livelliPossibili/livelloBase trovati su /api/v1/profili - meccanismo di 'opzioni che dipendono dal profilo scelto' ancora da progettare/validare, non solo da confermare il contenuto."
+}
