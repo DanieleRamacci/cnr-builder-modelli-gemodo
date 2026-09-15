@@ -48,6 +48,11 @@
   `internal_permissions` include `GEMODO_MODELLI_GESTORE`, configurato a mano
   dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak — stesso
   processo operativo gia' in uso per configurare `role_mappings` oggi.
+  *(2026-09-15: `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` supersede l'entita'
+  Ufficio e il campo `ufficio:` qui descritti — l'autorizzazione di scrittura
+  si risolve dal `codice_contesto` del tipo documento verificato contro il
+  contesto del token, senza campo/etichetta aggiuntiva; vedi
+  `docs/decision-register.yaml`)*
 
 ### Session 2026-09-14
 

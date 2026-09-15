@@ -208,6 +208,27 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
   voci di `role_mappings` il cui `internal_permissions` include
   `GEMODO_MODELLI_GESTORE` guadagnano un campo `ufficio:` esplicito, configurato a
   mano dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak.
+  *(2026-09-15: il campo `ufficio:` qui descritto non si implementa piu', vedi sotto)*
+
+### Session 2026-09-15
+
+- Q: Serve davvero un'entita' Ufficio separata (tabella dedicata, `ufficio:` su
+  `role_mappings`) per sapere chi puo' scrivere su un tipo documento? -> A: No
+  (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, CONFERMATA, supersede
+  `DEC-001-UFFICIO-PROPRIETARIO` e la parte di `DEC-002-GESTORE-UFFICIO-MAPPING`
+  sul campo `ufficio:`). Il **contesto** del token (`contexts.<nome>.roles`,
+  meccanismo gia' implementato per GEBAN) e' di per se' il segnale sufficiente:
+  `TipoDocumento` porta un campo diretto `codice_contesto` invece di un riferimento
+  a un'entita' Ufficio. Un utente puo' avere piu' contesti nel token
+  contemporaneamente (es. "geban" e un futuro "contratti"), ciascuno con i propri
+  ruoli, e vede/gestisce l'unione dei tipi documento associati a ciascun contesto
+  che possiede — verificato **separatamente per ciascun contesto**, mai come lista
+  di permessi gia' appiattita su tutti i contesti insieme (altrimenti un ruolo di
+  gestore in un contesto risulterebbe erroneamente valido anche in un altro). La
+  distinzione concettuale proprieta'(scrittura)/consumo(lettura-generazione) fra
+  `TipoDocumento` e `ProfiloDiIntegrazione` resta invariata — cambia solo il
+  meccanismo con cui si rappresenta "chi possiede", da entita' dedicata a campo
+  diretto sul contesto gia' esistente.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -356,10 +377,10 @@ risposta distingua i due casi.
    `PROFILO_INTEGRAZIONE_NON_ABILITATO` — le due condizioni restano distinguibili.
 4. **Given** il profilo del chiamante ha uno specifico `modello_versione_id` concesso
    esplicitamente tramite `modelli_versioni_ammessi`, anche se il tipo documento
-   proprietario non e' quello "principale" del profilo, **When** richiede
+   non e' quello del contesto "principale" del profilo, **When** richiede
    contratto dati o validazione per quel `modello_versione_id`, **Then** la
-   richiesta e' autorizzata (concessione cross-ufficio, `DEC-001-UFFICIO-
-   PROPRIETARIO`).
+   richiesta e' autorizzata (concessione cross-contesto, `DEC-001-CONTESTO-
+   SOSTITUISCE-UFFICIO`).
 
 ### Edge Cases
 
@@ -517,12 +538,15 @@ risposta distingua i due casi.
   persistenti (non restare solo in memoria di processo), cosi' che un futuro punto di
   modifica (es. interfaccia web) possa scrivere sulle stesse tabelle senza richiedere
   un cambio di schema.
-- **FR-031**: Ogni `TipoDocumento` MUST riferire esattamente un `Ufficio` proprietario;
-  la creazione o modifica di categorie, tipologie, contratti dati o modelli per quel
-  tipo documento MUST essere consentita solo a un chiamante con ruolo di gestore scoped
-  a quell'Ufficio. Questa autorizzazione di scrittura (proprieta') resta distinta
-  dall'autorizzazione di lettura/generazione di un'Applicazione (FR-025..FR-027), che
-  non implica proprieta'.
+- **FR-031**: Ogni `TipoDocumento` MUST avere un `codice_contesto` che identifica quale
+  contesto del token (`contexts.<codice_contesto>.roles`) ne autorizza la scrittura
+  (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`); la creazione o modifica di categorie,
+  tipologie, contratti dati o modelli per quel tipo documento MUST essere consentita
+  solo a un chiamante il cui token contiene quel contesto con un ruolo che, tramite
+  `role_mappings`, deriva `GEMODO_MODELLI_GESTORE` **per quello specifico contesto**
+  (mai per l'unione di tutti i contesti del token). Questa autorizzazione di scrittura
+  (proprieta') resta distinta dall'autorizzazione di lettura/generazione di
+  un'Applicazione (FR-025..FR-027), che non implica proprieta'.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -543,20 +567,20 @@ risposta distingua i due casi.
 - **Contratto Dati**: insieme dei campi e delle regole che GEBAN usa per costruire la
   maschera e preparare il payload; e' l'insieme di campi dichiarato da una specifica
   versione modello (livello 1, gia' implementato tramite `Campo Richiesto`).
-- **Ufficio**: gruppo organizzativo proprietario di uno o piu' Tipo Documento
-  (`DEC-001-UFFICIO-PROPRIETARIO`); autora categorie, tipologie, contratti dati e
-  modelli dei tipi documento che possiede. Distinto da Profilo Di Integrazione: la
-  proprieta' (scrittura) non implica ne' e' implicata dall'autorizzazione a consumare
-  (lettura/generazione).
+- **Ufficio** *(rimossa, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15)*: non
+  esiste piu' come entita' separata. Il ruolo che avrebbe giocato (chi puo' scrivere
+  su un Tipo Documento) e' giocato da `TipoDocumento.codice_contesto`, che deve
+  corrispondere a un contesto presente nel token del chiamante
+  (`contexts.<codice_contesto>.roles`).
 - **Profilo Di Integrazione**: perimetro contrattuale di un'Applicazione consumatrice
   (es. GEBAN): client tecnici ammessi, tipi documento/categorie/tipologie/versioni
   modello e contratti dati che quell'Applicazione puo' **consultare o generare**,
-  indipendentemente da quale Ufficio li possiede; operazioni abilitate. Introdotto
-  dalla `009`, oggi modellato ma non ancora applicato dalle API di questa feature
-  (`DEC-001-RELAZIONE-PROFILO-CATALOGO`).
+  indipendentemente dal contesto proprietario del tipo documento; operazioni
+  abilitate. Introdotto dalla `009`, oggi modellato ma non ancora applicato dalle API
+  di questa feature (`DEC-001-RELAZIONE-PROFILO-CATALOGO`).
 - **Registro Contratti Dati**: nuova entita' (livello 2, `DEC-001-REGISTRO-CONTRATTI-
-  DATI`), scoped per Tipo Documento (proprieta' ereditata dall'Ufficio di quel tipo
-  documento): raccoglie i contratti dati riusabili e versionati (stessa forma del
+  DATI`), scoped per Tipo Documento (proprieta' ereditata dal `codice_contesto` di
+  quel tipo documento): raccoglie i contratti dati riusabili e versionati (stessa forma del
   Contratto Dati di livello 1: campi con codice, etichetta, tipo, obbligatorieta',
   lingua) che i profili possono referenziare tramite `contratti_dati_ammessi`, e che
   vincolano cosa il builder (`002`/`003`) permette di inserire in un modello di quel

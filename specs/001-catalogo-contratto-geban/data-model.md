@@ -6,8 +6,8 @@
 `DEC-001-OWNERSHIP-DATI-ESTERNI`/`DEC-002-PORTS-ADAPTERS-DISCOVERY` (entrambe
 `CONFERMATA`) cambiano la semantica — non necessariamente lo schema — di
 `CategoriaDocumento`, `TipologiaDocumento` e `RegistroContrattiDati` sotto. Per
-ogni `TipoDocumento`, la sorgente di queste tre entita' dipende dal tipo di
-Ufficio proprietario:
+ogni `TipoDocumento`, la sorgente di queste tre entita' dipende dal tipo del
+`codice_contesto` che lo possiede:
 
 - **Tipo documento integrato** (posseduto da un sistema esterno con propria API,
   oggi `BANDO_CONCORSO` per GEBAN): le righe sono una **cache locale a TTL breve**,
@@ -30,35 +30,19 @@ verso l'endpoint registrato in `010` e' la sorgente effettiva per `BANDO_CONCORS
 
 ## Entities
 
-### Ufficio
+### Ufficio *(rimossa, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15)*
 
-*(nuova entita', `DEC-001-UFFICIO-PROPRIETARIO`, 2026-09-14)* Gruppo organizzativo
-proprietario di uno o piu' `TipoDocumento`. Distinto da `ProfiloDiIntegrazione`: un
-Ufficio possiede/autora i tipi documento (lato scrittura), un'Applicazione li consuma
-se autorizzata (lato lettura/generazione), indipendentemente da chi li possiede.
-Esempio: `UFFICIO_RECLUTAMENTO` possiede `BANDO_CONCORSO`; GEBAN (applicazione) puo'
-essere autorizzato a consultarlo senza esserne proprietario, e potrebbe in futuro
-essere autorizzato anche a `GRADUATORIA_CONCORSO` posseduto da un ufficio diverso.
-
-Fields:
-
-- `codice`: identificativo funzionale, univoco.
-- `nome`: es. "Ufficio Reclutamento".
-- `stato`: `ATTIVO` o `INATTIVO`.
-- `created_at`
-- `updated_at`
-
-Validation:
-
-- `codice` obbligatorio e univoco.
-- un utente MUST avere un ruolo di gestore scoped a un Ufficio per creare/editare
-  categorie, tipologie, contratti dati o modelli dei tipi documento che quell'Ufficio
-  possiede (FR-031).
-
-**Seed**: sezione `uffici:` in `infra/local/postgres/seed-demo-catalog.yaml` (stesso
-file di `tipi_documento:`), caricata da migration Alembic come le altre entita' del
-catalogo. Rinominare il file quando arrivera' un secondo tipo documento reale: il
-nome attuale dichiara "seed demo" ma contiene gia' nomenclatura GEBAN di produzione.
+Non esiste piu' come entita'/tabella separata. Il ruolo che avrebbe giocato (chi
+possiede/autora un `TipoDocumento`, lato scrittura) e' giocato dal campo diretto
+`TipoDocumento.codice_contesto`, verificato contro il contesto presente nel token
+del chiamante (`contexts.<codice_contesto>.roles`, meccanismo gia' implementato in
+`backend/app/common/security.py` per GEBAN). La distinzione concettuale
+proprieta'(scrittura)/consumo(lettura-generazione) fra `TipoDocumento` e
+`ProfiloDiIntegrazione` resta invariata rispetto a quanto deciso in
+`DEC-001-UFFICIO-PROPRIETARIO` — cambia solo il meccanismo, non piu' un'entita'
+dedicata ma un campo sul contesto gia' esistente. Nessuna sezione `uffici:` da
+aggiungere al seed: basta il campo `codice_contesto` su ogni voce di
+`tipi_documento:` in `infra/local/postgres/seed-demo-catalog.yaml`.
 
 ### TipoDocumento
 
@@ -68,9 +52,11 @@ Fields:
 
 - `codice`: identificativo funzionale, univoco.
 - `descrizione`: testo descrittivo.
-- `codice_ufficio_proprietario`: riferimento a `Ufficio` che possiede/autora questo
-  tipo documento (FR-031). Determina transitivamente la proprieta' di categorie,
-  tipologie, contratti dati e modelli legati a questo tipo documento.
+- `codice_contesto`: contesto del token (`contexts.<codice_contesto>.roles`) che
+  autorizza la scrittura su questo tipo documento (FR-031,
+  `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`). Determina transitivamente la proprieta'
+  di categorie, tipologie, contratti dati e modelli legati a questo tipo documento.
+  Per `BANDO_CONCORSO`: `"geban"`.
 - `attivo`: indica se il tipo e' usabile per configurazioni operative.
 - `created_at`
 - `updated_at`
@@ -78,11 +64,17 @@ Fields:
 Validation:
 
 - `codice` obbligatorio e univoco.
-- `codice_ufficio_proprietario` obbligatorio e deve riferire un Ufficio esistente.
+- `codice_contesto` obbligatorio; non deve necessariamente esistere ancora nel
+  token di nessun utente al momento della creazione (un tipo documento puo' essere
+  definito prima che il contesto corrispondente venga effettivamente configurato in
+  ACE) ma deve essere un valore stabile, mai rinominato dopo la creazione senza una
+  migrazione esplicita dei permessi.
 - tipi non attivi non vengono proposti come nuovi elementi operativi.
 - un'Applicazione (`ProfiloDiIntegrazione`) puo' consultare/generare per questo tipo
   documento solo se lo ha nel proprio `tipi_documento_ammessi` (FR-025..FR-027),
-  indipendentemente da quale Ufficio lo possiede.
+  indipendentemente dal `codice_contesto` che lo possiede — proprieta' (scrittura)
+  e autorizzazione a consumare (lettura/generazione) restano meccanismi separati
+  anche se entrambi finiscono per leggere lo stesso token.
 
 ### CategoriaDocumento
 
@@ -131,8 +123,8 @@ Validation:
   identifica una variante funzionale nel catalogo.
 - se presente, `codice_tipologia` deve corrispondere a una `TipologiaDocumento`
   configurata per lo stesso `codice_tipo_documento` (FR-020).
-- la proprieta' (chi puo' modificare questo modello) e' quella dell'`Ufficio`
-  proprietario del `TipoDocumento` referenziato, non un campo proprio (FR-031).
+- la proprieta' (chi puo' modificare questo modello) e' quella del `codice_contesto`
+  del `TipoDocumento` referenziato, non un campo proprio (FR-031).
 
 ### TipologiaDocumento
 
@@ -203,7 +195,7 @@ GEMODO. Per GEBAN queste combinazioni non sono ancora confermate con dati reali
 
 *(nuova entita', `DEC-001-REGISTRO-CONTRATTI-DATI`, 2026-09-14)* Contratto dati
 riusabile e versionato, scoped per `TipoDocumento` (proprieta' ereditata
-transitivamente dall'Ufficio che possiede quel tipo documento). Referenziato da
+transitivamente dal `codice_contesto` di quel tipo documento). Referenziato da
 `ProfiloDiIntegrazione.contratti_dati_ammessi`; vincola quali campi un modello legato
 a quel tipo documento puo' dichiarare (stessa forma di `ModelloCampoRichiesto`).
 Distinto dal contratto dati di livello 1 (`ModelloCampoRichiesto`, gia' implementato,
@@ -246,14 +238,14 @@ GEBAN) autorizzata a **consumare** (consultare/validare/generare), non a possede
 Fields rilevanti:
 
 - `tipi_documento_ammessi`: lista di `TipoDocumento.codice` che questo profilo puo'
-  consultare/consumare, indipendentemente da quale `Ufficio` li possiede.
+  consultare/consumare, indipendentemente dal `codice_contesto` che li possiede.
 - `categorie_ammessi`, `tipologie_ammessi`: stesso principio, dentro un tipo documento
   ammesso.
 - `modelli_versioni_ammessi`: lista di `modello_versione_id` (o codici) che questo
-  profilo puo' usare per generazione, anche se posseduti da un tipo documento/Ufficio
-  diverso da quello "principale" del profilo — e' il meccanismo di concessione
-  cross-ufficio (es. GEBAN autorizzato a un modello di un tipo documento posseduto da
-  un altro ufficio).
+  profilo puo' usare per generazione, anche se posseduti da un tipo documento con un
+  `codice_contesto` diverso da quello "principale" del profilo — e' il meccanismo di
+  concessione cross-contesto (es. GEBAN autorizzato a un modello di un tipo documento
+  posseduto da un contesto diverso da "geban").
 - `contratti_dati_ammessi`: lista di `RegistroContrattiDati.codice` ammessi.
 
 Validation:
@@ -400,7 +392,6 @@ aggiunti in entrambi i posti.
 ## Relationships
 
 ```text
-Ufficio 1--N TipoDocumento (proprieta')
 TipoDocumento 1--N CategoriaDocumento
 TipoDocumento 1--N TipologiaDocumento
 TipoDocumento 1--N ModelloDocumento
@@ -415,7 +406,7 @@ ModelloDocumentoVersione 1--N ModelloCampoRichiesto
 ModelloDocumentoVersione 1--N ValidazionePayload (runtime)
 ValidazionePayload 1--N ErroreValidazione
 PrincipalGEMODO 1--N Operazione API (runtime)
-ProfiloDiIntegrazione N--N TipoDocumento (consumo, indipendente dalla proprieta' Ufficio)
+ProfiloDiIntegrazione N--N TipoDocumento (consumo, indipendente dal codice_contesto proprietario)
 ProfiloDiIntegrazione N--N ModelloDocumentoVersione (concessione esplicita, FR-025..FR-027)
 ```
 

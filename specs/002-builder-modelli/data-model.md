@@ -2,18 +2,21 @@
 
 ## Nota Di Riallineamento (2026-09-15, Cascading ADR 0001)
 
-`TipoDocumento`, `CategoriaDocumento`, `TipologiaDocumento`, `Ufficio` e
+`TipoDocumento`, `CategoriaDocumento`, `TipologiaDocumento` e
 `RegistroContrattiDati` sono definite per intero in
 `specs/001-catalogo-contratto-geban/data-model.md` (che possiede queste entita';
 questo documento le riusa, non le ridefinisce). Le sezioni sotto sono state
-scritte prima della `DEC-001-UFFICIO-PROPRIETARIO`/`DEC-001-OWNERSHIP-DATI-
-ESTERNI` e restano come riferimento storico delle chiavi/validazioni condivise, ma
-per la semantica aggiornata (chi possiede cosa, cache vs seed per un tipo
-documento integrato) fa fede `001`. In particolare, per il builder:
+scritte prima della `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`/`DEC-001-OWNERSHIP-
+DATI-ESTERNI` e restano come riferimento storico delle chiavi/validazioni
+condivise, ma per la semantica aggiornata (chi possiede cosa, cache vs seed per
+un tipo documento integrato) fa fede `001`. In particolare, per il builder:
 
 - Una scrittura (creare/modificare categoria, tipologia, modello) e' autorizzata
-  solo se il gestore chiamante e' scoped all'Ufficio proprietario del tipo
-  documento target (FR-014, `002`; `DEC-001-UFFICIO-PROPRIETARIO`).
+  solo se il token del gestore chiamante contiene il `codice_contesto` del tipo
+  documento target, con un ruolo che in quel contesto deriva
+  `GEMODO_MODELLI_GESTORE` (FR-014, `002`; `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`
+  — nessuna entita' `Ufficio`, verifica scoped al singolo contesto, mai sulla
+  lista di permessi appiattita su tutti i contesti del token).
 - Il builder non legge mai direttamente `CategoriaDocumento`/`TipologiaDocumento`/
   `RegistroContrattiDati` come se fossero sempre dati locali: passa sempre dalla
   **porta di discovery** descritta sotto, che puo' risolversi in una lettura

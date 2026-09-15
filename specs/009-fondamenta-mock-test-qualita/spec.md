@@ -43,13 +43,15 @@
 Decisioni confermate nella `001` (`docs/decision-register.yaml`) che raffinano
 `SistemaRichiedente`/`ProfiloDiIntegrazione`, introdotti in questa spec:
 
-- `DEC-001-UFFICIO-PROPRIETARIO`: raffina la risposta della sessione 2026-07-28 su
-  "operatori umani GEMODO vs applicazioni chiamanti". Non e' solo GEMODO/GEBAN: un
-  `Ufficio` (nuova entita', potenzialmente anche staff di un ufficio esterno come un
-  futuro "ufficio contratti", non solo personale GEMODO) possiede uno o piu' tipi
-  documento e ne autora categorie/tipologie/contratti dati/modelli; un'Applicazione
+- `DEC-001-UFFICIO-PROPRIETARIO` (*superseduta 2026-09-15 da
+  `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`*): raffina la risposta della sessione
+  2026-07-28 su "operatori umani GEMODO vs applicazioni chiamanti". Non e' solo
+  GEMODO/GEBAN: un tipo documento e' posseduto da un contesto (`codice_contesto`,
+  non piu' un'entita' `Ufficio` dedicata — il contesto del token, potenzialmente
+  anche di staff esterno come un futuro contesto "contratti", non solo personale
+  GEMODO) che ne autora categorie/tipologie/contratti dati/modelli; un'Applicazione
   (`ProfiloDiIntegrazione`, es. GEBAN) e' autorizzata a consumarli indipendentemente
-  da quale Ufficio li possiede.
+  da quale contesto li possiede.
 - `DEC-001-CONFIG-PROFILO-GEBAN`: il manifest di `SistemaRichiedente`/
   `ProfiloDiIntegrazione` (oggi solo YAML caricato in memoria via
   `load_sistemi_richiedenti`, mai persistito) diventa il seed che popola vere tabelle
@@ -64,7 +66,13 @@ Decisioni confermate nella `001` (`docs/decision-register.yaml`) che raffinano
   guadagna un campo `ufficio:` sulle voci il cui `internal_permissions` include
   `GEMODO_MODELLI_GESTORE` — dichiara a quale Ufficio quel ruolo/contesto ACE da'
   diritto di scrittura nel builder (`002`), configurato a mano come le altre voci di
-  `role_mappings`.
+  `role_mappings`. *(2026-09-15: campo `ufficio:` NON PIU' necessario,
+  `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` supersede questa parte — il
+  `token_context` gia' presente su ogni voce di `role_mappings` e' di per se' il
+  segnale sufficiente; `ExternalRoleMapping`/`RoleMapping` in
+  `backend/app/quality/schemas.py` non deve guadagnare quel campo. Il resto del
+  meccanismo — gestore risolto dal contesto/ruolo del token, nessuna interfaccia
+  self-service — resta invariato.)*
 
 ## User Scenarios & Testing *(mandatory)*
 

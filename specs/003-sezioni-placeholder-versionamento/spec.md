@@ -24,10 +24,12 @@
 
 ### Session 2026-09-14 (propagazione da `001`)
 
-- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`):
+- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`,
+  *superseduta 2026-09-15 da `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`*):
   l'editor sezioni opera sempre su una versione modello che appartiene, tramite il suo
-  tipo documento, a un Ufficio proprietario. L'autorizzazione a modificare sezioni di
-  un modello resta quella del gestore scoped a quell'Ufficio, non un permesso globale.
+  tipo documento, a un contesto proprietario (`codice_contesto`, non piu' un'entita'
+  Ufficio separata). L'autorizzazione a modificare sezioni di un modello resta quella
+  del gestore il cui token contiene quel contesto, non un permesso globale.
 
 ## Out of Scope
 

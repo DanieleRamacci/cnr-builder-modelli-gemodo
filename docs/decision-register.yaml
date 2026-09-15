@@ -166,9 +166,10 @@ decisions:
       di integrazione (DEC-001-RELAZIONE-PROFILO-CATALOGO) dentro le route gia'
       esistenti, senza nuovi endpoint dedicati (DEC-001-API-PROFILO-GEBAN); i contratti
       dati ammessi vivono in un registro multi-tenant scoped per tipo documento
-      (DEC-001-REGISTRO-CONTRATTI-DATI), la cui proprieta' appartiene all'Ufficio che
-      possiede quel tipo documento, distinto dall'Applicazione che lo consuma
-      (DEC-001-UFFICIO-PROPRIETARIO). Il profilo/contratto di ogni sistema richiedente
+      (DEC-001-REGISTRO-CONTRATTI-DATI), la cui proprieta' appartiene al contesto
+      (codice_contesto) che possiede quel tipo documento, distinto dall'Applicazione
+      che lo consuma (2026-09-15: DEC-001-CONTESTO-SOSTITUISCE-UFFICIO supersede
+      DEC-001-UFFICIO-PROPRIETARIO qui citata, stesso principio). Il profilo/contratto di ogni sistema richiedente
       resta un file versionato nel repo, che popola vere tabelle DB (non solo cache di
       processo), aggiornato solo via build+deploy (DEC-001-CONFIG-PROFILO-GEBAN).
       Rischio residuo: design puntuale (schema tabelle, migration, nuovi codici errore)
@@ -223,19 +224,14 @@ decisions:
       stesso token ACE/contesto gia' costruito per il consumo GEBAN
       (contexts.<app>.roles, backend/app/common/security.py): chi ha ROLE_MANAGER#geban
       (gia' mappato oggi a GEMODO_MODELLI_GESTORE in role_mappings) e' il gestore.
-      Ogni voce di role_mappings il cui internal_permissions include
-      GEMODO_MODELLI_GESTORE (scope: builder) guadagna un campo esplicito ufficio:
-      che dichiara a quale Ufficio quel ruolo/contesto da' diritto di scrittura —
-      niente inferenza implicita dal profilo/sistema richiedente a cui la mapping
-      appartiene. La configurazione di questa associazione resta manuale, fatta
-      dall'admin GEMODO in coordinamento con chi gestisce ACE/Keycloak, stesso
-      identico processo operativo gia' in uso per configurare role_mappings oggi
-      (nessuna interfaccia self-service, coerente con DEC-001-CONFIG-PROFILO-GEBAN).
-      Nota 2026-09-14: lo schema esatto di dove/come leggere il segnale ufficio nel
-      token resta un dettaglio aperto, vedi DEC-002-SORGENTE-UFFICIO-TOKEN — questa
-      decisione fissa il meccanismo/processo, non ancora lo schema JWT preciso.
+      SUPERSEDUTA in parte da DEC-001-CONTESTO-SOSTITUISCE-UFFICIO (2026-09-15): il
+      "campo esplicito ufficio: per voce di role_mappings" descritto qui sotto non va
+      piu' implementato - il token_context gia' presente su ogni voce di role_mappings
+      e' di per se' il segnale sufficiente, senza un'etichetta Ufficio aggiuntiva da
+      derivarne. Il meccanismo di base (gestore risolto dal contesto/ruolo del token,
+      nessuna interfaccia self-service separata) resta valido e non cambia.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-09-14
+    data_ultima_revisione: 2026-09-15
 
   - id: DEC-002-SORGENTE-UFFICIO-TOKEN
     titolo: Sorgente del segnale Ufficio nel token del gestore (claim diretto vs. inferenza da contesto)
@@ -244,30 +240,30 @@ decisions:
       - specs/001-catalogo-contratto-geban
       - specs/006-sicurezza-autorizzazioni-audit
       - specs/009-fondamenta-mock-test-qualita
-    stato: APERTA
-    assunzione_provvisoria: >
-      in attesa di conferma dal team che gestisce ACE (2026-09-14). Due scenari
-      alternativi individuati, entrambi compatibili con il meccanismo/processo gia'
-      confermato in DEC-002-GESTORE-UFFICIO-MAPPING (nessuna interfaccia GEMODO
-      self-service, configurazione manuale coordinata con ACE):
-      (A) ACE fornisce un claim di afferenza/ufficio diretto nel token, indipendente
-      dal ruolo, popolato da un servizio ACE dove l'ufficio si sceglie da una lista
-      in fase di creazione del profilo utente — GEMODO legge l'ufficio direttamente
-      dal claim, senza inferirlo.
-      (B) ACE fornisce solo ruolo + contesto/servizio chiamante (stesso meccanismo
-      contexts.<app>.roles gia' in uso per GEBAN), senza un vero claim di ufficio —
-      l'ufficio si INFERISCE dal contesto/servizio stesso (es. il contesto "geban"
-      implica Ufficio Reclutamento), coerente con l'estensione di role_mappings gia'
-      descritta in DEC-002-GESTORE-UFFICIO-MAPPING.
+    stato: CONFERMATA
+    assunzione_provvisoria: null
     impatto: >
-      cambia lo schema esatto da implementare: nello scenario A serve leggere un
-      claim JWT generico indipendente dal contesto; nello scenario B basta
-      l'estensione di role_mappings (campo ufficio: per voce) gia' descritta. Non
-      generare tabelle/schema Ufficio-token nella 002 finche' non arriva la risposta
-      dal team ACE — bloccante per completare data-model.md/plan.md della 002 con lo
-      schema corretto.
+      confermato 2026-09-15 dal product owner, risolve definitivamente lo scenario
+      aperto: niente claim di afferenza/ufficio dedicato (scenario A scartato) e
+      niente inferenza implicita di un'etichetta Ufficio dal contesto (scenario B
+      originale, anch'esso scartato in favore di qualcosa di piu' semplice). Il
+      "contesto" del token (contexts.<nome>.roles, meccanismo gia' implementato in
+      backend/app/common/security.py per GEBAN) E' l'unita' di scoping, senza livelli
+      aggiuntivi sopra: un utente puo' avere piu' contesti nel token (es. "geban" e
+      "contratti"), ciascuno con i propri ruoli; vede/gestisce i documenti di TUTTI i
+      tipi documento il cui codice_contesto e' fra i contesti presenti nel suo token
+      (unione, non intersezione). Per ora nessuna associazione piu' fine (quale ruolo
+      dentro un contesto autorizza cosa oltre a quanto gia' derivato da role_mappings)
+      - rimandata a quando servira' davvero. Vedi DEC-001-CONTESTO-SOSTITUISCE-UFFICIO
+      per l'impatto sullo schema dati (TipoDocumento.codice_contesto sostituisce
+      l'idea di un'entita' Ufficio separata) e sull'enforcement (l'autorizzazione per
+      un tipo documento specifico va risolta guardando SOLO il contesto corrispondente
+      nel token, non la lista di permessi gia' appiattita su tutti i contesti insieme
+      - altrimenti un utente con contesto "geban" che da' GESTORE e contesto
+      "contratti" che da' solo VIEWER risulterebbe erroneamente GESTORE anche su
+      Contratti).
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-09-14
+    data_ultima_revisione: 2026-09-15
 
   - id: DEC-001-UFFICIO-PROPRIETARIO
     titolo: Distinzione Ufficio (proprietario) da Applicazione (consumatore)
@@ -284,18 +280,54 @@ decisions:
       Documento e autora categorie/tipologie/contratti dati/modelli per quelli che
       possiede; un'Applicazione (ProfiloDiIntegrazione, es. GEBAN) e' autorizzata a
       consumare (consultare/generare) uno o piu' Tipo Documento indipendentemente da
-      quale Ufficio li possiede — lo stesso profilo GEBAN potra' essere autorizzato
-      anche a un futuro tipo documento come GRADUATORIA_CONCORSO, posseduto da un
-      Ufficio diverso da quello di BANDO_CONCORSO. Sostituisce l'ipotesi precedente di
-      un flag tipo_integrazione: APPLICAZIONE|UFFICIO su ProfiloDiIntegrazione, che
-      mescolava i due concetti in un'unica entita'. Per il primo incremento GEBAN non
-      cambia nulla in pratica (GEMODO agisce per conto di un Ufficio "Reclutamento"
-      implicito via file di config), ma TipoDocumento deve gia' avere un riferimento a
-      un Ufficio proprietario (FR-031) per non richiedere un redesign quando arrivera'
-      un secondo ufficio/tipo documento reale. Rischio residuo: schema esatto (tabella
-      Ufficio, FK su tipo_documento) ancora da completare in plan.md.
+      quale Ufficio li possiede. SUPERSEDUTA da DEC-001-CONTESTO-SOSTITUISCE-UFFICIO
+      (2026-09-15): l'entita' Ufficio separata non si costruisce piu' - il ruolo che
+      doveva giocare (chi puo' scrivere su quale tipo documento) e' giocato dal
+      contesto del token (gia' esistente), tramite TipoDocumento.codice_contesto.
+      La distinzione concettuale Ufficio (proprietario/autore)/Applicazione
+      (consumatore) resta valida - e' solo l'implementazione di "proprietario" che
+      cambia da entita' dedicata a campo diretto sul contesto.
     fase_bloccante: PLAN
-    data_ultima_revisione: 2026-09-14
+    data_ultima_revisione: 2026-09-15
+
+  - id: DEC-001-CONTESTO-SOSTITUISCE-UFFICIO
+    titolo: Il contesto del token sostituisce l'entita' Ufficio come meccanismo di ownership/scoping
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/007-frontend-builder-consultazione
+      - specs/009-fondamenta-mock-test-qualita
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      confermato 2026-09-15 dal product owner. Sostituisce (supersede) sia
+      DEC-001-UFFICIO-PROPRIETARIO sia la parte di DEC-002-GESTORE-UFFICIO-MAPPING
+      relativa al campo ufficio: su role_mappings. Nessuna entita'/tabella Ufficio:
+      TipoDocumento porta un campo diretto codice_contesto (stringa) che deve
+      corrispondere a una chiave contexts.<codice_contesto> nel token di chi vuole
+      leggere/scrivere i suoi documenti o modelli. L'autorizzazione per un'operazione
+      su un tipo documento specifico si risolve cosi': (1) il token del chiamante
+      contiene una chiave contexts.<X> dove X == tipo_documento.codice_contesto? Se
+      no, rifiutato (stesso comportamento funzionale di prima, errore esplicito, non
+      lista vuota). (2) dentro SOLO quel contesto, quali internal_permissions
+      derivano i ruoli esterni presenti, via role_mappings (meccanismo gia'
+      implementato in permessi_da_ruoli_esterni, backend/app/quality/
+      integration_profile.py) - la permission richiesta (es. GEMODO_MODELLI_GESTORE
+      per una scrittura, DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE per una lettura) deve
+      essere fra quelle derivate DA QUEL CONTESTO, non dall'unione appiattita di tutti
+      i contesti del token (correttezza multi-contesto, vedi nota in
+      DEC-002-SORGENTE-UFFICIO-TOKEN). Un utente con piu' contesti nel token (es.
+      "geban" e "contratti") vede/gestisce l'unione dei tipi documento associati a
+      ciascun contesto che possiede, ciascuno verificato separatamente - mai
+      permission bleed fra contesti diversi. Per ora GEMODO_MODELLI_GESTORE via
+      contexts.geban.roles=ROLE_MANAGER#geban resta l'unico caso reale configurato
+      (BANDO_CONCORSO, un solo contesto); il meccanismo e' gia' generale per quando
+      arrivera' un secondo contesto/tipo documento reale (es. "contratti").
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-15
 
   - id: DEC-001-GENERALIZZAZIONE-TIPOLOGIA
     titolo: Generalizzazione di TipologiaBandoSOL a TipologiaDocumento
@@ -404,9 +436,11 @@ decisions:
       "bando-concorso-common-fields-v1" in infra/local/integration-profiles.local.yaml)
       e' oggi solo una stringa senza nessuna definizione a supporto: nessun file,
       tabella o validazione la risolve. Si introduce un registro dei contratti dati,
-      scoped per Tipo Documento (proprieta' ereditata transitivamente dall'Ufficio che
-      possiede quel tipo documento — vedi DEC-001-UFFICIO-PROPRIETARIO — non dal
-      sistema richiedente/profilo che lo consuma); ogni contratto dati del registro
+      scoped per Tipo Documento (proprieta' ereditata transitivamente dal
+      codice_contesto che possiede quel tipo documento — vedi 2026-09-15:
+      DEC-001-CONTESTO-SOSTITUISCE-UFFICIO, supersede il riferimento originale a
+      DEC-001-UFFICIO-PROPRIETARIO qui, stesso principio — non dal sistema
+      richiedente/profilo che lo consuma); ogni contratto dati del registro
       definisce l'insieme di campi (stessa forma di Campo Richiesto/campo_modello:
       codice, etichetta, tipo, obbligatorieta', lingua) che un modello di quel tipo
       documento puo' dichiarare. Il builder (002/003, non ancora implementato) dovra'

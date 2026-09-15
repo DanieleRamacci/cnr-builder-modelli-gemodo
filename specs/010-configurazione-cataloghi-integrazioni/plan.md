@@ -39,11 +39,12 @@ sistema esterno
 **Storage**: PostgreSQL. Nuove tabelle: `attributo_profilo`,
 `endpoint_integrazione`, `schema_discovery_generato` (versionato). Riusa
 `tipo_documento`/`categoria_documento`/`tipologia_bando_sol` di
-`app.catalog.models` (`001`). Dipende dalle tabelle `ufficio` e
+`app.catalog.models` (`001`), incluso il campo diretto
+`tipo_documento.codice_contesto` (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`,
+2026-09-15 — nessuna tabella `ufficio` separata). Dipende dalla tabella
 `registro_contratti_dati` che la `001` ha progettato (Phase 8,
-`DEC-001-UFFICIO-PROPRIETARIO`/`DEC-001-REGISTRO-CONTRATTI-DATI`) ma non ancora
-implementato in codice (T085-T092 di `001/tasks.md` sono ancora `[ ]`) — vedi
-Dependencies.
+`DEC-001-REGISTRO-CONTRATTI-DATI`) ma non ancora implementato in codice (T085,
+`T087` di `001/tasks.md` sono ancora `[ ]`) — vedi Dependencies.
 
 **Testing**: pytest, httpx/FastAPI TestClient, test reali su Postgres (nessun
 mock del DB), test del client HTTP dell'adapter con un server di prova locale
@@ -125,7 +126,7 @@ backend/
 │   ├── service.py                  # generazione schema (FR-006), test di connessione (FR-008)
 │   └── schemas.py
 ├── app/catalog/
-│   ├── models.py                   # riusato: TipoDocumento, CategoriaDocumento, TipologiaBandoSOL (+ Ufficio, RegistroContrattiDati da 001/Phase 8)
+│   ├── models.py                   # riusato: TipoDocumento (incluso codice_contesto), CategoriaDocumento, TipologiaBandoSOL (+ RegistroContrattiDati da 001/Phase 8)
 │   └── repository.py
 ├── app/common/
 │   ├── errors.py
@@ -163,10 +164,12 @@ Output:
 ## Dependencies
 
 - `001-catalogo-contratto-geban`: possiede `TipoDocumento`/`CategoriaDocumento`/
-  `TipologiaBandoSOL`, e progetta (non ancora implementato) `Ufficio` e
-  `RegistroContrattiDati` (Phase 8, T085-T092). **Ordine di implementazione**:
-  le migration di `Ufficio`/`RegistroContrattiDati` devono esistere prima delle
-  tabelle di questa spec che le referenziano (`attributo_profilo` referenzia
+  `TipologiaBandoSOL` e il campo diretto `TipoDocumento.codice_contesto`
+  (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15 — nessuna tabella `Ufficio`
+  da coordinare), e progetta (non ancora implementato) `RegistroContrattiDati`
+  (Phase 8, T085, T087). **Ordine di implementazione**: le migration di
+  `codice_contesto`/`RegistroContrattiDati` devono esistere prima delle tabelle
+  di questa spec che le referenziano (`attributo_profilo` referenzia
   indirettamente il profilo/categoria della `001`); se `001` non le ha ancora
   implementate quando si inizia l'implementazione di `010`, questa spec le crea
   come parte del proprio primo blocco di migration invece di duplicare la

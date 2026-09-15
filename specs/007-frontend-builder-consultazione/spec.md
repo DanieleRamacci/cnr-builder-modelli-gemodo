@@ -19,12 +19,14 @@
 
 ### Session 2026-09-14 (propagazione da `001`)
 
-- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`): oltre
+- `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`,
+  *superseduta 2026-09-15 da `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`*): oltre
   a GEBAN (un'Applicazione che non usa il frontend, gia' chiarito sopra), il frontend
-  GEMODO puo' avere utenti umani di un Ufficio proprietario (es. un futuro ufficio
-  contratti) che accedono via SSO CNR per creare/gestire in autonomia categorie,
-  tipologie, contratti dati e modelli dei tipi documento posseduti dal proprio
-  Ufficio. Questo e' distinto dal caso GEBAN gia' descritto ed e' da considerare
+  GEMODO puo' avere utenti umani il cui token contiene un contesto proprietario (es.
+  un futuro contesto "contratti") che accedono via SSO CNR per creare/gestire in
+  autonomia modelli dei tipi documento associati a quel contesto (la definizione di
+  categorie/tipologie/contratti dati e' invece scope della `010`, non di questo
+  frontend). Questo e' distinto dal caso GEBAN gia' descritto ed e' da considerare
   quando questa spec verra' pianificata in dettaglio.
 
 ## User Scenarios & Testing *(mandatory)*

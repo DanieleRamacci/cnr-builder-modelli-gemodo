@@ -396,9 +396,11 @@ vengono sincronizzati da un adapter HTTP verso l'endpoint registrato in
 li', non qui). I task T077-T092 sotto restano eseguibili cosi' come scritti; le
 annotazioni puntuali segnano dove la sourcing di produzione cambia.
 
-- [ ] T077 [P] Aggiungere sezione `uffici:` (`UFFICIO_RECLUTAMENTO`) e campo
-      `ufficio: UFFICIO_RECLUTAMENTO` a ogni voce di `tipi_documento:` in
-      `infra/local/postgres/seed-demo-catalog.yaml`
+- [ ] T077 [P] *(2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: riscritta,
+      non piu' `uffici:`/`ufficio:`)* Aggiungere campo `codice_contesto: geban` a
+      ogni voce di `tipi_documento:` in
+      `infra/local/postgres/seed-demo-catalog.yaml` — nessuna sezione `uffici:`
+      separata da creare, il contesto e' un valore diretto sul tipo documento.
 - [ ] T078 [P] Rinominare `tipologie_sol:` in `tipologie:` in
       `infra/local/postgres/seed-demo-catalog.yaml`: ogni voce guadagna
       `tipo_documento: BANDO_CONCORSO` e `codice_sol` viene rinominato
@@ -435,12 +437,16 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
 - [ ] T084 [P] Aggiornare fixture e test esistenti che referenziano
       `TipologiaBandoSOL`/`codice_sol` in `backend/tests/catalog/`,
       `backend/tests/support/`, `backend/tests/integration/test_seed_demo_validation.py`
-- [ ] T085 Migration Alembic `0009` in
-      `backend/alembic/versions/0009_ufficio_proprietario.py`: crea tabella
-      `ufficio`, aggiunge `tipo_documento.ufficio_id` (FK NOT NULL), rilegge
-      `uffici:`/`ufficio:` da `seed-demo-catalog.yaml` (T077) (depends on T080)
-- [ ] T086 [P] Aggiungere modello SQLAlchemy `Ufficio` e relazione
-      `TipoDocumento.ufficio_id` in `backend/app/catalog/models.py`
+- [ ] T085 *(2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: riscritta, niente
+      piu' tabella `Ufficio`)* Migration Alembic in
+      `backend/alembic/versions/0009_tipo_documento_contesto.py`: aggiunge
+      `tipo_documento.codice_contesto` (`String`, `NOT NULL` — backfill da
+      `codice_contesto:` nel seed aggiornato, T077), NESSUNA nuova tabella
+      `ufficio`, NESSUN FK. Rilegge `seed-demo-catalog.yaml` (T077) per popolare
+      la colonna (depends on T080).
+- [ ] T086 *(2026-09-15: non piu' necessaria — non esiste piu' un modello
+      SQLAlchemy `Ufficio` da aggiungere; `codice_contesto` in T085 e' gia' un
+      campo diretto su `TipoDocumento`, nessuna relazione separata)*
 - [ ] T087 Migration Alembic `0010` in
       `backend/alembic/versions/0010_profili_registro_contratti_dati.py`: crea
       tabelle `sistema_richiedente`, `client_applicativo`, `profilo_integrazione`
@@ -502,9 +508,9 @@ distinguibili (vedi Acceptance Scenarios della User Story 5 in `spec.md`).
       modello pubblicato restituisce elenco vuoto, non l'errore (regressione
       esplicita rispetto al comportamento del primo incremento) nello stesso file
 - [ ] T095 [P] [US5] Aggiungere test: `modello_versione_id` concesso via
-      `modelli_versioni_ammessi` di un tipo documento diverso da quello
-      "principale" del profilo viene comunque autorizzato (concessione
-      cross-ufficio) nello stesso file
+      `modelli_versioni_ammessi` di un tipo documento con `codice_contesto`
+      diverso da quello "principale" del profilo viene comunque autorizzato
+      (concessione cross-contesto) nello stesso file
 - [ ] T096 [P] [US5] Aggiungere test end-to-end con profilo GEBAN reale caricato
       dalle tabelle DB (non fixture in-memory) in
       `backend/tests/e2e/test_perimetro_profilo_geban.py`
@@ -595,7 +601,7 @@ trovato il 2026-09-14 (allow-list mai collegata alle route reali) e' chiuso.
 ```text
 Task: T093 Add out-of-perimeter test in backend/tests/catalog/test_perimetro_profilo_api.py
 Task: T094 Add in-perimeter-no-model regression test in backend/tests/catalog/test_perimetro_profilo_api.py
-Task: T095 Add cross-ufficio grant test in backend/tests/catalog/test_perimetro_profilo_api.py
+Task: T095 Add cross-contesto grant test in backend/tests/catalog/test_perimetro_profilo_api.py
 Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.py
 ```
 
@@ -619,10 +625,11 @@ Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.p
   (`0008`, `0009`, `0010`).
 - Il rename `TipologiaBandoSOL` -> `TipologiaDocumento` e' interno: `codice_tipologia`
   e `TIPOLOGIA_SOL_NON_VALIDA` restano invariati nel contratto pubblico.
-- FR-031 (proprieta' Ufficio sul lato scrittura) e' modellata a livello di schema in
-  questo incremento (T085-T086) ma la sua *enforcement* (chi puo' editare cosa)
-  resta bloccata sull'esistenza di endpoint di scrittura, che appartengono alla
-  `002` non ancora implementata — non inventare qui un endpoint di scrittura solo
+- FR-031 (proprieta' via `codice_contesto` sul lato scrittura,
+  `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15) e' modellata a livello di
+  schema in questo incremento (T085) ma la sua *enforcement* (chi puo' editare
+  cosa) resta bloccata sull'esistenza di endpoint di scrittura, che appartengono
+  alla `002` non ancora implementata — non inventare qui un endpoint di scrittura solo
   per testare FR-031.
 - **2026-09-15 (cascading ADR 0001)**: prima di eseguire in produzione la parte di
   T080/T087 che riguarda `BANDO_CONCORSO`, verificare che

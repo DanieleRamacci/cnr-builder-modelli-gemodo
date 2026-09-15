@@ -195,7 +195,9 @@ documento configurato (definito / connesso / errore ultima verifica).
 ### Functional Requirements
 
 - **FR-001**: Il sistema MUST fornire un'interfaccia di amministrazione per
-  definire un tipo documento (codice, nome, Ufficio proprietario).
+  definire un tipo documento (codice, nome, `codice_contesto` che ne autorizza
+  la scrittura — `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, nessuna entita' Ufficio
+  separata).
 - **FR-002**: Il sistema MUST permettere di definire, per un tipo documento, una o
   piu' tipologie (codice, descrizione, riferimento esterno opzionale).
 - **FR-003**: Il sistema MUST permettere di definire, per un tipo documento, uno o
@@ -239,10 +241,12 @@ documento configurato (definito / connesso / errore ultima verifica).
 
 ### Key Entities *(include if feature involves data)*
 
-- **Tipo Documento**, **Ufficio**, **Categoria/Profilo Documento**, **Tipologia
-  Documento**, **Campo Richiesto** *(riferimento, definite in `001`)*: questa spec
-  ne aggiunge l'interfaccia di *creazione/definizione*, non ridefinisce le
-  entita' stesse.
+- **Tipo Documento** (incluso `codice_contesto`), **Categoria/Profilo Documento**,
+  **Tipologia Documento**, **Campo Richiesto** *(riferimento, definite in `001`)*:
+  questa spec ne aggiunge l'interfaccia di *creazione/definizione*, non ridefinisce
+  le entita' stesse. Nessuna entita' `Ufficio` (`DEC-001-CONTESTO-SOSTITUISCE-
+  UFFICIO`, 2026-09-15): il proprietario di un tipo documento e' un campo diretto
+  (`codice_contesto`), non un'entita' separata da amministrare qui.
 - **Registro Contratti Dati** *(riferimento, `001`)*: destinazione della
   definizione per un tipo documento self-service.
 - **Attributo Profilo** *(nuova)*: attributo aggiuntivo opzionale su un profilo
@@ -288,7 +292,7 @@ documento configurato (definito / connesso / errore ultima verifica).
   indipendentemente dalla UI che li implementa).
 - Fuori scope di questa spec: l'editor visuale del documento/sezioni/placeholder
   (`003`), la generazione PDF (`004`), la gestione granulare di permessi oltre a
-  ruolo+Ufficio (`006`, FR-012 rimanda li' il dettaglio).
+  ruolo+contesto (`006`, FR-012 rimanda li' il dettaglio).
 - Le combinazioni tipologia-profilo e il meccanismo esatto degli attributi
   profilo-dipendenti (FR-003) per il caso GEBAN restano da validare con il loro
   team prima che l'integrazione reale vada in produzione (vedi note

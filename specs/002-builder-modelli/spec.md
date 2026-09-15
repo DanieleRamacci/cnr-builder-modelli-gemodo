@@ -83,6 +83,34 @@ Risolve le implicazioni concrete della sessione precedente per questa spec.
   contesto/servizio chiamante) o si inferisca dal contesto/servizio stesso (es. il
   contesto "geban" implica Ufficio Reclutamento) — cambia lo schema esatto da
   implementare, non solo il processo di configurazione gia' confermato sopra.
+  *(2026-09-15: risolto, vedi sotto — niente claim/inferenza aggiuntiva, il
+  contesto stesso e' il valore)*
+
+### Session 2026-09-15
+
+- Q: L'Ufficio resta un'entita' separata come deciso il 2026-09-14? -> A: No
+  (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, CONFERMATA, supersede
+  `DEC-001-UFFICIO-PROPRIETARIO` e la parte di `DEC-002-GESTORE-UFFICIO-MAPPING`
+  sul campo `ufficio:`). Il **contesto** del token (`contexts.<nome>.roles`,
+  gia' implementato per GEBAN) e' l'unita' di scoping, senza un'entita'/tabella
+  aggiuntiva sopra: `TipoDocumento` porta un campo diretto `codice_contesto`. Un
+  gestore e' autorizzato a scrivere su un tipo documento se il proprio token
+  contiene quel contesto con un ruolo che, **in quel contesto specifico**, deriva
+  `GEMODO_MODELLI_GESTORE` — mai sulla lista di permessi gia' appiattita su tutti
+  i contesti del token (un utente con piu' contesti, es. "geban" e un futuro
+  "contratti", va verificato separatamente per ciascuno; un ruolo di gestore in
+  un contesto non deve autorizzare la scrittura in un altro). FR-002/FR-003/
+  FR-014/FR-015 e Key Entities aggiornati di conseguenza sotto.
+- Q: FR-002 dice che il builder gestisce (crea/modifica) categorie e tipologie —
+  resta cosi' dopo che `specs/010-configurazione-cataloghi-integrazioni` e' nata
+  apposta per "definire la struttura di un tipo documento" (tipologie, profili,
+  campi)? -> A: No, e' un'incongruenza emersa lavorando su `010`: la
+  *definizione* della struttura (tipologie/profili/campi) e' scope della `010`
+  (User Story 1 li'), non di questa spec. Questa spec (`002`) legge la struttura
+  gia' definita/connessa (via `PortaDiscovery`, `DEC-002-PORTS-ADAPTERS-
+  DISCOVERY`) e la usa per **creare modelli** — non crea ne' modifica categorie
+  o tipologie essa stessa. FR-002 corretto sotto da "gestione" a "lettura"; la
+  User Story 1 di questa spec e' riscritta di conseguenza.
 
 ## Out of Scope
 
@@ -93,43 +121,47 @@ Risolve le implicazioni concrete della sessione precedente per questa spec.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Configurare categorie e tipologie per un tipo documento posseduto (Priority: P1)
+### User Story 1 - Leggere la struttura disponibile per un tipo documento connesso (Priority: P1)
 
-*(riallineata 2026-09-14, `DEC-001-UFFICIO-PROPRIETARIO`)* Come gestore modelli
-scoped a un Ufficio, voglio creare e mantenere categorie e tipologie per i tipi
-documento che il mio Ufficio possiede, cosi' da classificare correttamente i modelli
-disponibili per le applicazioni autorizzate a consumarli. La creazione del tipo
-documento stesso (e la sua assegnazione a un Ufficio proprietario) resta un'azione
-centrale GEMODO fuori da questa storia (vedi Clarifications).
+*(riscritta 2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` +
+chiarimento di confine con `010`)* Come gestore modelli il cui token contiene il
+contesto di un tipo documento, voglio consultare le categorie, tipologie e campi
+del contratto dati gia' definiti/connessi per quel tipo documento (tramite la
+porta di discovery, `DEC-002-PORTS-ADAPTERS-DISCOVERY`), cosi' da sapere cosa
+posso usare per creare un modello. La *definizione* di categorie/tipologie/campi
+(albero JSON, generazione del contratto per un sistema esterno, registrazione
+endpoint) e' interamente scope della `010`, non di questa storia: qui si legge,
+non si scrive.
 
-**Why this priority**: categorie e tipologie sono la base del catalogo operativo per
-un tipo documento gia' onboardato.
+**Why this priority**: senza sapere cosa e' disponibile per un tipo documento, il
+gestore non puo' creare un modello coerente (User Story 2).
 
-**Independent Test**: dato un tipo documento gia' posseduto dall'Ufficio del gestore,
-il gestore puo' creare/modificare categorie e tipologie e renderle disponibili alla
-configurazione di un modello; un gestore di un Ufficio diverso non puo'.
+**Independent Test**: dato un tipo documento connesso (self-service o con endpoint
+di discovery verificato), il gestore il cui token contiene quel contesto vede le
+categorie/tipologie/campi disponibili; un gestore senza quel contesto non li vede.
 
 **Acceptance Scenarios**:
 
-1. **Given** un tipo documento attivo posseduto dall'Ufficio del gestore, **When** il
-   gestore crea una categoria o una tipologia, **Then** risulta associata al tipo
-   documento e disponibile per nuovi modelli.
-2. **Given** un tipo documento posseduto da un Ufficio diverso da quello del gestore,
-   **When** il gestore prova a creare/modificare una categoria o tipologia per quel
-   tipo documento, **Then** il sistema rifiuta l'operazione con
-   `PROFILO_INTEGRAZIONE_NON_ABILITATO`.
-3. **Given** una categoria disattivata, **When** viene usata nel builder, **Then** non puo'
-   essere selezionata per nuovi modelli operativi.
+1. **Given** un tipo documento connesso e un contesto presente nel token del
+   gestore, **When** il gestore consulta la struttura disponibile, **Then**
+   ottiene categorie, tipologie e campi correnti (via `PortaDiscovery`).
+2. **Given** un tipo documento il cui `codice_contesto` NON e' fra i contesti del
+   token del gestore, **When** il gestore prova a consultarne la struttura,
+   **Then** il sistema rifiuta con `PROFILO_INTEGRAZIONE_NON_ABILITATO`.
+3. **Given** una categoria o tipologia disattivata nella definizione (`010`),
+   **When** il gestore consulta la struttura disponibile, **Then** non compare
+   fra le opzioni selezionabili per un nuovo modello.
 
 ---
 
 ### User Story 2 - Gestire modelli e versioni (Priority: P1)
 
 Come gestore modelli, voglio creare modelli documentali e versioni, cosi' da preparare
-nuove configurazioni senza modificare codice applicativo. *(riallineata 2026-09-14)*
-Il modello deve appartenere a un tipo documento posseduto dall'Ufficio del gestore, e
-i suoi campi devono provenire dal Registro Contratti Dati di quel tipo documento
-(`DEC-001-REGISTRO-CONTRATTI-DATI`), non essere liberi.
+nuove configurazioni senza modificare codice applicativo. *(riallineata 2026-09-15)*
+Il modello deve appartenere a un tipo documento il cui `codice_contesto` e' fra i
+contesti del token del gestore, e i suoi campi devono provenire dal Registro
+Contratti Dati di quel tipo documento (`DEC-001-REGISTRO-CONTRATTI-DATI`), letto
+tramite la struttura disponibile della User Story 1 — non essere liberi.
 
 **Why this priority**: il modello versionato e' il centro del builder.
 
@@ -188,13 +220,17 @@ versione pubblicata valida appare nel catalogo.
   questa spec: resta un'azione centrale GEMODO fuori dal builder (`DEC-001-CONFIG-
   PROFILO-GEBAN`). *(corretto 2026-09-14: la versione precedente permetteva
   creazione/gestione qui, superata da `DEC-001-UFFICIO-PROPRIETARIO`)*.
-- **FR-002**: Il sistema MUST permettere la gestione di categorie e tipologie
-  associate a un tipo documento, limitata ai tipi documento posseduti dall'Ufficio a
-  cui il gestore chiamante e' scoped (FR-014).
+- **FR-002**: *(corretto 2026-09-15: da "gestione" a "lettura", la definizione e'
+  scope della `010`)* Il sistema MUST permettere la lettura (non la creazione o
+  modifica) delle categorie e tipologie disponibili per un tipo documento
+  connesso, tramite la porta di discovery (`DEC-002-PORTS-ADAPTERS-DISCOVERY`),
+  limitata ai tipi documento il cui `codice_contesto` e' fra i contesti del token
+  del gestore chiamante (FR-014).
 - **FR-003**: Il sistema MUST permettere la creazione di modelli documentali associati
-  a tipo, categoria e tipologia quando prevista, limitata ai tipi documento posseduti
-  dall'Ufficio del gestore (FR-014); i campi del contratto dati del modello MUST
-  provenire dal Registro Contratti Dati ammesso per quel tipo documento (FR-015).
+  a tipo, categoria e tipologia quando prevista, limitata ai tipi documento il cui
+  `codice_contesto` e' fra i contesti del token del gestore (FR-014); i campi del
+  contratto dati del modello MUST provenire dal Registro Contratti Dati ammesso per
+  quel tipo documento (FR-015).
 - **FR-003a**: Il sistema MUST assegnare a ogni modello una variante obbligatoria; se il gestore non ne indica una, il sistema MUST usare la variante `STANDARD`.
 - **FR-004**: Il sistema MUST gestire versioni modello con stati `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO` e `SOSPESO`.
 - **FR-004a**: Il sistema MUST consentire il passaggio da `APPROVATO` a `PUBBLICATO` e da `PUBBLICATO` ad `ARCHIVIATO` o `SOSPESO`.
@@ -208,11 +244,15 @@ versione pubblicata valida appare nel catalogo.
 - **FR-011**: Il sistema MUST mantenere consultabili nello storico le versioni archiviate.
 - **FR-012**: Le API interne builder MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; le letture richiedono ruolo `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, le scritture e transizioni richiedono `GEMODO_MODELLI_GESTORE`.
 - **FR-013**: Il sistema MUST restituire errori stabili `ACCESSO_NON_AUTENTICATO` e `ACCESSO_NON_AUTORIZZATO` quando autenticazione o autorizzazione builder falliscono.
-- **FR-014**: *(nuovo 2026-09-14)* Il sistema MUST risolvere l'Ufficio a cui e' scoped
-  il gestore chiamante dal contesto/ruolo ACE del token (stesso meccanismo del
-  consumo GEBAN, `DEC-002-GESTORE-UFFICIO-MAPPING`, confermata) e MUST rifiutare con
-  `PROFILO_INTEGRAZIONE_NON_ABILITATO` qualunque scrittura (categoria, tipologia,
-  modello, versione) su un tipo documento non posseduto da quell'Ufficio.
+- **FR-014**: *(corretto 2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`)* Il
+  sistema MUST verificare che il token del gestore chiamante contenga il
+  `codice_contesto` del tipo documento target, con un ruolo che **in quel
+  contesto specifico** (mai sulla lista di permessi gia' appiattita su tutti i
+  contesti del token) deriva `GEMODO_MODELLI_GESTORE` tramite `role_mappings`
+  (stesso meccanismo del consumo GEBAN), e MUST rifiutare con
+  `PROFILO_INTEGRAZIONE_NON_ABILITATO` qualunque lettura di struttura (FR-002) o
+  scrittura (modello, versione) su un tipo documento il cui contesto non e'
+  presente nel token.
 - **FR-015**: *(nuovo 2026-09-14)* Quando un gestore aggiunge un campo al contratto
   dati di una versione modello, il sistema MUST verificare che il campo sia presente
   nel Registro Contratti Dati ammesso per il tipo documento del modello, e MUST
@@ -221,11 +261,11 @@ versione pubblicata valida appare nel catalogo.
 ### Key Entities
 
 - **Tipo Documento**: famiglia generale del documento; consultabile ma non creabile
-  da questa spec (proprieta' di un Ufficio, vedi `001`).
-- **Ufficio** *(riferimento, entita' definita in `001`)*: proprietario di uno o piu'
-  tipi documento; determina chi puo' scrivere categorie/tipologie/modelli per quel
-  tipo documento (FR-014).
-- **Categoria Documento**: classificazione interna al tipo documento.
+  da questa spec (definizione/onboarding sono scope della `010`; proprieta' via
+  `codice_contesto`, vedi `001`).
+- **Categoria Documento**, **Tipologia Documento**: classificazione interna al tipo
+  documento; definite dalla `010`, lette da questa spec tramite `PortaDiscovery`
+  (FR-002), non create/modificate qui.
 - **Registro Contratti Dati** *(riferimento, entita' definita in `001`)*: vincola i
   campi che un modello di un dato tipo documento puo' dichiarare (FR-015).
 - **Modello Documento**: contenitore logico del modello.
@@ -250,8 +290,8 @@ versione pubblicata valida appare nel catalogo.
 - Tipi, categorie e tipologie iniziali derivano dalla documentazione GEBAN gia' recepita dalla `001` e restano dati configurabili/versionabili, non costanti applicative.
 - La separazione revisore/approvatore non e' obbligatoria nel primo rilascio; il gestore modelli autorizzato puo' completare approvazione e pubblicazione.
 - Le autorizzazioni fini per profili di integrazione (consumo) non fanno parte della
-  `002` e restano nella spec sicurezza; l'autorizzazione di proprieta'/scrittura per
-  Ufficio (FR-014) e' invece parte di questa spec.
-- L'onboarding di nuovi tipi documento e Uffici resta un'azione centrale GEMODO fuori
-  da questa spec (file di configurazione + deploy), non un'API/UI builder, per
-  decisione esplicita del product owner (`001`).
+  `002` e restano nella spec sicurezza; l'autorizzazione di proprieta'/scrittura via
+  `codice_contesto` (FR-014) e' invece parte di questa spec.
+- L'onboarding di nuovi tipi documento (definizione struttura, generazione
+  contratto, registrazione endpoint) e' interamente scope della `010`, non di
+  questa spec — `002` consuma la struttura gia' connessa, non la definisce.

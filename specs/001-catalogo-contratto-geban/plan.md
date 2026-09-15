@@ -289,3 +289,37 @@ interessato in `tasks.md`, senza rinumerare i task esistenti.
 FR-027) e la generalizzazione `TipologiaDocumento` restano identici a come
 pianificati nel secondo incremento — l'ADR cambia *da dove arrivano i dati*, non
 *come si applica il perimetro* su di essi.
+
+## Quarto incremento (2026-09-15): il contesto del token sostituisce Ufficio
+
+**Aggiornamento**: `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` (CONFERMATA) supersede
+`DEC-001-UFFICIO-PROPRIETARIO`. Non esiste piu' un'entita'/tabella `Ufficio`
+separata: `TipoDocumento` porta un campo diretto `codice_contesto` che deve
+corrispondere a una chiave `contexts.<codice_contesto>.roles` nel token del
+chiamante (meccanismo gia' implementato in `backend/app/common/security.py` per
+GEBAN, mai esteso con una nuova entita'). Un utente con piu' contesti nel token
+vede/gestisce l'unione dei tipi documento associati a ciascuno, verificati
+**separatamente** — mai come permessi gia' appiattiti su tutti i contesti insieme
+(vedi `data-model.md`, entita' `Ufficio` rimossa, e nota su `DEC-002-SORGENTE-
+UFFICIO-TOKEN` nel registro decisioni per il rischio di permission bleed che
+questo evita).
+
+**Impatto su `tasks.md`**: `T085` riscritto (aggiunge `tipo_documento.
+codice_contesto`, nessuna tabella `ufficio` ne' FK); `T086` non piu' necessario
+(nessun modello SQLAlchemy `Ufficio` da aggiungere); `T077` riscritto (campo
+diretto `codice_contesto:` nel seed, nessuna sezione `uffici:`); `T095`
+rinominato da "cross-ufficio" a "cross-contesto" (stesso comportamento, nome
+corretto).
+
+**Impatto sulla sicurezza (rilevante per `002`/`006`)**: l'autorizzazione di
+scrittura per un `TipoDocumento` specifico MUST essere risolta guardando SOLO il
+contesto corrispondente a `codice_contesto` nel token del chiamante, non la lista
+di `internal_permissions` gia' derivata e appiattita su tutti i contesti presenti
+(`PrincipalGEMODO.ruoli`, oggi flat). Serve una funzione di autorizzazione
+scoped-per-contesto distinta dal pattern `ensure_roles(principal, ruoli)` gia' in
+uso per i permessi non scoped (es. `DOCUMENTI_VIEWER`); vedi `002/plan.md`.
+
+**Non cambia**: la distinzione concettuale proprieta'(scrittura)/consumo(lettura-
+generazione) fra `TipoDocumento` e `ProfiloDiIntegrazione` (FR-025..FR-031)
+resta la stessa — cambia solo il meccanismo con cui si rappresenta "chi
+possiede", non il principio.

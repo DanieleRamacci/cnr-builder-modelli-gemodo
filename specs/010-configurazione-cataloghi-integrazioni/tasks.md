@@ -25,11 +25,12 @@
 
 **⚠️ CRITICAL**: nessuna user story puo' iniziare prima che questa fase sia completa.
 
-- [ ] T003 Migration `ufficio` (schema gia' deciso in
-      `specs/001-catalogo-contratto-geban/data-model.md`) — creare solo se
+- [ ] T003 *(2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: niente tabella
+      `ufficio`)* Migration `tipo_documento.codice_contesto` (schema gia' deciso
+      in `specs/001-catalogo-contratto-geban/data-model.md`) — creare solo se
       `001/tasks.md` T085 non l'ha gia' introdotta; non riprogettare lo schema
 - [ ] T004 Migration `registro_contratti_dati` (schema gia' deciso in `001`,
-      stessa cautela di T003 rispetto a `001/tasks.md` T085-T086)
+      stessa cautela di T003 rispetto a `001/tasks.md` T087)
 - [ ] T005 [P] Migration `attributo_profilo` (`data-model.md`)
 - [ ] T006 [P] Migration `endpoint_integrazione` (`data-model.md`)
 - [ ] T007 [P] Migration `schema_discovery_generato` (`data-model.md`)

@@ -2,13 +2,15 @@
 
 ## Entita' riusate, non ridefinite qui
 
-`TipoDocumento`, `CategoriaDocumento` (profilo), `TipologiaBandoSOL`
-(tipologia), `Ufficio`, `RegistroContrattiDati` sono di proprieta' della `001`
+`TipoDocumento` (incluso il campo diretto `codice_contesto`,
+`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15 — nessuna entita' `Ufficio`),
+`CategoriaDocumento` (profilo), `TipologiaBandoSOL` (tipologia),
+`RegistroContrattiDati` sono di proprieta' della `001`
 (`specs/001-catalogo-contratto-geban/data-model.md`). Questa spec aggiunge
 l'interfaccia con cui un operatore le *crea/definisce* e tre entita' nuove che
-non hanno posto naturale altrove. `Ufficio` e `RegistroContrattiDati` sono
-progettate in `001` ma non ancora implementate in codice (`001/tasks.md`
-T085-T092): l'implementazione di questa spec crea quelle migration se `001`
+non hanno posto naturale altrove. `codice_contesto` e `RegistroContrattiDati`
+sono progettati in `001` ma non ancora implementati in codice (`001/tasks.md`
+T085, T087): l'implementazione di questa spec crea quelle migration se `001`
 non le ha ancora create, riusando lo schema gia' deciso li' senza
 riprogettarlo.
 

@@ -306,3 +306,30 @@ della cache e' progettato li', non duplicato in questa spec.
   scartato, l'adapter serve anche alla `002` (Ports & Adapters,
   `DEC-002-PORTS-ADAPTERS-DISCOVERY`) e a ogni futura integrazione — una spec
   dedicata (`010`) evita di riprogettarlo per ogni tipo documento.
+
+## Quarto incremento (2026-09-15): il contesto del token sostituisce Ufficio
+
+**Decision**: `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` (CONFERMATA) rimuove
+l'entita' `Ufficio` progettata nel secondo incremento (sopra). `TipoDocumento`
+porta un campo diretto `codice_contesto`, verificato contro
+`contexts.<codice_contesto>.roles` nel token del chiamante — lo stesso
+meccanismo gia' implementato per GEBAN, senza un'entita' aggiuntiva sopra.
+
+**Rationale**: il product owner ha chiarito che l'unita' di scoping e' gia'
+il "contesto" del token ACE (un utente puo' averne piu' di uno, ciascuno coi
+propri ruoli) — costruire un'entita' Ufficio separata sopra un meccanismo che
+gia' risolve lo stesso problema avrebbe aggiunto un livello ridondante. La
+correttezza multi-contesto (un ruolo in un contesto non deve autorizzare un
+altro contesto) richiede pero' di risolvere l'autorizzazione **per singolo
+contesto**, non sulla lista di permessi gia' appiattita su tutti i contesti del
+token come fa oggi `PrincipalGEMODO.ruoli`.
+
+**Alternatives considered**:
+
+- Mantenere l'entita' `Ufficio` come pianificata nel secondo incremento: scartato
+  esplicitamente dal product owner — livello ridondante sopra un meccanismo
+  (contesto del token) che gia' basta.
+- Inferire un'etichetta Ufficio dal contesto senza tabella dedicata (scenario B
+  di `DEC-002-SORGENTE-UFFICIO-TOKEN`, 2026-09-14): scartato anche questo, va
+  oltre il necessario — il contesto stesso e' gia' il valore da usare, non serve
+  nemmeno l'etichetta intermedia.
