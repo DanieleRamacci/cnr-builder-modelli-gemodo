@@ -675,6 +675,7 @@ decisions:
       - specs/002-builder-modelli
       - specs/006-sicurezza-autorizzazioni-audit
       - specs/009-fondamenta-mock-test-qualita
+      - specs/010-configurazione-cataloghi-integrazioni
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
@@ -702,6 +703,7 @@ decisions:
       - specs/002-builder-modelli
       - specs/007-frontend-builder-consultazione
       - specs/009-fondamenta-mock-test-qualita
+      - specs/010-configurazione-cataloghi-integrazioni
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
@@ -728,6 +730,7 @@ decisions:
     owner_spec: specs/002-builder-modelli
     spec_interessate:
       - specs/001-catalogo-contratto-geban
+      - specs/010-configurazione-cataloghi-integrazioni
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
@@ -747,6 +750,7 @@ decisions:
     owner_spec: specs/001-catalogo-contratto-geban
     spec_interessate:
       - specs/002-builder-modelli
+      - specs/010-configurazione-cataloghi-integrazioni
     stato: ASSUNTA_PROVVISORIA
     assunzione_provvisoria: >
       proposto 2026-09-15 (ADR 0001), non completamente definito ("vediamo" -
