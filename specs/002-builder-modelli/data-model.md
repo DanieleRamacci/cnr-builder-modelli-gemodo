@@ -1,6 +1,53 @@
 # Data Model - Builder Modelli Documentali
 
-## Entities
+## Nota Di Riallineamento (2026-09-15, Cascading ADR 0001)
+
+`TipoDocumento`, `CategoriaDocumento`, `TipologiaDocumento`, `Ufficio` e
+`RegistroContrattiDati` sono definite per intero in
+`specs/001-catalogo-contratto-geban/data-model.md` (che possiede queste entita';
+questo documento le riusa, non le ridefinisce). Le sezioni sotto sono state
+scritte prima della `DEC-001-UFFICIO-PROPRIETARIO`/`DEC-001-OWNERSHIP-DATI-
+ESTERNI` e restano come riferimento storico delle chiavi/validazioni condivise, ma
+per la semantica aggiornata (chi possiede cosa, cache vs seed per un tipo
+documento integrato) fa fede `001`. In particolare, per il builder:
+
+- Una scrittura (creare/modificare categoria, tipologia, modello) e' autorizzata
+  solo se il gestore chiamante e' scoped all'Ufficio proprietario del tipo
+  documento target (FR-014, `002`; `DEC-001-UFFICIO-PROPRIETARIO`).
+- Il builder non legge mai direttamente `CategoriaDocumento`/`TipologiaDocumento`/
+  `RegistroContrattiDati` come se fossero sempre dati locali: passa sempre dalla
+  **porta di discovery** descritta sotto, che puo' risolversi in una lettura
+  locale (self-service) o in una cache sincronizzata da un adapter HTTP esterno
+  (tipo documento integrato, es. GEBAN) — vedi `DEC-002-PORTS-ADAPTERS-DISCOVERY`.
+
+### Porta Di Discovery (Ports & Adapters, `DEC-002-PORTS-ADAPTERS-DISCOVERY`)
+
+Interfaccia astratta che il builder usa per sapere cosa e' disponibile per un tipo
+documento, indipendentemente da dove arrivano i dati.
+
+```text
+PortaDiscovery.categorie_disponibili(codice_tipo_documento) -> [CategoriaDocumento]
+PortaDiscovery.tipologie_disponibili(codice_tipo_documento) -> [TipologiaDocumento]
+PortaDiscovery.campi_disponibili(codice_tipo_documento) -> [CampoContrattoDati]
+```
+
+Due implementazioni (adapter), scelte in base a come e' configurato il tipo
+documento (schema di configurazione in
+`specs/010-configurazione-cataloghi-integrazioni`):
+
+- **AdapterLocale**: legge direttamente `CategoriaDocumento`/`TipologiaDocumento`/
+  `RegistroContrattiDati` di GEMODO (tipo documento self-service).
+- **AdapterHTTP**: chiama l'endpoint di discovery registrato per il tipo
+  documento (tipo documento integrato, es. GEBAN), con cache locale a TTL breve;
+  gestisce la paginazione in modo trasparente al chiamante (FR-011,
+  `specs/010-configurazione-cataloghi-integrazioni`).
+
+Il builder (creazione modello, scelta campi/placeholder) dipende sempre e solo
+dalla porta astratta, mai da uno dei due adapter direttamente — permette di
+cambiare un tipo documento da self-service a integrato (o viceversa) senza
+toccare il codice del builder.
+
+## Entities *(riferimento a `001`, vedi nota sopra)*
 
 ### TipoDocumento
 

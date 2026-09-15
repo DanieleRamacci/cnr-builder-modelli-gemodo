@@ -1,5 +1,33 @@
 # Data Model - Catalogo Modelli E Contratto Dati GEBAN
 
+## Nota Sull'Ownership Dei Dati (Cascading ADR 0001, 2026-09-15)
+
+`docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md` e le decisioni
+`DEC-001-OWNERSHIP-DATI-ESTERNI`/`DEC-002-PORTS-ADAPTERS-DISCOVERY` (entrambe
+`CONFERMATA`) cambiano la semantica — non necessariamente lo schema — di
+`CategoriaDocumento`, `TipologiaDocumento` e `RegistroContrattiDati` sotto. Per
+ogni `TipoDocumento`, la sorgente di queste tre entita' dipende dal tipo di
+Ufficio proprietario:
+
+- **Tipo documento integrato** (posseduto da un sistema esterno con propria API,
+  oggi `BANDO_CONCORSO` per GEBAN): le righe sono una **cache locale a TTL breve**,
+  popolate/aggiornate da un adapter HTTP che chiama l'endpoint di discovery
+  registrato per quel tipo documento (schema esatto dell'adapter e della
+  registrazione endpoint: `specs/010-configurazione-cataloghi-integrazioni`). Non
+  sono piu' un seed permanente: GEMODO non e' la sorgente di verita' per il loro
+  contenuto, solo un riferimento locale indicizzabile.
+- **Tipo documento self-service** (nessun sistema esterno): le righe restano
+  possedute/autorate da GEMODO, create tramite l'interfaccia di configurazione
+  (`010`) o il builder (`002`), esattamente come descritto nelle sezioni sotto
+  senza ulteriori modifiche.
+
+In ambienti locali/test, `infra/local/postgres/seed-demo-catalog.yaml` continua a
+esistere e a popolare queste tabelle — ma per `BANDO_CONCORSO` questo ruolo passa
+da "seed di produzione" a **fixture per un adapter locale/mock** (stesso principio
+gia' in uso in questo repo per `mock-geban/`), utile per sviluppo e test senza
+dipendere da una chiamata di rete reale verso GEBAN. In produzione, l'adapter HTTP
+verso l'endpoint registrato in `010` e' la sorgente effettiva per `BANDO_CONCORSO`.
+
 ## Entities
 
 ### Ufficio
@@ -74,6 +102,10 @@ Validation:
 - chiave logica: `codice_tipo_documento + codice`.
 - profili non attivi non vengono proposti per nuovi filtri operativi.
 
+**Sorgente**: vedi "Nota Sull'Ownership Dei Dati" in cima al documento — per un tipo
+documento integrato queste righe sono una cache locale sincronizzata dall'adapter
+di discovery, non un seed posseduto da GEMODO.
+
 ### ModelloDocumento
 
 Contenitore logico di un modello.
@@ -128,8 +160,14 @@ Validation:
 
 - chiave logica: `codice_tipo_documento + codice` (prima: `codice` globale).
 - perimetro GEBAN per `BANDO_CONCORSO`: TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB
-  (seed demo in `infra/local/postgres/seed-demo-catalog.yaml`); altri tipi documento
-  definiranno il proprio elenco indipendente, senza collidere sui codici.
+  (verificati sugli endpoint di test reali di GEBAN il 2026-09-15, vedi
+  `docs/adr/0001-esempio-discovery-geban.json`); altri tipi documento definiranno il
+  proprio elenco indipendente, senza collidere sui codici.
+
+**Sorgente**: vedi "Nota Sull'Ownership Dei Dati" in cima al documento — per
+`BANDO_CONCORSO` queste righe sono una cache locale sincronizzata dall'adapter di
+discovery verso GEBAN, non piu' un seed permanente come nella versione precedente
+di questo documento (2026-09-14).
 
 ### ClassificazioneCatalogo
 
@@ -153,6 +191,13 @@ Validation:
 - l'endpoint di classificazione restituisce l'albero tipologie -> profili;
   la ricerca modelli puo' poi usare `codice_tipologia` e `profilo` come filtri
   derivati dalla scelta nell'albero.
+
+**Sorgente**: come `CategoriaDocumento`/`TipologiaDocumento` — per un tipo documento
+integrato, le combinazioni tipologia-profilo arrivano dall'adapter di discovery
+(campo `tipologie[].profili[]` nella risposta, vedi
+`docs/adr/0001-esempio-discovery-geban.json`), non sono piu' definite localmente da
+GEMODO. Per GEBAN queste combinazioni non sono ancora confermate con dati reali
+(vedi note `_confermato: false` nell'esempio).
 
 ### RegistroContrattiDati
 
@@ -183,6 +228,13 @@ Validation:
 - ogni riferimento in `ProfiloDiIntegrazione.contratti_dati_ammessi` MUST corrispondere
   a un `RegistroContrattiDati` esistente (FR-029); un riferimento a un contratto dati
   inesistente MUST essere rifiutato al caricamento, non ignorato silenziosamente.
+
+**Sorgente**: come le entita' sopra — per `BANDO_CONCORSO` il campo `campi` arriva
+dall'adapter di discovery (campo `campi[]` nella risposta), non e' piu' autorato
+localmente da GEMODO. Include anche campi il cui elenco di opzioni dipende dal
+profilo scelto (es. "livello", vedi entita' `Attributo Profilo` in
+`specs/010-configurazione-cataloghi-integrazioni/spec.md`) — non modellato in questo
+documento prima del 2026-09-15.
 
 ### ProfiloDiIntegrazione *(riferimento)*
 

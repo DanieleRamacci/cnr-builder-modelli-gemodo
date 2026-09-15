@@ -386,17 +386,29 @@ come dato interrogabile).
 **⚠️ CRITICAL**: nessun lavoro della User Story 5 puo' iniziare prima che questa fase
 sia completa.
 
+**Nota 2026-09-15 (cascading ADR 0001, terzo incremento — vedi `plan.md`)**: per
+`BANDO_CONCORSO`, `seed-demo-catalog.yaml` (T077-T079) e le migration che lo
+rileggono (T080, T087) restano valide per popolare un **adapter locale/mock**
+(sviluppo e test senza rete verso GEBAN) — non sono piu' la sorgente di
+produzione. In produzione, categorie/tipologie/contratto dati di `BANDO_CONCORSO`
+vengono sincronizzati da un adapter HTTP verso l'endpoint registrato in
+`specs/010-configurazione-cataloghi-integrazioni` (schema dell'adapter progettato
+li', non qui). I task T077-T092 sotto restano eseguibili cosi' come scritti; le
+annotazioni puntuali segnano dove la sourcing di produzione cambia.
+
 - [ ] T077 [P] Aggiungere sezione `uffici:` (`UFFICIO_RECLUTAMENTO`) e campo
       `ufficio: UFFICIO_RECLUTAMENTO` a ogni voce di `tipi_documento:` in
       `infra/local/postgres/seed-demo-catalog.yaml`
 - [ ] T078 [P] Rinominare `tipologie_sol:` in `tipologie:` in
       `infra/local/postgres/seed-demo-catalog.yaml`: ogni voce guadagna
       `tipo_documento: BANDO_CONCORSO` e `codice_sol` viene rinominato
-      `riferimento_esterno`
+      `riferimento_esterno`. *(2026-09-15: da qui in poi questo file e' fixture
+      per l'adapter locale/mock, non piu' seed di produzione per BANDO_CONCORSO)*
 - [ ] T079 [P] Aggiungere sezione `contratti_dati:` a
       `infra/local/postgres/seed-demo-catalog.yaml` che definisce
       `bando-concorso-common-fields-v1` (codice, `tipo_documento: BANDO_CONCORSO`,
-      versione, campi ricalcati da `CAMPI_DEMO`/`ModelloCampoRichiesto`)
+      versione, campi ricalcati da `CAMPI_DEMO`/`ModelloCampoRichiesto`).
+      *(2026-09-15: stessa nota di T078 — fixture per adapter locale/mock)*
 - [ ] T080 Migration Alembic `0008` in
       `backend/alembic/versions/0008_generalizza_tipologia_documento.py`: rinomina
       tabella `tipologia_bando_sol` -> `tipologia_documento`, aggiunge
@@ -405,7 +417,10 @@ sia completa.
       (nullable), rimuove la colonna vestigiale
       `tipo_documento.tipologia_bando_sol_id` (verificato: non usata da nessun
       codice reale), rilegge `seed-demo-catalog.yaml` aggiornato (T078) per
-      ripopolare (stesso pattern upsert/disattiva-stale di `0005`-`0007`)
+      ripopolare (stesso pattern upsert/disattiva-stale di `0005`-`0007`). *(2026-
+      09-15: la rinomina/generalizzazione dello schema resta valida cosi' com'e';
+      il refresh periodico di queste righe in produzione per BANDO_CONCORSO passa
+      pero' dall'adapter HTTP di `010`, non solo da questa migration one-shot)*
 - [ ] T081 [P] Rinominare `TipologiaBandoSOL` -> `TipologiaDocumento` in
       `backend/app/catalog/models.py`, aggiungere relazione/FK
       `tipo_documento_id`, rinominare `codice_sol` -> `riferimento_esterno`
@@ -435,7 +450,12 @@ sia completa.
       tabella figlia per i campi), rilegge
       `infra/local/integration-profiles.local.yaml` e la sezione
       `contratti_dati:` di `seed-demo-catalog.yaml` (T079) per popolarle (depends
-      on T085)
+      on T085). *(2026-09-15: le tabelle `sistema_richiedente`/
+      `profilo_integrazione` restano possedute da GEMODO senza cambiamenti — sono
+      "chi puo' consumare cosa", non il contenuto del catalogo. Solo
+      `registro_contratti_dati` per BANDO_CONCORSO segue la stessa nota di T078/
+      T079/T080: fixture locale, sincronizzata in produzione dall'adapter di
+      `010`)*
 - [ ] T088 [P] Aggiungere modelli SQLAlchemy per le nuove tabelle in un nuovo
       `backend/app/quality/models.py`, stessa forma dei Pydantic gia' esistenti in
       `backend/app/quality/schemas.py`
@@ -591,3 +611,9 @@ Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.p
   resta bloccata sull'esistenza di endpoint di scrittura, che appartengono alla
   `002` non ancora implementata — non inventare qui un endpoint di scrittura solo
   per testare FR-031.
+- **2026-09-15 (cascading ADR 0001)**: prima di eseguire in produzione la parte di
+  T080/T087 che riguarda `BANDO_CONCORSO`, verificare che
+  `specs/010-configurazione-cataloghi-integrazioni` abbia un adapter di discovery
+  funzionante e un endpoint registrato — altrimenti il refresh di produzione della
+  categorizzazione GEBAN non ha sorgente. Le stesse migration restano comunque
+  eseguibili in locale/test per popolare l'adapter mock, senza questa dipendenza.

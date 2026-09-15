@@ -258,3 +258,34 @@ piano: la costituzione richiede contratti espliciti "prima dell'implementazione"
 prima della pianificazione — le decisioni architetturali (chi possiede cosa, come si
 autorizza, come si generalizza) sono chiuse; i dettagli di wire format restano legati
 alla sequenza dei task.
+
+## Terzo incremento (2026-09-15): cascading ADR 0001
+
+**Aggiornamento**: `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`
+(deciso dopo una riunione col team GEBAN/ACE) cambia la sorgente di
+`CategoriaDocumento`, `TipologiaDocumento`, `ClassificazioneCatalogo` e
+`RegistroContrattiDati` per un tipo documento integrato: da seed permanente
+posseduto da GEMODO a cache locale a TTL breve, sincronizzata da un adapter HTTP
+verso l'endpoint di discovery registrato per quel tipo documento
+(`DEC-001-OWNERSHIP-DATI-ESTERNI`, `DEC-002-PORTS-ADAPTERS-DISCOVERY`). Vedi
+[data-model.md](./data-model.md), sezione "Nota Sull'Ownership Dei Dati".
+
+**Dipendenza esplicita**: lo schema esatto dell'adapter (tabella
+`endpoint_integrazione`, meccanismo di cache/TTL, gestione paginazione, test di
+connessione) e' progettato in `specs/010-configurazione-cataloghi-integrazioni`
+(nuova spec dedicata all'interfaccia di amministrazione che genera il contratto
+atteso e registra l'endpoint), non duplicato qui. La `001` referenzia quello
+schema quando disponibile, invece di riprogettarlo.
+
+**Impatto su `tasks.md`**: i task `T077`-`T079` e `T085` del secondo incremento
+(Phase 8, seed locale per Ufficio/tipologie/contratti dati) restano validi per
+l'uso come fixture di un adapter locale/mock (sviluppo e test senza rete verso
+GEBAN); il caricamento in produzione della categorizzazione di `BANDO_CONCORSO`
+passa pero' dall'adapter HTTP configurato in `010`, non piu' esclusivamente dalla
+migration che rilegge il file. Annotazioni aggiunte direttamente su ciascun task
+interessato in `tasks.md`, senza rinumerare i task esistenti.
+
+**Non cambia**: l'enforcement del perimetro per profilo (User Story 5, FR-025..
+FR-027) e la generalizzazione `TipologiaDocumento` restano identici a come
+pianificati nel secondo incremento — l'ADR cambia *da dove arrivano i dati*, non
+*come si applica il perimetro* su di essi.

@@ -144,6 +144,11 @@ domain rather than duplicate persistence.
   conventions and API documentation checks.
 - `006-sicurezza-autorizzazioni-audit`: authoritative security model; for this feature the
   confirmed first-release rule is `GEMODO_MODELLI_GESTORE` can approve and publish.
+- `010-configurazione-cataloghi-integrazioni` *(nuova dipendenza, 2026-09-15,
+  cascading ADR 0001)*: il builder non deve accedere a categorie/tipologie/campi
+  disponibili direttamente — passa sempre dalla porta di discovery astratta
+  descritta in `data-model.md`, la cui implementazione concreta (adapter locale o
+  HTTP) e' configurata in `010`. Vedi `DEC-002-PORTS-ADAPTERS-DISCOVERY`.
 
 ## Complexity Tracking
 

@@ -280,3 +280,29 @@ integrazione e autorizzazioni fini restano fuori scope.
 - Implementare tutta la sicurezza `006` dentro `001`: scartato, confonderebbe ownership
   e introdurrebbe profili/audit/workflow non necessari per catalogo, contratto e
   validazione payload.
+
+---
+
+## Terzo incremento (2026-09-15): cascading ADR 0001
+
+### Decision: categoria/tipologia di un tipo documento integrato diventano cache, non seed
+
+**Rationale**: dopo una riunione col team GEBAN/ACE, copiare la categorizzazione di
+un sistema esterno come sorgente di verita' locale e' stato riconosciuto come
+anti-pattern (dati duplicati, doppia sorgente di verita' — vedi
+`docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`,
+`DEC-001-OWNERSHIP-DATI-ESTERNI`). Per `BANDO_CONCORSO`, `CategoriaDocumento`,
+`TipologiaDocumento`, `ClassificazioneCatalogo` e `RegistroContrattiDati` passano
+da seed permanente (migration `0007`) a cache locale a TTL breve, sincronizzata
+da un adapter HTTP verso l'endpoint di discovery registrato in
+`specs/010-configurazione-cataloghi-integrazioni`. Lo schema esatto dell'adapter e
+della cache e' progettato li', non duplicato in questa spec.
+
+**Alternatives considered**:
+
+- Mantenere il seed locale come sorgente permanente: scartato, e' esattamente
+  l'anti-pattern identificato nella riunione — rischio di copia non aggiornata.
+- Progettare l'adapter/cache direttamente in `001` invece che in una spec dedicata:
+  scartato, l'adapter serve anche alla `002` (Ports & Adapters,
+  `DEC-002-PORTS-ADAPTERS-DISCOVERY`) e a ogni futura integrazione — una spec
+  dedicata (`010`) evita di riprogettarlo per ogni tipo documento.
