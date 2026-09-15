@@ -77,9 +77,9 @@
       "codice": "livello", "etichetta": "Livello", "tipo": "enum", "lingua": "IT", "obbligatorio": true, "ordine": 7,
       "descrizione": "Livello professionale del bando",
       "validazione": { "fonte_opzioni": "profilo.livelli_possibili", "default": "profilo.livello_base" },
-      "_confermato": false,
-      "_comment": "PROPOSTA NON CONFERMATA: /api/v1/profili restituisce livelliPossibili/livelloBase per profilo (es. Ricercatore I/II/III). Se un bando richiede davvero questo dato, e' un campo che varia per profilo, non un campo generico come gli altri sei sopra - da confermare con GEBAN prima di considerarlo parte del contratto."
+      "_confermato": true,
+      "_comment": "Confermato 2026-09-15 dal product owner: GEBAN gestisce davvero bandi per livelli diversi dello stesso profilo (es. Ricercatore II vs III livello), quindi il dato serve. Il meccanismo (enum con opzioni dipendenti dal profilo scelto, via fonte_opzioni) resta una proposta GEMODO: il team GEBAN deve confermare che la sua API restituira' il campo in questa forma quando implementera' l'endpoint."
     }
   ],
-  "_comment_campi": "I primi 6 campi sono gia' quelli usati oggi da GEMODO (stessa forma di backend/alembic/versions/0005_classificazione_catalogo_geban.py CAMPI_DEMO) e sono generici per tutto BANDO_CONCORSO, indipendenti dal profilo scelto. Il settimo campo (livello) e' una proposta per gestire livelliPossibili/livelloBase trovati su /api/v1/profili - meccanismo di 'opzioni che dipendono dal profilo scelto' ancora da progettare/validare, non solo da confermare il contenuto."
+  "_comment_campi": "I primi 6 campi sono gia' quelli usati oggi da GEMODO (stessa forma di backend/alembic/versions/0005_classificazione_catalogo_geban.py CAMPI_DEMO) e sono generici per tutto BANDO_CONCORSO, indipendenti dal profilo scelto. Il settimo campo (livello) e' un dato reale confermato (GEBAN ha bandi per livelli diversi dello stesso profilo); il meccanismo con cui lo rappresentiamo (opzioni dipendenti dal profilo scelto tramite fonte_opzioni) resta da validare con l'implementazione reale del team GEBAN."
 }
