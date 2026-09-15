@@ -43,6 +43,28 @@ DOCUMENTO`).
   sui codici verificati sugli endpoint di test di GEBAN il 2026-09-15 — usato come
   riferimento per questa spec, non ancora come file consumato a runtime.
 
+### Session 2026-09-15 (seconda parte)
+
+- Q: Le tre API GEBAN-facing di classificazione gia' implementate dalla `001`
+  (`/catalogo/tipi-documento`, `/profili`, `/classificazione`) restano nel
+  contratto pubblico? -> A: No, si ritirano
+  (`DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`). GEBAN possiede gia' la propria
+  categorizzazione, non ha bisogno di richiederla a GEMODO. Lo schema/esempio
+  generato da FR-006 e' il sostituto funzionale: non un endpoint runtime nostro,
+  ma la documentazione che dice agli sviluppatori esterni come strutturare
+  l'endpoint di discovery che loro devono esporre verso GEMODO. Il contratto
+  GEBAN-facing verso la `001` si riduce a `/catalogo/modelli`,
+  `/campi-richiesti`, `/documenti/valida`, `/documenti/genera` — tutte relative
+  a cosa ha GEMODO, mai a cosa possiede il sistema esterno.
+- Q: Quando l'operatore GEMODO naviga l'albero tipologia/profilo/campi per creare
+  un nuovo modello (FR-011, interrogazione live della porta di discovery) e il
+  sistema esterno integrato e' irraggiungibile in quel momento, si usa una cache
+  locale? -> A: Cache breve **in memoria di processo** soltanto (nessuna tabella
+  DB persistente) per fluidita' di navigazione; se il sistema esterno resta
+  irraggiungibile oltre quella finestra, la navigazione si ferma e restituisce un
+  errore funzionale di connessione — mai un elenco vuoto o dati stantii silenziosi
+  (coerente con l'Acceptance Scenario 3 della User Story 3).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Definire la struttura di un tipo documento (Priority: P1)

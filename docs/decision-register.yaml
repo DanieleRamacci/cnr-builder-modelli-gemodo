@@ -767,3 +767,43 @@ decisions:
       di generare i task di validazione dei dati esterni.
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-15
+
+  - id: DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE
+    titolo: Ritiro delle API GEBAN-facing di classificazione, sostituite dal contratto di discovery
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      confermato 2026-09-15 dal product owner, nel contesto della progettazione
+      della 010. Le tre API GEBAN-facing implementate nel primo incremento della
+      001 - GET /catalogo/tipi-documento, GET
+      /catalogo/tipi-documento/{codice}/profili, GET
+      /catalogo/tipi-documento/{codice}/classificazione - rispecchiavano verso
+      GEBAN una categorizzazione letta dal seed locale. Con
+      DEC-001-OWNERSHIP-DATI-ESTERNI la categorizzazione per un tipo documento
+      integrato appartiene al sistema esterno: GEBAN non ha bisogno di richiedere
+      a GEMODO il proprio stesso catalogo (tipo documento, profilo, tipologia),
+      lo possiede gia'. Le tre API sono quindi ritirate dal contratto pubblico
+      verso GEBAN. Il contratto GEBAN-facing si riduce a quattro operazioni,
+      tutte relative a COSA HA GEMODO (mai a cosa possiede GEBAN): GET
+      /catalogo/modelli (lista dei modelli GEMODO, filtrabile con i codici che
+      GEBAN gia' conosce), GET
+      /catalogo/modelli/{modello_versione_id}/campi-richiesti, POST
+      /documenti/valida, POST /documenti/genera. Al posto delle tre API ritirate,
+      GEMODO fornisce agli sviluppatori del sistema esterno un contratto/
+      documentazione (non un endpoint runtime nostro) che descrive come deve
+      essere strutturato l'endpoint di discovery che LORO devono esporre verso
+      GEMODO, con un esempio JSON concreto per ciascun livello configurato
+      nell'area di configurazione del modello - e' lo step 2 del flusso di
+      onboarding (DEC-001-ONBOARDING-STRUTTURA-DOCUMENTO) e la ragion d'essere
+      dell'entita' "Schema Di Discovery Generato" della 010. La navigazione a
+      livelli nel builder GEMODO (creazione di un nuovo modello) resta invece
+      un'interrogazione live della porta di discovery (DEC-002-PORTS-ADAPTERS-
+      DISCOVERY): se il sistema esterno non risponde, GEMODO non puo' sapere
+      quali tipi/categorie/tipologie/campi gestire in quel momento, quindi
+      l'operazione resta in attesa e viene restituito un errore funzionale di
+      connessione al servizio esterno, non un elenco vuoto o stantio.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-09-15

@@ -553,6 +553,19 @@ trovato il 2026-09-14 (allow-list mai collegata alle route reali) e' chiuso.
 - [ ] T107 Aggiornare `docs/project-map.md` e l'`impatto` delle decisioni in
       `docs/decision-register.yaml` per riflettere lo stato effettivamente
       implementato (oggi descrivono solo la direzione confermata)
+- [ ] T108 *(2026-09-15, `DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`)* Ritirare da
+      `contracts/geban-catalog-api.openapi.yaml` le tre operazioni
+      `listTipiDocumento`, `listProfiliDocumento`, `getClassificazioneDocumento`
+      (`/catalogo/tipi-documento`, `/catalogo/tipi-documento/{codice}/profili`,
+      `/catalogo/tipi-documento/{codice}/classificazione`), rimuovere le relative
+      route/test in `backend/app/catalog/api.py` e
+      `backend/tests/catalog/test_catalogo_categorie_api.py`/
+      `test_catalogo_tipi_documento_api.py`, e verificare che nessun'altra parte
+      del sistema (mock GEBAN incluso) dipenda ancora da queste risposte prima di
+      rimuoverle. Bloccato finche' `010` non eroga la generazione del contratto di
+      discovery (sostituto funzionale) — non rimuovere le tre API prima che quella
+      capacita' esista, per non lasciare GEBAN senza modo di scoprire la forma
+      attesa del proprio endpoint.
 
 ---
 
@@ -617,3 +630,10 @@ Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.p
   funzionante e un endpoint registrato — altrimenti il refresh di produzione della
   categorizzazione GEBAN non ha sorgente. Le stesse migration restano comunque
   eseguibili in locale/test per popolare l'adapter mock, senza questa dipendenza.
+- **2026-09-15 (`DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`)**: `listTipiDocumento`,
+  `listProfiliDocumento`, `getClassificazioneDocumento` restano nel contratto
+  pubblico *solo* fino a T108. Non sono piu' il modo corretto per GEBAN di
+  scoprire la propria categorizzazione (la possiede gia'): quel bisogno e'
+  coperto dal contratto/documentazione di discovery generato da `010`, non da un
+  endpoint runtime GEMODO. Nessun nuovo consumatore va aggiunto a queste tre API
+  nel frattempo.

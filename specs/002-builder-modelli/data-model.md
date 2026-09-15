@@ -23,24 +23,31 @@ documento integrato) fa fede `001`. In particolare, per il builder:
 ### Porta Di Discovery (Ports & Adapters, `DEC-002-PORTS-ADAPTERS-DISCOVERY`)
 
 Interfaccia astratta che il builder usa per sapere cosa e' disponibile per un tipo
-documento, indipendentemente da dove arrivano i dati.
+documento, indipendentemente da dove arrivano i dati. Progettata e implementata
+per intero (porta + due adapter, modulo `backend/app/discovery/`) dalla
+`specs/010-configurazione-cataloghi-integrazioni/data-model.md`, che e' la fonte
+canonica della firma esatta — qui solo un riferimento per il builder, non
+ridefinirla se cambia li'.
 
 ```text
-PortaDiscovery.categorie_disponibili(codice_tipo_documento) -> [CategoriaDocumento]
-PortaDiscovery.tipologie_disponibili(codice_tipo_documento) -> [TipologiaDocumento]
-PortaDiscovery.campi_disponibili(codice_tipo_documento) -> [CampoContrattoDati]
+PortaDiscovery.tipologie_disponibili(codice_tipo_documento) -> list[TipologiaDisponibile]
+PortaDiscovery.profili_disponibili(codice_tipo_documento, codice_tipologia) -> list[ProfiloDisponibile]
+PortaDiscovery.attributi_profilo(codice_tipo_documento, codice_profilo) -> list[AttributoDisponibile]
+PortaDiscovery.campi_disponibili(codice_tipo_documento) -> list[CampoDisponibile]
 ```
 
 Due implementazioni (adapter), scelte in base a come e' configurato il tipo
-documento (schema di configurazione in
-`specs/010-configurazione-cataloghi-integrazioni`):
+documento:
 
 - **AdapterLocale**: legge direttamente `CategoriaDocumento`/`TipologiaDocumento`/
   `RegistroContrattiDati` di GEMODO (tipo documento self-service).
 - **AdapterHTTP**: chiama l'endpoint di discovery registrato per il tipo
-  documento (tipo documento integrato, es. GEBAN), con cache locale a TTL breve;
-  gestisce la paginazione in modo trasparente al chiamante (FR-011,
-  `specs/010-configurazione-cataloghi-integrazioni`).
+  documento (tipo documento integrato, es. GEBAN), con cache **in memoria di
+  processo** a TTL breve (mai una tabella DB — deciso 2026-09-15, vedi
+  `specs/010-configurazione-cataloghi-integrazioni/research.md`); gestisce la
+  paginazione in modo trasparente al chiamante (FR-011). Se il sistema esterno
+  e' irraggiungibile oltre la finestra di cache, il builder riceve un errore
+  funzionale di connessione, mai un elenco vuoto silenzioso.
 
 Il builder (creazione modello, scelta campi/placeholder) dipende sempre e solo
 dalla porta astratta, mai da uno dei due adapter direttamente — permette di
