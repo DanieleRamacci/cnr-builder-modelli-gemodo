@@ -103,7 +103,8 @@ specs/010-configurazione-cataloghi-integrazioni/
 ├── data-model.md
 ├── quickstart.md
 ├── contracts/
-│   └── configurazione-cataloghi-api.openapi.yaml
+│   ├── configurazione-cataloghi-api.openapi.yaml   # API amministrativa GEMODO (FR-001..FR-009)
+│   └── geban-discovery-endpoint.openapi.yaml       # contratto che GEBAN deve implementare (non un'API GEMODO), consegnato 2026-09-15 come deliverable manuale prima ancora dell'implementazione di FR-006
 └── tasks.md
 ```
 

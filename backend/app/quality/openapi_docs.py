@@ -29,6 +29,11 @@ PUBLISHED_CONTRACTS: dict[str, Path] = {
     / "001-catalogo-contratto-geban"
     / "contracts"
     / "geban-catalog-api.openapi.yaml",
+    "geban-discovery-endpoint": REPO_ROOT
+    / "specs"
+    / "010-configurazione-cataloghi-integrazioni"
+    / "contracts"
+    / "geban-discovery-endpoint.openapi.yaml",
 }
 
 router = APIRouter(tags=["quality"])

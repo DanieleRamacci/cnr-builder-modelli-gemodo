@@ -74,11 +74,11 @@
     { "codice": "numero_posti", "etichetta": "Numero posti", "tipo": "number", "lingua": "IT", "obbligatorio": true, "ordine": 5, "descrizione": "Numero dei posti previsti", "validazione": { "minimum": 1 }, "_confermato": true },
     { "codice": "titolo_en", "etichetta": "Title", "tipo": "string", "lingua": "EN", "obbligatorio": true, "ordine": 6, "descrizione": "Titolo inglese del bando", "validazione": { "minLength": 1 }, "_confermato": true },
     {
-      "codice": "livello", "etichetta": "Livello", "tipo": "enum", "lingua": "IT", "obbligatorio": true, "ordine": 7,
+      "codice": "livello", "etichetta": "Livello", "tipo": "string", "lingua": "IT", "obbligatorio": true, "ordine": 7,
       "descrizione": "Livello professionale del bando",
       "validazione": { "fonte_opzioni": "profilo.livelli_possibili", "default": "profilo.livello_base" },
       "_confermato": true,
-      "_comment": "Confermato 2026-09-15 dal product owner: GEBAN gestisce davvero bandi per livelli diversi dello stesso profilo (es. Ricercatore II vs III livello), quindi il dato serve. Il meccanismo (enum con opzioni dipendenti dal profilo scelto, via fonte_opzioni) resta una proposta GEMODO: il team GEBAN deve confermare che la sua API restituira' il campo in questa forma quando implementera' l'endpoint."
+      "_comment": "Confermato 2026-09-15 dal product owner: GEBAN gestisce davvero bandi per livelli diversi dello stesso profilo (es. Ricercatore II vs III livello), quindi il dato serve. Il meccanismo (opzioni dipendenti dal profilo scelto, via fonte_opzioni) resta una proposta GEMODO: il team GEBAN deve confermare che la sua API restituira' il campo in questa forma quando implementera' l'endpoint. 'tipo' e' 'string' (non 'enum'): il vocabolario tipo_dato gia' usato da ModelloCampoRichiesto (001/002) e' string/number/date/boolean/array/object, senza 'enum' - il vincolo sui valori ammessi passa per 'validazione.fonte_opzioni', non per il tipo (corretto 2026-09-15, la versione precedente con tipo='enum' non sarebbe stata riconosciuta da PayloadValidationService._matches_type)."
     }
   ],
   "_comment_campi": "I primi 6 campi sono gia' quelli usati oggi da GEMODO (stessa forma di backend/alembic/versions/0005_classificazione_catalogo_geban.py CAMPI_DEMO) e sono generici per tutto BANDO_CONCORSO, indipendenti dal profilo scelto. Il settimo campo (livello) e' un dato reale confermato (GEBAN ha bandi per livelli diversi dello stesso profilo); il meccanismo con cui lo rappresentiamo (opzioni dipendenti dal profilo scelto tramite fonte_opzioni) resta da validare con l'implementazione reale del team GEBAN."

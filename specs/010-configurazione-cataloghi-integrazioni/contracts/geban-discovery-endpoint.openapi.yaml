@@ -1,0 +1,368 @@
+openapi: 3.0.3
+info:
+  title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
+  version: 0.1.0
+  description: >
+    **Questo NON e' un'API esposta da GEMODO.** Descrive l'endpoint che il
+    sistema esterno GEBAN deve implementare ed esporre, cosi' che GEMODO possa
+    interrogarlo per scoprire tipologie, profili e campi del contratto dati
+    del tipo documento `BANDO_CONCORSO` senza che GEMODO ne copii e mantenga
+    una copia locale come sorgente di verita' (`DEC-001-OWNERSHIP-DATI-ESTERNI`,
+    `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`).
+
+
+    **Flusso di integrazione** (`DEC-001-ONBOARDING-STRUTTURA-DOCUMENTO`):
+    1. GEMODO genera questo contratto (documento consegnato al team GEBAN);
+    2. il team GEBAN implementa un endpoint HTTP GET che risponde con questa
+    forma; 3. un operatore GEMODO registra l'URL reale dell'endpoint
+    nell'interfaccia di amministrazione (`specs/010-configurazione-cataloghi-
+    integrazioni`) ed esegue un test di connessione; 4. solo dopo un test
+    riuscito il tipo documento risulta "connesso" e diventa possibile creare
+    modelli in GEMODO che referenziano queste tipologie/profili/campi.
+
+
+    **Paginazione**: se la risposta reale e' paginata (es. envelope HAL/Spring
+    Data REST con `_embedded`/`_links`/`page`, come osservato su altri
+    endpoint di test GEBAN), il client GEMODO la gestisce in modo trasparente
+    assemblando il risultato completo - questo contratto descrive il
+    contenuto logico atteso, non impone un formato di trasporto specifico
+    (FR-011, `specs/010-configurazione-cataloghi-integrazioni/spec.md`).
+
+
+    **Autenticazione dell'endpoint esterno**: da concordare con il team GEBAN,
+    non ancora specificata in questa prima versione del contratto.
+
+
+    **Stato dei dati in questo esempio**: i 10 codici tipologia e i 7 codici
+    profilo sono verificati sugli endpoint di test reali di GEBAN
+    (`https://geban-service.test.si.cnr.it/api/v1/profili`,
+    `/api/v1/tipoSols`, 2026-09-15). Le **combinazioni** tipologia-profilo
+    sono una proposta GEMODO (basata su `infra/local/postgres/seed-demo-
+    catalog.yaml`) ancora da validare con GEBAN - le tipologie `TDPNRR`, `CD`,
+    `DIR`, `CATP`, `SDIP` hanno volutamente `profili: []` nell'esempio perche'
+    non abbiamo ancora una proposta di combinazione per loro: vanno compilate
+    insieme al team GEBAN, non lasciate vuote in produzione. Il meccanismo del
+    campo `livello` (opzioni dipendenti dal profilo scelto, vedi
+    `components.schemas.CampoContrattoDati`) e' confermato nel dato (GEBAN
+    gestisce davvero bandi per livelli diversi dello stesso profilo) ma non
+    ancora nella forma esatta della risposta API: il team GEBAN deve
+    confermare che la implementera' cosi'.
+servers:
+  - url: https://<host-scelto-da-GEBAN>
+    description: >
+      URL reale a scelta del team GEBAN, registrato successivamente
+      nell'interfaccia di amministrazione GEMODO. Il path sotto e' un esempio
+      illustrativo, non un vincolo sul path reale.
+paths:
+  /discovery/bando-concorso:
+    get:
+      summary: Discovery tipologie/profili/campi per BANDO_CONCORSO (esempio di path)
+      description: >
+        Restituisce la classificazione corrente (tipologie, profili, attributi
+        profilo-dipendenti) e il contratto dati (campi) per il tipo documento
+        `BANDO_CONCORSO`. Chiamato da GEMODO solo in fase di definizione/
+        navigazione struttura (mai in fase di validazione/generazione
+        documento, che usa sempre i dati gia' snapshottati nel modello
+        pubblicato).
+      operationId: getDiscoveryBandoConcorso
+      responses:
+        "200":
+          description: Classificazione e contratto dati correnti
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryResponse"
+              examples:
+                bandoConcorso:
+                  $ref: "#/components/examples/BandoConcorsoDiscoveryExample"
+components:
+  examples:
+    BandoConcorsoDiscoveryExample:
+      summary: Esempio reale BANDO_CONCORSO (2026-09-15)
+      value:
+        tipo_documento: BANDO_CONCORSO
+        validita: "2026-09-15T00:00:00Z"
+        tipologie:
+          - codice: TDPNRR
+            descrizione: Tempo Determinato PNRR
+            profili: []
+          - codice: CD
+            descrizione: Comandi e Distacchi
+            profili: []
+          - codice: DIR
+            descrizione: Direttori
+            profili: []
+          - codice: TD
+            descrizione: Tempo Determinato
+            profili:
+              - codice: COLLABORATORE_TECNICO_ER
+                descrizione: Collaboratore Tecnico E.R.
+                livelli_possibili: ["IV", "V", "VI"]
+                livello_base: "VI"
+              - codice: OPERATORE_TECNICO
+                descrizione: Operatore Tecnico
+                livelli_possibili: ["VI", "VII", "VIII"]
+                livello_base: "VIII"
+              - codice: RICERCATORE
+                descrizione: Ricercatore
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: TECNOLOGO
+                descrizione: Tecnologo
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+          - codice: CP
+            descrizione: Concorsi Pubblici
+            profili:
+              - codice: COLLABORATORE_TECNICO_ER
+                descrizione: Collaboratore Tecnico E.R.
+                livelli_possibili: ["IV", "V", "VI"]
+                livello_base: "VI"
+              - codice: OPERATORE_TECNICO
+                descrizione: Operatore Tecnico
+                livelli_possibili: ["VI", "VII", "VIII"]
+                livello_base: "VIII"
+              - codice: RICERCATORE
+                descrizione: Ricercatore
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: TECNOLOGO
+                descrizione: Tecnologo
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: FUNZIONARIO_AMMINISTRAZIONE
+                descrizione: Funzionario di Amministrazione
+                livelli_possibili: ["IV", "V"]
+                livello_base: "V"
+          - codice: RS
+            descrizione: Reclutamento Speciale
+            profili:
+              - codice: RICERCATORE
+                descrizione: Ricercatore
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: TECNOLOGO
+                descrizione: Tecnologo
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+          - codice: CATP
+            descrizione: Categorie Protette
+            profili: []
+          - codice: TI
+            descrizione: Tempo Indeterminato
+            profili:
+              - codice: COLLABORATORE_TECNICO_ER
+                descrizione: Collaboratore Tecnico E.R.
+                livelli_possibili: ["IV", "V", "VI"]
+                livello_base: "VI"
+              - codice: OPERATORE_TECNICO
+                descrizione: Operatore Tecnico
+                livelli_possibili: ["VI", "VII", "VIII"]
+                livello_base: "VIII"
+              - codice: RICERCATORE
+                descrizione: Ricercatore
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: TECNOLOGO
+                descrizione: Tecnologo
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: FUNZIONARIO_AMMINISTRAZIONE
+                descrizione: Funzionario di Amministrazione
+                livelli_possibili: ["IV", "V"]
+                livello_base: "V"
+          - codice: SDIP
+            descrizione: Selezioni per dipendenti CNR/Candidature
+            profili: []
+          - codice: MOB
+            descrizione: Mobilita'
+            profili:
+              - codice: COLLABORATORE_TECNICO_ER
+                descrizione: Collaboratore Tecnico E.R.
+                livelli_possibili: ["IV", "V", "VI"]
+                livello_base: "VI"
+              - codice: OPERATORE_TECNICO
+                descrizione: Operatore Tecnico
+                livelli_possibili: ["VI", "VII", "VIII"]
+                livello_base: "VIII"
+              - codice: RICERCATORE
+                descrizione: Ricercatore
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: TECNOLOGO
+                descrizione: Tecnologo
+                livelli_possibili: ["I", "II", "III"]
+                livello_base: "III"
+              - codice: FUNZIONARIO_AMMINISTRAZIONE
+                descrizione: Funzionario di Amministrazione
+                livelli_possibili: ["IV", "V"]
+                livello_base: "V"
+        campi:
+          - codice: codice_bando
+            etichetta: Codice bando
+            tipo: string
+            lingua: IT
+            obbligatorio: true
+            ordine: 1
+            descrizione: Identificativo funzionale del bando
+            validazione: { minLength: 1 }
+          - codice: titolo_it
+            etichetta: Titolo
+            tipo: string
+            lingua: IT
+            obbligatorio: true
+            ordine: 2
+            descrizione: Titolo italiano del bando
+            validazione: { minLength: 1 }
+          - codice: descrizione_ridotta_it
+            etichetta: Descrizione ridotta
+            tipo: string
+            lingua: IT
+            obbligatorio: false
+            ordine: 3
+            descrizione: Sintesi italiana del bando
+            validazione: null
+          - codice: sede_prescelta_it
+            etichetta: Sede
+            tipo: string
+            lingua: IT
+            obbligatorio: true
+            ordine: 4
+            descrizione: Sede associata alla procedura
+            validazione: { minLength: 1 }
+          - codice: numero_posti
+            etichetta: Numero posti
+            tipo: number
+            lingua: IT
+            obbligatorio: true
+            ordine: 5
+            descrizione: Numero dei posti previsti
+            validazione: { minimum: 1 }
+          - codice: titolo_en
+            etichetta: Title
+            tipo: string
+            lingua: EN
+            obbligatorio: true
+            ordine: 6
+            descrizione: Titolo inglese del bando
+            validazione: { minLength: 1 }
+          - codice: livello
+            etichetta: Livello
+            tipo: string
+            lingua: IT
+            obbligatorio: true
+            ordine: 7
+            descrizione: Livello professionale del bando
+            validazione:
+              fonte_opzioni: profilo.livelli_possibili
+              default: profilo.livello_base
+  schemas:
+    DiscoveryResponse:
+      type: object
+      required: [tipo_documento, validita, tipologie, campi]
+      properties:
+        tipo_documento:
+          type: string
+          example: BANDO_CONCORSO
+        validita:
+          type: string
+          format: date-time
+          description: >
+            Data/ora di riferimento della classificazione restituita
+            (`DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`). GEMODO la mostra
+            insieme a ogni modello creato a partire da questa risposta.
+        tipologie:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tipologia"
+        campi:
+          type: array
+          description: >
+            Campi del contratto dati, definiti una sola volta a livello di
+            tipo documento (non duplicati per ogni combinazione tipologia/
+            profilo).
+          items:
+            $ref: "#/components/schemas/CampoContrattoDati"
+    Tipologia:
+      type: object
+      required: [codice, descrizione, profili]
+      properties:
+        codice:
+          type: string
+          example: TD
+        descrizione:
+          type: string
+          example: Tempo Determinato
+        profili:
+          type: array
+          description: >
+            Profili ammessi sotto questa tipologia. Un array vuoto e'
+            valido (tipologia senza combinazione ancora definita) ma MUST
+            essere compilato prima dell'uso in produzione, non lasciato
+            vuoto silenziosamente.
+          items:
+            $ref: "#/components/schemas/Profilo"
+    Profilo:
+      type: object
+      required: [codice, descrizione]
+      properties:
+        codice:
+          type: string
+          example: RICERCATORE
+        descrizione:
+          type: string
+          example: Ricercatore
+        livelli_possibili:
+          type: array
+          description: >
+            Attributo profilo-dipendente (generalizza il caso "livello",
+            vedi `Attributo Profilo` in
+            `specs/010-configurazione-cataloghi-integrazioni/spec.md`).
+            Opzionale: non ogni profilo ha necessariamente questo attributo.
+          items:
+            type: string
+          example: ["I", "II", "III"]
+        livello_base:
+          type: string
+          description: Valore di default fra `livelli_possibili` per questo profilo.
+          example: "III"
+    CampoContrattoDati:
+      type: object
+      required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
+      properties:
+        codice:
+          type: string
+          example: numero_posti
+        etichetta:
+          type: string
+          example: Numero posti
+        tipo:
+          type: string
+          description: >
+            Stesso vocabolario di `ModelloCampoRichiesto.tipo_dato`
+            (`001`/`002`): `string`, `number`, `date`, `boolean`, `array`,
+            `object`. Nessun tipo `enum` dedicato - un campo con opzioni
+            vincolate (fisse o dipendenti dal profilo) resta `string`/
+            `number` con il vincolo espresso in `validazione`.
+          enum: [string, number, date, boolean, array, object]
+        lingua:
+          type: string
+          enum: [IT, EN]
+        obbligatorio:
+          type: boolean
+        ordine:
+          type: integer
+          minimum: 1
+        descrizione:
+          type: string
+          nullable: true
+        validazione:
+          type: object
+          nullable: true
+          description: >
+            Vincoli semplici (es. `minLength`, `minimum`) oppure, per un
+            campo dipendente da un attributo profilo, un riferimento
+            simbolico invece di un elenco statico:
+            `{"fonte_opzioni": "profilo.<nome_attributo>", "default":
+            "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il
+            profilo scelto in fase di creazione modello.

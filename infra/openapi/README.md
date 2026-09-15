@@ -24,6 +24,7 @@ abbiano un solo punto da cui partire.
 | Contratto | Spec owner | API scope | Stato |
 |---|---|---|---|
 | [`geban-catalog-api.openapi.yaml`](../../specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml) | `001-catalogo-contratto-geban` | GEBAN (catalogo, campi, validazione) | Implementato |
+| [`geban-discovery-endpoint.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml) | `010-configurazione-cataloghi-integrazioni` | **Non un'API GEMODO** — contratto che il sistema esterno GEBAN deve implementare (endpoint di discovery per `BANDO_CONCORSO`) | Consegnato al team GEBAN come riferimento (2026-09-15); combinazioni tipologia-profilo e meccanismo esatto del campo `livello` ancora da confermare con loro |
 | Generazione documento/PDF | `004-generazione-documenti-pdf` | GEBAN | Da produrre prima dell'implementazione runtime |
 | Stato, riferimento, download, idempotenza | `005-storage-idempotenza-consultazione` | GEBAN | Da produrre prima dell'implementazione runtime |
 | API interne builder (tipi, categorie, modelli, versioni) | `002-builder-modelli` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
