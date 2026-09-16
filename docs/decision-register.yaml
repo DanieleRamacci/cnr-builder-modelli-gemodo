@@ -841,3 +841,40 @@ decisions:
       connessione al servizio esterno, non un elenco vuoto o stantio.
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-15
+
+  - id: DEC-006-AUD-ASSENTE-NEI-TOKEN-ACE
+    titolo: Il claim aud non e' presente nei token emessi da ACE
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      confermato 2026-09-16 dal product owner contro un token ACE reale: il
+      claim `aud` visto finora negli esempi (`SEC-006-003`,
+      `specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md`) era stato
+      impostato manualmente lato client durante i test, non e' valorizzato da
+      ACE. Un token ACE reale contiene solo `contexts.<nome>.roles` (es.
+      `contexts.geban.roles`, eventualmente insieme ad altri contesti dello
+      stesso utente come `contexts.geri.roles` - GEMODO deve derivare
+      permessi solo dai contesti che conosce, ignorando gli altri senza
+      errore, gia' cosi' in `permessi_da_ruoli_esterni`). Corretto
+      `backend/app/common/security.py::decode_principal_from_token`: prima
+      richiedeva sempre `aud=gemodo-backend` (PyJWT rifiuta un token con
+      `aud` presente se non gli si passa `audience=`, quindi bisogna anche
+      disabilitare esplicitamente `verify_aud` e validare a mano, non basta
+      omettere il parametro) - senza questa correzione nessun token ACE
+      reale sarebbe mai stato accettato. Nuovo comportamento: `aud` assente
+      e' accettato (il segnale di destinazione diventa il contesto
+      riconosciuto); `aud` presente deve ancora contenere `gemodo-backend`
+      (vale per i client diretti GEMODO, `gemodo-frontend`/`geban-backend`,
+      che continuano a valorizzarlo). Verificato con test reali
+      (`backend/tests/common/test_security_jwt.py`, inclusi due nuovi test:
+      token ACE multi-contesto senza `aud`, e `aud` presente ma sbagliato
+      ancora rifiutato). Documentazione da correggere ovunque mostri `aud`
+      come presente/obbligatorio nell'esempio di token ACE: `keycloak-jwt.md`
+      (esempi e regole di validazione), `deploy/coolify-test/index.html`.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-16

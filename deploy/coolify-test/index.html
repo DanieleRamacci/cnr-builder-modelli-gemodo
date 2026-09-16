@@ -410,17 +410,19 @@
           </p>
           <div class="warn">
             Il client tecnico <code>geban-backend</code> (client credentials, ruoli diretti su
-            <code>gemodo-backend</code>) resta un doppio di test/CI. Il flusso reale usa un client ACE ammesso
-            (es. <code>geri-angular-public</code>): il token deve contenere <code>aud: gemodo-backend</code> e il
-            claim <code>contexts.geban.roles</code> con i ruoli GEBAN dell'utente. GEMODO non usa quei ruoli
-            direttamente: li traduce in permessi propri tramite una mappa configurata
-            (<code>infra/local/integration-profiles.local.yaml</code>).
+            <code>gemodo-backend</code>, <strong>con</strong> audience) resta un doppio di test/CI. Il flusso reale
+            usa un client ACE ammesso (es. <code>geri-angular-public</code>): il token
+            <strong>non contiene <code>aud</code></strong> (ACE non lo valorizza) e porta solo il claim
+            <code>contexts</code>, con il ruolo GEBAN dentro <code>contexts.geban.roles</code> — l'utente puo' avere
+            anche altri contesti per altri applicativi ACE nello stesso token, GEMODO considera solo quelli che
+            conosce. GEMODO non usa quei ruoli direttamente: li traduce in permessi propri tramite una mappa
+            configurata (<code>infra/local/integration-profiles.local.yaml</code>).
           </div>
           <pre>{
   "iss": "https://sso.test.si.cnr.it/auth/realms/cnr",
-  "aud": ["gemodo-backend", "..."],
   "azp": "geri-angular-public",
   "contexts": {
+    "geri": { "roles": ["ROLE_ADMIN#geri"] },
     "geban": { "roles": ["ROLE_COORDINATOR#geban"] }
   }
 }</pre>

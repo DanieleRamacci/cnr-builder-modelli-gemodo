@@ -59,12 +59,16 @@ Setup eseguito manualmente in Admin Console sul realm `cnr` di test:
 - Verifica token tecnico (`client_credentials` su `geban-backend`, controllo `iss`, `aud`,
   `azp`, `resource_access.gemodo-backend.roles`): da mantenere per test e CI.
 - Client ACE reale comunicato dal team GEBAN: negli esempi ricevuti il claim `azp` vale
-  `geri-angular-public`. Il token contiene gia' `aud` con `gemodo-backend`, ruoli
-  `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` in `resource_access.gemodo-backend.roles` e
-  ruoli ACE/GEBAN nel claim `contexts.geban.roles`.
+  `geri-angular-public`. **Corretto 2026-09-16**: il token ACE reale non contiene `aud`
+  (il valore visto in un primo esempio era stato impostato a mano lato client durante un
+  test) ne', di norma, `resource_access.gemodo-backend.roles` - contiene solo ruoli ACE/
+  GEBAN nel claim `contexts.geban.roles`, eventualmente insieme ad altri contesti dello
+  stesso utente per altri applicativi ACE (es. `contexts.geri.roles`), che GEMODO ignora
+  perche' non li conosce.
 - Mapper ACE: il team GEBAN usa un mapper di tipo ACE che, con contesto `geban`, aggiunge
-  al token claim nella forma `contexts.geban.roles`. Questo mapper non sostituisce
-  l'audience GEMODO: il token deve continuare a contenere `aud` con `gemodo-backend`.
+  al token claim nella forma `contexts.geban.roles`. Questo mapper non imposta `aud`: per
+  i token ACE, `aud` resta assente per design (vedi "Come Leggere Il Token ACE/GEBAN"
+  sotto) - non e' un requisito da imporre lato ACE.
 
 ## Principio Di Base
 
@@ -202,19 +206,22 @@ applica la mappa sopra.
 
 ### Come Leggere Il Token ACE/GEBAN
 
-Nel token di esempio ricevuto dal team GEBAN ci sono tre informazioni distinte, tutte
-utili ma con significato diverso:
+**Corretto 2026-09-16** (`DEC-006-AUD-ASSENTE-NEI-TOKEN-ACE`): il primo esempio di token
+ricevuto dal team GEBAN mostrava un claim `aud` con `gemodo-backend` gia' presente - ma
+quel valore era stato impostato **a mano lato client durante un test**, non da ACE. Un
+token emesso davvero da ACE **non contiene `aud`** ne', di norma, `resource_access.
+gemodo-backend.roles`: contiene solo il claim `contexts`, con potenzialmente piu' di un
+contesto per lo stesso utente (uno per ogni applicativo ACE a cui e' abilitato).
 
 ```json
 {
-  "aud": ["oauth2-resource", "gemodo-backend", "account"],
+  "iss": "https://sso.test.si.cnr.it/auth/realms/cnr",
+  "sub": "user-123",
   "azp": "geri-angular-public",
-  "resource_access": {
-    "gemodo-backend": {
-      "roles": ["DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"]
-    }
-  },
   "contexts": {
+    "geri": {
+      "roles": ["ROLE_ADMIN#geri"]
+    },
     "geban": {
       "roles": ["ROLE_COORDINATOR#geban"]
     }
@@ -222,29 +229,35 @@ utili ma con significato diverso:
 }
 ```
 
-- `aud` indica i destinatari/resource server del token. Per GEMODO e' obbligatorio che
-  contenga `gemodo-backend`; nell'esempio e' gia' presente, quindi il token e' destinato
-  anche alle API GEMODO.
-- `azp` indica il client che ha ottenuto/emesso il token per l'applicazione chiamante. Nel
-  flusso reale indicato dai colleghi puo' essere `geri-angular-public` o un client ACE
-  equivalente censito nel profilo di integrazione GEMODO.
-- `resource_access.gemodo-backend.roles` contiene ruoli GEMODO diretti assegnati/mappati
-  in Keycloak sul client `gemodo-backend`. Sono gia' permessi applicativi GEMODO e non
-  dipendono dal claim ACE `contexts`.
-- `contexts.geban.roles` contiene ruoli applicativi ACE/GEBAN dell'utente. GEMODO non li
-  usa direttamente negli endpoint: li traduce tramite `role_mappings` nel profilo di
-  integrazione.
-
-La configurazione finale supporta entrambe le fonti di autorizzazione:
+- **Nessun `aud`**: ACE non lo valorizza. GEMODO non puo' e non deve pretenderlo per
+  questo tipo di token - un token ACE senza `aud` e' autenticato su firma/issuer/scadenza,
+  poi autorizzato in base al contesto riconosciuto (sotto).
+- `azp` indica il client che ha ottenuto il token (es. `geri-angular-public`), censito nel
+  profilo di integrazione GEMODO (`client_ammessi`). Resta un controllo, ma da solo non
+  basta a sapere "per quale applicativo" e' questa chiamata: lo stesso client ACE puo'
+  essere condiviso da piu' sistemi (nell'esempio, l'utente ha sia il contesto "geri" sia
+  "geban").
+- **Il contesto e' il segnale di destinazione**, non `aud`: `contexts.geban.roles` dice
+  "questa parte del token riguarda GEBAN". GEMODO considera solo i contesti che conosce
+  (qui: `geban`) e ignora silenziosamente gli altri (qui: `geri`) - non e' un errore avere
+  contesti che GEMODO non usa, e' normale per un utente abilitato a piu' applicativi ACE.
+  I ruoli dentro il contesto riconosciuto (`ROLE_COORDINATOR#geban`, o gli altri ruoli
+  GEBAN gia' visti: `ROLE_GESTORE#geban`, `ROLE_MANAGER#geban`, `ROLE_USER#geban`) vengono
+  tradotti in permessi GEMODO tramite `role_mappings` nel profilo di integrazione.
+- `resource_access.gemodo-backend.roles` resta un meccanismo valido, ma per i **client
+  diretti GEMODO** (`gemodo-frontend`, `geban-backend`), non per il flusso ACE - quei
+  client continuano a impostare `aud: gemodo-backend` e ruoli diretti, vedi Flusso 1 sotto.
 
 ```text
-resource_access.gemodo-backend.roles -> permessi GEMODO diretti
-contexts.geban.roles -> mapping configurato -> permessi GEMODO derivati
+resource_access.gemodo-backend.roles -> permessi GEMODO diretti (client diretti GEMODO, aud presente e verificato)
+contexts.<nome>.roles -> mapping configurato -> permessi GEMODO derivati (ACE, aud assente per design)
 ```
 
-Il controllo `aud=gemodo-backend` resta obbligatorio in entrambi i casi. La presenza di
-ruoli GEMODO diretti o di ruoli ACE/GEBAN non sostituisce la verifica che il token sia
-destinato alle API GEMODO.
+Regola di validazione aggiornata: se `aud` e' presente nel token, deve contenere
+`gemodo-backend` (rifiutato altrimenti); se `aud` e' assente, il token resta valido e
+l'autorizzazione si basa sul contesto riconosciuto. Implementato in
+`backend/app/common/security.py::_ensure_audience_if_declared`, verificato con test reali
+(`backend/tests/common/test_security_jwt.py`).
 
 ## Flusso 1 - Utente Che Usa Il Builder GEMODO
 
@@ -344,8 +357,11 @@ non perdere tracciabilita' anche se l'autorizzazione tecnica sarebbe superata.
 ### Variante Reale ACE Con Context Roles
 
 Il team GEBAN puo' chiamare GEMODO con un token emesso da un client ACE ammesso, ad
-esempio `geri-angular-public`, purche' il token sia destinato a GEMODO e contenga il
-contesto `geban`.
+esempio `geri-angular-public`, purche' contenga il contesto `geban`. **Corretto
+2026-09-16**: questo token non contiene `aud` (ACE non lo valorizza) - la richiesta e'
+destinata a GEMODO perche' porta un contesto che GEMODO riconosce, non perche' lo dichiara
+esplicitamente in un'audience. L'utente puo' avere anche altri contesti nello stesso
+token per altri applicativi ACE: GEMODO deriva permessi solo da quello che conosce.
 
 JWT atteso:
 
@@ -353,14 +369,11 @@ JWT atteso:
 {
   "iss": "https://sso.test.si.cnr.it/auth/realms/cnr",
   "sub": "user-123",
-  "aud": ["oauth2-resource", "gemodo-backend", "account"],
   "azp": "geri-angular-public",
-  "resource_access": {
-    "gemodo-backend": {
-      "roles": ["DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"]
-    }
-  },
   "contexts": {
+    "geri": {
+      "roles": ["ROLE_ADMIN#geri"]
+    },
     "geban": {
       "roles": ["ROLE_COORDINATOR#geban"]
     }
@@ -372,10 +385,13 @@ JWT atteso:
 GEMODO deve validare:
 
 - firma, issuer, scadenza del token;
-- audience `gemodo-backend`;
+- se `aud` e' presente, deve contenere `gemodo-backend` (rifiutato altrimenti); se
+  assente, nessun controllo di audience e' possibile ne' richiesto per questo token;
 - client chiamante presente nella lista dei client ammessi;
-- ruoli GEMODO in `resource_access.gemodo-backend.roles` oppure ruoli ACE/GEBAN in
-  `contexts.geban.roles` mappabili a permessi GEMODO;
+- ruoli GEMODO in `resource_access.gemodo-backend.roles` (se presente) oppure ruoli ACE/
+  GEBAN in `contexts.geban.roles` mappabili a permessi GEMODO - GEMODO ignora
+  silenziosamente i contesti che non conosce (es. `contexts.geri` sopra) invece di
+  trattarli come errore;
 - coerenza tra contesto token `geban`, payload `sistema_richiedente: GEBAN` e azione
   richiesta.
 
@@ -445,9 +461,10 @@ validato in test:
    assegnare i ruoli tecnici (`DOCUMENTI_GENERATORE`, `DOCUMENTI_VIEWER`, `SYSTEM_GEBAN`) al
    service account del client `geban-backend` dove si usa il doppio tecnico di test.
 5. Per i client ACE reali, verificare che il token includa:
-   - audience `gemodo-backend`;
    - `azp`/client id del client ACE ammesso;
    - `contexts.geban.roles` con i ruoli GEBAN concordati;
+   - **nessun `aud` atteso** (ACE non lo valorizza, corretto 2026-09-16 - non richiederlo
+     in configurazione ne' in validazione per questo tipo di token);
    - opzionalmente anche `resource_access.gemodo-backend.roles`, se ACE continua a
      valorizzare ruoli GEMODO nel token.
 6. Configurare in GEMODO la mappa ruoli esterni -> permessi GEMODO, mantenendo separati
@@ -457,7 +474,9 @@ validato in test:
 8. Assicurare che i JWT destinati a GEMODO contengano:
    - `iss`
    - `sub`
-   - `aud`
+   - `aud` con `gemodo-backend` **per i client diretti GEMODO** (`gemodo-frontend`,
+     `geban-backend`); i token ACE non lo contengono e non devono contenerlo (corretto
+     2026-09-16, vedi "Come Leggere Il Token ACE/GEBAN")
    - `azp` o claim equivalente del client chiamante
    - ruoli applicativi in `resource_access.gemodo-backend.roles` oppure ruoli esterni in
      `contexts.<app>.roles` mappabili a permessi GEMODO
@@ -506,9 +525,9 @@ il flusso GEBAN il contesto richiesto e' `geban`, quindi nel token deve comparir
 }
 ```
 
-Il mapper ACE serve solo a popolare `contexts.geban.roles`. Non sostituisce la
-configurazione di destinazione: il token deve continuare a contenere audience
-`gemodo-backend`.
+Il mapper ACE serve solo a popolare `contexts.geban.roles`. **Corretto 2026-09-16**: non
+imposta ne' richiede un `aud` verso `gemodo-backend` - i token ACE restano validi senza
+audience, vedi "Come Leggere Il Token ACE/GEBAN" sopra.
 
 ## Regole Di Validazione In GEMODO
 
@@ -517,7 +536,8 @@ GEMODO deve rifiutare la richiesta quando:
 - manca il token;
 - firma o issuer non sono validi;
 - token scaduto;
-- audience non contiene GEMODO;
+- `aud` e' presente ma non contiene GEMODO (se `aud` e' assente, nessun rifiuto per
+  questo motivo: e' il caso atteso per i token ACE);
 - manca il ruolo/claim richiesto;
 - il token ACE contiene `contexts.geban.roles` ma il ruolo non e' presente nella mappa
   configurata;
@@ -592,13 +612,17 @@ di altri soggetti oltre al gestore.
 ```
 
 ```text
-Rif. SEC-006-003 (risolta il 2026-09-14)
+Rif. SEC-006-003 (risolta il 2026-09-14, corretta il 2026-09-16)
 
-I token ACE con contexts.geban.roles sono accettabili per GEBAN se contengono audience
-gemodo-backend e se i ruoli esterni sono trasformati da una mappa configurabile in
-permessi GEMODO. ROLE_GESTORE#geban, ROLE_MANAGER#geban, ROLE_COORDINATOR#geban e
-ROLE_USER#geban possono generare documenti; solo ROLE_MANAGER#geban puo' gestire modelli
-nel perimetro GEBAN.
+I token ACE con contexts.geban.roles sono accettabili per GEBAN, con i ruoli esterni
+trasformati da una mappa configurabile in permessi GEMODO. ROLE_GESTORE#geban,
+ROLE_MANAGER#geban, ROLE_COORDINATOR#geban e ROLE_USER#geban possono generare documenti;
+solo ROLE_MANAGER#geban puo' gestire modelli nel perimetro GEBAN. Corretto 2026-09-16
+(DEC-006-AUD-ASSENTE-NEI-TOKEN-ACE): questi token NON contengono audience gemodo-backend -
+ACE non la valorizza, un primo esempio che la mostrava era stato impostato a mano lato
+client durante un test. L'audience resta verificata solo quando il token la dichiara
+(client diretti GEMODO); un token ACE senza aud e' valido, l'autorizzazione si basa sul
+contesto riconosciuto.
 ```
 
 Nessuna decisione bloccante differita al momento.

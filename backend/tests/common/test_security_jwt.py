@@ -134,9 +134,13 @@ def test_decode_accepts_configured_interactive_client():
 
 
 def test_decode_accepts_configured_ace_client_with_context_role(tmp_path):
+    """Riflette il token ACE reale (2026-09-16): nessun claim `aud` - ACE non lo
+    valorizza, solo `contexts.<nome>.roles`. Il segnale di destinazione e' il
+    contesto riconosciuto (`geban`), non l'audience."""
     keys = JwtTestKeys()
     token = signed_token(
         keys,
+        audience=None,
         client_id="geri-angular-public",
         roles=None,
         contexts={"geban": ["ROLE_COORDINATOR#geban"]},
@@ -155,7 +159,36 @@ def test_decode_accepts_configured_ace_client_with_context_role(tmp_path):
     assert principal.ruoli_contesto == (("geban", ("ROLE_COORDINATOR#geban",)),)
 
 
-def test_decode_rejects_ace_token_without_gemodo_audience(tmp_path):
+def test_decode_accepts_ace_token_with_multiple_contexts_only_geban_configured(tmp_path):
+    """Caso reale segnalato dal product owner: lo stesso token ACE puo' portare
+    piu' contesti (es. "geri" oltre a "geban"). GEMODO deve derivare permessi
+    solo dal contesto che conosce (`geban`), ignorare "geri" senza errore, e
+    continuare a non richiedere `aud`."""
+    keys = JwtTestKeys()
+    token = signed_token(
+        keys,
+        audience=None,
+        client_id="geri-angular-public",
+        roles=None,
+        contexts={"geri": ["ROLE_ADMIN#geri"], "geban": ["ROLE_COORDINATOR#geban"]},
+    )
+
+    principal = decode_principal_from_token(
+        token,
+        settings=_settings(integration_profiles_path=_write_integration_profiles(tmp_path)),
+        signing_key=keys.public_pem,
+    )
+
+    assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
+    assert ROLE_DOCUMENTI_VIEWER in principal.ruoli
+    assert dict(principal.ruoli_contesto)["geri"] == ("ROLE_ADMIN#geri",)
+
+
+def test_decode_rejects_ace_token_with_wrong_audience_even_if_context_valid(tmp_path):
+    """Se `aud` E' presente (non e' il caso ACE normale, ma puo' capitare con
+    client diretti mal configurati) e non contiene gemodo-backend, il token
+    resta rifiutato anche se porta un contesto valido - `aud` assente e' OK,
+    `aud` presente ma sbagliato non lo e'."""
     keys = JwtTestKeys()
     token = signed_token(
         keys,

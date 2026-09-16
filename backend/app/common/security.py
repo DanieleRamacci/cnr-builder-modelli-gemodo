@@ -139,12 +139,37 @@ def decode_principal_from_token(
             token,
             key=key,
             algorithms=ALLOWED_ALGORITHMS,
-            audience=settings.keycloak_audience,
             issuer=settings.keycloak_issuer_url,
+            # PyJWT rifiuta un token con `aud` presente se non gli passiamo
+            # `audience=`, ma ACE non valorizza affatto `aud` - l'unico modo per
+            # accettare entrambi i casi e' disabilitare il controllo integrato e
+            # farlo noi stessi, condizionalmente, in _ensure_audience_if_declared.
+            options={"verify_aud": False},
         )
     except InvalidTokenError as exc:
         raise AuthenticationError() from exc
+    _ensure_audience_if_declared(payload, settings)
     return _principal_from_payload(payload, settings)
+
+
+def _ensure_audience_if_declared(payload: dict[str, Any], settings: Settings) -> None:
+    """Verify ``aud`` only when the token declares one.
+
+    ACE (2026-09-16, confirmed by the product owner against real tokens) does
+    not set ``aud`` at all - the ACE mapper only adds ``contexts.<nome>.roles``.
+    A token without ``aud`` is authenticated on issuer/signature/expiry alone;
+    the destination signal is the recognized context, checked later in
+    ``_principal_from_payload`` (client allow-list + configured
+    ``role_mappings``). Direct GEMODO clients (``gemodo-frontend``,
+    ``geban-backend``) still set ``aud``, so when it IS present it MUST still
+    contain ``keycloak_audience`` - this branch is not relaxed.
+    """
+
+    aud = payload.get("aud")
+    if aud is None:
+        return
+    if settings.keycloak_audience not in _audience_tuple(aud):
+        raise AuthenticationError()
 
 
 def mock_principal(settings: Settings) -> PrincipalGEMODO:
