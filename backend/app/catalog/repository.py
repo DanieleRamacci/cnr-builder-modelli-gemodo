@@ -14,6 +14,7 @@ from app.catalog.models import (
     ModelloCampoRichiesto,
     ModelloDocumento,
     ModelloDocumentoVersione,
+    RegistroContrattiDati,
     TipoDocumento,
     TipologiaBandoSOL,
 )
@@ -21,6 +22,7 @@ from app.catalog.models import (
 
 STATO_ATTIVO = "ATTIVA"
 STATO_PUBBLICATO = "PUBBLICATO"
+STATO_REGISTRO_ATTIVO = "ATTIVO"
 
 
 def list_tipi_documento(db: Session) -> list[TipoDocumento]:
@@ -64,6 +66,16 @@ def list_classificazione_by_tipo_codice(db: Session, codice_tipo_documento: str)
 
 def get_tipologia_sol_by_codice(db: Session, codice: str) -> TipologiaBandoSOL | None:
     return db.scalar(select(TipologiaBandoSOL).where(TipologiaBandoSOL.codice == codice, TipologiaBandoSOL.attiva.is_(True)))
+
+
+def list_registri_contratti_attivi_by_tipo_codice(db: Session, codice_tipo_documento: str) -> list[RegistroContrattiDati]:
+    stmt = (
+        select(RegistroContrattiDati)
+        .join(TipoDocumento, RegistroContrattiDati.tipo_documento_id == TipoDocumento.id)
+        .where(TipoDocumento.codice == codice_tipo_documento, RegistroContrattiDati.stato == STATO_REGISTRO_ATTIVO)
+        .order_by(RegistroContrattiDati.codice)
+    )
+    return list(db.scalars(stmt))
 
 
 def _day_start(value: date) -> datetime:

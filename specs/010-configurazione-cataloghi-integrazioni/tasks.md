@@ -36,12 +36,21 @@
 - [ ] T007 [P] Migration `schema_discovery_generato` (`data-model.md`)
 - [ ] T008 Modelli SQLAlchemy `AttributoProfilo`, `EndpointIntegrazione`,
       `SchemaDiscoveryGenerato` in `backend/app/configurazione/models.py`
-- [ ] T009 Definire l'interfaccia astratta `PortaDiscovery` e i DTO condivisi
-      (`TipologiaDisponibile`, `ProfiloDisponibile`, `AttributoDisponibile`,
-      `CampoDisponibile`) in `backend/app/discovery/port.py` e
-      `backend/app/discovery/schemas.py`
-- [ ] T010 [P] Implementare `AdapterLocale` in
-      `backend/app/discovery/adapter_locale.py` (legge le tabelle `001`)
+- [x] T009 *(implementata 2026-09-16, forma ridotta)* Interfaccia astratta
+      `PortaDiscovery` e DTO in `backend/app/discovery/port.py`/`schemas.py`:
+      `tipologie_disponibili`/`campi_disponibili` implementati e testati (via
+      `backend/tests/builder/test_builder_flow_api.py`, non un test dedicato al
+      modulo discovery). **Non incluso**: `profili_disponibili`/
+      `attributi_profilo` come metodi separati del port (per stasera i profili
+      sono annidati dentro `TipologiaDisponibile.profili`, niente
+      `AttributoDisponibile`/`AttributoProfilo` — il campo `livello` resta un
+      campo normale del registro contratti dati, non ancora un attributo
+      profilo-dipendente risolto dinamicamente). Aggiornare quando si
+      implementa T005/T008 (`AttributoProfilo`).
+- [x] T010 [P] *(implementata 2026-09-16)* `AdapterLocale` in
+      `backend/app/discovery/adapter_locale.py`, legge `ClassificazioneCatalogo`/
+      `TipologiaBandoSOL`/`CategoriaDocumento`/`RegistroContrattiDati` reali —
+      verificato su Postgres reale, non solo unit test in memoria.
 - [ ] T011 [P] Implementare la cache in memoria di processo (TTL breve, mai
       persistente) in `backend/app/discovery/cache.py`
 - [ ] T012 Implementare `AdapterHTTP` in `backend/app/discovery/adapter_http.py`

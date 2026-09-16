@@ -1,0 +1,144 @@
+"""Repository helpers for the builder admin domain (model/version creation and workflow)."""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, joinedload
+
+from app.catalog.models import CategoriaDocumento, ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione
+
+
+def get_categoria_by_codice(db: Session, tipo_documento_id: uuid.UUID, codice: str) -> CategoriaDocumento | None:
+    stmt = select(CategoriaDocumento).where(
+        CategoriaDocumento.tipo_documento_id == tipo_documento_id,
+        CategoriaDocumento.codice == codice,
+    )
+    return db.scalar(stmt)
+
+
+def _prossimo_public_id(db: Session, model) -> int:
+    massimo = db.scalar(select(func.max(model.public_id)))
+    return (massimo or 0) + 1
+
+
+def crea_modello(
+    db: Session,
+    *,
+    codice: str,
+    nome: str,
+    tipo_documento_id: uuid.UUID,
+    categoria_documento_id: uuid.UUID,
+    tipologia_bando_sol_id: uuid.UUID | None,
+    variante: str,
+) -> ModelloDocumento:
+    modello = ModelloDocumento(
+        id=uuid.uuid4(),
+        public_id=_prossimo_public_id(db, ModelloDocumento),
+        tipo_documento_id=tipo_documento_id,
+        categoria_documento_id=categoria_documento_id,
+        tipologia_bando_sol_id=tipologia_bando_sol_id,
+        codice=codice,
+        nome=nome,
+        variante=variante,
+        stato="ATTIVA",
+    )
+    db.add(modello)
+    db.flush()
+    return modello
+
+
+def get_modello(db: Session, modello_id: uuid.UUID) -> ModelloDocumento | None:
+    stmt = (
+        select(ModelloDocumento)
+        .options(
+            joinedload(ModelloDocumento.tipo_documento),
+            joinedload(ModelloDocumento.categoria_documento),
+            joinedload(ModelloDocumento.tipologia_bando_sol),
+        )
+        .where(ModelloDocumento.id == modello_id)
+    )
+    return db.scalar(stmt)
+
+
+def crea_versione(
+    db: Session,
+    *,
+    modello_documento_id: uuid.UUID,
+    campi: list[ModelloCampoRichiesto],
+) -> ModelloDocumentoVersione:
+    numero_versione = (
+        db.scalar(
+            select(func.max(ModelloDocumentoVersione.versione)).where(
+                ModelloDocumentoVersione.modello_documento_id == modello_documento_id
+            )
+        )
+        or 0
+    ) + 1
+    versione = ModelloDocumentoVersione(
+        id=uuid.uuid4(),
+        public_id=_prossimo_public_id(db, ModelloDocumentoVersione),
+        modello_documento_id=modello_documento_id,
+        versione=numero_versione,
+        stato="BOZZA",
+        formato_documentale="GEMODO_DOCUMENT_V1",
+        struttura_documentale={},
+    )
+    db.add(versione)
+    db.flush()
+    for campo in campi:
+        campo.modello_versione_id = versione.id
+        db.add(campo)
+    db.flush()
+    return versione
+
+
+def get_versione(db: Session, versione_id: uuid.UUID) -> ModelloDocumentoVersione | None:
+    stmt = (
+        select(ModelloDocumentoVersione)
+        .options(joinedload(ModelloDocumentoVersione.modello))
+        .where(ModelloDocumentoVersione.id == versione_id)
+    )
+    return db.scalar(stmt)
+
+
+def get_versione_pubblicata_corrente(
+    db: Session,
+    *,
+    tipo_documento_id: uuid.UUID,
+    categoria_documento_id: uuid.UUID,
+    tipologia_bando_sol_id: uuid.UUID | None,
+    variante: str,
+    escludi_versione_id: uuid.UUID,
+) -> ModelloDocumentoVersione | None:
+    stmt = (
+        select(ModelloDocumentoVersione)
+        .join(ModelloDocumento, ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id)
+        .where(
+            ModelloDocumento.tipo_documento_id == tipo_documento_id,
+            ModelloDocumento.categoria_documento_id == categoria_documento_id,
+            ModelloDocumento.tipologia_bando_sol_id == tipologia_bando_sol_id,
+            ModelloDocumento.variante == variante,
+            ModelloDocumentoVersione.stato == "PUBBLICATO",
+            ModelloDocumentoVersione.id != escludi_versione_id,
+        )
+    )
+    return db.scalar(stmt)
+
+
+def transizione_stato(
+    db: Session,
+    versione: ModelloDocumentoVersione,
+    *,
+    nuovo_stato: str,
+) -> ModelloDocumentoVersione:
+    versione.stato = nuovo_stato
+    versione.updated_at = datetime.now(timezone.utc)
+    if nuovo_stato == "PUBBLICATO":
+        versione.pubblicato_at = datetime.now(timezone.utc)
+        versione.pubblicato_il = datetime.now(timezone.utc)
+    db.add(versione)
+    db.flush()
+    return versione

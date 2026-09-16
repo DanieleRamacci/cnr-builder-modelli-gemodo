@@ -39,6 +39,8 @@ class Settings:
     gemodo_mock_client_id: str
     gemodo_mock_roles: tuple[str, ...]
     integration_profiles_path: str | None
+    gemodo_mock_context: str | None = None
+    gemodo_mock_context_roles: tuple[str, ...] = ()
 
     @property
     def jwks_url(self) -> str:
@@ -65,6 +67,8 @@ def get_settings() -> Settings:
             for role in os.getenv("GEMODO_MOCK_ROLES", "DOCUMENTI_VIEWER,DOCUMENTI_GENERATORE").split(",")
             if role.strip()
         ),
+        gemodo_mock_context=os.getenv("GEMODO_MOCK_CONTEXT") or None,
+        gemodo_mock_context_roles=_tuple_env("GEMODO_MOCK_CONTEXT_ROLES", ""),
         integration_profiles_path=os.getenv(
             "GEMODO_INTEGRATION_PROFILES_PATH",
             str(repo_root / "infra" / "local" / "integration-profiles.local.yaml"),

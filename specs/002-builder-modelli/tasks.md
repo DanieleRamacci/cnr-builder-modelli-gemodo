@@ -14,6 +14,64 @@
 - **[Story]**: Which user story this task belongs to
 - Include exact file paths in descriptions
 
+## Nota Implementazione 2026-09-16 (prima implementazione reale, letta prima di lavorare sui task sotto)
+
+Nella sera del 2026-09-15/16 e' stata implementata una prima verticale reale
+(non un prototipo) del builder, verificata su Postgres reale, per sbloccare
+il flusso end-to-end "GEBAN genera un documento". Non segue la struttura a
+file granulare descritta nei task sotto (`app/builder/api/`, `repository/`,
+`service/`, `validation/` come sottopacchetti separati): usa moduli piatti
+`backend/app/builder/{api,service,repository,schemas,audit}.py`, funzionalmente
+equivalenti ma non file-per-file identici ai task. Chi riprende questi task
+deve leggere prima cosa esiste davvero, non assumere che uno stato `[ ]`
+significhi "niente scritto" ne' che uno stato `[x]` copra tutto cio' che il
+task descrive.
+
+**Reale e testato (`backend/tests/builder/test_builder_flow_api.py`, 7 test,
+Postgres reale)**:
+- `GET /api/v1/builder/tipi-documento/{codice}/struttura-disponibile` (US1
+  riscritta 2026-09-15: sola lettura via `PortaDiscovery`/`AdapterLocale`
+  reale, non le vecchie T014-T025).
+- `POST /api/v1/builder/modelli`, `POST .../versioni` (US2): crea modello e
+  versione, campi validati contro `RegistroContrattiDati` reale (7 campi,
+  incluso `livello`).
+- `POST .../invia-revisione`, `.../approva`, `.../pubblica` (US3): catena
+  completa BOZZA->IN_REVISIONE->APPROVATO->PUBBLICATO, archiviazione
+  automatica della precedente versione corrente della stessa variante,
+  verificata a livello DB (non solo di risposta HTTP).
+- Autorizzazione scoped per contesto (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`,
+  `verify_scrittura_su_contesto` in `backend/app/common/security.py`): test
+  dedicato prova che un ruolo di gestore in un contesto NON autorizza la
+  scrittura su un tipo documento di un contesto diverso, anche con lo stesso
+  token multi-contesto.
+- Fine a fine reale: dopo la pubblicazione, `POST /api/v1/documenti/valida` e
+  `POST /api/v1/documenti/genera` (gia' implementati dalla `001`) chiamati
+  contro il nuovo modello pubblicato hanno successo, senza modifiche a
+  quel codice — prova concreta che l'endpoint di generazione e' davvero
+  generico rispetto alla struttura del modello.
+
+**Deliberatamente NON fatto stasera (gap reali, non da assumere coperti)**:
+- Nessun endpoint per modificare il contenuto di una versione gia' pubblicata
+  ne' per derivare una bozza da una pubblicata (FR-005/FR-006) — esiste solo
+  creazione di versioni nuove, l'immutabilita' non e' mai stata messa alla
+  prova perche' non c'e' ancora un percorso di scrittura che la violerebbe.
+- Nessuna route dedicata `archivia`/`sospendi` (la transizione
+  PUBBLICATO->ARCHIVIATO/SOSPESO e' supportata dal service/`TRANSIZIONI_VALIDE`
+  ma non ha ancora un endpoint HTTP che la esponga).
+- Nessun vincolo **a livello DB** che impedisca due versioni `PUBBLICATO`
+  correnti per la stessa variante in scrittura concorrente — solo
+  applicativo (lettura-poi-scrivi in `transizione()`); accettabile per
+  l'uso di stasera (un operatore alla volta), non per produzione multi-utente.
+- Nessuna validazione esplicita di etichette-variante duplicate (Edge Case
+  dedicato, non implementato).
+- Nessun contratto OpenAPI (`contracts/builder-modelli-api.openapi.yaml` non
+  esiste ancora) ne' pubblicazione Swagger/ReDoc per queste route — API
+  interna, non ancora documentata come richiesto dal principio II della
+  costituzione: da fare prima di qualunque rilascio esterno di queste route.
+- Nessun modulo `backend/app/builder/README.md`.
+
+---
+
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Builder API skeleton over the shared catalog domain.

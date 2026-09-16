@@ -401,6 +401,11 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       ogni voce di `tipi_documento:` in
       `infra/local/postgres/seed-demo-catalog.yaml` — nessuna sezione `uffici:`
       separata da creare, il contesto e' un valore diretto sul tipo documento.
+      *(2026-09-15/16: NON ancora fatto — il valore in DB e' stato popolato da
+      T085 con un backfill diretto via SQL nella migration, non rileggendo
+      questo file; corretto per l'unico tipo documento reale di stasera
+      (BANDO_CONCORSO), ma questo task resta aperto per restare coerenti col
+      resto del seed quando arrivera' un secondo tipo documento)*
 - [ ] T078 [P] Rinominare `tipologie_sol:` in `tipologie:` in
       `infra/local/postgres/seed-demo-catalog.yaml`: ogni voce guadagna
       `tipo_documento: BANDO_CONCORSO` e `codice_sol` viene rinominato
@@ -411,8 +416,10 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       `bando-concorso-common-fields-v1` (codice, `tipo_documento: BANDO_CONCORSO`,
       versione, campi ricalcati da `CAMPI_DEMO`/`ModelloCampoRichiesto`).
       *(2026-09-15: stessa nota di T078 — fixture per adapter locale/mock)*
-- [ ] T080 Migration Alembic `0008` in
-      `backend/alembic/versions/0008_generalizza_tipologia_documento.py`: rinomina
+- [ ] T080 *(2026-09-16: numero migration aggiornato da `0008` a `0009` — `0008`
+      e' stato preso da T085, implementata prima perche' necessaria stasera)*
+      Migration Alembic `0009` in
+      `backend/alembic/versions/0009_generalizza_tipologia_documento.py`: rinomina
       tabella `tipologia_bando_sol` -> `tipologia_documento`, aggiunge
       `tipo_documento_id` (FK), cambia il vincolo univoco a
       `(tipo_documento_id, codice)`, rinomina `codice_sol` -> `riferimento_esterno`
@@ -437,31 +444,39 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
 - [ ] T084 [P] Aggiornare fixture e test esistenti che referenziano
       `TipologiaBandoSOL`/`codice_sol` in `backend/tests/catalog/`,
       `backend/tests/support/`, `backend/tests/integration/test_seed_demo_validation.py`
-- [ ] T085 *(2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: riscritta, niente
-      piu' tabella `Ufficio`)* Migration Alembic in
-      `backend/alembic/versions/0009_tipo_documento_contesto.py`: aggiunge
-      `tipo_documento.codice_contesto` (`String`, `NOT NULL` — backfill da
-      `codice_contesto:` nel seed aggiornato, T077), NESSUNA nuova tabella
-      `ufficio`, NESSUN FK. Rilegge `seed-demo-catalog.yaml` (T077) per popolare
-      la colonna (depends on T080).
+- [x] T085 *(implementata 2026-09-16, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`:
+      niente piu' tabella `Ufficio`)* Migration Alembic
+      `backend/alembic/versions/0008_contesto_registro_contratti_audit.py`:
+      aggiunge `tipo_documento.codice_contesto` (`String`, `NOT NULL`), NESSUNA
+      nuova tabella `ufficio`, NESSUN FK. Backfill diretto via SQL
+      (`codice_contesto = 'geban'` per `BANDO_CONCORSO`, l'unico tipo documento
+      reale) invece di rileggere `seed-demo-catalog.yaml` — T077 resta aperto,
+      vedi la sua nota; se/quando arriva un secondo tipo documento questa
+      migration va estesa a leggere dal seed invece di restare hardcoded.
+      Verificato su Postgres reale (`alembic upgrade head` pulito, colonna letta
+      correttamente via SQLAlchemy).
 - [ ] T086 *(2026-09-15: non piu' necessaria — non esiste piu' un modello
       SQLAlchemy `Ufficio` da aggiungere; `codice_contesto` in T085 e' gia' un
       campo diretto su `TipoDocumento`, nessuna relazione separata)*
-- [ ] T087 Migration Alembic `0010` in
-      `backend/alembic/versions/0010_profili_registro_contratti_dati.py`: crea
-      tabelle `sistema_richiedente`, `client_applicativo`, `profilo_integrazione`
-      (+ tabelle di collegamento per `tipi_documento_ammessi`,
-      `categorie_ammessi`, `tipologie_ammessi`, `modelli_versioni_ammessi`,
-      `contratti_dati_ammessi`, `role_mappings`) e `registro_contratti_dati` (+
-      tabella figlia per i campi), rilegge
-      `infra/local/integration-profiles.local.yaml` e la sezione
-      `contratti_dati:` di `seed-demo-catalog.yaml` (T079) per popolarle (depends
-      on T085). *(2026-09-15: le tabelle `sistema_richiedente`/
-      `profilo_integrazione` restano possedute da GEMODO senza cambiamenti — sono
-      "chi puo' consumare cosa", non il contenuto del catalogo. Solo
-      `registro_contratti_dati` per BANDO_CONCORSO segue la stessa nota di T078/
-      T079/T080: fixture locale, sincronizzata in produzione dall'adapter di
-      `010`)*
+- [x] T087 (parziale, `registro_contratti_dati` — 2026-09-16) / [ ] (rimane,
+      `sistema_richiedente`/`client_applicativo`/`profilo_integrazione` come
+      tabelle DB) — Migration Alembic
+      `backend/alembic/versions/0008_contesto_registro_contratti_audit.py` (non
+      `0010`, riusa la stessa migration di T085): crea `registro_contratti_dati`
+      (`tipo_documento_id`, `codice`, `versione`, `campi` JSONB, `stato`),
+      popolata con `bando-concorso-common-fields-v1` (i 7 campi reali, incluso
+      `livello`) via SQL diretto invece che rileggendo una sezione
+      `contratti_dati:` di `seed-demo-catalog.yaml` (che non esiste ancora, vedi
+      T079). **Non fatto**: `sistema_richiedente`/`client_applicativo`/
+      `profilo_integrazione` restano tabelle NON create — `_configured_sistemi`
+      in `security.py` legge ancora `infra/local/integration-profiles.local.yaml`
+      via cache in memoria, invariato (T088-T092 sotto restano da fare per
+      davvero, non solo la parte registro contratti dati). *(le tabelle
+      sistema_richiedente/profilo_integrazione restano possedute da GEMODO senza
+      cambiamenti — sono "chi puo' consumare cosa", non il contenuto del
+      catalogo. Solo `registro_contratti_dati` per BANDO_CONCORSO segue la
+      stessa nota di T078/T079/T080: fixture locale, sincronizzata in
+      produzione dall'adapter di `010`)*
 - [ ] T088 [P] Aggiungere modelli SQLAlchemy per le nuove tabelle in un nuovo
       `backend/app/quality/models.py`, stessa forma dei Pydantic gia' esistenti in
       `backend/app/quality/schemas.py`

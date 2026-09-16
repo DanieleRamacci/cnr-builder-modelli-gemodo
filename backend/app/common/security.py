@@ -148,6 +148,9 @@ def decode_principal_from_token(
 
 
 def mock_principal(settings: Settings) -> PrincipalGEMODO:
+    ruoli_contesto: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    if settings.gemodo_mock_context is not None:
+        ruoli_contesto = ((settings.gemodo_mock_context, settings.gemodo_mock_context_roles),)
     return PrincipalGEMODO(
         subject=settings.gemodo_mock_subject,
         client_id=settings.gemodo_mock_client_id,
@@ -155,6 +158,7 @@ def mock_principal(settings: Settings) -> PrincipalGEMODO:
         ruoli=settings.gemodo_mock_roles,
         issuer=settings.keycloak_issuer_url,
         ruoli_diretti=settings.gemodo_mock_roles,
+        ruoli_contesto=ruoli_contesto,
     )
 
 
@@ -179,3 +183,29 @@ def require_documenti_generatore(principal: PrincipalGEMODO = Depends(require_pr
 
 def require_modelli_gestore(principal: PrincipalGEMODO = Depends(require_principal)) -> PrincipalGEMODO:
     return ensure_roles(principal, (ROLE_GEMODO_MODELLI_GESTORE,))
+
+
+def verify_scrittura_su_contesto(
+    principal: PrincipalGEMODO,
+    codice_contesto: str,
+    settings: Settings | None = None,
+) -> None:
+    """Authorize a write for a tipo documento owned by ``codice_contesto``.
+
+    DEC-001-CONTESTO-SOSTITUISCE-UFFICIO: resolved strictly per-context, never
+    against ``principal.ruoli`` (already flattened across every context the
+    token carries) - a role granting GEMODO_MODELLI_GESTORE in one context
+    MUST NOT authorize a write on a tipo documento owned by another context.
+    """
+    settings = settings or get_settings()
+    ruoli_nel_contesto = dict(principal.ruoli_contesto).get(codice_contesto, ())
+    if not ruoli_nel_contesto:
+        raise AuthorizationError()
+    sistemi = list(_configured_sistemi(settings))
+    permessi = permessi_da_ruoli_esterni(
+        sistemi,
+        client_id=principal.client_id,
+        context_roles={codice_contesto: ruoli_nel_contesto},
+    )
+    if ROLE_GEMODO_MODELLI_GESTORE not in permessi:
+        raise AuthorizationError()
