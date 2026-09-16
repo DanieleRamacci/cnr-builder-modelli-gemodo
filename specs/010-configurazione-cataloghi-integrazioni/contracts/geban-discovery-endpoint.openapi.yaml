@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.1.0
+  version: 0.2.0
   description: >
     **Questo NON e' un'API esposta da GEMODO.** E' la specifica di CIO' CHE IL
     TEAM GEBAN DEVE COSTRUIRE.
@@ -13,24 +13,33 @@ info:
     comunicherai a GEMODO, non e' imposto da questo contratto - vedi
     `servers` sotto).
 
-    2. Quando GEMODO lo chiama, rispondi con **un singolo oggetto JSON** con
-    esattamente questa forma: `tipo_documento` (sempre `"BANDO_CONCORSO"`),
-    `validita` (data/ora), `tipologie` (array) e `campi` (array) - schema
-    completo in `components.schemas.DiscoveryResponse` qui sotto.
+    2. Quando GEMODO lo chiama, rispondi con **un singolo oggetto JSON**: una
+    mappa da codice tipo documento (es. `"BANDO_CONCORSO"`) al suo albero di
+    categorizzazione, annidato fino ai campi - schema completo in
+    `components.schemas.DiscoveryResponse` qui sotto.
 
-    3. Guarda l'**Example Value** dell'operazione `GET` sotto: e' un esempio
-    completo e reale (non inventato) di come deve essere fatta la tua
-    risposta per `BANDO_CONCORSO` oggi. La tua implementazione deve produrre
-    qualcosa di equivalente, aggiornato ai vostri dati correnti.
+    3. Guarda l'**Example Value** dell'operazione `GET` sotto. Per brevita'
+    e' compilato **un solo ramo per esteso** (una tipologia, un profilo, i
+    suoi campi): la vostra risposta reale ripete la stessa identica forma per
+    ciascuna delle vostre tipologie/profili - vedi
+    `docs/adr/0001-esempio-discovery-geban.json` nel repository GEMODO per
+    l'elenco completo dei codici tipologia/profilo gia' verificati.
 
-    4. Non devi gestire nessun altro tipo documento oltre `BANDO_CONCORSO` per
-    questa integrazione, e non e' richiesta autenticazione su questo endpoint
-    in questa prima versione (vedi sotto).
+    4. L'albero non e' fisso a "tipologia poi profilo": e' un esempio basato
+    sulla classificazione che GEBAN ci ha comunicato finora. Se la vostra
+    classificazione reale ha piu' o meno livelli, o nomi diversi, non cambia
+    nulla per noi - l'unico vincolo e' che i campi (`campi`) stiano al livello
+    foglia del vostro albero, come nell'esempio.
+
+    5. Potete rispondere anche per piu' di un tipo documento nello stesso
+    endpoint (chiavi multiple nella mappa) se vi e' comodo, ma per questa
+    integrazione **serve solo `BANDO_CONCORSO`**. Non e' richiesta
+    autenticazione su questo endpoint in questa prima versione.
 
 
     Il resto di questa pagina spiega il contesto (perche' esiste questo
     contratto) e i dettagli campo per campo - se ti serve solo "cosa devo
-    restituire", i 4 punti sopra e l'Example Value bastano.
+    restituire", i 5 punti sopra e l'Example Value bastano.
 
 
     Descrive l'endpoint che il sistema esterno GEBAN deve implementare ed
@@ -63,20 +72,16 @@ info:
     non ancora specificata in questa prima versione del contratto.
 
 
-    **Stato dei dati in questo esempio**: i 10 codici tipologia e i 7 codici
-    profilo sono verificati sugli endpoint di test reali di GEBAN
-    (`https://geban-service.test.si.cnr.it/api/v1/profili`,
-    `/api/v1/tipoSols`, 2026-09-15). Le **combinazioni** tipologia-profilo
-    sono una proposta GEMODO (basata su `infra/local/postgres/seed-demo-
-    catalog.yaml`) ancora da validare con GEBAN - le tipologie `TDPNRR`, `CD`,
-    `DIR`, `CATP`, `SDIP` hanno volutamente `profili: []` nell'esempio perche'
-    non abbiamo ancora una proposta di combinazione per loro: vanno compilate
-    insieme al team GEBAN, non lasciate vuote in produzione. Il meccanismo del
-    campo `livello` (opzioni dipendenti dal profilo scelto, vedi
-    `components.schemas.CampoContrattoDati`) e' confermato nel dato (GEBAN
-    gestisce davvero bandi per livelli diversi dello stesso profilo) ma non
-    ancora nella forma esatta della risposta API: il team GEBAN deve
-    confermare che la implementera' cosi'.
+    **Stato dei dati in questo esempio**: i codici realmente usati sotto
+    (`TD`, `COLLABORATORE_TECNICO_ER`) sono verificati sugli endpoint di test
+    reali di GEBAN (`https://geban-service.test.si.cnr.it/api/v1/profili`,
+    `/api/v1/tipoSols`, 2026-09-15) - l'elenco completo (10 tipologie, 7
+    profili) e' in `docs/adr/0001-esempio-discovery-geban.json`. Le
+    **combinazioni** tipologia-profilo restano da confermare con GEBAN. Il
+    meccanismo del campo `livello` (opzioni dipendenti dal profilo scelto) e'
+    confermato nel dato (GEBAN gestisce davvero bandi per livelli diversi
+    dello stesso profilo) ma non ancora nella forma esatta della risposta
+    API: il team GEBAN deve confermare che la implementera' cosi'.
 servers:
   - url: https://<host-scelto-da-GEBAN>
     description: >
@@ -84,28 +89,26 @@ servers:
       nell'interfaccia di amministrazione GEMODO. Il path sotto e' un esempio
       illustrativo, non un vincolo sul path reale.
 paths:
-  /discovery/bando-concorso:
+  /discovery:
     get:
-      summary: Discovery tipologie/profili/campi per BANDO_CONCORSO (esempio di path)
+      summary: Discovery albero tipologie/profili/campi (esempio di path)
       description: >
         **Questa e' l'operazione che dovete implementare voi (team GEBAN).**
-        Il path `/discovery/bando-concorso` qui sotto e' solo un esempio -
-        implementatela dove preferite. La risposta 200 MUST avere
-        esattamente la forma di `DiscoveryResponse`: guardate il pannello
-        "Example Value" della risposta 200 qui sotto per un esempio completo
-        e reale, campo per campo.
+        Il path `/discovery` qui sotto e' solo un esempio - implementatela
+        dove preferite. La risposta 200 MUST avere esattamente la forma di
+        `DiscoveryResponse`: guardate il pannello "Example Value" della
+        risposta 200 qui sotto - mostra un solo ramo compilato per esteso
+        (una tipologia, un profilo, i suoi campi), la vostra risposta reale
+        ripete la stessa forma per ogni combinazione che avete davvero.
 
 
-        Restituisce la classificazione corrente (tipologie, profili, attributi
-        profilo-dipendenti) e il contratto dati (campi) per il tipo documento
-        `BANDO_CONCORSO`. Chiamato da GEMODO solo in fase di definizione/
-        navigazione struttura (mai in fase di validazione/generazione
-        documento, che usa sempre i dati gia' snapshottati nel modello
-        pubblicato).
-      operationId: getDiscoveryBandoConcorso
+        Chiamato da GEMODO solo in fase di definizione/navigazione struttura
+        (mai in fase di validazione/generazione documento, che usa sempre i
+        dati gia' snapshottati nel modello pubblicato).
+      operationId: getDiscovery
       responses:
         "200":
-          description: Classificazione e contratto dati correnti
+          description: Albero di categorizzazione e contratto dati per tipo documento
           content:
             application/json:
               schema:
@@ -116,211 +119,113 @@ paths:
 components:
   examples:
     BandoConcorsoDiscoveryExample:
-      summary: Esempio reale BANDO_CONCORSO (2026-09-15)
+      summary: Un ramo completo (TD -> Collaboratore Tecnico E.R. -> campi), piu' un placeholder per un secondo tipo documento
       value:
-        tipo_documento: BANDO_CONCORSO
-        validita: "2026-09-15T00:00:00Z"
-        tipologie:
-          - codice: TDPNRR
-            descrizione: Tempo Determinato PNRR
-            profili: []
-          - codice: CD
-            descrizione: Comandi e Distacchi
-            profili: []
-          - codice: DIR
-            descrizione: Direttori
-            profili: []
-          - codice: TD
-            descrizione: Tempo Determinato
-            profili:
-              - codice: COLLABORATORE_TECNICO_ER
-                descrizione: Collaboratore Tecnico E.R.
-                livelli_possibili: ["IV", "V", "VI"]
-                livello_base: "VI"
-              - codice: OPERATORE_TECNICO
-                descrizione: Operatore Tecnico
-                livelli_possibili: ["VI", "VII", "VIII"]
-                livello_base: "VIII"
-              - codice: RICERCATORE
-                descrizione: Ricercatore
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: TECNOLOGO
-                descrizione: Tecnologo
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-          - codice: CP
-            descrizione: Concorsi Pubblici
-            profili:
-              - codice: COLLABORATORE_TECNICO_ER
-                descrizione: Collaboratore Tecnico E.R.
-                livelli_possibili: ["IV", "V", "VI"]
-                livello_base: "VI"
-              - codice: OPERATORE_TECNICO
-                descrizione: Operatore Tecnico
-                livelli_possibili: ["VI", "VII", "VIII"]
-                livello_base: "VIII"
-              - codice: RICERCATORE
-                descrizione: Ricercatore
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: TECNOLOGO
-                descrizione: Tecnologo
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: FUNZIONARIO_AMMINISTRAZIONE
-                descrizione: Funzionario di Amministrazione
-                livelli_possibili: ["IV", "V"]
-                livello_base: "V"
-          - codice: RS
-            descrizione: Reclutamento Speciale
-            profili:
-              - codice: RICERCATORE
-                descrizione: Ricercatore
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: TECNOLOGO
-                descrizione: Tecnologo
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-          - codice: CATP
-            descrizione: Categorie Protette
-            profili: []
-          - codice: TI
-            descrizione: Tempo Indeterminato
-            profili:
-              - codice: COLLABORATORE_TECNICO_ER
-                descrizione: Collaboratore Tecnico E.R.
-                livelli_possibili: ["IV", "V", "VI"]
-                livello_base: "VI"
-              - codice: OPERATORE_TECNICO
-                descrizione: Operatore Tecnico
-                livelli_possibili: ["VI", "VII", "VIII"]
-                livello_base: "VIII"
-              - codice: RICERCATORE
-                descrizione: Ricercatore
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: TECNOLOGO
-                descrizione: Tecnologo
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: FUNZIONARIO_AMMINISTRAZIONE
-                descrizione: Funzionario di Amministrazione
-                livelli_possibili: ["IV", "V"]
-                livello_base: "V"
-          - codice: SDIP
-            descrizione: Selezioni per dipendenti CNR/Candidature
-            profili: []
-          - codice: MOB
-            descrizione: Mobilita'
-            profili:
-              - codice: COLLABORATORE_TECNICO_ER
-                descrizione: Collaboratore Tecnico E.R.
-                livelli_possibili: ["IV", "V", "VI"]
-                livello_base: "VI"
-              - codice: OPERATORE_TECNICO
-                descrizione: Operatore Tecnico
-                livelli_possibili: ["VI", "VII", "VIII"]
-                livello_base: "VIII"
-              - codice: RICERCATORE
-                descrizione: Ricercatore
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: TECNOLOGO
-                descrizione: Tecnologo
-                livelli_possibili: ["I", "II", "III"]
-                livello_base: "III"
-              - codice: FUNZIONARIO_AMMINISTRAZIONE
-                descrizione: Funzionario di Amministrazione
-                livelli_possibili: ["IV", "V"]
-                livello_base: "V"
-        campi:
-          - codice: codice_bando
-            etichetta: Codice bando
-            tipo: string
-            lingua: IT
-            obbligatorio: true
-            ordine: 1
-            descrizione: Identificativo funzionale del bando
-            validazione: { minLength: 1 }
-          - codice: titolo_it
-            etichetta: Titolo
-            tipo: string
-            lingua: IT
-            obbligatorio: true
-            ordine: 2
-            descrizione: Titolo italiano del bando
-            validazione: { minLength: 1 }
-          - codice: descrizione_ridotta_it
-            etichetta: Descrizione ridotta
-            tipo: string
-            lingua: IT
-            obbligatorio: false
-            ordine: 3
-            descrizione: Sintesi italiana del bando
-            validazione: null
-          - codice: sede_prescelta_it
-            etichetta: Sede
-            tipo: string
-            lingua: IT
-            obbligatorio: true
-            ordine: 4
-            descrizione: Sede associata alla procedura
-            validazione: { minLength: 1 }
-          - codice: numero_posti
-            etichetta: Numero posti
-            tipo: number
-            lingua: IT
-            obbligatorio: true
-            ordine: 5
-            descrizione: Numero dei posti previsti
-            validazione: { minimum: 1 }
-          - codice: titolo_en
-            etichetta: Title
-            tipo: string
-            lingua: EN
-            obbligatorio: true
-            ordine: 6
-            descrizione: Titolo inglese del bando
-            validazione: { minLength: 1 }
-          - codice: livello
-            etichetta: Livello
-            tipo: string
-            lingua: IT
-            obbligatorio: true
-            ordine: 7
-            descrizione: Livello professionale del bando
-            validazione:
-              fonte_opzioni: profilo.livelli_possibili
-              default: profilo.livello_base
+        BANDO_CONCORSO:
+          validita: "2026-09-15T00:00:00Z"
+          tipologie:
+            - codice: TD
+              descrizione: Tempo Determinato
+              profili:
+                - codice: COLLABORATORE_TECNICO_ER
+                  descrizione: Collaboratore Tecnico E.R.
+                  livelli_possibili: ["IV", "V", "VI"]
+                  livello_base: "VI"
+                  campi:
+                    - codice: codice_bando
+                      etichetta: Codice bando
+                      tipo: string
+                      lingua: IT
+                      obbligatorio: true
+                      ordine: 1
+                      descrizione: Identificativo funzionale del bando
+                      validazione: { minLength: 1 }
+                    - codice: titolo_it
+                      etichetta: Titolo
+                      tipo: string
+                      lingua: IT
+                      obbligatorio: true
+                      ordine: 2
+                      descrizione: Titolo italiano del bando
+                      validazione: { minLength: 1 }
+                    - codice: descrizione_ridotta_it
+                      etichetta: Descrizione ridotta
+                      tipo: string
+                      lingua: IT
+                      obbligatorio: false
+                      ordine: 3
+                      descrizione: Sintesi italiana del bando
+                      validazione: null
+                    - codice: sede_prescelta_it
+                      etichetta: Sede
+                      tipo: string
+                      lingua: IT
+                      obbligatorio: true
+                      ordine: 4
+                      descrizione: Sede associata alla procedura
+                      validazione: { minLength: 1 }
+                    - codice: numero_posti
+                      etichetta: Numero posti
+                      tipo: number
+                      lingua: IT
+                      obbligatorio: true
+                      ordine: 5
+                      descrizione: Numero dei posti previsti
+                      validazione: { minimum: 1 }
+                    - codice: titolo_en
+                      etichetta: Title
+                      tipo: string
+                      lingua: EN
+                      obbligatorio: true
+                      ordine: 6
+                      descrizione: Titolo inglese del bando
+                      validazione: { minLength: 1 }
+                    - codice: livello
+                      etichetta: Livello
+                      tipo: string
+                      lingua: IT
+                      obbligatorio: true
+                      ordine: 7
+                      descrizione: Livello professionale del bando
+                      validazione:
+                        fonte_opzioni: profilo.livelli_possibili
+                        default: profilo.livello_base
+        ALTRO_TIPO_DOCUMENTO_SE_RILEVANTE:
+          validita: "2026-09-15T00:00:00Z"
+          tipologie:
+            - codice: ESEMPIO_TIPOLOGIA
+              descrizione: >-
+                Placeholder - se volete integrare anche un altro tipo
+                documento con lo stesso endpoint (facoltativo, per questa
+                integrazione serve solo BANDO_CONCORSO), aggiungete qui una
+                seconda chiave con la stessa identica forma di sopra.
+              profili:
+                - codice: ESEMPIO_PROFILO
+                  descrizione: Placeholder
+                  campi: []
   schemas:
     DiscoveryResponse:
       type: object
-      required: [tipo_documento, validita, tipologie, campi]
+      description: >
+        Mappa da codice tipo documento alla sua struttura. Nel caso reale di
+        oggi conterra' sempre e solo la chiave `BANDO_CONCORSO`.
+      additionalProperties:
+        $ref: "#/components/schemas/StrutturaTipoDocumento"
+    StrutturaTipoDocumento:
+      type: object
+      required: [validita, tipologie]
       properties:
-        tipo_documento:
-          type: string
-          example: BANDO_CONCORSO
         validita:
           type: string
           format: date-time
           description: >
-            Data/ora di riferimento della classificazione restituita
+            Data/ora di riferimento di questa classificazione
             (`DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`). GEMODO la mostra
             insieme a ogni modello creato a partire da questa risposta.
         tipologie:
           type: array
           items:
             $ref: "#/components/schemas/Tipologia"
-        campi:
-          type: array
-          description: >
-            Campi del contratto dati, definiti una sola volta a livello di
-            tipo documento (non duplicati per ogni combinazione tipologia/
-            profilo).
-          items:
-            $ref: "#/components/schemas/CampoContrattoDati"
     Tipologia:
       type: object
       required: [codice, descrizione, profili]
@@ -342,7 +247,7 @@ components:
             $ref: "#/components/schemas/Profilo"
     Profilo:
       type: object
-      required: [codice, descrizione]
+      required: [codice, descrizione, campi]
       properties:
         codice:
           type: string
@@ -364,6 +269,17 @@ components:
           type: string
           description: Valore di default fra `livelli_possibili` per questo profilo.
           example: "III"
+        campi:
+          type: array
+          description: >
+            Campi del contratto dati per questo profilo (livello foglia
+            dell'albero). Se, come nel caso reale di BANDO_CONCORSO, gli
+            stessi campi si ripetono identici su piu' profili/tipologie, e'
+            una scelta legittima ripeterli qui uguali - questo contratto non
+            impone un meccanismo di riuso, descrive solo la forma della
+            risposta.
+          items:
+            $ref: "#/components/schemas/CampoContrattoDati"
     CampoContrattoDati:
       type: object
       required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
