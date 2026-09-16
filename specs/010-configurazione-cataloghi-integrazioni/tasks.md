@@ -56,7 +56,19 @@
 - [ ] T012 Implementare `AdapterHTTP` in `backend/app/discovery/adapter_http.py`
       (client `httpx`, paginazione HAL trasparente, usa T011, solleva errore
       funzionale di connessione se il sistema esterno non risponde oltre la
-      finestra di cache — depende da T009-T011)
+      finestra di cache — depende da T009-T011). *(2026-09-16, chiarito dal
+      product owner: il parsing dell'albero DEVE essere generico/ricorsivo —
+      cammina i `nodi[]`/`figli[]` della risposta a qualunque profondita' il
+      sistema esterno la fornisca, mai un parser scritto assumendo un numero
+      fisso di livelli (es. "sempre tipologia poi profilo") — coerente con
+      `NodoCategorizzazione` in
+      `specs/010-configurazione-cataloghi-integrazioni/contracts/
+      geban-discovery-endpoint.openapi.yaml`. L'unica parte a forma fissa e'
+      il singolo campo (`CampoContrattoDati`), letto solo sui nodi foglia.
+      Nessun codice oggi legge dal vero endpoint GEBAN — `AdapterLocale`
+      (T010) legge solo le tabelle locali `001`, a 2 livelli fissi perche'
+      quella e' la forma reale locale di `BANDO_CONCORSO`, non un vincolo
+      sui dati che GEBAN potra' restituire.)*
 - [ ] T013 [P] Server di test locale che simula l'envelope HAL di GEBAN
       (`_embedded`/`_links`/`page`) in `backend/tests/discovery/support/`, usato
       da tutti i test dell'adapter HTTP invece di chiamare GEBAN reale
