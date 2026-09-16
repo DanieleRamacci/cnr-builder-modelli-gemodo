@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.2.0
+  version: 0.3.0
   description: >
     **Questo NON e' un'API esposta da GEMODO.** E' la specifica di CIO' CHE IL
     TEAM GEBAN DEVE COSTRUIRE.
@@ -25,11 +25,20 @@ info:
     `docs/adr/0001-esempio-discovery-geban.json` nel repository GEMODO per
     l'elenco completo dei codici tipologia/profilo gia' verificati.
 
-    4. L'albero non e' fisso a "tipologia poi profilo": e' un esempio basato
-    sulla classificazione che GEBAN ci ha comunicato finora. Se la vostra
-    classificazione reale ha piu' o meno livelli, o nomi diversi, non cambia
-    nulla per noi - l'unico vincolo e' che i campi (`campi`) stiano al livello
-    foglia del vostro albero, come nell'esempio.
+    4. **L'albero puo' avere una profondita' diversa per ogni tipo
+    documento**: per `BANDO_CONCORSO` sono due livelli (tipologia, poi
+    profilo) perche' e' cosi' che GEBAN ci ha descritto la propria
+    classificazione - ma non e' una regola fissa del contratto. Un altro tipo
+    documento potrebbe avere un solo livello, o tre, o nomi diversi da
+    "tipologia"/"profilo": per questo lo schema (`NodoCategorizzazione`
+    sotto) e' generico, un nodo puo' avere altri nodi sotto (`figli`) oppure
+    essere una foglia con `campi` - mai entrambi. **L'unica cosa che DEVE
+    restare identica ovunque, a qualunque livello e per qualunque tipo
+    documento, e' la struttura di un singolo campo**
+    (`components.schemas.CampoContrattoDati`): codice, etichetta, tipo,
+    lingua, obbligatorio, ordine, descrizione, validazione - sempre questi
+    otto attributi, sempre con questo significato, indipendentemente da dove
+    nell'albero compare il campo.
 
     5. Potete rispondere anche per piu' di un tipo documento nello stesso
     endpoint (chiavi multiple nella mappa) se vi e' comodo, ma per questa
@@ -91,15 +100,16 @@ servers:
 paths:
   /discovery:
     get:
-      summary: Discovery albero tipologie/profili/campi (esempio di path)
+      summary: Discovery albero di categorizzazione e campi (esempio di path)
       description: >
         **Questa e' l'operazione che dovete implementare voi (team GEBAN).**
         Il path `/discovery` qui sotto e' solo un esempio - implementatela
         dove preferite. La risposta 200 MUST avere esattamente la forma di
         `DiscoveryResponse`: guardate il pannello "Example Value" della
-        risposta 200 qui sotto - mostra un solo ramo compilato per esteso
-        (una tipologia, un profilo, i suoi campi), la vostra risposta reale
-        ripete la stessa forma per ogni combinazione che avete davvero.
+        risposta 200 qui sotto - mostra due tipi documento di esempio con
+        **profondita' dell'albero diversa** (`BANDO_CONCORSO` a due livelli,
+        il secondo a un livello solo), per chiarire che la profondita' non e'
+        fissa. Solo il primo ramo di ciascuno e' compilato per esteso.
 
 
         Chiamato da GEMODO solo in fase di definizione/navigazione struttura
@@ -119,16 +129,21 @@ paths:
 components:
   examples:
     BandoConcorsoDiscoveryExample:
-      summary: Un ramo completo (TD -> Collaboratore Tecnico E.R. -> campi), piu' un placeholder per un secondo tipo documento
+      summary: >-
+        BANDO_CONCORSO a due livelli (tipologia poi profilo), un secondo tipo
+        documento di esempio a un livello solo - stessa struttura di campo in
+        entrambi
       value:
         BANDO_CONCORSO:
           validita: "2026-09-15T00:00:00Z"
-          tipologie:
+          nodi:
             - codice: TD
               descrizione: Tempo Determinato
-              profili:
+              _nota_livello: "questo e' il primo livello per BANDO_CONCORSO: la 'tipologia'"
+              figli:
                 - codice: COLLABORATORE_TECNICO_ER
                   descrizione: Collaboratore Tecnico E.R.
+                  _nota_livello: "questo e' il secondo livello per BANDO_CONCORSO: il 'profilo' - qui e' foglia, ha campi invece di altri figli"
                   livelli_possibili: ["IV", "V", "VI"]
                   livello_base: "VI"
                   campi:
@@ -190,19 +205,28 @@ components:
                       validazione:
                         fonte_opzioni: profilo.livelli_possibili
                         default: profilo.livello_base
-        ALTRO_TIPO_DOCUMENTO_SE_RILEVANTE:
+        ALTRO_TIPO_DOCUMENTO_ESEMPIO:
+          _nota: >-
+            Placeholder - se volete integrare anche un altro tipo documento
+            con lo stesso endpoint (facoltativo, per questa integrazione
+            serve solo BANDO_CONCORSO). Qui l'albero e' volutamente A UN SOLO
+            LIVELLO (nessun figli, il nodo e' gia' foglia con campi), diverso
+            dai due livelli di BANDO_CONCORSO sopra - per mostrare che la
+            profondita' e' libera. Gli otto attributi di ogni campo restano
+            pero' identici a quelli di BANDO_CONCORSO.
           validita: "2026-09-15T00:00:00Z"
-          tipologie:
-            - codice: ESEMPIO_TIPOLOGIA
-              descrizione: >-
-                Placeholder - se volete integrare anche un altro tipo
-                documento con lo stesso endpoint (facoltativo, per questa
-                integrazione serve solo BANDO_CONCORSO), aggiungete qui una
-                seconda chiave con la stessa identica forma di sopra.
-              profili:
-                - codice: ESEMPIO_PROFILO
-                  descrizione: Placeholder
-                  campi: []
+          nodi:
+            - codice: ESEMPIO_CATEGORIA
+              descrizione: Esempio di nodo foglia diretto, senza sotto-livelli
+              campi:
+                - codice: esempio_campo
+                  etichetta: Campo di esempio
+                  tipo: string
+                  lingua: IT
+                  obbligatorio: true
+                  ordine: 1
+                  descrizione: Stessa struttura del campo usata sopra per BANDO_CONCORSO
+                  validazione: { minLength: 1 }
   schemas:
     DiscoveryResponse:
       type: object
@@ -213,7 +237,7 @@ components:
         $ref: "#/components/schemas/StrutturaTipoDocumento"
     StrutturaTipoDocumento:
       type: object
-      required: [validita, tipologie]
+      required: [validita, nodi]
       properties:
         validita:
           type: string
@@ -222,13 +246,22 @@ components:
             Data/ora di riferimento di questa classificazione
             (`DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`). GEMODO la mostra
             insieme a ogni modello creato a partire da questa risposta.
-        tipologie:
+        nodi:
           type: array
+          description: Primo livello dell'albero di categorizzazione di questo tipo documento.
           items:
-            $ref: "#/components/schemas/Tipologia"
-    Tipologia:
+            $ref: "#/components/schemas/NodoCategorizzazione"
+    NodoCategorizzazione:
       type: object
-      required: [codice, descrizione, profili]
+      required: [codice, descrizione]
+      description: >
+        Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e
+        `descrizione`; ha POI o `figli` (per scendere di un altro livello,
+        stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai
+        entrambi, mai nessuno dei due. Il numero di livelli non e' fissato
+        dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi
+        profilo), un altro tipo documento potrebbe averne uno solo o tre -
+        vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`) qui sopra.
       properties:
         codice:
           type: string
@@ -236,52 +269,46 @@ components:
         descrizione:
           type: string
           example: Tempo Determinato
-        profili:
-          type: array
-          description: >
-            Profili ammessi sotto questa tipologia. Un array vuoto e'
-            valido (tipologia senza combinazione ancora definita) ma MUST
-            essere compilato prima dell'uso in produzione, non lasciato
-            vuoto silenziosamente.
-          items:
-            $ref: "#/components/schemas/Profilo"
-    Profilo:
-      type: object
-      required: [codice, descrizione, campi]
-      properties:
-        codice:
-          type: string
-          example: RICERCATORE
-        descrizione:
-          type: string
-          example: Ricercatore
         livelli_possibili:
           type: array
           description: >
             Attributo profilo-dipendente (generalizza il caso "livello",
             vedi `Attributo Profilo` in
             `specs/010-configurazione-cataloghi-integrazioni/spec.md`).
-            Opzionale: non ogni profilo ha necessariamente questo attributo.
+            Opzionale, ha senso solo su un nodo foglia (con `campi`).
           items:
             type: string
           example: ["I", "II", "III"]
         livello_base:
           type: string
-          description: Valore di default fra `livelli_possibili` per questo profilo.
+          description: Valore di default fra `livelli_possibili` per questo nodo, se presente.
           example: "III"
+        figli:
+          type: array
+          description: >
+            Sotto-nodi, se questo non e' un livello foglia. Un array vuoto e'
+            valido (nodo senza sotto-categorizzazione ancora definita) ma
+            MUST essere compilato prima dell'uso in produzione, non lasciato
+            vuoto silenziosamente.
+          items:
+            $ref: "#/components/schemas/NodoCategorizzazione"
         campi:
           type: array
           description: >
-            Campi del contratto dati per questo profilo (livello foglia
-            dell'albero). Se, come nel caso reale di BANDO_CONCORSO, gli
-            stessi campi si ripetono identici su piu' profili/tipologie, e'
-            una scelta legittima ripeterli qui uguali - questo contratto non
-            impone un meccanismo di riuso, descrive solo la forma della
-            risposta.
+            Campi del contratto dati, presenti solo se questo e' un nodo
+            foglia (nessun `figli`). Se, come nel caso reale di
+            BANDO_CONCORSO, gli stessi campi si ripetono identici su piu'
+            foglie, e' una scelta legittima ripeterli qui uguali - questo
+            contratto non impone un meccanismo di riuso, descrive solo la
+            forma della risposta.
           items:
             $ref: "#/components/schemas/CampoContrattoDati"
     CampoContrattoDati:
       type: object
+      description: >
+        Struttura FISSA per ogni campo, identica a qualunque livello
+        dell'albero e per qualunque tipo documento - e' l'unica parte di
+        questo contratto che non cambia mai.
       required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
       properties:
         codice:
