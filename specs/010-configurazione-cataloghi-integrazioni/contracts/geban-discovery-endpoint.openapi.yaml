@@ -32,7 +32,12 @@ info:
     documento potrebbe avere un solo livello, o tre, o nomi diversi da
     "tipologia"/"profilo": per questo lo schema (`NodoCategorizzazione`
     sotto) e' generico, un nodo puo' avere altri nodi sotto (`figli`) oppure
-    essere una foglia con `campi` - mai entrambi. **L'unica cosa che DEVE
+    essere una foglia con `campi` - mai entrambi. `figli`/`campi` sono le
+    uniche chiavi fisse (necessarie per un parsing ricorsivo deterministico);
+    il nome concettuale di ogni livello e' invece libero, va nel campo
+    opzionale `tipo_livello` di ogni nodo (es. `"tipologia"`, `"profilo"`, o
+    un nome del vostro dominio) - puramente informativo, non usato per il
+    parsing. **L'unica cosa che DEVE
     restare identica ovunque, a qualunque livello e per qualunque tipo
     documento, e' la struttura di un singolo campo**
     (`components.schemas.CampoContrattoDati`): codice, etichetta, tipo,
@@ -107,9 +112,10 @@ paths:
         dove preferite. La risposta 200 MUST avere esattamente la forma di
         `DiscoveryResponse`: guardate il pannello "Example Value" della
         risposta 200 qui sotto - mostra due tipi documento di esempio con
-        **profondita' dell'albero diversa** (`BANDO_CONCORSO` a due livelli,
-        il secondo a un livello solo), per chiarire che la profondita' non e'
-        fissa. Solo il primo ramo di ciascuno e' compilato per esteso.
+        **profondita' dell'albero diversa e piu' rami per livello**
+        (`BANDO_CONCORSO` a due livelli, il secondo a tre livelli con piu'
+        rami), per chiarire che ne' la profondita' ne' il numero di rami sono
+        fissi. Solo il primo ramo di ciascun livello e' compilato per esteso.
 
 
         Chiamato da GEMODO solo in fase di definizione/navigazione struttura
@@ -131,19 +137,19 @@ components:
     BandoConcorsoDiscoveryExample:
       summary: >-
         BANDO_CONCORSO a due livelli (tipologia poi profilo), un secondo tipo
-        documento di esempio a un livello solo - stessa struttura di campo in
-        entrambi
+        documento di esempio a tre livelli con piu' rami - stessa struttura
+        di campo in entrambi, tipo_livello etichetta ogni nodo
       value:
         BANDO_CONCORSO:
           validita: "2026-09-15T00:00:00Z"
           nodi:
             - codice: TD
               descrizione: Tempo Determinato
-              _nota_livello: "questo e' il primo livello per BANDO_CONCORSO: la 'tipologia'"
+              tipo_livello: tipologia
               figli:
                 - codice: COLLABORATORE_TECNICO_ER
                   descrizione: Collaboratore Tecnico E.R.
-                  _nota_livello: "questo e' il secondo livello per BANDO_CONCORSO: il 'profilo' - qui e' foglia, ha campi invece di altri figli"
+                  tipo_livello: profilo
                   livelli_possibili: ["IV", "V", "VI"]
                   livello_base: "VI"
                   campi:
@@ -209,24 +215,47 @@ components:
           _nota: >-
             Placeholder - se volete integrare anche un altro tipo documento
             con lo stesso endpoint (facoltativo, per questa integrazione
-            serve solo BANDO_CONCORSO). Qui l'albero e' volutamente A UN SOLO
-            LIVELLO (nessun figli, il nodo e' gia' foglia con campi), diverso
-            dai due livelli di BANDO_CONCORSO sopra - per mostrare che la
-            profondita' e' libera. Gli otto attributi di ogni campo restano
-            pero' identici a quelli di BANDO_CONCORSO.
+            serve solo BANDO_CONCORSO). Qui l'albero e' volutamente PIU'
+            PROFONDO di BANDO_CONCORSO (tre livelli invece di due) e con piu'
+            rami per livello, per mostrare che ne' la profondita' ne' il
+            numero di rami sono fissati dal contratto. Per brevita' solo il
+            primo ramo di ogni livello e' compilato fino ai campi; gli altri
+            rami (`CATEGORIA_ESEMPIO_B`, `SOTTOCATEGORIA_ESEMPIO_A2`,
+            `DETTAGLIO_ESEMPIO_A1_II`) sono presenti solo con codice/
+            descrizione per mostrare che possono esserci piu' rami allo
+            stesso livello, senza svilupparli oltre. Gli otto attributi di
+            ogni campo restano identici a quelli di BANDO_CONCORSO.
           validita: "2026-09-15T00:00:00Z"
           nodi:
-            - codice: ESEMPIO_CATEGORIA
-              descrizione: Esempio di nodo foglia diretto, senza sotto-livelli
-              campi:
-                - codice: esempio_campo
-                  etichetta: Campo di esempio
-                  tipo: string
-                  lingua: IT
-                  obbligatorio: true
-                  ordine: 1
-                  descrizione: Stessa struttura del campo usata sopra per BANDO_CONCORSO
-                  validazione: { minLength: 1 }
+            - codice: CATEGORIA_ESEMPIO_A
+              descrizione: Primo ramo del primo livello (sviluppato per esteso)
+              tipo_livello: area
+              figli:
+                - codice: SOTTOCATEGORIA_ESEMPIO_A1
+                  descrizione: Primo ramo del secondo livello (sviluppato per esteso)
+                  tipo_livello: categoria
+                  figli:
+                    - codice: DETTAGLIO_ESEMPIO_A1_I
+                      descrizione: Primo ramo del terzo livello - qui e' foglia, ha campi
+                      tipo_livello: dettaglio
+                      campi:
+                        - codice: esempio_campo
+                          etichetta: Campo di esempio
+                          tipo: string
+                          lingua: IT
+                          obbligatorio: true
+                          ordine: 1
+                          descrizione: Stessa struttura del campo usata sopra per BANDO_CONCORSO
+                          validazione: { minLength: 1 }
+                    - codice: DETTAGLIO_ESEMPIO_A1_II
+                      descrizione: Secondo ramo del terzo livello - non sviluppato oltre, solo per mostrare che ce ne puo' essere piu' di uno
+                      tipo_livello: dettaglio
+                - codice: SOTTOCATEGORIA_ESEMPIO_A2
+                  descrizione: Secondo ramo del secondo livello - non sviluppato oltre
+                  tipo_livello: categoria
+            - codice: CATEGORIA_ESEMPIO_B
+              descrizione: Secondo ramo del primo livello - non sviluppato oltre
+              tipo_livello: area
   schemas:
     DiscoveryResponse:
       type: object
@@ -260,8 +289,15 @@ components:
         stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai
         entrambi, mai nessuno dei due. Il numero di livelli non e' fissato
         dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi
-        profilo), un altro tipo documento potrebbe averne uno solo o tre -
-        vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`) qui sopra.
+        profilo), un altro tipo documento potrebbe averne uno solo, tre o
+        piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre
+        livelli) qui sopra. `figli`/`campi` restano le uniche chiavi
+        strutturali fisse (necessarie per un parsing ricorsivo deterministico
+        lato GEMODO, indipendentemente da quanti livelli ci sono); il nome
+        concettuale di ciascun livello (tipologia, profilo, o qualunque cosa
+        abbia senso per il vostro dominio) e' invece libero e va nel campo
+        `tipo_livello` sotto - puramente informativo, non usato per il
+        parsing.
       properties:
         codice:
           type: string
@@ -269,6 +305,15 @@ components:
         descrizione:
           type: string
           example: Tempo Determinato
+        tipo_livello:
+          type: string
+          nullable: true
+          description: >
+            Nome del livello di categorizzazione a cui appartiene questo
+            nodo (es. `"tipologia"`, `"profilo"`, o un nome del vostro
+            dominio). Puramente informativo/leggibile per chi consulta la
+            risposta - GEMODO non lo usa per decidere come camminare
+            l'albero (quello dipende solo da `figli`/`campi`). Opzionale.
         livelli_possibili:
           type: array
           description: >
