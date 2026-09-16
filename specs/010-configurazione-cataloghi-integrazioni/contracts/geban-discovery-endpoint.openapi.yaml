@@ -3,11 +3,41 @@ info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
   version: 0.1.0
   description: >
-    **Questo NON e' un'API esposta da GEMODO.** Descrive l'endpoint che il
-    sistema esterno GEBAN deve implementare ed esporre, cosi' che GEMODO possa
-    interrogarlo per scoprire tipologie, profili e campi del contratto dati
-    del tipo documento `BANDO_CONCORSO` senza che GEMODO ne copii e mantenga
-    una copia locale come sorgente di verita' (`DEC-001-OWNERSHIP-DATI-ESTERNI`,
+    **Questo NON e' un'API esposta da GEMODO.** E' la specifica di CIO' CHE IL
+    TEAM GEBAN DEVE COSTRUIRE.
+
+
+    ## Cosa devi fare, in sintesi
+
+    1. Implementa **un endpoint HTTP GET**, all'URL che preferisci (lo
+    comunicherai a GEMODO, non e' imposto da questo contratto - vedi
+    `servers` sotto).
+
+    2. Quando GEMODO lo chiama, rispondi con **un singolo oggetto JSON** con
+    esattamente questa forma: `tipo_documento` (sempre `"BANDO_CONCORSO"`),
+    `validita` (data/ora), `tipologie` (array) e `campi` (array) - schema
+    completo in `components.schemas.DiscoveryResponse` qui sotto.
+
+    3. Guarda l'**Example Value** dell'operazione `GET` sotto: e' un esempio
+    completo e reale (non inventato) di come deve essere fatta la tua
+    risposta per `BANDO_CONCORSO` oggi. La tua implementazione deve produrre
+    qualcosa di equivalente, aggiornato ai vostri dati correnti.
+
+    4. Non devi gestire nessun altro tipo documento oltre `BANDO_CONCORSO` per
+    questa integrazione, e non e' richiesta autenticazione su questo endpoint
+    in questa prima versione (vedi sotto).
+
+
+    Il resto di questa pagina spiega il contesto (perche' esiste questo
+    contratto) e i dettagli campo per campo - se ti serve solo "cosa devo
+    restituire", i 4 punti sopra e l'Example Value bastano.
+
+
+    Descrive l'endpoint che il sistema esterno GEBAN deve implementare ed
+    esporre, cosi' che GEMODO possa interrogarlo per scoprire tipologie,
+    profili e campi del contratto dati del tipo documento `BANDO_CONCORSO`
+    senza che GEMODO ne copii e mantenga una copia locale come sorgente di
+    verita' (`DEC-001-OWNERSHIP-DATI-ESTERNI`,
     `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`).
 
 
@@ -58,6 +88,14 @@ paths:
     get:
       summary: Discovery tipologie/profili/campi per BANDO_CONCORSO (esempio di path)
       description: >
+        **Questa e' l'operazione che dovete implementare voi (team GEBAN).**
+        Il path `/discovery/bando-concorso` qui sotto e' solo un esempio -
+        implementatela dove preferite. La risposta 200 MUST avere
+        esattamente la forma di `DiscoveryResponse`: guardate il pannello
+        "Example Value" della risposta 200 qui sotto per un esempio completo
+        e reale, campo per campo.
+
+
         Restituisce la classificazione corrente (tipologie, profili, attributi
         profilo-dipendenti) e il contratto dati (campi) per il tipo documento
         `BANDO_CONCORSO`. Chiamato da GEMODO solo in fase di definizione/
