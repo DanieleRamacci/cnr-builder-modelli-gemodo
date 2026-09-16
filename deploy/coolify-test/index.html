@@ -222,6 +222,24 @@
         line-height: 1.45;
       }
 
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+      }
+
+      th {
+        background: var(--surface-soft);
+        color: var(--text);
+      }
+
       .api-list {
         display: grid;
         gap: 10px;
@@ -328,6 +346,31 @@
       </section>
 
       <section class="panel">
+        <h2>Documentazione integrazione GEMODO &harr; GEBAN</h2>
+        <div class="body stack">
+          <p class="note">
+            Questo <strong>non e' un'API GEMODO</strong>: descrive l'endpoint di discovery che il team GEBAN deve
+            implementare ed esporre, cosi' che GEMODO possa scoprire tipologie/profili/campi senza che GEMODO ne
+            mantenga una copia locale come sorgente di verita'.
+          </p>
+          <div class="doc-grid">
+            <div class="box">
+              <a href="/docs/geban-discovery-endpoint" target="_blank" rel="noreferrer">Swagger contratto discovery</a>
+              <span>Schema e esempio reale (BANDO_CONCORSO) della risposta attesa dall'endpoint che GEBAN implementa.</span>
+            </div>
+            <div class="box">
+              <a href="/redoc/geban-discovery-endpoint" target="_blank" rel="noreferrer">ReDoc contratto discovery</a>
+              <span>Stesso contratto, impaginato per consegna al team di sviluppo GEBAN.</span>
+            </div>
+            <div class="box">
+              <a href="/openapi/geban-discovery-endpoint.yaml" target="_blank" rel="noreferrer">OpenAPI YAML</a>
+              <span>Sorgente tecnica del contratto atteso, da usare come riferimento di implementazione.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
         <h2>Autenticazione Swagger</h2>
         <div class="body stack">
           <div class="warn">
@@ -353,6 +396,48 @@
             <code>https://dev-gemodo.concorsi.cnr.it/*</code>, web origin dello stesso dominio, audience mapper verso
             <code>gemodo-backend</code>, e ruoli <code>DOCUMENTI_VIEWER</code>/<code>DOCUMENTI_GENERATORE</code>
             assegnati all'utente sul client <code>gemodo-backend</code>.
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Come si autentica GEBAN per davvero (non il login di questa pagina)</h2>
+        <div class="body stack">
+          <p class="note">
+            Il login SSO sopra serve solo a un umano che prova l'API da Swagger. L'integrazione reale GEBAN &rarr;
+            GEMODO usa un token emesso da <strong>ACE</strong> (stesso realm Keycloak <code>cnr</code>), non il login
+            di questa pagina.
+          </p>
+          <div class="warn">
+            Il client tecnico <code>geban-backend</code> (client credentials, ruoli diretti su
+            <code>gemodo-backend</code>) resta un doppio di test/CI. Il flusso reale usa un client ACE ammesso
+            (es. <code>geri-angular-public</code>): il token deve contenere <code>aud: gemodo-backend</code> e il
+            claim <code>contexts.geban.roles</code> con i ruoli GEBAN dell'utente. GEMODO non usa quei ruoli
+            direttamente: li traduce in permessi propri tramite una mappa configurata
+            (<code>infra/local/integration-profiles.local.yaml</code>).
+          </div>
+          <pre>{
+  "iss": "https://sso.test.si.cnr.it/auth/realms/cnr",
+  "aud": ["gemodo-backend", "..."],
+  "azp": "geri-angular-public",
+  "contexts": {
+    "geban": { "roles": ["ROLE_COORDINATOR#geban"] }
+  }
+}</pre>
+          <table>
+            <thead>
+              <tr><th>Ruolo ACE (<code>contexts.geban.roles</code>)</th><th>Permesso GEMODO derivato</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>ROLE_GESTORE#geban</code></td><td><code>DOCUMENTI_GENERATORE</code>, <code>DOCUMENTI_VIEWER</code></td></tr>
+              <tr><td><code>ROLE_MANAGER#geban</code></td><td><code>DOCUMENTI_GENERATORE</code>, <code>DOCUMENTI_VIEWER</code>, <code>GEMODO_MODELLI_GESTORE</code></td></tr>
+              <tr><td><code>ROLE_COORDINATOR#geban</code></td><td><code>DOCUMENTI_GENERATORE</code>, <code>DOCUMENTI_VIEWER</code></td></tr>
+              <tr><td><code>ROLE_USER#geban</code></td><td><code>DOCUMENTI_GENERATORE</code>, <code>DOCUMENTI_VIEWER</code></td></tr>
+            </tbody>
+          </table>
+          <p class="note">
+            Riferimento completo: <code>specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md</code> (decisioni
+            <code>SEC-006-001</code>/<code>SEC-006-003</code>).
           </p>
         </div>
       </section>
