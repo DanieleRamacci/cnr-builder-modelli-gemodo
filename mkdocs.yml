@@ -18,6 +18,7 @@ nav:
       - API Readiness: spec-kit/api-readiness.md
       - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
   - Project Map: project-map.md
+  - Flusso Integrazione GEBAN: flusso-integrazione-geban.md
   - API Documentation: api-documentation.md
   - Decision Workflow: decision-workflow.md
   - Riuso PA: open-source-pa-readiness.md
