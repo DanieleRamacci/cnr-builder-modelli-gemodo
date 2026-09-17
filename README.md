@@ -61,8 +61,10 @@ Manifest e strumenti di qualita' principali:
 
 Dal 2026-09-17 il catalogo esterno locale e le API di classificazione sono
 dismessi (`010` FR-016, migration `0009`). Prima del deploy fare backup DB:
-il downgrade richiede un ripristino. Il builder usa discovery HTTP configurata
-con `GEMODO_DISCOVERY_ENDPOINTS`; senza URL risponde 503, mai con dati di seed.
+il downgrade richiede un ripristino. Il builder usa discovery HTTP risolta
+dal registro integrazioni (`010`, `POST /api/v1/configurazione/integrazioni`,
+CONNESSO dopo verifica); senza integrazione connessa risponde 503/409, mai
+con dati di seed.
 Modelli GEMODO, versioni e relativi contratti restano persistenti.
 Configurazione e prova: [incremento discovery](specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md).
 

@@ -21,8 +21,8 @@ def test_integration_openapi_is_valid_including_external_references(contract):
     validate(contract, base_uri=CONTRACT.as_uri())
 
 
-def test_integration_contract_does_not_claim_runtime_or_seed(contract):
-    assert contract["x-implementation-status"] == "planned"
+def test_integration_contract_keeps_its_identity_and_scope_invariants(contract):
+    assert "x-implementation-status" not in contract
     assert contract["security"] == [{"KeycloakBearer": []}]
     assert contract["components"]["schemas"]["IntegrazioneAdmin"]["properties"]["modalita"]["enum"] == ["SINGOLO_ENDPOINT"]
     assert "codice_contesto" not in contract["components"]["schemas"]["IntegrazioneUpdate"]["properties"]

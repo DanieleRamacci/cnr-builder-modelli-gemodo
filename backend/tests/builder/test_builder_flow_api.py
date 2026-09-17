@@ -16,8 +16,8 @@ a write on a tipo documento owned by a different context.
 from __future__ import annotations
 
 import uuid
-import json
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import pytest
 import sqlalchemy as sa
@@ -29,6 +29,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.catalog.models import TipoDocumento
+from app.configurazione.models import EndpointIntegrazione, Integrazione
 from app.db.session import get_db
 from app.main import app
 from tests.support.postgres import postgres_database_url
@@ -71,8 +72,43 @@ def db_engine(postgres_database_url, monkeypatch):
 
 
 @pytest.fixture()
-def builder_client(db_engine, monkeypatch, catalogo_esterno):
-    monkeypatch.setenv("GEMODO_DISCOVERY_ENDPOINTS", json.dumps({"BANDO_CONCORSO": catalogo_esterno[0] + "/discovery"}))
+def integrazione_connessa(db_engine, catalogo_esterno):
+    """Registers a CONNESSO Integrazione/EndpointIntegrazione for BANDO_CONCORSO (T082).
+
+    The builder resolves discovery through the registry, never through an env var
+    bypass; this fixture sets up the registry state a real admin verify (T081) would
+    have produced, without re-running the HTTP round trip (that flow is covered by
+    ``tests/configurazione/test_integrazioni_admin.py``).
+    """
+    url, _, _ = catalogo_esterno
+    with Session(db_engine) as db:
+        tipo = db.execute(sa.select(TipoDocumento).where(TipoDocumento.codice == "BANDO_CONCORSO")).scalar_one()
+        integrazione_precedente = tipo.integrazione_id
+        source = Integrazione(codice="TEST_" + uuid.uuid4().hex[:16], nome="Software di test",
+                              codice_contesto=tipo.codice_contesto)
+        db.add(source)
+        db.flush()
+        db.add(EndpointIntegrazione(
+            integrazione_id=source.id, url=url + "/discovery", timeout_ms=5000, stato="CONNESSO",
+            revisione_verificata=1, versione_contratto_verificata="0.4.0",
+            data_ultimo_test=datetime.now(timezone.utc), esito_ultimo_test={"esito": "CONFORME", "errori": []},
+        ))
+        tipo.integrazione_id = source.id
+        db.commit()
+        source_id = source.id
+    try:
+        yield source_id
+    finally:
+        with Session(db_engine) as db:
+            db.execute(sa.text("UPDATE tipo_documento SET integrazione_id = :precedente WHERE codice = 'BANDO_CONCORSO'"),
+                      {"precedente": integrazione_precedente})
+            db.execute(sa.delete(EndpointIntegrazione).where(EndpointIntegrazione.integrazione_id == source_id))
+            db.execute(sa.delete(Integrazione).where(Integrazione.id == source_id))
+            db.commit()
+
+
+@pytest.fixture()
+def builder_client(db_engine, monkeypatch, integrazione_connessa):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geri-angular-public")
     monkeypatch.setenv("GEMODO_MOCK_CONTEXT", "geban")
@@ -250,15 +286,25 @@ def test_removed_branch_and_duplicate_fields_do_not_create_versions(builder_clie
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("config", [None, "", "[]", '{"BANDO_CONCORSO":123}', '{"BANDO_CONCORSO":"file:///tmp/catalogo"}'])
-def test_missing_or_invalid_config_does_not_fall_back_to_seed(builder_client, monkeypatch, config):
-    if config is None:
-        monkeypatch.delenv("GEMODO_DISCOVERY_ENDPOINTS")
-    else:
-        monkeypatch.setenv("GEMODO_DISCOVERY_ENDPOINTS", config)
+def test_unconfigured_tipo_documento_does_not_fall_back_to_seed(builder_client, db_engine):
+    with Session(db_engine) as db:
+        db.execute(sa.text("UPDATE tipo_documento SET integrazione_id = NULL WHERE codice = 'BANDO_CONCORSO'"))
+        db.commit()
     response = builder_client.get("/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile")
     assert response.status_code == 503
     assert response.json()["codice"] == "DISCOVERY_NON_CONFIGURATA"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("stato", ["DEFINITO", "ERRORE"])
+def test_not_connected_integration_does_not_fall_back_to_seed(builder_client, db_engine, integrazione_connessa, stato):
+    with Session(db_engine) as db:
+        db.execute(sa.text("UPDATE endpoint_integrazione SET stato = :stato WHERE integrazione_id = :id"),
+                  {"stato": stato, "id": integrazione_connessa})
+        db.commit()
+    response = builder_client.get("/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile")
+    assert response.status_code == 409
+    assert response.json()["codice"] == "INTEGRAZIONE_NON_CONNESSA"
 
 
 @pytest.mark.integration

@@ -42,6 +42,16 @@ def integrazioni(db: Session):
     return list(db.scalars(select(Integrazione).order_by(Integrazione.codice)))
 
 
+def integrazioni_connesse(db: Session) -> list[tuple[Integrazione, EndpointIntegrazione]]:
+    righe = db.execute(
+        select(Integrazione, EndpointIntegrazione)
+        .join(EndpointIntegrazione, EndpointIntegrazione.integrazione_id == Integrazione.id)
+        .where(EndpointIntegrazione.stato == "CONNESSO")
+        .order_by(Integrazione.codice)
+    ).all()
+    return [(riga.Integrazione, riga.EndpointIntegrazione) for riga in righe]
+
+
 def integrazione(db: Session, integrazione_id, *, lock: bool = False):
     query = select(Integrazione).where(Integrazione.id == integrazione_id)
     if lock:

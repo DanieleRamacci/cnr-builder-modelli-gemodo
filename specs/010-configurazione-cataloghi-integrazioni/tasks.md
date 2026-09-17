@@ -634,19 +634,74 @@ Feature attiva invariata; nessun task applicativo di altre spec viene avviato.
       13 nuovi test reali in `backend/tests/configurazione/test_integrazioni_admin.py`
       (Postgres reale via Testcontainers, server HTTP locale reale per la
       verifica, nessun mock della logica di dominio); regressione locale
-      `pytest -m "not e2e"`: 248 passati (12 e2e esclusi). Non ancora
-      pubblicato in Swagger/ReDoc (`x-implementation-status` del contratto
-      resta `planned` finche' anche T083 non e' implementato). T082/T083/T084
-      restano da fare: il resolver builder legge ancora
-      `GEMODO_DISCOVERY_ENDPOINTS`, non esiste lettura manager delle
-      integrazioni CONNESSE.
-- [ ] T082 Sostituire resolver operativo da ambiente con integrazioni CONNESSE
+      `pytest -m "not e2e"`: 248 passati (12 e2e esclusi) al momento di questo
+      task; non ancora pubblicato in Swagger/ReDoc a quel punto (T082/T083
+      completati subito dopo nella stessa sessione, vedi sotto).
+- [x] T082 Sostituire resolver operativo da ambiente con integrazioni CONNESSE
       registrate; rimuovere bypass `GEMODO_DISCOVERY_ENDPOINTS`, senza fallback
       locale o import automatico. Aggiornare documentazione operativa e test.
-- [ ] T083 Implementare letture manager: integrazioni autorizzate, radici,
+      `backend/app/discovery/configuration.py` riscritto: `discovery_per_tipo`
+      ora prende `(db, tipo)`, risolve `tipo.integrazione_id` sul registro
+      (`EndpointIntegrazione.stato == 'CONNESSO'`), nessuna lettura di
+      `os.environ`. Nessuna integrazione -> `DISCOVERY_NON_CONFIGURATA` (503,
+      come il comportamento legacy); integrazione non `CONNESSO` ->
+      `INTEGRAZIONE_NON_CONNESSA` (409, nuovo codice dal contratto T078).
+      Cache RAM condivisa (`CacheDiscovery`) con scope `integrazione:{id}:
+      revisione:{revisione_verificata}`, cosi' una riverifica invalida
+      implicitamente le voci precedenti. `backend/app/builder/service.py`
+      aggiornato per passare il `TipoDocumento` gia' risolto invece dello
+      scartare e richiedere solo il codice.
+      Migrato `backend/tests/builder/test_builder_flow_api.py`: fixture
+      `integrazione_connessa` crea/rimuove una `Integrazione`+
+      `EndpointIntegrazione` CONNESSO reale (Postgres) puntata al server HTTP
+      locale di test, sostituendo `GEMODO_DISCOVERY_ENDPOINTS`; il test
+      `test_missing_or_invalid_config_does_not_fall_back_to_seed` (5 varianti
+      dell'env var) sostituito da due test mirati sul nuovo registro (nessuna
+      integrazione -> 503; integrazione DEFINITO/ERRORE -> 409), nessuna
+      regressione sulle 13 asserzioni restanti del file (18 test, 18 passati).
+      Documentazione operativa aggiornata (README.md, docs/project-map.md,
+      specs/002-builder-modelli/data-model.md, infra/local/compose.yaml,
+      docker-compose.coolify.yml): rimosso `GEMODO_DISCOVERY_ENDPOINTS`,
+      introdotte `GEMODO_INTEGRAZIONI_ALLOWLIST`/`_PRIVATO` (T081) al suo posto
+      nei compose file. `specs/010-.../fondazioni-amministrative.md` non
+      toccato: e' nota storica esplicita, non stato corrente.
+- [x] T083 Implementare letture manager: integrazioni autorizzate, radici,
       navigazione ricorsiva e campi foglia; verificare contesto prima dell'HTTP.
       Adeguare touchpoint condivisi e riferimenti sorgente senza avviare task
       di creazione modello/PDF/frontend appartenenti alle altre spec.
+      Nuovo `backend/app/builder/integrazioni_service.py`
+      (`IntegrazioniManagerService`) + route in `backend/app/builder/api.py`:
+      `GET /builder/integrazioni`, `GET .../{ id }/tipi-documento`,
+      `GET .../{id}/tipi-documento/{codice}/struttura`. Autorizzazione per
+      singolo contesto (mai `principal.ruoli` appiattito): nuovo
+      `contesti_con_permesso` in `backend/app/common/security.py`, fattorizzato
+      da `verify_scrittura_su_contesto` senza cambiarne il comportamento.
+      Integrazione non trovata o contesto non autorizzato -> stessa risposta
+      404 `RISORSA_NON_TROVATA` (nessuna differenza osservabile, l'esistenza di
+      un'integrazione di un altro contesto non e' mai rivelata); non `CONNESSO`
+      -> 409 `INTEGRAZIONE_NON_CONNESSA`; il contesto e' verificato prima di
+      costruire l'`AdapterHTTP`, mai dopo. Errori di trasporto/conformita'
+      rimappati esplicitamente a 502 e timeout a 504 (le route `/builder/`
+      precedenti restano su 503, semantica invariata) — vedi
+      `IntegrazioniManagerService._mappa`. Radici = chiavi della mappa
+      multi-tipo (`sorted(mappa.cataloghi)`), non i nodi di un singolo
+      catalogo; "nessun import DB" rispettato (solo lettura live via
+      `AdapterHTTP`, cache in RAM). 9 nuovi test reali in
+      `backend/tests/builder/test_integrazioni_manager.py` (Postgres +
+      server HTTP locale reali), incl. prova diretta che un contesto non
+      autorizzato non genera mai la richiesta HTTP (`requests == []`).
+      Contratto `integrazioni-api.openapi.yaml`: rimosso
+      `x-implementation-status: planned` (tutte le 8 operazioni sono ora
+      reali) e pubblicato in Swagger/ReDoc (`/docs/integrazioni`,
+      `/redoc/integrazioni`, voce aggiunta a
+      `backend/app/quality/openapi_docs.py`); descrizione aggiornata per
+      riflettere T081-T083 fatti e T084 aperto.
+      `backend/tests/configurazione/test_integration_contract.py` aggiornato
+      di conseguenza (asserisce l'assenza del flag, non piu' `"planned"`).
+      Regressione locale `pytest -m "not e2e"`: 256 passati, 12 esclusi.
+      **Ancora aperto**: T084 (matrice avversaria SSRF/rebinding/concorrenza),
+      T047/T049-T052/T055-058/T071/T073/T076 (polish/hardening gia' annotati
+      sopra).
 - [ ] T084 Testare registro vuoto anche con seed/env/token, due tipi su un URL,
       una radice invalida, codici uguali in sorgenti diverse, token multicontesto,
       permessi non appiattiti, concorrenza modifica URL/verifica, isolamento dei

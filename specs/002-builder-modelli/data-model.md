@@ -58,8 +58,11 @@ la 010, non viene simulato col vecchio catalogo:
   funzionale di connessione, mai un elenco vuoto silenzioso.
 
 Il builder dipende dalla porta astratta. Nel runtime corrente l'URL e'
-configurato operativamente tramite `GEMODO_DISCOVERY_ENDPOINTS`; onboarding
-amministrativo e selezione per stato sono ancora task aperti nella 010.
+risolto da `TipoDocumento.integrazione_id` sul registro admin della 010
+(`Integrazione`/`EndpointIntegrazione`, T081): solo un'integrazione nello
+stato `CONNESSO` fornisce una porta di discovery, senza URL d'ambiente e
+senza fallback locale (T082). Le letture manager per contesto (T083) restano
+un task aperto.
 
 ## Entities (Archivio Storico, Non Schema Runtime)
 

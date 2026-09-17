@@ -19,6 +19,16 @@ valida e mette in cache RAM tutta la mappa multi-tipo per sorgente/revisione.
 Nuova API onboarding e resolver registrato restano T081-T084, non operativi.
 Test solo su PostgreSQL temporaneo e server HTTP locale.
 
+Aggiornamento 2026-09-17 (T081/T082/T083): API admin
+`/api/v1/configurazione/integrazioni` (CRUD + verifica sincrona) operativa;
+il resolver del builder legge ora solo integrazioni `CONNESSO` dal registro
+(`TipoDocumento.integrazione_id`), `GEMODO_DISCOVERY_ENDPOINTS` rimosso senza
+fallback. Letture manager `/api/v1/builder/integrazioni*` operative
+(autorizzazione per singolo contesto, verificata prima di ogni chiamata HTTP).
+Contratto `integrazioni-api.openapi.yaml` pubblicato (Swagger/ReDoc). Resta
+T084 (prove avversarie SSRF/rebinding/concorrenza). Suite non-e2e: 256
+passati, 12 esclusi.
+
 [ADR 0002](adr/0002-integrazioni-contesti-modelli-test.md) e
 [flusso e owner](../specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md).
 Integrazioni software create manualmente, contesto JWT e singolo endpoint

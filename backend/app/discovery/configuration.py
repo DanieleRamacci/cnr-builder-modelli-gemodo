@@ -1,31 +1,43 @@
-"""Explicit deployment configuration, until administrative onboarding is built."""
+"""Resolves the discovery adapter for a tipo documento from the registered integration.
 
-import json
-import os
-from functools import lru_cache
+T082 (ADR 0002): the source of truth for "which URL serves this tipo documento" is the
+``Integrazione``/``EndpointIntegrazione`` registry configured and verified through
+``IntegrazioniService`` (T081), reached via ``TipoDocumento.integrazione_id`` - never an
+environment variable. A tipo documento whose integration is not ``CONNESSO`` has no
+usable discovery source; there is no local/seed fallback.
+"""
 
-from app.common.errors import ErrorCode
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from app.catalog.models import TipoDocumento
+from app.common.errors import DomainError, ErrorCode
+from app.configurazione import repository as configurazione_repository
 from app.discovery.adapter_http import AdapterHTTP
+from app.discovery.cache import CacheDiscovery
 from app.discovery.errors import DiscoveryError
 
+# Shared across requests so the TTL cache (app.discovery.cache.CacheDiscovery) actually
+# avoids re-fetching on every read; entries are scoped per integration+verified revision,
+# so a re-verification or reconfiguration naturally invalidates old entries instead of
+# reusing them (see integrazioni-policy.md "RAM/cache per integrazione e revisione").
+_CACHE_DISCOVERY_REGISTRATA = CacheDiscovery()
 
-@lru_cache(maxsize=32)
-def _adapter(url: str) -> AdapterHTTP:
-    return AdapterHTTP(url)
 
-
-def discovery_per_tipo(codice: str) -> AdapterHTTP:
-    try:
-        endpoints = json.loads(os.environ.get("GEMODO_DISCOVERY_ENDPOINTS", "{}"))
-        if not isinstance(endpoints, dict):
-            raise ValueError("Configurazione non valida")
-        url = endpoints.get(codice)
-        if not isinstance(url, str) or not url:
-            raise ValueError("Endpoint assente")
-        return _adapter(url)
-    except (ValueError, TypeError):
+def discovery_per_tipo(db: Session, tipo: TipoDocumento) -> AdapterHTTP:
+    if tipo.integrazione_id is None:
         raise DiscoveryError(
             ErrorCode.DISCOVERY_NON_CONFIGURATA,
             "Endpoint discovery non configurato per questo tipo documento",
             status_code=503,
-        ) from None
+        )
+    endpoint = configurazione_repository.endpoint(db, tipo.integrazione_id)
+    if endpoint is None or endpoint.stato != "CONNESSO":
+        raise DomainError("INTEGRAZIONE_NON_CONNESSA", "Integrazione non connessa", status_code=409)
+    return AdapterHTTP(
+        endpoint.url,
+        cache=_CACHE_DISCOVERY_REGISTRATA,
+        timeout_seconds=endpoint.timeout_ms / 1000,
+        cache_scope=f"integrazione:{tipo.integrazione_id}:revisione:{endpoint.revisione_verificata}",
+    )

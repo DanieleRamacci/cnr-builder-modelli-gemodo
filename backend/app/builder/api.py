@@ -12,11 +12,14 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
+from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
     CreaModelloRequest,
     CreaVersioneRequest,
+    IntegrazioneVisibile,
     ModelloResponse,
     StrutturaDisponibileResponse,
+    StrutturaTipoDocumentoResponse,
     VersioneResponse,
 )
 from app.builder.service import BuilderService, get_builder_service
@@ -58,6 +61,37 @@ def get_struttura_disponibile(
     service: BuilderService = Depends(get_builder_service),
 ) -> StrutturaDisponibileResponse:
     return service.struttura_disponibile(principal, codiceTipoDocumento)
+
+
+@router.get("/integrazioni", response_model=list[IntegrazioneVisibile])
+def lista_integrazioni_manager(
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniManagerService = Depends(get_integrazioni_manager_service),
+) -> list[IntegrazioneVisibile]:
+    return service.lista(principal)
+
+
+@router.get("/integrazioni/{integrazioneId}/tipi-documento", response_model=list[str])
+def lista_tipi_documento_live(
+    integrazioneId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniManagerService = Depends(get_integrazioni_manager_service),
+) -> list[str]:
+    return service.tipi_documento(integrazioneId, principal)
+
+
+@router.get(
+    "/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura",
+    response_model=StrutturaTipoDocumentoResponse,
+    response_model_exclude_none=True,
+)
+def get_struttura_live_per_integrazione(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniManagerService = Depends(get_integrazioni_manager_service),
+) -> StrutturaTipoDocumentoResponse:
+    return service.struttura(integrazioneId, codice, principal)
 
 
 @router.post("/modelli", response_model=ModelloResponse, status_code=201)

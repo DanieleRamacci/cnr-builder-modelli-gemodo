@@ -3,7 +3,9 @@ info:
   title: GEMODO - Registro Software E Discovery Autorizzato
   version: 0.1.0
   description: >
-    Contratto di design T078, non ancora implementato o pubblicato dal backend.
+    Contratto T078, implementato (T081 registro/configurazione/verifica admin,
+    T082 resolver builder dal registro, T083 letture manager). La matrice di
+    prova avversaria (SSRF/rebinding/concorrenza, T084) resta da completare.
     Registro inizialmente vuoto, senza seed GEBAN. Un software ha un contesto
     JWT e un singolo endpoint che puo' restituire piu' tipi documento.
     La verifica usa la forma comune, non gli esempi amministrativi.
@@ -12,7 +14,6 @@ servers:
   - url: /api/v1
 security:
   - KeycloakBearer: []
-x-implementation-status: planned
 paths:
   /configurazione/integrazioni:
     get:

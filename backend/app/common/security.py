@@ -210,27 +210,50 @@ def require_modelli_gestore(principal: PrincipalGEMODO = Depends(require_princip
     return ensure_roles(principal, (ROLE_GEMODO_MODELLI_GESTORE,))
 
 
+def _permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str, settings: Settings) -> set[str]:
+    """Permissions granted by ``codice_contesto`` alone, never mixed with any other context.
+
+    DEC-001-CONTESTO-SOSTITUISCE-UFFICIO: a role granting a permission in one context
+    MUST NOT authorize an action scoped to a different context - so this always calls
+    ``permessi_da_ruoli_esterni`` with a single-context dict, never
+    ``principal.ruoli`` (already flattened across every context the token carries).
+    """
+    ruoli_nel_contesto = dict(principal.ruoli_contesto).get(codice_contesto, ())
+    if not ruoli_nel_contesto:
+        return set()
+    sistemi = list(_configured_sistemi(settings))
+    return permessi_da_ruoli_esterni(
+        sistemi,
+        client_id=principal.client_id,
+        context_roles={codice_contesto: ruoli_nel_contesto},
+    )
+
+
 def verify_scrittura_su_contesto(
     principal: PrincipalGEMODO,
     codice_contesto: str,
     settings: Settings | None = None,
 ) -> None:
-    """Authorize a write for a tipo documento owned by ``codice_contesto``.
+    """Authorize a write for a tipo documento owned by ``codice_contesto``."""
+    settings = settings or get_settings()
+    if ROLE_GEMODO_MODELLI_GESTORE not in _permessi_nel_contesto(principal, codice_contesto, settings):
+        raise AuthorizationError()
 
-    DEC-001-CONTESTO-SOSTITUISCE-UFFICIO: resolved strictly per-context, never
-    against ``principal.ruoli`` (already flattened across every context the
-    token carries) - a role granting GEMODO_MODELLI_GESTORE in one context
-    MUST NOT authorize a write on a tipo documento owned by another context.
+
+def contesti_con_permesso(
+    principal: PrincipalGEMODO,
+    permesso: str,
+    codici_contesto: Iterable[str],
+    settings: Settings | None = None,
+) -> set[str]:
+    """Subset of ``codici_contesto`` that grant ``permesso`` on their own (T083).
+
+    Each candidate context is evaluated in isolation via ``_permessi_nel_contesto``,
+    so a manager authorized to read/write in context A never gains visibility into an
+    integration owned by context B just because both appear in the same token.
     """
     settings = settings or get_settings()
-    ruoli_nel_contesto = dict(principal.ruoli_contesto).get(codice_contesto, ())
-    if not ruoli_nel_contesto:
-        raise AuthorizationError()
-    sistemi = list(_configured_sistemi(settings))
-    permessi = permessi_da_ruoli_esterni(
-        sistemi,
-        client_id=principal.client_id,
-        context_roles={codice_contesto: ruoli_nel_contesto},
-    )
-    if ROLE_GEMODO_MODELLI_GESTORE not in permessi:
-        raise AuthorizationError()
+    return {
+        codice for codice in set(codici_contesto)
+        if permesso in _permessi_nel_contesto(principal, codice, settings)
+    }

@@ -31,7 +31,11 @@ services:
       KEYCLOAK_JWKS_CACHE_TTL_SECONDS: ${KEYCLOAK_JWKS_CACHE_TTL_SECONDS:-300}
       GEMODO_USE_MOCK_PRINCIPAL: ${GEMODO_USE_MOCK_PRINCIPAL:-false}
       DOCUMENTALE_MOCK_URL: ${DOCUMENTALE_MOCK_URL:-}
-      GEMODO_DISCOVERY_ENDPOINTS: ${GEMODO_DISCOVERY_ENDPOINTS:-}
+      # Discovery esterna (010): il builder legge solo integrazioni CONNESSE dal
+      # registro admin, non da un URL d'ambiente. Allowlist di deployment per le
+      # destinazioni che l'admin puo' configurare/verificare (vuoto di default).
+      GEMODO_INTEGRAZIONI_ALLOWLIST: ${GEMODO_INTEGRAZIONI_ALLOWLIST:-}
+      GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO: ${GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO:-}
     expose:
       - "8000"
     depends_on:

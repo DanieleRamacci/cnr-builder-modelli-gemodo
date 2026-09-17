@@ -43,8 +43,8 @@ class BuilderService:
         self.discovery = discovery
 
     def _catalogo(self, codice: str, *, aggiornato: bool = False) -> CatalogoDiscovery:
-        self._resolve_tipo_documento(codice)
-        porta = self.discovery if self.discovery is not None else discovery_per_tipo(codice)
+        tipo = self._resolve_tipo_documento(codice)
+        porta = self.discovery if self.discovery is not None else discovery_per_tipo(self.db, tipo)
         return porta.catalogo_discovery(codice, forza_aggiornamento=aggiornato)
 
     def struttura_disponibile(self, principal: PrincipalGEMODO, codice_tipo_documento: str) -> CatalogoDiscovery:

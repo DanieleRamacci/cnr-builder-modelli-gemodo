@@ -49,7 +49,12 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-gemodo-backend}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
       DOCUMENTALE_MOCK_URL: http://documentale-mock:9000
-      GEMODO_DISCOVERY_ENDPOINTS: ${GEMODO_DISCOVERY_ENDPOINTS:-}
+      # Discovery esterna (010): il builder legge solo integrazioni CONNESSE dal
+      # registro admin (POST /api/v1/configurazione/integrazioni), non da un URL
+      # d'ambiente. Una destinazione va aggiunta qui prima che l'admin possa
+      # configurarla/verificarla (vuoto di default, nessuna chiamata implicita).
+      GEMODO_INTEGRAZIONI_ALLOWLIST: ${GEMODO_INTEGRAZIONI_ALLOWLIST:-}
+      GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO: ${GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO:-}
     ports:
       - "8000:8000"
     depends_on:

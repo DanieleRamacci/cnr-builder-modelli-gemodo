@@ -304,6 +304,16 @@ def test_expired_attempt_does_not_block_a_new_verify(admin_client, monkeypatch, 
     assert response.json()["stato"] == "CONNESSO"
 
 
+def test_versioned_admin_documentation_available():
+    with TestClient(app) as client:
+        source = client.get("/openapi/integrazioni.yaml")
+        assert source.status_code == 200
+        for path in ("/docs/integrazioni", "/redoc/integrazioni"):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert "/openapi/integrazioni.yaml" in response.text
+
+
 @pytest.mark.integration
 def test_admin_routes_reject_non_admin_principals(admin_client):
     client, _ = admin_client

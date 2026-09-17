@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.discovery.schemas import CatalogoDiscovery
 
 StrutturaDisponibileResponse = CatalogoDiscovery
+StrutturaTipoDocumentoResponse = CatalogoDiscovery
+
+
+class IntegrazioneVisibile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: uuid.UUID
+    codice: str
+    nome: str
+    codice_contesto: str
 
 
 class CreaModelloRequest(BaseModel):
