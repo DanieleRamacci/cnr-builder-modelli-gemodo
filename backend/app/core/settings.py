@@ -41,6 +41,8 @@ class Settings:
     integration_profiles_path: str | None
     gemodo_mock_context: str | None = None
     gemodo_mock_context_roles: tuple[str, ...] = ()
+    gemodo_integrazioni_allowlist: tuple[str, ...] = ()
+    gemodo_integrazioni_allowlist_privato: tuple[str, ...] = ()
 
     @property
     def jwks_url(self) -> str:
@@ -73,4 +75,6 @@ def get_settings() -> Settings:
             "GEMODO_INTEGRATION_PROFILES_PATH",
             str(repo_root / "infra" / "local" / "integration-profiles.local.yaml"),
         ),
+        gemodo_integrazioni_allowlist=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST"),
+        gemodo_integrazioni_allowlist_privato=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO"),
     )

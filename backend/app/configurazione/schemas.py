@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -120,3 +121,47 @@ class SchemaResponse(BaseModel):
     versione: int
     generato_il: datetime
     schema_documentazione: dict[str, Any] = Field(serialization_alias="schema")
+
+
+class IntegrazioneCreate(Input):
+    codice: Annotated[str, Field(min_length=1, max_length=100)]
+    nome: Annotated[str, Field(min_length=1, max_length=200)]
+    codice_contesto: Annotated[str, Field(min_length=1, max_length=64)]
+
+
+class IntegrazioneUpdate(Input):
+    revisione_attesa: Annotated[int, Field(ge=1)]
+    nome: Annotated[str, Field(min_length=1, max_length=200)]
+    url: Annotated[str, Field(min_length=1, max_length=2048)] | None
+    timeout_ms: Annotated[int, Field(ge=1000, le=10000)]
+
+
+class VerificaRequest(Input):
+    revisione_attesa: Annotated[int, Field(ge=1)]
+
+
+class ErroreVerifica(BaseModel):
+    codice: str
+    messaggio: str
+    percorso: str | None = None
+
+
+class UltimaVerifica(BaseModel):
+    data: datetime
+    revisione: int
+    versione_contratto: str
+    esito: Literal["CONFORME", "NON_CONFORME", "NON_RAGGIUNGIBILE"]
+    errori: list[ErroreVerifica]
+
+
+class IntegrazioneAdmin(BaseModel):
+    id: uuid.UUID
+    codice: str
+    nome: str
+    codice_contesto: str
+    modalita: str
+    revisione: int
+    url: str | None
+    timeout_ms: int
+    stato: str
+    ultima_verifica: UltimaVerifica | None

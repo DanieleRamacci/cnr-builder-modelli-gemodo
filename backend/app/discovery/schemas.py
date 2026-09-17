@@ -10,6 +10,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
 
+# specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml (info.version)
+VERSIONE_CONTRATTO_DISCOVERY = "0.4.0"
+
 
 class CampoDiscovery(BaseModel):
     model_config = ConfigDict(frozen=True)

@@ -604,9 +604,42 @@ Feature attiva invariata; nessun task applicativo di altre spec viene avviato.
       duplicate rifiutate. Cache namespace/sorgente/revisione, copie isolate,
       niente salvataggi DB. T081/T082 devono passare lo scope da registro DB.
       Test discovery/configurazione: 72 passati, nessuno saltato (12.44s).
-- [ ] T081 Implementare registro/configurazione/verifica admin del contratto
+- [x] T081 Implementare registro/configurazione/verifica admin del contratto
       T078; successo riferito a revisione corrente e forma comune, non esempio.
       URL modificato richiede verifica; test su revisione superata non connette.
+      Implementati `POST/GET /configurazione/integrazioni`, `GET/PUT .../{id}`,
+      `POST .../{id}/verifica` (`backend/app/configurazione/{api,service}.py`,
+      nuovo `IntegrazioniService`). Configurazione con controllo ottimistico su
+      `revisione` (409 REVISIONE_SUPERATA); cambio URL/timeout invalida stato a
+      DEFINITO e cancella l'esito precedente, cambio solo nome conserva
+      CONNESSO/ERRORE; URL null elimina la riga `endpoint_integrazione`.
+      Verifica sincrona senza cache (`AdapterHTTP(..., forza_aggiornamento=True)`
+      su T080), su tutta la mappa multi-tipo; prenotazione atomica del
+      tentativo (`tentativo_id`/`tentativo_scadenza`) rilasciata prima della
+      chiamata HTTP (nessuna transazione DB aperta durante l'I/O) e riconfermata
+      dopo, applicando il risultato solo se tentativo e revisione sono ancora
+      correnti (altrimenti 409 REVISIONE_SUPERATA senza cambiare stato); un
+      tentativo scaduto non blocca una nuova verifica. Errori di trasporto/
+      timeout mappati a esito NON_RAGGIUNGIBILE, forma non conforme a
+      NON_CONFORME, entrambi a stato ERRORE.
+      Nuovo `backend/app/discovery/egress.py`: destinazione approvata solo se
+      nell'allowlist di deployment (`GEMODO_INTEGRAZIONI_ALLOWLIST`, vuota di
+      default) e con IP risolti pubblici; un'origine anche in
+      `GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO` e' l'eccezione di deployment
+      esplicita che ammette HTTP e IP privati/loopback (fixture di test).
+      Verifica applicata sia in configurazione sia immediatamente prima della
+      chiamata HTTP di verifica; NON implementa il pinning della connessione
+      all'IP risolto (protezione da DNS rebinding) ne' la matrice avversariale
+      completa (redirect, HAL ciclico, rebinding) — quello resta T084.
+      13 nuovi test reali in `backend/tests/configurazione/test_integrazioni_admin.py`
+      (Postgres reale via Testcontainers, server HTTP locale reale per la
+      verifica, nessun mock della logica di dominio); regressione locale
+      `pytest -m "not e2e"`: 248 passati (12 e2e esclusi). Non ancora
+      pubblicato in Swagger/ReDoc (`x-implementation-status` del contratto
+      resta `planned` finche' anche T083 non e' implementato). T082/T083/T084
+      restano da fare: il resolver builder legge ancora
+      `GEMODO_DISCOVERY_ENDPOINTS`, non esiste lettura manager delle
+      integrazioni CONNESSE.
 - [ ] T082 Sostituire resolver operativo da ambiente con integrazioni CONNESSE
       registrate; rimuovere bypass `GEMODO_DISCOVERY_ENDPOINTS`, senza fallback
       locale o import automatico. Aggiornare documentazione operativa e test.
