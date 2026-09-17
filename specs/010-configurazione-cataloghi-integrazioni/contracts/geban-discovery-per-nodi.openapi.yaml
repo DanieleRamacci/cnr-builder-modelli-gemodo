@@ -1,0 +1,251 @@
+openapi: 3.0.3
+info:
+  title: Esempio discovery GEBAN per nodi
+  version: 0.1.0
+  description: |
+    Proposta di secondo tipo di integrazione, da simulare con il team GEBAN.
+    Questi tre endpoint sono esposti da GEBAN, non da GEMODO.
+    GEMODO registra soltanto l'URL iniziale e la modalita PER_NODI.
+    Le risposte indicano gli URL successivi, completi dei parametri.
+    Gli URL sono relativi alla base API indicata in servers; le destinazioni
+    devono appartenere alla base autorizzata dell'integrazione.
+    Tipologie, profili e combinazioni sono dati demo, non un elenco vincolante.
+    TD e CP hanno entrambi i profili mostrati nell'esempio; le combinazioni
+    reali devono essere confermate da GEBAN.
+    Non esiste un numero obbligatorio di livelli: un ramo ha url_figli,
+    una foglia ha url_campi, mai entrambi. tipo_livello e' informativo.
+    I campi descrivono il contratto dati, non i valori di un bando concreto.
+    versione_catalogo identifica lo stato dei dati, non la versione OpenAPI.
+    Il client propaga la versione ricevuta: se non e' piu' disponibile,
+    GEBAN risponde 409 e la navigazione deve ripartire dall'ingresso.
+    La gestione runtime GEMODO di questa modalita non e' ancora implementata.
+    Autenticazione esterna da concordare: questo esempio non ne definisce
+    una per la simulazione e non decide la politica di produzione.
+servers:
+  - url: https://geban.example/api
+    description: Indirizzo dimostrativo da sostituire con il server di simulazione
+paths:
+  /discovery/bando-concorso:
+    get:
+      operationId: elencoTipologieBando
+      summary: Ingresso - elenco delle tipologie
+      responses:
+        '200':
+          description: Primo livello disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElencoNodi'
+              example:
+                codice_tipo_documento: BANDO_CONCORSO
+                versione_catalogo: demo-2026-09-17.1
+                validita: '2026-09-17T00:00:00Z'
+                nodi:
+                  - id: TD
+                    codice: TD
+                    descrizione: Tempo Determinato
+                    tipo_livello: tipologia
+                    foglia: false
+                    url_figli: /discovery/bando-concorso/profili?tipologia=TD&versione_catalogo=demo-2026-09-17.1
+                  - id: CP
+                    codice: CP
+                    descrizione: Concorsi Pubblici
+                    tipo_livello: tipologia
+                    foglia: false
+                    url_figli: /discovery/bando-concorso/profili?tipologia=CP&versione_catalogo=demo-2026-09-17.1
+        '503':
+          $ref: '#/components/responses/NonDisponibile'
+  /discovery/bando-concorso/profili:
+    get:
+      operationId: elencoProfiliBando
+      summary: Profili appartenenti alla tipologia selezionata
+      parameters:
+        - $ref: '#/components/parameters/Tipologia'
+        - $ref: '#/components/parameters/Versione'
+      responses:
+        '200':
+          description: Esempio per tipologia TD; CP espone gli stessi profili demo con percorsi e URL CP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElencoNodi'
+              example:
+                codice_tipo_documento: BANDO_CONCORSO
+                versione_catalogo: demo-2026-09-17.1
+                validita: '2026-09-17T00:00:00Z'
+                nodo_padre: TD
+                nodi:
+                  - id: TD/COLLABORATORE_TECNICO_ER
+                    codice: COLLABORATORE_TECNICO_ER
+                    descrizione: Collaboratore Tecnico E.R.
+                    tipo_livello: profilo
+                    livelli_possibili: [IV, V, VI]
+                    livello_base: VI
+                    foglia: true
+                    url_campi: /discovery/bando-concorso/campi?tipologia=TD&profilo=COLLABORATORE_TECNICO_ER&versione_catalogo=demo-2026-09-17.1
+                  - id: TD/RICERCATORE
+                    codice: RICERCATORE
+                    descrizione: Ricercatore
+                    tipo_livello: profilo
+                    livelli_possibili: [I, II, III]
+                    livello_base: III
+                    foglia: true
+                    url_campi: /discovery/bando-concorso/campi?tipologia=TD&profilo=RICERCATORE&versione_catalogo=demo-2026-09-17.1
+        '400':
+          $ref: '#/components/responses/ParametroNonValido'
+        '404':
+          $ref: '#/components/responses/RamoNonTrovato'
+        '409':
+          $ref: '#/components/responses/VersioneCambiata'
+        '503':
+          $ref: '#/components/responses/NonDisponibile'
+  /discovery/bando-concorso/campi:
+    get:
+      operationId: campiProfiloBando
+      summary: Campi della foglia selezionata - fine della navigazione
+      parameters:
+        - $ref: '#/components/parameters/Tipologia'
+        - name: profilo
+          in: query
+          required: true
+          schema: {type: string, minLength: 1}
+          example: COLLABORATORE_TECNICO_ER
+        - $ref: '#/components/parameters/Versione'
+      responses:
+        '200':
+          description: Campi comuni; attributi del profilo coerenti con la selezione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampiFoglia'
+              example:
+                codice_tipo_documento: BANDO_CONCORSO
+                versione_catalogo: demo-2026-09-17.1
+                validita: '2026-09-17T00:00:00Z'
+                nodo_id: TD/COLLABORATORE_TECNICO_ER
+                percorso: [TD, COLLABORATORE_TECNICO_ER]
+                profilo:
+                  codice: COLLABORATORE_TECNICO_ER
+                  livelli_possibili: [IV, V, VI]
+                  livello_base: VI
+                campi:
+                  - {codice: codice_bando, etichetta: Codice bando, tipo: string, lingua: IT, obbligatorio: true, ordine: 1, descrizione: Identificativo funzionale del bando, validazione: {minLength: 1}}
+                  - {codice: titolo_it, etichetta: Titolo, tipo: string, lingua: IT, obbligatorio: true, ordine: 2, descrizione: Titolo italiano del bando, validazione: {minLength: 1}}
+                  - {codice: descrizione_ridotta_it, etichetta: Descrizione ridotta, tipo: string, lingua: IT, obbligatorio: false, ordine: 3, descrizione: Sintesi italiana del bando, validazione: null}
+                  - {codice: sede_prescelta_it, etichetta: Sede, tipo: string, lingua: IT, obbligatorio: true, ordine: 4, descrizione: Sede associata alla procedura, validazione: {minLength: 1}}
+                  - {codice: numero_posti, etichetta: Numero posti, tipo: number, lingua: IT, obbligatorio: true, ordine: 5, descrizione: Numero dei posti previsti, validazione: {minimum: 1}}
+                  - {codice: titolo_en, etichetta: Title, tipo: string, lingua: EN, obbligatorio: true, ordine: 6, descrizione: Titolo inglese del bando, validazione: {minLength: 1}}
+                  - {codice: livello, etichetta: Livello, tipo: string, lingua: IT, obbligatorio: true, ordine: 7, descrizione: Livello professionale del bando, validazione: {fonte_opzioni: profilo.livelli_possibili, default: profilo.livello_base}}
+        '400':
+          $ref: '#/components/responses/ParametroNonValido'
+        '404':
+          $ref: '#/components/responses/RamoNonTrovato'
+        '409':
+          $ref: '#/components/responses/VersioneCambiata'
+        '503':
+          $ref: '#/components/responses/NonDisponibile'
+components:
+  parameters:
+    Tipologia:
+      name: tipologia
+      in: query
+      required: true
+      schema: {type: string, minLength: 1}
+      example: TD
+    Versione:
+      name: versione_catalogo
+      in: query
+      required: true
+      schema: {type: string, minLength: 1}
+      example: demo-2026-09-17.1
+  schemas:
+    Metadati:
+      type: object
+      required: [codice_tipo_documento, versione_catalogo, validita]
+      properties:
+        codice_tipo_documento: {type: string, example: BANDO_CONCORSO}
+        versione_catalogo: {type: string}
+        validita: {type: string, format: date-time}
+    ElencoNodi:
+      allOf:
+        - $ref: '#/components/schemas/Metadati'
+        - type: object
+          required: [nodi]
+          properties:
+            nodo_padre: {type: string}
+            nodi:
+              type: array
+              description: Un elenco vuoto significa nessuna opzione, mai errore di connessione.
+              items:
+                $ref: '#/components/schemas/Nodo'
+    Nodo:
+      type: object
+      required: [id, codice, descrizione, foglia]
+      properties:
+        id: {type: string, description: Identificativo stabile e univoco nel tipo documento}
+        codice: {type: string}
+        descrizione: {type: string}
+        tipo_livello: {type: string}
+        foglia: {type: boolean}
+        url_figli: {type: string, description: URL relativo alla base API autorizzata}
+        url_campi: {type: string, description: URL relativo alla base API autorizzata}
+        livelli_possibili: {type: array, items: {type: string}}
+        livello_base: {type: string}
+      oneOf:
+        - required: [url_figli]
+          properties:
+            foglia: {enum: [false]}
+          not:
+            required: [url_campi]
+        - required: [url_campi]
+          properties:
+            foglia: {enum: [true]}
+          not:
+            required: [url_figli]
+    CampiFoglia:
+      allOf:
+        - $ref: '#/components/schemas/Metadati'
+        - type: object
+          required: [nodo_id, percorso, campi]
+          properties:
+            nodo_id: {type: string}
+            percorso: {type: array, minItems: 1, items: {type: string}}
+            profilo:
+              type: object
+              description: Attributi del profilo scelto per risolvere fonte_opzioni e default.
+              additionalProperties: true
+            campi:
+              type: array
+              items:
+                $ref: './geban-discovery-endpoint.openapi.yaml#/components/schemas/CampoContrattoDati'
+    Errore:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+  responses:
+    ParametroNonValido:
+      description: Parametro obbligatorio assente o malformato
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: PARAMETRO_NON_VALIDO, messaggio: Il parametro tipologia e' obbligatorio}
+    RamoNonTrovato:
+      description: Tipologia sconosciuta oppure profilo non appartenente alla tipologia richiesta
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: RAMO_NON_TROVATO, messaggio: La combinazione tipologia e profilo richiesta non esiste}
+    VersioneCambiata:
+      description: Versione richiesta non piu' disponibile; ripartire dall'URL iniziale
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: VERSIONE_CATALOGO_CAMBIATA, messaggio: Il catalogo e' cambiato. Ripetere la navigazione dall'ingresso}
+    NonDisponibile:
+      description: Catalogo temporaneamente non disponibile
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: CATALOGO_NON_DISPONIBILE, messaggio: Servizio temporaneamente non disponibile}

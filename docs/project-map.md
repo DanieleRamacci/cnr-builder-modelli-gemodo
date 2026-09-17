@@ -14,14 +14,14 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 |---|---|---|---|---|
 | `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Primo incremento implementato (2026-07-31), 73/73 task completati; nomenclatura categorie/tipologie riallineata a GEBAN (2026-09-14, migration `0007`); secondo incremento (FR-025..FR-031: perimetro per-profilo, proprieta' via `codice_contesto` vs Applicazione consumatrice — entita' Ufficio rimossa il 2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` — registro contratti dati, generalizzazione `TipologiaDocumento`) con decisioni `CONFERMATA`; migration `0008` (2026-09-16, reale su Postgres) aggiunge `tipo_documento.codice_contesto` e `registro_contratti_dati` (T085/T087 parziale — sistema_richiedente/profilo_integrazione restano su YAML, T088-T092 non fatti); gate readiness verde per PLAN, TASKS bloccato solo da `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`; T080 (generalizzazione tipologia) ancora da fare; suite `pytest -m "not e2e"` verde (147 test) | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; espone catalogo, contratto campi, validazione payload e protezione JWT Keycloak minima. UUID resta chiave interna DB, mentre `public_id` intero stabile e' esposto a GEBAN come `modello_versione_id`. L'allow-list per-profilo (`categorie_ammessi`/`tipologie_ammessi`) e i `contratti_dati_ammessi` non sono ancora applicati dalle API reali (solo dal fixture di test mock-GEBAN) — bloccante prima di andare in produzione con generazione reale per GEBAN; direzione confermata, implementazione da pianificare in `plan.md` |
 | `002-builder-modelli` | Builder backend per tipi, categorie, modelli, versioni e pubblicazione | Spec/plan/tasks aggiornati (2026-07-31, riallineati 2026-09-15 al pivot ADR 0001/contesto); prima verticale reale implementata (2026-09-16, non segue 1:1 i 64 task granulari — vedi nota in `tasks.md`): creazione modello/versione, catena completa di pubblicazione con auto-archiviazione, autorizzazione scoped per contesto, tutto verificato su Postgres reale (7 test in `backend/tests/builder/`); mancano ancora modifica/derivazione di versioni pubblicate, route archivia/sospendi dedicate, vincolo DB anti-doppia-pubblicazione, contratto OpenAPI | §2, §4, §8.2-§8.6, §10, §16.3 | Stati definitivi confermati: `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO`, `SOSPESO`; `GEMODO_MODELLI_GESTORE` puo' approvare/pubblicare nel primo rilascio. La `002` espone API builder protette da Keycloak (autorizzazione scoped per `codice_contesto`, non piu' Ufficio) e riusa il dominio catalogo condiviso della `001`, senza duplicare tabelle. Dopo pubblicazione, `/documenti/valida` e `/documenti/genera` della `001` funzionano contro i nuovi modelli senza modifiche — provato end-to-end |
-| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Attiva; spec/plan/tasks aggiornati (2026-07-31), 0/69 task implementati; readiness gate `TASKS` verde | §5.5, §6, §8.7-§8.9, §16.3 | Formato visuale confermato: editor controllato, non HTML libero; modello `GEMODO_DOCUMENT_V1` con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati. La `003` estende API builder protette da Keycloak e alimenta il renderer della `004` |
+| `003-sezioni-placeholder-versionamento` | Sezioni proprie della versione modello, placeholder, JSON schema e contenuti strutturati | Pianificata; spec/plan/tasks aggiornati (2026-07-31), 0/69 task implementati; readiness gate `TASKS` verde | §5.5, §6, §8.7-§8.9, §16.3 | Formato visuale confermato: editor controllato, non HTML libero; modello `GEMODO_DOCUMENT_V1` con blocchi ammessi, posizionamenti controllati, asset versionati, stili consentiti e placeholder validati. La `003` estende API builder protette da Keycloak e alimenta il renderer della `004` |
 | `004-generazione-documenti-pdf` | Generazione documenti, rendering, PDF bozza/ufficiale | Draft di copertura | §9.6, §13, §16.5 | Si ferma alla generazione e metadati documento; bando multiplo, ribando e bando inglese integrale chiariti in `009` il 2026-07-28; resta da chiarire confine con stampa/pubblicazione SOL |
 | `005-storage-idempotenza-consultazione` | Storage documentale, idempotenza, download e stato generazione | Draft di copertura | §9.7-§9.8, §13, §14, §11.2 | Da confermare storage definitivo; ribando chiarito in `009` come nuovo bando collegato al precedente; resta da chiarire nuova pubblicazione/riferimento documentale verso sistemi esterni |
 | `006-sicurezza-autorizzazioni-audit` | Keycloak, ruoli, autorizzazioni, audit sicurezza | Implementazione ACE/context roles completata localmente (2026-09-14), tasks 23/23 completati; suite `pytest -m "not e2e"` verde; quality review esterno bloccato da login reviewer | §12, §8.11, §12.9 | `keycloak-jwt.md`; decisioni confermate/estese: GEBAN puo' chiamare GEMODO con token ACE utente dal realm `cnr`, client censito (es. `geri-angular-public`), audience obbligatoria `gemodo-backend` e ruoli in `contexts.geban.roles`; GEMODO normalizza ruoli diretti `resource_access.gemodo-backend.roles` e ruoli ACE/GEBAN tramite mapping configurato in `infra/local/integration-profiles.local.yaml`. `geban-backend` resta doppio tecnico per test/CI; solo `ROLE_MANAGER#geban` deriva `GEMODO_MODELLI_GESTORE`, mentre `ROLE_GESTORE#geban`, `ROLE_MANAGER#geban`, `ROLE_COORDINATOR#geban` e `ROLE_USER#geban` derivano permessi di generazione/consultazione documenti |
 | `007-frontend-builder-consultazione` | Frontend builder e consultazione generazioni | Draft integrata | §11, §16.6 | Dipende da API builder e generazioni |
 | `008-ai-mcp-readiness` | Predisposizione AI, MCP, documentazione AI-ready | Draft integrata | §15 | Non prerequisito del primo rilascio |
-| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test, qualita', documentazione API e readiness riuso PA | Implementata (Fase 1-5, T001-T058); Polish in corso | §16.1, §16.2, §16.7, §17 | Attiva; ambiente locale, mock GEBAN, registro decisioni (28 voci) e matrice di copertura reali e testati (109 test pytest); raccoglie setup, criteri cross-cutting, ownership decisioni, OpenAPI/Swagger/ReDoc, portale documentazione e vincoli open source/PA |
-| `010-configurazione-cataloghi-integrazioni` | Interfaccia di amministrazione per definire tipi documento/tipologie/profili/campi, generare il contratto di discovery per un sistema esterno e registrarne l'endpoint | Spec/plan/research/data-model/tasks scritti (2026-09-15); T009/T010 (`PortaDiscovery`+`AdapterLocale`, forma ridotta senza `attributi_profilo`) implementati e verificati su Postgres reale il 2026-09-16, resto (2-52) non fatto; readiness gate `PLAN` verde, `TASKS` bloccato da `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI` (esplicitato in `tasks.md`, non silenziato) | n/d (nata da `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`, non dalla `PROPOSTA` originale) | Nuova spec nata dal cambio di paradigma su ownership dei dati esterni (referenziare non copiare, `DEC-001-OWNERSHIP-DATI-ESTERNI`); sostituisce, per questo incremento, il percorso file+deploy previsto da `DEC-001-CONFIG-PROFILO-GEBAN`. Primo caso d'uso reale: GEBAN/`BANDO_CONCORSO`, esempio in `docs/adr/0001-esempio-discovery-geban.json`. Eroga anche il sostituto funzionale delle tre API di classificazione GEBAN-facing ritirate dalla `001` (`DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`, 2026-09-15): non un endpoint runtime nostro, ma la generazione del contratto/documentazione che dice agli sviluppatori esterni come strutturare il proprio endpoint di discovery |
+| `009-fondamenta-mock-test-qualita` | Fondamenta tecniche, mock, test, qualita', documentazione API e readiness riuso PA | Implementata (Fase 1-5, T001-T058); Polish in corso | §16.1, §16.2, §16.7, §17 | Ambiente locale, mock GEBAN, registro decisioni (28 voci) e matrice di copertura reali e testati (109 test pytest); raccoglie setup, criteri cross-cutting, ownership decisioni, OpenAPI/Swagger/ReDoc, portale documentazione e vincoli open source/PA |
+| `010-configurazione-cataloghi-integrazioni` | Interfaccia di amministrazione per definire tipi documento/tipologie/profili/campi, generare il contratto di discovery per un sistema esterno e registrarne l'endpoint | **Feature attiva**; spec/plan/research/data-model/tasks scritti (2026-09-15); chiarimento 2026-09-16: il contratto di discovery vincola la forma comune, non i valori reali; T003/T004 soddisfatti da migration `001`/`0008`; T009/T010 (`PortaDiscovery`+`AdapterLocale`, forma ridotta senza `attributi_profilo`) implementati e verificati su Postgres reale il 2026-09-16; resto (T001-T002/T005-T008/T011-T052) non fatto; readiness gate `PLAN` verde, `TASKS` bloccato da `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI` (esplicitato in `tasks.md`, non silenziato) | n/d (nata da `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md`, non dalla `PROPOSTA` originale) | Nuova spec nata dal cambio di paradigma su ownership dei dati esterni (referenziare non copiare, `DEC-001-OWNERSHIP-DATI-ESTERNI`); sostituisce, per questo incremento, il percorso file+deploy previsto da `DEC-001-CONFIG-PROFILO-GEBAN`. Primo caso d'uso reale: GEBAN/`BANDO_CONCORSO`, esempio in `docs/adr/0001-esempio-discovery-geban.json`. Eroga anche il sostituto funzionale delle tre API di classificazione GEBAN-facing ritirate dalla `001` (`DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`, 2026-09-15): non un endpoint runtime nostro, ma la generazione del contratto/documentazione che dice agli sviluppatori esterni come strutturare la forma del proprio endpoint di discovery |
 
 ## Coverage Per Sezione Proposta
 
@@ -31,8 +31,8 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 | §1 Principio Architetturale | Constitution, 001, 002 | Coperta | Confini GEBAN/servizio/documentale |
 | §2 Flusso Di Progettazione Del Modello | 002, 003 | Coperta | Workflow builder e pubblicazione |
 | §3 Flusso GEBAN - Servizio Modelli | 001, 004, 005 | Coperta | Catalogo -> campi -> generazione -> riferimento |
-| §4 Categorizzazione Interna | 001, 002 | Coperta | Tipo, categoria, tipologia, modello |
-| §5 Campi Richiesti E Contratto Dati | 001, 003 | Coperta | Contratto dati e JSON schema |
+| §4 Categorizzazione Interna | 001, 002, 010 | Coperta | Tipo, categoria, tipologia, modello; `010` governa l'onboarding/configurazione e la discovery dei dati esterni |
+| §5 Campi Richiesti E Contratto Dati | 001, 003, 010 | Coperta | Contratto dati e JSON schema; `010` genera la documentazione di forma per l'endpoint di discovery |
 | §6 Placeholder E Sezioni | 003, 004 | Coperta | Sezioni e risoluzione placeholder |
 | §7 Proprietario Dei Dati | Constitution, 001, 004, 006 | Coperta | Ownership dati e snapshot |
 | §8 Schema Dati Proposto | 002, 003, 004, 005, 006, 009 | Coperta | Entita' distribuite per responsabilita' |
@@ -82,49 +82,48 @@ Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md
   sviluppo, produzione, architettura, configurazione, sicurezza, contributi, segnalazione
   vulnerabilita', test, release e changelog.
 
-## Stato Plan/Tasks Delle Spec Operative (verificato 2026-07-31)
+## Stato Plan/Tasks Delle Spec Operative (verificato 2026-09-16)
 
-`001-catalogo-contratto-geban` ha `spec.md`, `plan.md`, OpenAPI, `data-model.md`,
-`quickstart.md` e `tasks.md` aggiornati al 2026-07-31. L'implementazione runtime e'
-completa per i 73 task: catalogo, contratto dati, validazione payload e protezione JWT
-Keycloak minima sono disponibili nel backend.
+La feature attiva e' `010-configurazione-cataloghi-integrazioni`, come dichiarato in
+`.specify/feature.json`. Prima di proseguire con implementazione applicativa, usare
+`specs/010-configurazione-cataloghi-integrazioni/spec.md`, `plan.md`, `data-model.md`,
+`research.md` e `tasks.md` come sorgente corrente.
 
-`002-builder-modelli` ha `spec.md`, `plan.md`, `data-model.md`, OpenAPI e `tasks.md`
-aggiornati al 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la conferma di
-`DEC-002-STATI-MODELLO`; la feature puo' partire da `T001`, ma il codice runtime deve
-riusare le fondamenta condivise della `001` quando implementate.
+Stato sintetico:
 
-`003-sezioni-placeholder-versionamento` ha `spec.md`, `plan.md`, `data-model.md`, OpenAPI
-e `tasks.md` aggiornati al 2026-07-31. Il readiness gate per `TASKS` e' verde dopo la
-conferma di `DEC-003-FORMATO-VISUALE-MODELLO`; la feature puo' partire da `T001` dopo le
-fondamenta runtime di `001` e `002`.
+- `001`: primo incremento completato; secondo incremento parziale con
+  `tipo_documento.codice_contesto` e `registro_contratti_dati` gia' migrati su Postgres
+  reale; restano task aperti per enforcement reale del perimetro per-profilo e ritiro
+  API di classificazione legacy (T108, dipendente da `010`).
+- `002`: prima verticale reale implementata e testata su Postgres reale; i task granulari
+  storici non sono piu' un indicatore 1:1 dello stato del codice, leggere sempre la nota
+  iniziale in `specs/002-builder-modelli/tasks.md` prima di riprendere lavoro li'.
+- `003`: pianificata e non ancora implementata; resta dopo il builder e dopo la discovery
+  necessaria ai campi/placeholder.
+- `006`: implementazione ACE/context roles completata localmente; quality review esterno
+  ancora bloccato da login reviewer.
+- `010`: attiva; T003/T004 soddisfatti dalla migration `001`/`0008`, T009/T010
+  completati in forma ridotta, resto task aperto. La decisione
+  `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI` resta `ASSUNTA_PROVVISORIA` e blocca
+  formalmente la fase `TASKS` completa; i task che non dipendono dalle soglie fini sono
+  esplicitati in `tasks.md`.
 
-Stato implementazione task: `001` completata (73/73), `002` non implementata (0/64),
-`003` non implementata (0/69). Prima di avviare l'implementazione applicativa oltre la
-`003`:
-
-1. implementare la `002` seguendo `specs/002-builder-modelli/tasks.md`, riusando dominio
-   catalogo e sicurezza comune;
-2. implementare la `003` seguendo `specs/003-sezioni-placeholder-versionamento/tasks.md`,
-   riusando ciclo vita versione, sicurezza builder e contratto campi;
-3. verificare con `backend/app/quality/readiness_gate.py` che nessuna decisione critica
-   blocchi ancora la fase `TASKS` per la spec target prima di generare nuovi task
-   implementativi (FR-018).
-
-Questo evita di implementare codice applicativo contro un contratto dati o un modello
-di autorizzazione gia' superato dalle decisioni successive.
+Regola operativa: non rimuovere le tre API legacy di classificazione della `001` prima
+che la User Story 2 della `010` produca davvero il contratto/documentazione di discovery
+che le sostituisce funzionalmente.
 
 ## Ordine Suggerito Di Approfondimento
 
 1. `001-catalogo-contratto-geban`
 2. `002-builder-modelli`
-3. `003-sezioni-placeholder-versionamento`
-4. `006-sicurezza-autorizzazioni-audit`
-5. `004-generazione-documenti-pdf`
-6. `005-storage-idempotenza-consultazione`
-7. `007-frontend-builder-consultazione`
-8. `009-fondamenta-mock-test-qualita`
-9. `008-ai-mcp-readiness`
+3. `010-configurazione-cataloghi-integrazioni`
+4. `003-sezioni-placeholder-versionamento`
+5. `006-sicurezza-autorizzazioni-audit`
+6. `004-generazione-documenti-pdf`
+7. `005-storage-idempotenza-consultazione`
+8. `007-frontend-builder-consultazione`
+9. `009-fondamenta-mock-test-qualita`
+10. `008-ai-mcp-readiness`
 
 L'ordine mette prima il flusso GEBAN e il dominio configurabile, poi sicurezza e
 generazione, quindi frontend, test e predisposizione AI.

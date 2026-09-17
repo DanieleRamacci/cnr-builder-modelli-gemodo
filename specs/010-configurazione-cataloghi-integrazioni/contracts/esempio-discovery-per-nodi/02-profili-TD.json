@@ -1,0 +1,36 @@
+{
+  "codice_tipo_documento": "BANDO_CONCORSO",
+  "versione_catalogo": "demo-2026-09-17.1",
+  "validita": "2026-09-17T00:00:00Z",
+  "nodo_padre": "TD",
+  "nodi": [
+    {
+      "id": "TD/COLLABORATORE_TECNICO_ER",
+      "codice": "COLLABORATORE_TECNICO_ER",
+      "descrizione": "Collaboratore Tecnico E.R.",
+      "tipo_livello": "profilo",
+      "livelli_possibili": [
+        "IV",
+        "V",
+        "VI"
+      ],
+      "livello_base": "VI",
+      "foglia": true,
+      "url_campi": "/discovery/bando-concorso/campi?tipologia=TD&profilo=COLLABORATORE_TECNICO_ER&versione_catalogo=demo-2026-09-17.1"
+    },
+    {
+      "id": "TD/RICERCATORE",
+      "codice": "RICERCATORE",
+      "descrizione": "Ricercatore",
+      "tipo_livello": "profilo",
+      "livelli_possibili": [
+        "I",
+        "II",
+        "III"
+      ],
+      "livello_base": "III",
+      "foglia": true,
+      "url_campi": "/discovery/bando-concorso/campi?tipologia=TD&profilo=RICERCATORE&versione_catalogo=demo-2026-09-17.1"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "codice_tipo_documento": "BANDO_CONCORSO",
+  "versione_catalogo": "demo-2026-09-17.1",
+  "validita": "2026-09-17T00:00:00Z",
+  "nodi": [
+    {
+      "id": "TD",
+      "codice": "TD",
+      "descrizione": "Tempo Determinato",
+      "tipo_livello": "tipologia",
+      "foglia": false,
+      "url_figli": "/discovery/bando-concorso/profili?tipologia=TD&versione_catalogo=demo-2026-09-17.1"
+    },
+    {
+      "id": "CP",
+      "codice": "CP",
+      "descrizione": "Concorsi Pubblici",
+      "tipo_livello": "tipologia",
+      "foglia": false,
+      "url_figli": "/discovery/bando-concorso/profili?tipologia=CP&versione_catalogo=demo-2026-09-17.1"
+    }
+  ]
+}

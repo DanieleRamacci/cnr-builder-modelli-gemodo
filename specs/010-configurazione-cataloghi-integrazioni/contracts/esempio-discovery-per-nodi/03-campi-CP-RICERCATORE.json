@@ -1,0 +1,104 @@
+{
+  "codice_tipo_documento": "BANDO_CONCORSO",
+  "versione_catalogo": "demo-2026-09-17.1",
+  "validita": "2026-09-17T00:00:00Z",
+  "nodo_id": "CP/RICERCATORE",
+  "percorso": [
+    "CP",
+    "RICERCATORE"
+  ],
+  "profilo": {
+    "codice": "RICERCATORE",
+    "livelli_possibili": [
+      "I",
+      "II",
+      "III"
+    ],
+    "livello_base": "III"
+  },
+  "campi": [
+    {
+      "codice": "codice_bando",
+      "etichetta": "Codice bando",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 1,
+      "descrizione": "Identificativo funzionale del bando",
+      "validazione": {
+        "minLength": 1
+      }
+    },
+    {
+      "codice": "titolo_it",
+      "etichetta": "Titolo",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 2,
+      "descrizione": "Titolo italiano del bando",
+      "validazione": {
+        "minLength": 1
+      }
+    },
+    {
+      "codice": "descrizione_ridotta_it",
+      "etichetta": "Descrizione ridotta",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": false,
+      "ordine": 3,
+      "descrizione": "Sintesi italiana del bando",
+      "validazione": null
+    },
+    {
+      "codice": "sede_prescelta_it",
+      "etichetta": "Sede",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 4,
+      "descrizione": "Sede associata alla procedura",
+      "validazione": {
+        "minLength": 1
+      }
+    },
+    {
+      "codice": "numero_posti",
+      "etichetta": "Numero posti",
+      "tipo": "number",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 5,
+      "descrizione": "Numero dei posti previsti",
+      "validazione": {
+        "minimum": 1
+      }
+    },
+    {
+      "codice": "titolo_en",
+      "etichetta": "Title",
+      "tipo": "string",
+      "lingua": "EN",
+      "obbligatorio": true,
+      "ordine": 6,
+      "descrizione": "Titolo inglese del bando",
+      "validazione": {
+        "minLength": 1
+      }
+    },
+    {
+      "codice": "livello",
+      "etichetta": "Livello",
+      "tipo": "string",
+      "lingua": "IT",
+      "obbligatorio": true,
+      "ordine": 7,
+      "descrizione": "Livello professionale del bando",
+      "validazione": {
+        "fonte_opzioni": "profilo.livelli_possibili",
+        "default": "profilo.livello_base"
+      }
+    }
+  ]
+}

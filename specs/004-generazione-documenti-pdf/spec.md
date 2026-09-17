@@ -21,10 +21,12 @@
 
 - `DEC-001-PROFILO-GEBAN` (confermata in `docs/decision-register.yaml`): la
   generazione documento richiede che il `modello_versione_id` richiesto sia nel
-  perimetro ammesso del profilo del chiamante (proprio o concesso da un altro Ufficio
-  proprietario, vedi `DEC-001-UFFICIO-PROPRIETARIO`), non solo che il token abbia il
-  ruolo `DOCUMENTI_GENERATORE`. Un chiamante autenticato ma fuori perimetro deve
-  ricevere un errore funzionale distinto, non generare il documento.
+  perimetro ammesso del profilo del chiamante, non solo che il token abbia il
+  ruolo `DOCUMENTI_GENERATORE`. Dopo `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`
+  (2026-09-15), la proprieta' di scrittura del tipo documento e' rappresentata da
+  `TipoDocumento.codice_contesto`, non da un'entita' `Ufficio` separata. Un chiamante
+  autenticato ma fuori perimetro deve ricevere un errore funzionale distinto, non
+  generare il documento.
 
 ## User Scenarios & Testing *(mandatory)*
 

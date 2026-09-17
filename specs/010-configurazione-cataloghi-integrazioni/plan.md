@@ -8,8 +8,9 @@
 
 Interfaccia di amministrazione con cui un operatore GEMODO definisce un tipo
 documento (tipologie, profili/categorie, campi del contratto dati), genera da
-quella definizione lo schema/esempio JSON che un sistema esterno deve
-implementare per integrarsi (sostituendo il percorso file+deploy), registra
+quella definizione lo schema/esempio JSON che descrive la forma comune che un
+sistema esterno deve implementare per integrarsi (sostituendo il percorso
+file+deploy), registra
 l'endpoint di discovery fornito dal sistema esterno e ne verifica la conformita'
 prima di marcare il tipo documento come "connesso" e quindi utilizzabile per
 creare modelli. Introduce il pattern Ports & Adapters
@@ -34,17 +35,21 @@ HAL/Spring Data REST come osservato su GEBAN), moduli condivisi
 **API Documentation**: nuovo contratto OpenAPI amministrativo
 (`contracts/configurazione-cataloghi-api.openapi.yaml`), distinto dal contratto
 GEBAN-facing della `001` — questa e' un'API interna GEMODO, mai chiamata da un
-sistema esterno
+sistema esterno. Il contratto amministrativo e' un prerequisito bloccante per
+l'implementazione runtime degli endpoint: deve dichiarare path, payload,
+risposte success/error, security scheme Keycloak e note di autorizzazione prima
+che inizino le user story che espongono API.
 
 **Storage**: PostgreSQL. Nuove tabelle: `attributo_profilo`,
 `endpoint_integrazione`, `schema_discovery_generato` (versionato). Riusa
 `tipo_documento`/`categoria_documento`/`tipologia_bando_sol` di
 `app.catalog.models` (`001`), incluso il campo diretto
 `tipo_documento.codice_contesto` (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`,
-2026-09-15 — nessuna tabella `ufficio` separata). Dipende dalla tabella
-`registro_contratti_dati` che la `001` ha progettato (Phase 8,
-`DEC-001-REGISTRO-CONTRATTI-DATI`) ma non ancora implementato in codice (T085,
-`T087` di `001/tasks.md` sono ancora `[ ]`) — vedi Dependencies.
+2026-09-15 — nessuna tabella `ufficio` separata) e la tabella
+`registro_contratti_dati` introdotti dalla migration `0008` della `001`
+(2026-09-16, Postgres reale). Questa spec aggiunge solo le tabelle proprie
+rimaste: `attributo_profilo`, `endpoint_integrazione`,
+`schema_discovery_generato`.
 
 **Testing**: pytest, httpx/FastAPI TestClient, test reali su Postgres (nessun
 mock del DB), test del client HTTP dell'adapter con un server di prova locale
@@ -102,12 +107,16 @@ specs/010-configurazione-cataloghi-integrazioni/
 ├── plan.md
 ├── research.md
 ├── data-model.md
-├── quickstart.md
 ├── contracts/
-│   ├── configurazione-cataloghi-api.openapi.yaml   # API amministrativa GEMODO (FR-001..FR-009)
+│   ├── configurazione-cataloghi-api.openapi.yaml   # API amministrativa GEMODO (FR-001..FR-009), gate pre-runtime
 │   └── geban-discovery-endpoint.openapi.yaml       # contratto che GEBAN deve implementare (non un'API GEMODO), consegnato 2026-09-15 come deliverable manuale prima ancora dell'implementazione di FR-006
 └── tasks.md
 ```
+
+Output pianificati ma non ancora presenti: `quickstart.md` (T049/T052).
+Il contratto `contracts/configurazione-cataloghi-api.openapi.yaml` e' presente
+come deliverable di design e va mantenuto allineato prima di implementare gli
+endpoint runtime.
 
 ### Source Code (repository root)
 
@@ -159,21 +168,21 @@ Output:
 
 - [data-model.md](./data-model.md)
 - [contracts/configurazione-cataloghi-api.openapi.yaml](./contracts/configurazione-cataloghi-api.openapi.yaml)
-- [quickstart.md](./quickstart.md)
+- [contracts/geban-discovery-endpoint.openapi.yaml](./contracts/geban-discovery-endpoint.openapi.yaml)
+
+Pending planned outputs, tracked in `tasks.md`:
+
+- `quickstart.md` (T049/T052), scenario end-to-end documentato dopo comportamento
+  stabile.
 
 ## Dependencies
 
 - `001-catalogo-contratto-geban`: possiede `TipoDocumento`/`CategoriaDocumento`/
-  `TipologiaBandoSOL` e il campo diretto `TipoDocumento.codice_contesto`
+  `TipologiaBandoSOL`, il campo diretto `TipoDocumento.codice_contesto`
   (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`, 2026-09-15 — nessuna tabella `Ufficio`
-  da coordinare), e progetta (non ancora implementato) `RegistroContrattiDati`
-  (Phase 8, T085, T087). **Ordine di implementazione**: le migration di
-  `codice_contesto`/`RegistroContrattiDati` devono esistere prima delle tabelle
-  di questa spec che le referenziano (`attributo_profilo` referenzia
-  indirettamente il profilo/categoria della `001`); se `001` non le ha ancora
-  implementate quando si inizia l'implementazione di `010`, questa spec le crea
-  come parte del proprio primo blocco di migration invece di duplicare la
-  decisione di schema gia' presa in `001/data-model.md`.
+  da coordinare) e `RegistroContrattiDati`. Le migration di
+  `codice_contesto`/`RegistroContrattiDati` esistono gia' nella `001` (`0008`,
+  2026-09-16); questa spec non deve duplicarle e deve solo referenziarle.
 - `002-builder-modelli`: consuma la porta di discovery (`app.discovery.port`)
   prodotta da questa spec; nessuna duplicazione della logica adapter.
 - `006-sicurezza-autorizzazioni-audit`: definisce il ruolo amministrativo

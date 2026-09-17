@@ -59,20 +59,15 @@ Decisioni confermate nella `001` (`docs/decision-register.yaml`) che raffinano
   tabelle senza richiedere un nuovo schema.
 - `DEC-001-REGISTRO-CONTRATTI-DATI`: `contratti_dati_ammessi` su
   `ProfiloDiIntegrazione` (definito in questa spec) referenzia ora un registro reale di
-  contratti dati scoped per tipo documento (proprieta' dell'Ufficio), non piu' una
-  stringa senza definizione a supporto.
-- `DEC-002-GESTORE-UFFICIO-MAPPING` (confermata riallineando la `002`): lo schema
-  `RoleMapping` di `ProfiloDiIntegrazione.role_mappings`, definito in questa spec,
-  guadagna un campo `ufficio:` sulle voci il cui `internal_permissions` include
-  `GEMODO_MODELLI_GESTORE` — dichiara a quale Ufficio quel ruolo/contesto ACE da'
-  diritto di scrittura nel builder (`002`), configurato a mano come le altre voci di
-  `role_mappings`. *(2026-09-15: campo `ufficio:` NON PIU' necessario,
-  `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` supersede questa parte — il
-  `token_context` gia' presente su ogni voce di `role_mappings` e' di per se' il
-  segnale sufficiente; `ExternalRoleMapping`/`RoleMapping` in
-  `backend/app/quality/schemas.py` non deve guadagnare quel campo. Il resto del
-  meccanismo — gestore risolto dal contesto/ruolo del token, nessuna interfaccia
-  self-service — resta invariato.)*
+  contratti dati scoped per tipo documento (proprieta' via `TipoDocumento.codice_contesto`),
+  non piu' una stringa senza definizione a supporto.
+- `DEC-002-GESTORE-UFFICIO-MAPPING` e' superseduta nella parte del campo `ufficio:`
+  da `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` (2026-09-15): il `token_context` gia'
+  presente su ogni voce di `role_mappings` e' il segnale sufficiente per collegare
+  ruolo ACE e contesto di scrittura. `ExternalRoleMapping`/`RoleMapping` in
+  `backend/app/quality/schemas.py` non deve guadagnare un campo `ufficio:`. Il resto
+  del meccanismo — gestore risolto dal contesto/ruolo del token, nessuna interfaccia
+  self-service in questa spec — resta invariato.
 
 ## User Scenarios & Testing *(mandatory)*
 

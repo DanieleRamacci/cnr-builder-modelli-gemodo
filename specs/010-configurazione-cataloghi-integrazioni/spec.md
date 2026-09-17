@@ -65,6 +65,21 @@ DOCUMENTO`).
   errore funzionale di connessione — mai un elenco vuoto o dati stantii silenziosi
   (coerente con l'Acceptance Scenario 3 della User Story 3).
 
+### Session 2026-09-16
+
+- Q: Lo schema/esempio generato da GEMODO vincola anche i valori reali
+  restituiti dall'API integrata? -> A: No. La documentazione di integrazione
+  vincola la **forma logica comune** dell'endpoint di discovery (albero
+  ricorsivo, nodi, foglie, campi e struttura dei tipi dato), non una fotografia
+  statica delle tipologie/profili/campi reali. Per un contesto integrato
+  (GEBAN o futuro sistema esterno), i dati operativi usati per creare un
+  modello arrivano dall'API del sistema integrato tramite `PortaDiscovery`; il
+  modello salva nel DB lo snapshot/struttura scelta in funzione di quei dati
+  reali. Gli esempi consegnati agli integratori sono illustrativi: il test di
+  connessione fallisce se la risposta non rispetta la forma comune o manca di
+  attributi obbligatori, non solo perche' i valori restituiti differiscono dagli
+  esempi.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Definire la struttura di un tipo documento (Priority: P1)
@@ -100,23 +115,24 @@ ancora utilizzabile per creare modelli.
 ### User Story 2 - Generare il contratto/documentazione per l'integratore (Priority: P1)
 
 Come operatore GEMODO, voglio che la definizione della User Story 1 produca
-automaticamente uno schema/esempio JSON che descrive esattamente la risposta
-attesa dall'endpoint di discovery, cosi' da consegnarlo a un team di sviluppo
-esterno senza ambiguita' su cosa implementare.
+automaticamente uno schema/esempio JSON che descrive la forma logica comune
+della risposta attesa dall'endpoint di discovery, cosi' da consegnarlo a un
+team di sviluppo esterno senza ambiguita' su come strutturare la propria API.
 
 **Why this priority**: e' il meccanismo che sostituisce il "far indovinare" al
 team esterno cosa GEMODO si aspetta — nucleo del cambio di paradigma di questa
 spec.
 
 **Independent Test**: dato un tipo documento completamente definito, l'operatore
-ottiene uno schema/esempio scaricabile che, se implementato letteralmente da un
-endpoint di prova, viene accettato dal test di connessione della User Story 3.
+ottiene uno schema/esempio scaricabile che chiarisce forma comune e tipi dato;
+un endpoint di prova con valori diversi dagli esempi ma conforme alla forma
+comune viene accettato dal test di connessione della User Story 3.
 
 **Acceptance Scenarios**:
 
 1. **Given** una definizione completa, **When** l'operatore genera il contratto,
-   **Then** ottiene un JSON Schema/esempio con tipo documento, tipologie,
-   profili, campi e data di validita'.
+   **Then** ottiene un JSON Schema/esempio con struttura dell'albero, struttura
+   dei campi, tipi dato e data di validita' della forma contrattuale.
 2. **Given** il contratto e' stato generato, **When** l'operatore lo esporta,
    **Then** puo' scaricarlo o copiarlo per consegnarlo a un team esterno.
 
@@ -132,19 +148,20 @@ documentale diventi "connesso" e disponibile per la creazione di modelli.
 documento integrato resta definito ma inutilizzabile — evita che un operatore
 inizi a creare modelli contro un'integrazione che non funziona ancora.
 
-**Independent Test**: registrando un endpoint di prova che rispetta lo schema, il
-tipo documento passa a "connesso"; registrando un endpoint che non rispetta lo
-schema (campi mancanti o extra) o irraggiungibile, resta "non connesso" con un
-errore esplicito.
+**Independent Test**: registrando un endpoint di prova che rispetta la forma
+comune dello schema, anche con valori reali diversi dagli esempi, il tipo
+documento passa a "connesso"; registrando un endpoint che non rispetta la forma
+comune (attributi obbligatori mancanti, tipi dato errati, nodi non validi) o
+irraggiungibile, resta "non connesso" con un errore esplicito.
 
 **Acceptance Scenarios**:
 
 1. **Given** un tipo documento definito (User Story 1) con contratto generato
    (User Story 2), **When** l'operatore registra un endpoint e il test di
    connessione ha successo, **Then** il tipo documento risulta "connesso".
-2. **Given** un endpoint registrato restituisce campi non previsti dal contratto
-   generato, **When** viene testato, **Then** il sistema segnala l'errore e non
-   marca il contesto come connesso.
+2. **Given** un endpoint registrato restituisce una risposta che viola la forma
+   comune del contratto generato, **When** viene testato, **Then** il sistema
+   segnala l'errore e non marca il contesto come connesso.
 3. **Given** un endpoint registrato e' temporaneamente irraggiungibile in fase di
    *creazione modello* (non di sola consultazione), **When** un operatore prova a
    creare un modello, **Then** l'operazione fallisce con errore esplicito, non con
@@ -177,8 +194,9 @@ documento configurato (definito / connesso / errore ultima verifica).
 
 ### Edge Cases
 
-- Un endpoint registrato che non rispetta lo schema generato (campi mancanti o
-  extra rispetto al contratto).
+- Un endpoint registrato che non rispetta la forma comune dello schema generato
+  (attributi obbligatori mancanti, tipi dato errati, nodi con `figli` e `campi`
+  insieme, o struttura non ricorsivamente leggibile).
 - Un endpoint irraggiungibile al momento della registrazione (test di connessione
   fallito) — il contesto resta "non connesso", non entra in uno stato ambiguo.
 - Un tipo documento definito ma mai connesso: deve restare non utilizzabile per la
@@ -211,14 +229,18 @@ documento configurato (definito / connesso / errore ultima verifica).
   marcare un campo come dipendente da un attributo profilo definito in FR-003
   invece che con opzioni fisse.
 - **FR-006**: Il sistema MUST generare, dalla definizione, uno schema/esempio JSON
-  che rappresenta la risposta attesa dall'endpoint di discovery di un sistema
-  esterno integrato (tipo documento, tipologie, profili, campi, data di validita').
+  che rappresenta la forma logica comune della risposta attesa dall'endpoint di
+  discovery di un sistema esterno integrato (albero di categorizzazione, nodi,
+  foglie, struttura dei campi, tipi dato, data di validita'). Lo schema/esempio
+  MUST NOT essere trattato come sorgente autoritativa dei valori reali che
+  l'endpoint integrato restituira'.
 - **FR-007**: Il sistema MUST permettere di esportare la documentazione generata
   in FR-006 per consegnarla a un team di sviluppo esterno.
 - **FR-008**: Il sistema MUST permettere di registrare l'URL di un endpoint
   esterno per un tipo documento definito, e di eseguire un test di connessione che
-  verifichi la conformita' della risposta allo schema generato in FR-006 prima di
-  marcare il contesto come connesso.
+  verifichi la conformita' strutturale della risposta alla forma comune generata
+  in FR-006 prima di marcare il contesto come connesso; valori reali diversi dagli
+  esempi sono ammessi se rispettano quella forma.
 - **FR-009**: Un tipo documento integrato senza un endpoint registrato e
   verificato MUST restare non utilizzabile per la creazione di modelli; questo
   stato MUST essere visibile in una dashboard (User Story 4).
@@ -258,8 +280,9 @@ documento configurato (definito / connesso / errore ultima verifica).
   dell'ultimo test di connessione.
 - **Schema Di Discovery Generato** *(nuova)*: rappresentazione JSON Schema/esempio
   prodotta dalla definizione (FR-006), versionata, usata sia come documentazione
-  per l'integratore sia come riferimento per validare le risposte reali
-  dell'endpoint registrato (FR-008).
+  per l'integratore sia come riferimento per validare la forma delle risposte
+  reali dell'endpoint registrato (FR-008). Non contiene la lista autoritativa e
+  definitiva dei valori operativi: quelli arrivano dall'API integrata.
 
 ## Success Criteria *(mandatory)*
 
@@ -297,3 +320,7 @@ documento configurato (definito / connesso / errore ultima verifica).
   profilo-dipendenti (FR-003) per il caso GEBAN restano da validare con il loro
   team prima che l'integrazione reale vada in produzione (vedi note
   `_confermato: false` residue in `docs/adr/0001-esempio-discovery-geban.json`).
+- La documentazione di integrazione e gli esempi servono a comunicare la forma
+  comune da implementare; la struttura effettivamente salvata in un modello GEMODO
+  nasce dai dati restituiti dall'endpoint integrato al momento della creazione del
+  modello.

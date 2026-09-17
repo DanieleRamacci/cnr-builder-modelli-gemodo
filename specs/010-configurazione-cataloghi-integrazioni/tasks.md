@@ -16,21 +16,30 @@
 
 - [ ] T001 Creare lo scheletro dei moduli `backend/app/discovery/` e
       `backend/app/configurazione/` (`__init__.py`, struttura da `plan.md`)
-- [ ] T002 [P] Creare `contracts/configurazione-cataloghi-api.openapi.yaml` con
-      security scheme `KeycloakBearer` riusato da `001`, error catalog stub
+- [ ] T002 [P] Completare `contracts/configurazione-cataloghi-api.openapi.yaml`
+      come contratto amministrativo pre-runtime: path, payload, risposte
+      success/error con esempi, security scheme `KeycloakBearer` riusato da
+      `001`, note di autorizzazione collegate a T014. Questo task e' un gate di
+      contract-first: nessun endpoint runtime T021/T029/T040/T045 puo' iniziare
+      prima che il contratto sia allineato.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **⚠️ CRITICAL**: nessuna user story puo' iniziare prima che questa fase sia completa.
+Il contratto OpenAPI amministrativo (T002) e la decisione autorizzativa (T014)
+fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
-- [ ] T003 *(2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: niente tabella
+- [x] T003 *(soddisfatta dalla migration `001`/`0008`, 2026-09-16;
+      `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`: niente tabella
       `ufficio`)* Migration `tipo_documento.codice_contesto` (schema gia' deciso
-      in `specs/001-catalogo-contratto-geban/data-model.md`) — creare solo se
-      `001/tasks.md` T085 non l'ha gia' introdotta; non riprogettare lo schema
-- [ ] T004 Migration `registro_contratti_dati` (schema gia' deciso in `001`,
-      stessa cautela di T003 rispetto a `001/tasks.md` T087)
+      in `specs/001-catalogo-contratto-geban/data-model.md`) — gia' introdotta
+      da `backend/alembic/versions/0008_contesto_registro_contratti_audit.py`;
+      non riprogettare lo schema
+- [x] T004 *(soddisfatta dalla migration `001`/`0008`, 2026-09-16)* Migration
+      `registro_contratti_dati` (schema gia' deciso in `001`) — gia' introdotta
+      da `backend/alembic/versions/0008_contesto_registro_contratti_audit.py`
 - [ ] T005 [P] Migration `attributo_profilo` (`data-model.md`)
 - [ ] T006 [P] Migration `endpoint_integrazione` (`data-model.md`)
 - [ ] T007 [P] Migration `schema_discovery_generato` (`data-model.md`)
@@ -140,8 +149,9 @@
 - [ ] T027 [US2] Repository `SchemaDiscoveryGenerato` (versionamento
       incrementale per tipo documento) in `backend/app/configurazione/repository.py`
 - [ ] T028 [US2] Service di generazione: proietta la struttura (T019-T020) nel
-      JSON schema/esempio (tipo documento, tipologie, profili, campi, attributi
-      profilo-dipendenti, data di validita') — depende da T022, T027
+      JSON schema/esempio della forma comune (albero, nodi, struttura campi,
+      tipi dato, attributi profilo-dipendenti, data di validita') — depende da
+      T022, T027
 - [ ] T029 [US2] Endpoint `POST /configurazione/tipi-documento/{codice}/schema-discovery`
       (genera nuova versione) e `GET .../schema-discovery/{versione}` (esporta,
       FR-007), protetti dal ruolo FR-012 (T014)
@@ -163,12 +173,15 @@
       `backend/tests/configurazione/contract/test_endpoint_integrazione_api.py`
 - [ ] T032 [P] [US3] Integration test: endpoint conforme -> stato `CONNESSO`
       (Acceptance Scenario 1)
-- [ ] T033 [P] [US3] Integration test: endpoint con campi mancanti/extra
-      rispetto allo schema -> stato `ERRORE`, mai `CONNESSO` (Acceptance
-      Scenario 2) — *(nota: la soglia esatta errore vs avviso per dati non
-      attesi resta `ASSUNTA_PROVVISORIA` su `DEC-001-VERSIONING-RIFERIMENTI-
-      ESTERNI`; questo test copre solo il caso gia' deciso — campo non
-      dichiarato = errore, non silenziosamente accettato — non le soglie fini)*
+- [ ] T033 [P] [US3] Integration test: endpoint con forma non conforme allo
+      schema comune (attributi obbligatori mancanti, tipi dato errati, nodo non
+      valido) -> stato `ERRORE`, mai `CONNESSO` (Acceptance Scenario 2). Un
+      endpoint con valori reali diversi dagli esempi ma conforme alla forma
+      comune deve invece restare valido. *(nota: la soglia esatta errore vs
+      avviso per metadati non attesi resta `ASSUNTA_PROVVISORIA` su
+      `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`; questo test copre solo il caso
+      gia' deciso — forma non valida = errore, non silenziosamente accettata —
+      non le soglie fini)*
 - [ ] T034 [P] [US3] Integration test: endpoint irraggiungibile in fase di
       registrazione -> stato `ERRORE` con messaggio esplicito, non stato
       ambiguo (Edge Case)
@@ -190,8 +203,9 @@
 - [ ] T038 [US3] Repository `EndpointIntegrazione` in
       `backend/app/configurazione/repository.py`
 - [ ] T039 [US3] Service di test di connessione: chiama `AdapterHTTP` (T012)
-      contro l'URL registrato, confronta la risposta con lo
-      `SchemaDiscoveryGenerato` corrente (T027), aggiorna `stato`/`esito_ultimo_test`
+      contro l'URL registrato, valida la forma della risposta contro lo
+      `SchemaDiscoveryGenerato` corrente (T027), senza pretendere che i valori
+      reali coincidano con gli esempi, e aggiorna `stato`/`esito_ultimo_test`
       — depende da T012, T027, T038
 - [ ] T040 [US3] Endpoint `POST /configurazione/tipi-documento/{codice}/endpoint-integrazione`
       (registra + testa) e `POST .../endpoint-integrazione/verifica` (ri-testa),
@@ -237,8 +251,10 @@
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T047 [P] Completare `contracts/configurazione-cataloghi-api.openapi.yaml`
-      con esempi di successo/errore per FR-001..FR-009
+- [ ] T047 [P] Verificare che
+      `contracts/configurazione-cataloghi-api.openapi.yaml` resti allineato
+      all'implementazione effettiva e agli esempi success/error gia' definiti
+      in T002 per FR-001..FR-009
 - [ ] T048 [P] Verificare Swagger/ReDoc locale per il nuovo contratto
       (Costituzione, principio VI)
 - [ ] T049 [P] Scrivere `quickstart.md`: scenario end-to-end con una fixture
@@ -272,7 +288,7 @@
 
 ### Parallel Opportunities
 
-- T003-T007 (migration) possono girare in parallelo dopo T001-T002.
+- T005-T007 (migration ancora aperte) possono girare in parallelo dopo T001-T002.
 - T010, T011 possono girare in parallelo dopo T009.
 - T015-T018, T024-T026, T031-T037, T043-T044 (test di ciascuna user story)
   possono girare in parallelo fra loro all'interno della stessa fase.
@@ -282,7 +298,7 @@
 
 ```text
 Task: T032 Endpoint conforme -> CONNESSO
-Task: T033 Endpoint con campi mancanti/extra -> ERRORE
+Task: T033 Endpoint con forma non conforme -> ERRORE
 Task: T034 Endpoint irraggiungibile in registrazione -> ERRORE esplicito
 Task: T035 Endpoint irraggiungibile in creazione modello -> errore di connessione
 Task: T036 Self-service, nessun endpoint richiesto

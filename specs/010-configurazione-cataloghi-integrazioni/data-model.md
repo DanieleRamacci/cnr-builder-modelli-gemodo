@@ -9,10 +9,9 @@
 (`specs/001-catalogo-contratto-geban/data-model.md`). Questa spec aggiunge
 l'interfaccia con cui un operatore le *crea/definisce* e tre entita' nuove che
 non hanno posto naturale altrove. `codice_contesto` e `RegistroContrattiDati`
-sono progettati in `001` ma non ancora implementati in codice (`001/tasks.md`
-T085, T087): l'implementazione di questa spec crea quelle migration se `001`
-non le ha ancora create, riusando lo schema gia' deciso li' senza
-riprogettarlo.
+sono stati progettati nella `001` e risultano gia' presenti in codice tramite
+la migration `0008_contesto_registro_contratti_audit.py` (2026-09-16). Questa
+spec li riusa e non deve creare migration duplicate.
 
 ## Porta Di Discovery (canonica, `DEC-002-PORTS-ADAPTERS-DISCOVERY`)
 
@@ -35,6 +34,14 @@ indipendenti da SQLAlchemy: stessa forma sia che arrivino da
 `RegistroContrattiDati` locali) sia da `AdapterHTTP` (deserializzati dalla
 risposta esterna). Il chiamante (builder `002`, o la definizione struttura di
 questa spec) non distingue mai i due casi.
+
+La porta espone i dati operativi reali del contesto nel momento in cui vengono
+richiesti. Lo `SchemaDiscoveryGenerato` documenta e valida la forma comune che
+un endpoint integrato deve rispettare, ma non e' la sorgente autoritativa dei
+valori restituiti dall'endpoint HTTP. Per un tipo documento integrato, tipologie,
+profili, attributi e campi disponibili sono quelli ottenuti dall'API esterna
+registrata; il modello GEMODO salva la struttura scelta a partire da quella
+risposta.
 
 ### AdapterLocale
 
@@ -101,8 +108,8 @@ Fields:
   `ERRORE` (ultimo test fallito).
 - `schema_discovery_generato_id_verificato`: quale versione dello schema e'
   stata usata per l'ultimo test riuscito; opzionale.
-- `esito_ultimo_test`: messaggio funzionale (es. "campo X non previsto dalla
-  risposta", "connessione rifiutata").
+- `esito_ultimo_test`: messaggio funzionale (es. "attributo obbligatorio X
+  mancante", "tipo dato non valido", "connessione rifiutata").
 - `data_ultimo_test`
 - `created_at`
 - `updated_at`
@@ -111,8 +118,9 @@ Validation:
 
 - `stato` parte sempre da `DEFINITO` alla registrazione.
 - `stato` diventa `CONNESSO` solo se il test di connessione (FR-008) valida la
-  risposta contro lo `SchemaDiscoveryGenerato` **corrente** del tipo
-  documento.
+  risposta contro la forma comune dello `SchemaDiscoveryGenerato` **corrente** del
+  tipo documento. Valori reali diversi dagli esempi restano validi se rispettano
+  quella forma.
 - se la definizione struttura viene ridefinita dopo che l'endpoint e'
   `CONNESSO` (nuova versione di `SchemaDiscoveryGenerato`), `stato` torna a
   `DEFINITO` finche' non viene rieseguito un test contro la nuova versione —
@@ -126,16 +134,20 @@ Validation:
 
 Schema/esempio JSON generato dalla definizione struttura (User Story 1),
 versionato. E' sia la documentazione consegnata al team esterno sia il
-riferimento con cui il test di connessione (FR-008) valida la risposta reale.
+riferimento con cui il test di connessione (FR-008) valida la **forma** della
+risposta reale.
 
 Fields:
 
 - `id`
 - `tipo_documento_id`
 - `versione`: intero, incrementale per tipo documento.
-- `contenuto`: il JSON generato (tipo documento, tipologie, profili, campi,
-  attributi profilo-dipendenti, data di validita' — stessa forma di
-  `docs/adr/0001-esempio-discovery-geban.json`).
+- `contenuto`: il JSON generato (albero di categorizzazione, struttura dei nodi,
+  struttura dei campi, tipi dato, attributi profilo-dipendenti, data di validita'
+  della forma contrattuale — stessa forma di
+  `docs/adr/0001-esempio-discovery-geban.json`). I valori mostrati sono esempi o
+  semi iniziali, non l'elenco autoritativo dei valori reali che l'endpoint
+  integrato potra' restituire.
 - `generato_il`
 - `generato_da`: identita' dell'operatore (audit).
 

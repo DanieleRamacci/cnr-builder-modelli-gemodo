@@ -82,6 +82,31 @@ del contratto.
   un futuro sistema integrato diverso da GEBAN chiedesse esplicitamente questa
   vista — non e' il caso ora, non progettarla preventivamente.
 
+## Decision: il contratto di discovery vincola la forma comune, non i valori reali
+
+**Rationale**: la documentazione generata da GEMODO serve agli sviluppatori del
+sistema integrato per sapere come deve essere strutturata la risposta
+(`DiscoveryResponse`, albero ricorsivo, nodi, foglie, campi e tipi dato). Non e'
+una copia dei dati di classificazione e non deve diventare una sorgente
+autoritativa parallela. Per un tipo documento integrato, la creazione di un
+modello legge tipologie/profili/campi dall'API registrata tramite `AdapterHTTP`;
+il modello salva nel DB la struttura scelta a partire da quei dati reali. Questo
+preserva `DEC-001-OWNERSHIP-DATI-ESTERNI`: GEMODO conosce la forma del contratto,
+ma il sistema esterno resta proprietario dei valori di classificazione.
+
+**Validation boundary**: il test di connessione deve rifiutare risposte che non
+rispettano la forma comune (attributi obbligatori mancanti, tipi dato errati,
+nodi non validi), ma non deve rifiutare una risposta solo perche' i valori reali
+differiscono dagli esempi pubblicati nella documentazione.
+
+**Alternatives considered**:
+
+- Trattare lo schema/esempio generato come lista autoritativa di valori ammessi —
+  scartato: ricreerebbe una copia locale dei dati esterni e contraddirebbe il
+  cambio di paradigma dell'ADR 0001.
+- Accettare qualunque JSON dall'endpoint registrato — scartato: senza forma comune
+  il builder non potrebbe navigare e salvare modelli in modo deterministico.
+
 ## Decision: paginazione HAL gestita internamente all'adapter HTTP
 
 **Rationale**: gia' chiarito in `spec.md` (FR-011) e osservato su

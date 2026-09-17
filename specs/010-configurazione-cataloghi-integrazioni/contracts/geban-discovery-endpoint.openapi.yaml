@@ -3,6 +3,10 @@ info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
   version: 0.3.0
   description: >
+    Questo file descrive la modalita ad albero completo. La proposta alternativa
+    a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
+    e le risposte JSON in `esempio-discovery-per-nodi/README.md`.
+
     **Questo NON e' un'API esposta da GEMODO.** E' la specifica di CIO' CHE IL
     TEAM GEBAN DEVE COSTRUIRE.
 
@@ -21,9 +25,10 @@ info:
     3. Guarda l'**Example Value** dell'operazione `GET` sotto. Per brevita'
     e' compilato **un solo ramo per esteso** (una tipologia, un profilo, i
     suoi campi): la vostra risposta reale ripete la stessa identica forma per
-    ciascuna delle vostre tipologie/profili - vedi
-    `docs/adr/0001-esempio-discovery-geban.json` nel repository GEMODO per
-    l'elenco completo dei codici tipologia/profilo gia' verificati.
+    ciascuna delle vostre tipologie/profili. Gli esempi non sono la lista
+    autoritativa dei valori ammessi: servono a mostrare la forma. I valori
+    reali che GEMODO usera' per creare un modello saranno quelli restituiti
+    dalla vostra API registrata.
 
     4. **L'albero puo' avere una profondita' diversa per ogni tipo
     documento**: per `BANDO_CONCORSO` sono due livelli (tipologia, poi
@@ -54,6 +59,15 @@ info:
     Il resto di questa pagina spiega il contesto (perche' esiste questo
     contratto) e i dettagli campo per campo - se ti serve solo "cosa devo
     restituire", i 5 punti sopra e l'Example Value bastano.
+
+
+    **Confine importante**: questo contratto vincola la forma logica comune
+    della risposta, non una fotografia statica dei dati. GEMODO valida che la
+    risposta sia leggibile secondo questa forma; non rifiuta una risposta solo
+    perche' tipologie, profili o campi reali differiscono dagli esempi. Dopo la
+    connessione, la creazione dei modelli GEMODO usa i dati restituiti dalla
+    vostra API e salva nel proprio DB la struttura scelta in funzione di quei
+    dati.
 
 
     Descrive l'endpoint che il sistema esterno GEBAN deve implementare ed
@@ -90,8 +104,9 @@ info:
     (`TD`, `COLLABORATORE_TECNICO_ER`) sono verificati sugli endpoint di test
     reali di GEBAN (`https://geban-service.test.si.cnr.it/api/v1/profili`,
     `/api/v1/tipoSols`, 2026-09-15) - l'elenco completo (10 tipologie, 7
-    profili) e' in `docs/adr/0001-esempio-discovery-geban.json`. Le
-    **combinazioni** tipologia-profilo restano da confermare con GEBAN. Il
+    profili) e' in `docs/adr/0001-esempio-discovery-geban.json` come esempio
+    operativo iniziale, non come elenco immutabile. Le **combinazioni**
+    tipologia-profilo restano da confermare con GEBAN. Il
     meccanismo del campo `livello` (opzioni dipendenti dal profilo scelto) e'
     confermato nel dato (GEBAN gestisce davvero bandi per livelli diversi
     dello stesso profilo) ma non ancora nella forma esatta della risposta
@@ -120,7 +135,9 @@ paths:
 
         Chiamato da GEMODO solo in fase di definizione/navigazione struttura
         (mai in fase di validazione/generazione documento, che usa sempre i
-        dati gia' snapshottati nel modello pubblicato).
+        dati gia' snapshottati nel modello pubblicato). Il test di connessione
+        verifica la forma della risposta, non l'uguaglianza dei valori reali
+        rispetto agli esempi.
       operationId: getDiscovery
       responses:
         "200":

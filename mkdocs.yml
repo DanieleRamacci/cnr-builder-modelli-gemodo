@@ -19,6 +19,7 @@ nav:
       - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
   - Project Map: project-map.md
   - Flusso Integrazione GEBAN: flusso-integrazione-geban.md
+  - Discovery Per Nodi - Esempio: discovery-per-nodi-esempio.md
   - API Documentation: api-documentation.md
   - Decision Workflow: decision-workflow.md
   - Riuso PA: open-source-pa-readiness.md
