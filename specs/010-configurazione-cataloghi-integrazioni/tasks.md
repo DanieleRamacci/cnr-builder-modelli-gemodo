@@ -14,19 +14,19 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Creare lo scheletro dei moduli `backend/app/discovery/` e
+- [x] T001 Creare lo scheletro dei moduli `backend/app/discovery/` e
       `backend/app/configurazione/` (`__init__.py`, struttura da `plan.md`)
-      IN CORSO 2026-09-17: discovery presente; configurazione include
-      __init__, models e security. API/schema/repository/service seguono T019.
-- [ ] T002 [P] Completare `contracts/configurazione-cataloghi-api.openapi.yaml`
+      Discovery presente; configurazione include __init__, models, security,
+      api, schemas, repository e service (ripresa US1/US2).
+- [x] T002 [P] Completare `contracts/configurazione-cataloghi-api.openapi.yaml`
       come contratto amministrativo pre-runtime: path, payload, risposte
       success/error con esempi, security scheme `KeycloakBearer` riusato da
       `001`, note di autorizzazione collegate a T014. Questo task e' un gate di
       contract-first: nessun endpoint runtime T021/T029/T040/T045 puo' iniziare
       prima che il contratto sia allineato.
-      IN CORSO: v0.2 riallinea envelope errori, ruoli, tipi campo ed esempi;
-      resta da chiudere il design della definizione US1 e verificare tutti
-      i payload amministrativi prima degli endpoint runtime.
+      Contratto v0.2 riallineato prima delle route US1/US2: envelope errori,
+      ruoli, tipi campo, definizione proprietaria e revisione, esempi. Le route
+      US3 restano pianificate; riallineamento runtime futuro obbligatorio T047.
 
 ---
 
@@ -115,32 +115,34 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ### Tests for User Story 1
 
-- [ ] T015 [P] [US1] Contract test per la definizione struttura in
+- [x] T015 [P] [US1] Contract test per la definizione struttura in
       `backend/tests/configurazione/contract/test_definizione_struttura_api.py`
-- [ ] T016 [P] [US1] Integration test: creazione completa (tipo + tipologia +
+- [x] T016 [P] [US1] Integration test: creazione completa (tipo + tipologia +
       profilo + campo) -> stato "definito, non connesso" (Acceptance Scenario 1)
       in `backend/tests/configurazione/integration/test_definizione_struttura.py`
 - [ ] T017 [P] [US1] Integration test: campo che referenzia un
       `AttributoProfilo` non richiede opzioni proprie, le eredita dal profilo
       scelto (Acceptance Scenario 2)
-- [ ] T018 [P] [US1] Integration test: tipo documento senza tipologie resta
+      IN CORSO: ereditarieta' risolta nell'esempio generato e testata;
+      la risoluzione dei riferimenti simbolici nel builder live resta da fare.
+- [x] T018 [P] [US1] Integration test: tipo documento senza tipologie resta
       "incompleto" — guardia riusata da US2 (Acceptance Scenario 3)
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Repository della definizione/esempio proprietario in
+- [x] T019 [P] [US1] Repository della definizione/esempio proprietario in
       `backend/app/configurazione/repository.py`: riusa `TipoDocumento`, mai
-      categorie/tipologie/registro globali ritirati da FR-016. SOSPESO finche'
-      il design US1 della persistenza della definizione e' riallineato.
-- [ ] T020 [US1] `DefinizioneStrutturaService` (crea/aggiorna tipo documento +
+      categorie/tipologie/registro globali ritirati da FR-016. Design T074:
+      revisioni JSON proprietarie, non discovery ricevuti dall'esterno.
+- [x] T020 [US1] `DefinizioneStrutturaService` (crea/aggiorna tipo documento +
       tipologie + profili + campi in un'unica transazione) in
       `backend/app/configurazione/service.py` — depende da T019
-- [ ] T021 [US1] Endpoint `POST /configurazione/tipi-documento` e
+- [x] T021 [US1] Endpoint `POST /configurazione/tipi-documento` e
       `PUT /configurazione/tipi-documento/{codice}/struttura` in
       `backend/app/configurazione/api.py`, protetti dal ruolo FR-012 (T014)
-- [ ] T022 [US1] Validazione "definizione completa" (almeno una
+- [x] T022 [US1] Validazione "definizione completa" (almeno una
       tipologia/profilo/campo) riusata come guardia da US2 — depende da T020
-- [ ] T023 [US1] Evento audit per ogni creazione/modifica struttura
+- [x] T023 [US1] Evento audit per ogni creazione/modifica struttura
 
 **Checkpoint**: User Story 1 funzionante e testabile in isolamento.
 
@@ -154,26 +156,26 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ### Tests for User Story 2
 
-- [ ] T024 [P] [US2] Contract test per generazione/export schema in
+- [x] T024 [P] [US2] Contract test per generazione/export schema in
       `backend/tests/configurazione/contract/test_schema_discovery_api.py`
-- [ ] T025 [P] [US2] Integration test: schema generato da una definizione
+- [x] T025 [P] [US2] Integration test: schema generato da una definizione
       equivalente al caso GEBAN coerente con la forma di
       `docs/adr/0001-esempio-discovery-geban.json`
-- [ ] T026 [P] [US2] Integration test: generazione bloccata su definizione
+- [x] T026 [P] [US2] Integration test: generazione bloccata su definizione
       incompleta, errore indica cosa manca (Acceptance Scenario, riusa T018)
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Repository `SchemaDiscoveryGenerato` (versionamento
+- [x] T027 [US2] Repository `SchemaDiscoveryGenerato` (versionamento
       incrementale per tipo documento) in `backend/app/configurazione/repository.py`
-- [ ] T028 [US2] Service di generazione: proietta la struttura (T019-T020) nel
+- [x] T028 [US2] Service di generazione: proietta la struttura (T019-T020) nel
       JSON schema/esempio della forma comune (albero, nodi, struttura campi,
       tipi dato, attributi profilo-dipendenti, data di validita') — depende da
       T022, T027
-- [ ] T029 [US2] Endpoint `POST /configurazione/tipi-documento/{codice}/schema-discovery`
+- [x] T029 [US2] Endpoint `POST /configurazione/tipi-documento/{codice}/schema-discovery`
       (genera nuova versione) e `GET .../schema-discovery/{versione}` (esporta,
       FR-007), protetti dal ruolo FR-012 (T014)
-- [ ] T030 [US2] Evento audit di generazione/esportazione
+- [x] T030 [US2] Evento audit di generazione/esportazione
 
 **Checkpoint**: User Story 1+2 funzionanti — un tipo documento puo' essere definito e il suo contratto generato e consegnato, anche senza ancora registrare un endpoint.
 
@@ -246,20 +248,20 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ### Tests for User Story 4
 
-- [ ] T043 [P] [US4] Contract test per la vista dashboard in
+- [x] T043 [P] [US4] Contract test per la vista dashboard in
       `backend/tests/configurazione/contract/test_dashboard_stato_api.py`
-- [ ] T044 [P] [US4] Integration test: stato corretto per tipi documento in
+- [x] T044 [P] [US4] Integration test: stato corretto per tipi documento in
       stati diversi (Acceptance Scenario 1)
 
 ### Implementation for User Story 4
 
-- [ ] T045 [US4] Endpoint `GET /configurazione/tipi-documento` (vista
+- [x] T045 [US4] Endpoint `GET /configurazione/tipi-documento` (vista
       amministrativa aggregata con stato ed esito ultimo test) in
       `backend/app/configurazione/api.py` — endpoint interno, non il sostituto
       della `listTipiDocumento` GEBAN-facing ritirata (`DEC-001-RITIRO-
       ENDPOINT-CLASSIFICAZIONE`): quella non aveva un pubblico interno, questa
       si', sono contratti diversi nonostante il nome simile
-- [ ] T046 [US4] Query aggregata in `backend/app/configurazione/repository.py`
+- [x] T046 [US4] Query aggregata in `backend/app/configurazione/repository.py`
       (join `TipoDocumento` + `EndpointIntegrazione` + ultima
       `SchemaDiscoveryGenerato`) — depende da T038, T027
 
@@ -273,7 +275,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `contracts/configurazione-cataloghi-api.openapi.yaml` resti allineato
       all'implementazione effettiva e agli esempi success/error gia' definiti
       in T002 per FR-001..FR-009
-- [ ] T048 [P] Verificare Swagger/ReDoc locale per il nuovo contratto
+- [x] T048 [P] Verificare Swagger/ReDoc locale per il nuovo contratto
       (Costituzione, principio VI)
 - [ ] T049 [P] Scrivere `quickstart.md`: scenario end-to-end con una fixture
       tipo-Contratti (diversa da `BANDO_CONCORSO`, per dimostrare che il motore
@@ -508,3 +510,134 @@ al product owner. Nessuna migrazione viene eseguita sul DB operativo.
       Review indipendente bloccata dalla policy di esecuzione:
       invio del repository/diff a Claude richiede autorizzazione esplicita
       dell'utente. Il PASS precedente copre solo FR-016, non questo incremento.
+      Aggiornamento successivo: utente ha rinviato esplicitamente review e
+      soglie hash/runner. Suite finale US1/US2: 221 passati, 12 e2e esclusi,
+      nessuno saltato; 15 mirati. Non reiterare richiesta di review esterna.
+
+## Phase 11: Convergence - persistenza proprietaria US1/US2
+
+- [x] T074 [US1] FR-001..FR-005/FR-013 (missing): progettare e migrare
+      `definizione_struttura` versionata con JSON proprietario per tipo;
+      collegare gli schemi generati alla revisione usata. Non salvare discovery
+      esterni, non riusare categorie/tipologie legacy. Prerequisito di T019.
+- [x] T075 [US1] Costituzione V/T023/T030 (missing): introdurre audit
+      amministrativo per tipo documento, separato dall'audit che richiede
+      un modello; creazione/modifica/generazione/export in transazioni atomiche.
+- [ ] T076 [US1] US1/US2 (partial): verificare contratto/runtime, revisioni,
+      incompletezza, riferimenti attributi, isolamento e regressioni; pubblicare
+      Swagger/ReDoc ed esempi operativi. Review esterna rinviata su richiesta
+      dell'utente: non dichiarare completata la feature senza quality gate.
+      IN CORSO: implementazione e controlli locali presenti in
+      `tests/configurazione/test_onboarding.py` e `test_contract_foundation.py`
+      (coprono anche T015/T016/T018/T024-T026/T043-T044). Review rinviata.
+      Verifica locale finale: 221 passati, 12 e2e esclusi, nessuno saltato
+      (26.35s); 15 test mirati amministrativi. `git diff --check` pulito.
+
+### Stato Corrente Prevalente Sulle Note Storiche
+
+US1/US2 backend e lettura aggregata dashboard implementati. Una revisione
+d'esempio viene salvata per tipo; export storico immutato e audit atomico.
+T017 resta parziale sulla risoluzione live nel builder, T036 self-service
+rinviato, T031-T042 connessione e selezione registrata ancora da implementare.
+Il backend builder continua a usare URL operativi espliciti; non si dichiara
+completato T041. Il frontend Angular/Design Angular Kit resta nella spec 007.
+Hash/runner T055-T058 e review esterna sono rinviati dall'utente.
+T073/T076 restano IN CORSO sul quality gate; nessuna richiesta di invio a
+Claude viene reiterata in questo incremento. La feature 010 non e' completa.
+
+## Phase 12: Integrazione Per Software E Handoff MVP
+
+Prevale ADR 0002: endpoint per software, non per tipo. T031-T046 vanno letti
+nel nuovo perimetro; i passaggi che richiedevano uno schema d'esempio per
+connettere sono superati da T078-T084. Le spunte storiche documentano incrementi
+precedenti, non certificano il nuovo flusso. US1/US2 rimangono strumenti opzionali.
+Feature attiva invariata; nessun task applicativo di altre spec viene avviato.
+
+- [x] T077 Formalizzare ADR 0002, 010 FR-017..FR-021, piano e data-model:
+      registro vuoto, contesto JWT, singolo URL per software, forma comune
+      indipendente dagli esempi e PDF di test senza editor visuale.
+- [x] T078 Definire `contracts/integrazioni-api.openapi.yaml` prima del runtime:
+      CRUD/configurazione admin e verifica, letture manager filtrate, identita'
+      sorgente, esiti/versioni, errori e compatibilita' delle API per tipo.
+      Definire URL approvati/SSRF, autenticazione sorgente se richiesta,
+      timeout/limiti e sanificazione; non pubblicare route non implementate.
+      Contratto 0.1.0 e `contracts/integrazioni-policy.md` presenti;
+      registro admin, letture manager, revisione/tentativo, egress deny-default,
+      timeout e compatibilita' descritti. Validazione strutturale locale passata:
+      YAML, 8 operazioni, 51 riferimenti, security e stato planned verificati;
+      Validazione OpenAPI completa passata, riferimenti esterni inclusi.
+      Sei test contrattuali passati (4 nuovi, 2 precedenti), esempi validati.
+      Validatore aggiunto al gruppo dev e lockfile; nessun update di dipendenze
+      preesistenti. Compatibilita' legacy e nuove route additive nella policy;
+      adeguamento contratto admin precedente richiesto in T079 prima di codici
+      duplicati. Nessun endpoint di questo contratto operativo.
+- [x] T079 Migrare Integrazione software e proprieta' Endpoint, revisione di
+      configurazione, identita' tipo scoped per integrazione e audit autonomo.
+      Preservare modelli/versioni/ID pubblici/campi/sezioni/generazioni/audit;
+      niente GEBAN automatico da seed/env/token. Legacy associato esplicitamente
+      con nuova verifica; test upgrade/downgrade e vincoli PostgreSQL.
+      Prima di implementare: definire associazione legacy, archivio degli esiti
+      vecchi e downgrade senza ricostruire cataloghi esterni; adeguare contratto
+      admin e repository per identita' tipo scoped prima di codici duplicati.
+      IN CORSO: primo incremento 0012 implementato per registro/audit e FK
+      ownership nullable senza backfill; unicita' globale preservata fino al
+      secondo incremento endpoint/namespace. Downgrade rifiutato con dati
+      registro/audit o tipi associati. Nessuna associazione implicita attiva.
+      Test mirato PostgreSQL reale passato: vincoli, upgrade/downgrade,
+      registro vuoto con tipi legacy e preservazione integrale delle righe
+      modello/versione, UUID e public_id. Nessuna migrazione sul DB operativo.
+      Regressioni finali: 226 passati, 12 e2e esclusi, nessuno saltato (28.82s).
+      Review indipendente rinviata come richiesto; feature non completa.
+      Incremento 0013 concluso: endpoint software senza FK esempi, archivio
+      storico inerte senza ORM/fallback, namespace scoped e legacy null univoco.
+      Associazione interna admin esplicita/auditata, senza trasferimento owner;
+      niente connessione automatica. Codici ambigui rifiutati da repository,
+      catalogo e builder; lista catalogo vincolata al tipo UUID risolto.
+      Contratti admin/builder/catalogo aggiornati con 409 SORGENTE_AMBIGUA.
+      Test PostgreSQL upgrade/downgrade/storico/unicita'/associazione passati;
+      nessuna migrazione sul DB operativo. Esposizione HTTP resta T081.
+- [x] T080 Estendere PortaDiscovery/AdapterHTTP alla mappa intera multi-tipo;
+      validare tutte le radici, cache/indici solo RAM per sorgente e revisione.
+      Paginazione trasparente non equivale a modalita' PER_NODI.
+      Implementati MappaDiscovery e lettura integrale condivisa da navigazione
+      per tipo, HAL multi-tipo e validazione di tutte le radici; chiavi JSON
+      duplicate rifiutate. Cache namespace/sorgente/revisione, copie isolate,
+      niente salvataggi DB. T081/T082 devono passare lo scope da registro DB.
+      Test discovery/configurazione: 72 passati, nessuno saltato (12.44s).
+- [ ] T081 Implementare registro/configurazione/verifica admin del contratto
+      T078; successo riferito a revisione corrente e forma comune, non esempio.
+      URL modificato richiede verifica; test su revisione superata non connette.
+- [ ] T082 Sostituire resolver operativo da ambiente con integrazioni CONNESSE
+      registrate; rimuovere bypass `GEMODO_DISCOVERY_ENDPOINTS`, senza fallback
+      locale o import automatico. Aggiornare documentazione operativa e test.
+- [ ] T083 Implementare letture manager: integrazioni autorizzate, radici,
+      navigazione ricorsiva e campi foglia; verificare contesto prima dell'HTTP.
+      Adeguare touchpoint condivisi e riferimenti sorgente senza avviare task
+      di creazione modello/PDF/frontend appartenenti alle altre spec.
+- [ ] T084 Testare registro vuoto anche con seed/env/token, due tipi su un URL,
+      una radice invalida, codici uguali in sorgenti diverse, token multicontesto,
+      permessi non appiattiti, concorrenza modifica URL/verifica, isolamento dei
+      metadati admin, SSRF/limiti/errori e regressioni PostgreSQL/HTTP reali.
+- [x] T085 Propagare requisiti MVP alle spec owner 001..007 senza cambiare
+      feature; registrare dipendenze e stato reale nel documento MVP.
+- [x] T086 Verificare coerenza documentale locale, identificativi e link del
+      nuovo perimetro; riportare residui contrattuali prima di implementare.
+      Non sostituisce review indipendente T073/T076, rinviata dall'utente.
+      Verificati identificativi FR/task senza duplicati e 9 link locali validi;
+      `git diff --check` pulito. Residui: contratto T078 e policy extra 001
+      FR-033 da pianificare prima dei rispettivi cambi runtime; migrazione
+      e nuovi flussi non implementati in questo aggiornamento documentale.
+
+- [x] T087 Registrare il gap di autorizzazione API consumatore nelle spec owner
+      001 FR-034..FR-038 e 006 FR-014..FR-017, con accettazione mono/multicontesto,
+      negazione sicura e protezione contro ID indovinati e payload falsificati.
+      Handoff bloccante prima dell'uso operativo: aggiornare plan/contratti/tasks
+      001/006 e implementare enforcement e test dopo cambio feature autorizzato.
+      Nessun codice modificato; questo task completa la formalizzazione, non
+      il controllo runtime. T078/T083/T084 devono rispettare tali requisiti.
+
+- [x] T088 [T079] Implementare primo incremento 0012 del registro software,
+      audit autonomo e FK ownership/contesto nullable, senza seed/backfill e
+      senza rimuovere l'unicita' globale prima dell'adeguamento dei consumer.
+      Test PostgreSQL reale passato; T079 resta IN CORSO su endpoint/namespace
+      e associazione legacy. Non certifica API admin, manager o PDF disponibili.

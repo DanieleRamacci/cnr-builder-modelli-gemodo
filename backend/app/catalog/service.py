@@ -48,6 +48,7 @@ class CatalogService:
         versions = repository.list_published_model_versions(
             self.db,
             codice_tipo_documento=tipo_documento,
+            tipo_documento_id=tipo.id,
             codice_categoria=categoria,
             codice_tipologia=codice_tipologia,
             historical=modalita == ModalitaCatalogo.STORICO,

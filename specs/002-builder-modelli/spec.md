@@ -12,6 +12,18 @@ PROPRIETARIO`/`DEC-001-REGISTRO-CONTRATTI-DATI`/`DEC-002-GESTORE-UFFICIO-MAPPING
 
 ## Clarifications
 
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Prevale sui riferimenti storici a registri locali e seed: il manager naviga
+il discovery live delle integrazioni CONNESSE autorizzate fino alla foglia.
+Identita': integrazione + tipo + percorso completo. Campi e classificazione
+provengono dalla sorgente, non dall'esempio amministrativo. Nel DB restano
+solo i riferimenti e il contratto delle versioni modello, non il catalogo.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-06-19
 
 - Q: Le versioni pubblicate della stessa variante possono sovrapporsi? -> A: No, per stessa combinazione tipo documento, categoria, tipologia e variante esiste una sola versione pubblicata corrente; modelli simili coesistono come varianti distinte.
@@ -229,8 +241,8 @@ versione pubblicata valida appare nel catalogo.
 - **FR-003**: Il sistema MUST permettere la creazione di modelli documentali associati
   a tipo, categoria e tipologia quando prevista, limitata ai tipi documento il cui
   `codice_contesto` e' fra i contesti del token del gestore (FR-014); i campi del
-  contratto dati del modello MUST provenire dal Registro Contratti Dati ammesso per
-  quel tipo documento (FR-015).
+  contratto dati del modello MUST provenire dalla foglia discovery selezionata
+  nell'integrazione autorizzata (FR-015).
 - **FR-003a**: Il sistema MUST assegnare a ogni modello una variante obbligatoria; se il gestore non ne indica una, il sistema MUST usare la variante `STANDARD`.
 - **FR-004**: Il sistema MUST gestire versioni modello con stati `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO` e `SOSPESO`.
 - **FR-004a**: Il sistema MUST consentire il passaggio da `APPROVATO` a `PUBBLICATO` e da `PUBBLICATO` ad `ARCHIVIATO` o `SOSPESO`.
@@ -255,8 +267,15 @@ versione pubblicata valida appare nel catalogo.
   presente nel token.
 - **FR-015**: *(nuovo 2026-09-14)* Quando un gestore aggiunge un campo al contratto
   dati di una versione modello, il sistema MUST verificare che il campo sia presente
-  nel Registro Contratti Dati ammesso per il tipo documento del modello, e MUST
-  rifiutare campi non presenti li'.
+  nella foglia discovery selezionata per il modello, e MUST rifiutare campi
+  estranei a quella foglia. L'esempio amministrativo non limita i campi ammessi.
+
+- **FR-016**: Il manager MUST poter creare una versione di test in BOZZA senza
+  editor visuale, con struttura minima automatica della 003. La creazione
+  MUST NOT pubblicare automaticamente: generazione dopo normale pubblicazione.
+- **FR-017**: Il modello MUST includere i campi obbligatori della foglia e
+  distinguere obbligatorieta' sorgente dalla presenza richiesta degli opzionali
+  selezionati secondo il contratto della 001.
 
 ### Key Entities
 
@@ -266,8 +285,8 @@ versione pubblicata valida appare nel catalogo.
 - **Categoria Documento**, **Tipologia Documento**: classificazione interna al tipo
   documento; definite dalla `010`, lette da questa spec tramite `PortaDiscovery`
   (FR-002), non create/modificate qui.
-- **Registro Contratti Dati** *(riferimento, entita' definita in `001`)*: vincola i
-  campi che un modello di un dato tipo documento puo' dichiarare (FR-015).
+- **Foglia Discovery**: sorgente esterna dei campi selezionabili (FR-015), letta
+  tramite 010; non costituisce un registro locale del catalogo.
 - **Modello Documento**: contenitore logico del modello.
 - **Variante Modello**: etichetta funzionale obbligatoria che distingue modelli simili nello stesso tipo, categoria e tipologia; `STANDARD` rappresenta la variante predefinita.
 - **Versione Modello**: configurazione versionata del modello.

@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -17,13 +17,23 @@ class Base(DeclarativeBase):
 
 class TipoDocumento(Base):
     __tablename__ = "tipo_documento"
+    __table_args__ = (
+        UniqueConstraint("integrazione_id", "codice", name="uq_tipo_documento_integrazione_codice"),
+        Index("uq_tipo_documento_legacy_codice", "codice", unique=True, postgresql_where=text("integrazione_id IS NULL")),
+        ForeignKeyConstraint(
+            ["integrazione_id", "codice_contesto"],
+            ["integrazione.id", "integrazione.codice_contesto"],
+            name="fk_tipo_integrazione_contesto",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    codice: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    codice: Mapped[str] = mapped_column(String(64), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     stato: Mapped[str] = mapped_column(String(32), nullable=False, default="BOZZA")
     spec_owner: Mapped[str] = mapped_column(String(128), nullable=False)
     codice_contesto: Mapped[str] = mapped_column(String(64), nullable=False)
+    integrazione_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

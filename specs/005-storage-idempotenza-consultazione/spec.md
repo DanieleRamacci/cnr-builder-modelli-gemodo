@@ -10,6 +10,16 @@
 
 ## Clarifications
 
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Anche il PDF di test segue storage, riferimento stabile, stato, download
+autorizzato e retry. La finalita' TEST/non ufficiale resta distinguibile
+dall'ufficiale in consultazione e idempotenza.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-06-22
 
 - Q: Stiamo creando la spec da zero? -> A: No. La spec esiste gia' come draft di copertura; questa sessione la integra con decisioni e vincoli emersi da generazione PDF, sicurezza/audit e proposta sorgente.
@@ -119,6 +129,11 @@ lo stato e le autorizzazioni lo consentono.
 - **FR-016**: Il sistema MUST restituire errori funzionali distinti per documento inesistente, non autorizzato, non ancora disponibile, fallito, conflitto idempotente e riferimento non recuperabile.
 - **FR-017**: Il sistema MUST NOT esporre snapshot dati, payload completo o dettagli storage a utenti o client non autorizzati.
 - **FR-018**: Gli stati di generazione esposti a GEBAN MUST essere coerenti con il contratto pubblico e non dipendere da nomi interni del backend storage.
+
+- **FR-019**: Il PDF di test MUST avere riferimento recuperabile e download
+  autorizzato secondo le stesse regole di sicurezza e stato dei documenti.
+- **FR-020**: Retry e consultazione MUST NOT restituire un test come ufficiale;
+  finalita' e bozza/ufficiale MUST distinguere le richieste idempotenti.
 
 ### Key Entities
 

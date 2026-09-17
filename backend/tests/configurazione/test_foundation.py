@@ -63,7 +63,7 @@ def test_configuration_requires_authentication(monkeypatch):
 def test_configuration_migration_and_constraints(postgres_database_url, monkeypatch):
     from app.catalog.models import TipoDocumento
     from app.configurazione.models import (
-        AttributoProfilo, EndpointIntegrazione, SchemaDiscoveryGenerato,
+        AttributoProfilo, EndpointIntegrazione, Integrazione, SchemaDiscoveryGenerato,
     )
 
     monkeypatch.setenv("DATABASE_URL", postgres_database_url)
@@ -72,6 +72,10 @@ def test_configuration_migration_and_constraints(postgres_database_url, monkeypa
     engine = sa.create_engine(postgres_database_url)
     try:
         with Session(engine) as db:
+            source = Integrazione(codice="FOUNDATION_DEMO", nome="Demo", codice_contesto="demo")
+            other_source = Integrazione(codice="FOUNDATION_ALTRO", nome="Altro", codice_contesto="demo")
+            db.add_all([source, other_source])
+            db.flush()
             tipo = TipoDocumento(codice=f"TEST_{uuid.uuid4().hex[:16]}", nome="Demo",
                                  stato="BOZZA", spec_owner="010", codice_contesto="demo")
             altro = TipoDocumento(codice=f"TEST_{uuid.uuid4().hex[:16]}", nome="Altro",
@@ -82,7 +86,7 @@ def test_configuration_migration_and_constraints(postgres_database_url, monkeypa
                                             contenuto={"esempio": True}, generato_da="test")
             db.add(schema)
             db.flush()
-            endpoint = EndpointIntegrazione(tipo_documento_id=tipo.id,
+            endpoint = EndpointIntegrazione(integrazione_id=source.id,
                                            url="https://software.example.test/discovery")
             attributo = AttributoProfilo(tipo_documento_id=tipo.id, percorso_profilo=["A", "B"],
                                        codice="livello", valori_ammessi=["I", "II"], valore_default="II")
@@ -90,7 +94,7 @@ def test_configuration_migration_and_constraints(postgres_database_url, monkeypa
             db.flush()
             assert endpoint.stato == "DEFINITO"
             assert endpoint.timeout_ms == 5000
-            assert endpoint.schema_discovery_generato_id_verificato is None
+            assert endpoint.revisione_verificata is None
 
             invalid = [
                 AttributoProfilo(tipo_documento_id=tipo.id, percorso_profilo=["A", "B"],
@@ -103,13 +107,12 @@ def test_configuration_migration_and_constraints(postgres_database_url, monkeypa
                                        contenuto={}, generato_da="test"),
                 SchemaDiscoveryGenerato(tipo_documento_id=tipo.id, versione=0,
                                        contenuto={}, generato_da="test"),
-                EndpointIntegrazione(tipo_documento_id=tipo.id, url="https://altro.example.test"),
-                EndpointIntegrazione(tipo_documento_id=altro.id, url="https://altro.example.test",
+                EndpointIntegrazione(integrazione_id=source.id, url="https://altro.example.test"),
+                EndpointIntegrazione(integrazione_id=other_source.id, url="https://altro.example.test",
                                      stato="CONNESSO"),
-                EndpointIntegrazione(tipo_documento_id=altro.id, url="https://altro.example.test",
-                                     stato="CONNESSO", data_ultimo_test=datetime.now(timezone.utc),
-                                     schema_discovery_generato_id_verificato=schema.id),
-                EndpointIntegrazione(tipo_documento_id=altro.id, url="https://altro.example.test",
+                EndpointIntegrazione(integrazione_id=other_source.id, url="https://altro.example.test",
+                                     stato="CONNESSO", data_ultimo_test=datetime.now(timezone.utc)),
+                EndpointIntegrazione(integrazione_id=other_source.id, url="https://altro.example.test",
                                      timeout_ms=0),
             ]
             for row in invalid:
@@ -118,7 +121,9 @@ def test_configuration_migration_and_constraints(postgres_database_url, monkeypa
                         db.add(row)
                         db.flush()
             endpoint.stato = "CONNESSO"
-            endpoint.schema_discovery_generato_id_verificato = schema.id
+            endpoint.revisione_verificata = 1
+            endpoint.versione_contratto_verificata = "1"
+            endpoint.esito_ultimo_test = {"esito": "CONFORME"}
             endpoint.data_ultimo_test = datetime.now(timezone.utc)
             db.flush()
             db.expire_all()

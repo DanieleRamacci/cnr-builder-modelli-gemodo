@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.4.0
+  version: 0.5.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -82,6 +82,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/AmbiguousSource"
   /catalogo/modelli/{modelloVersioneId}/campi-richiesti:
     get:
       summary: Contratto dati per versione modello pubblicata
@@ -193,6 +195,12 @@ components:
         type: integer
         format: int64
   responses:
+    AmbiguousSource:
+      description: Codice tipo ambiguo; indicare l'integrazione, nessuna selezione automatica
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {codice: SORGENTE_AMBIGUA, messaggio: Indicare l'integrazione del tipo documento}
     BadRequest:
       description: Richiesta non valida
       content:

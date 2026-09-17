@@ -12,6 +12,24 @@
 
 ## Clarifications
 
+### Enforcement API Per Contesto - 2026-09-17
+
+Permessi aggregati nel principal sono utili per il controllo generale, non
+autorizzano risorse di qualsiasi contesto. Gli endpoint consumatore devono
+applicare i requisiti 001 FR-034..FR-038; la generazione simulata non fa eccezione.
+Il runtime corrente non applica ancora completamente questa garanzia.
+
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Il codice_contesto configurato nell'integrazione corrisponde alla chiave
+del JWT, ma non assegna ruoli, contesti o client. Mapping, audience e client
+ammessi restano responsabilita' di questa spec. Il manager non configura
+endpoint e non riceve implicitamente il permesso di generazione ufficiale.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-09-14 (seconda sessione, perimetro contrattuale e propagazione da `001`)
 
 - Q: `DEC-006-AUTORIZZAZIONI-PROFILO-GEBAN` (owner di questa spec) e' risolta? -> A:
@@ -261,6 +279,28 @@ target e timestamp.
 - **FR-011**: Ogni audit event MUST contenere almeno tipo aggregate, identificativo target, tipo evento, attore o client, esito, timestamp e payload minimo sanificato; per rifiuti autorizzativi deve includere il motivo applicativo del rifiuto senza esporre segreti.
 - **FR-012**: Un'operazione sensibile MUST NOT essere considerata completata con successo se l'audit obbligatorio non viene registrato o non e' ricostruibile.
 - **FR-013**: I tool AI/MCP che leggono o scrivono dati GEMODO MUST rispettare gli stessi ruoli, contesti e audit delle API ordinarie; pubblicazione, archiviazione, generazione ufficiale e download richiedono conferma esplicita quando invocati tramite AI/MCP.
+
+- **FR-005k**: Lettura discovery e creazione modello MUST verificare il permesso
+  nel contesto dell'integrazione prima della chiamata sorgente. Token con due
+  contesti MUST NOT trasferire il permesso di gestione dall'uno all'altro.
+- **FR-005l**: Creare un'integrazione MUST NOT creare utenti, assegnare contesti
+  o ruoli, sostituire mapping e client autorizzati.
+
+### Requisiti Di Isolamento Per Contesto
+- **FR-014**: Il servizio MUST valutare azione e ruolo nel contesto proprietario
+  della risorsa risolto lato server, mai sulla sola unione dei permessi JWT.
+  Presenza del contesto senza ruolo mappato sufficiente MUST NOT concedere accesso.
+- **FR-015**: Ruoli client diretti MUST NOT scavalcare l'isolamento: richiedono
+  comunque un ambito esplicito autorizzato per client/profilo e contesto target.
+  GEMODO_ADMIN abilita amministrazione interna; MUST NOT costituire bypass
+  implicito nelle API consumatore. Eventuale accesso trasversale richiede una
+  policy esplicita, auditata e distinta, non prevista da questo incremento.
+- **FR-016**: Test di sicurezza MUST coprire catalogo, contratto, validazione,
+  generazione simulata e futura generazione reale con token mono/multicontesto,
+  permessi diversi per contesto, ID indovinati, payload falsificati, ruoli
+  diretti senza ambito, client/mapping disabilitati e metadati di paginazione.
+- **FR-017**: Rifiuti MUST essere auditati e sanificati; risposte pubbliche
+  seguono 001 FR-037 senza rivelare l'esistenza di risorse non visibili.
 
 ### Key Entities
 

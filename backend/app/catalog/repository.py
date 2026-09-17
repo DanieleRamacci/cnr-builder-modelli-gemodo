@@ -9,13 +9,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
+from app.common.errors import DomainError
 
 STATO_ATTIVO = "ATTIVA"
 STATO_PUBBLICATO = "PUBBLICATO"
 
 
 def get_tipo_documento_by_codice(db: Session, codice: str) -> TipoDocumento | None:
-    return db.scalar(select(TipoDocumento).where(TipoDocumento.codice == codice))
+    types = list(db.scalars(select(TipoDocumento).where(TipoDocumento.codice == codice).limit(2)))
+    if len(types) > 1:
+        raise DomainError("SORGENTE_AMBIGUA", "Indicare l'integrazione del tipo documento", status_code=409)
+    return types[0] if types else None
 
 
 def _day_start(value: date) -> datetime:
@@ -30,6 +34,7 @@ def list_published_model_versions(
     db: Session,
     *,
     codice_tipo_documento: str | None = None,
+    tipo_documento_id: UUID | None = None,
     codice_categoria: str | None = None,
     codice_tipologia: str | None = None,
     historical: bool = False,
@@ -60,6 +65,8 @@ def list_published_model_versions(
         stmt = stmt.where(ModelloDocumentoVersione.pubblicato_at <= _day_end(pubblicato_a))
     if codice_tipo_documento:
         stmt = stmt.where(TipoDocumento.codice == codice_tipo_documento)
+    if tipo_documento_id is not None:
+        stmt = stmt.where(TipoDocumento.id == tipo_documento_id)
     if codice_categoria:
         stmt = stmt.where(ModelloDocumento.codice_categoria == codice_categoria)
     if codice_tipologia:

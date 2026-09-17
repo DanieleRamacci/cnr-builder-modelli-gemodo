@@ -6,6 +6,15 @@
 
 ## Summary
 
+Target corrente ADR 0002: admin crea un software integrato con nome, contesto
+JWT e un endpoint singolo. Elenco inizialmente vuoto, nessun GEBAN preinstallato.
+Test contro contratto comune su tutti i tipi restituiti, senza prerequisito
+di definizione/generazione d'esempio US1/US2. Manager accede per permesso nel
+contesto, naviga dati reali e crea modello di test; rendering minimo e UI
+sono pianificati nelle spec owner, non implementati dalla presente decisione.
+Le fondazioni 0010/0011 e il design per tipo sotto descrivono il precedente
+incremento: devono convergere con Phase 12, non autorizzano un flusso parallelo.
+
 Interfaccia di amministrazione con cui un operatore GEMODO definisce un tipo
 documento (tipologie, profili/categorie, campi del contratto dati), genera da
 quella definizione lo schema/esempio JSON che descrive la forma comune che un
@@ -47,7 +56,8 @@ risposte success/error, security scheme Keycloak e note di autorizzazione prima
 che inizino le user story che espongono API.
 
 **Storage**: PostgreSQL. Nuove tabelle: `attributo_profilo`,
-`endpoint_integrazione`, `schema_discovery_generato` (versionato). Riusa
+`endpoint_integrazione`, `schema_discovery_generato` (versionato),
+`definizione_struttura` (revisioni proprietarie) e `audit_evento_configurazione`. Riusa
 `tipo_documento` di `app.catalog.models` (`001`), incluso il campo diretto
 `tipo_documento.codice_contesto` (`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`,
 2026-09-15 — nessuna tabella `ufficio` separata). FR-016 ritira categorie,
@@ -65,8 +75,9 @@ amministrative senza dati/seed GEBAN. Vincoli DB su unicita' per tipo,
 versione positiva, default attributo ammesso, timeout e schema verificato
 appartenente allo stesso tipo. Il guard amministrativo riusa autenticazione
 e ruolo `GEMODO_ADMIN`, senza derivarlo da `GEMODO_MODELLI_GESTORE`.
-Gli endpoint e i servizi US1-US4 non sono ancora implementati; l'URL runtime
-del backend builder resta configurato tramite `GEMODO_DISCOVERY_ENDPOINTS`.
+Stato successivo: US1/US2 backend e lettura dashboard per tipo implementati;
+il nuovo onboarding per software non lo e'. L'URL runtime del backend builder
+resta configurato tramite `GEMODO_DISCOVERY_ENDPOINTS` fino a T082.
 
 **Target Platform**: backend web service, stesso deployment di `001`/`002`
 
@@ -143,7 +154,7 @@ backend/
 │   └── schemas.py                  # DTO condivisi fra adapter
 ├── app/configurazione/
 │   ├── api.py                      # endpoint amministrativi FR-001..FR-009
-│   ├── models.py                   # AttributoProfilo, EndpointIntegrazione, SchemaDiscoveryGenerato
+│   ├── models.py                   # attributi/esempi, endpoint, schema, revisioni definizione, audit
 │   ├── repository.py
 │   ├── service.py                  # generazione schema (FR-006), test di connessione (FR-008)
 │   └── schemas.py
@@ -212,6 +223,69 @@ richiedono conferma; la decisione nel registro non e' ancora chiusa integralment
 Output: [research.md](./research.md)
 
 ## Phase 1: Design & Contracts
+
+### Target ADR 0002 - Phase 12
+
+- Nuovo contratto di design `contracts/integrazioni-api.openapi.yaml` presente
+  per T078, con policy `contracts/integrazioni-policy.md`, da verificare prima
+  di runtime/migration consumer: admin su `/configurazione/integrazioni`,
+  dettaglio/configurazione e verifica per integrazione, viste manager per
+  sorgenti autorizzate e tipi restituiti. Non riusare la lista dei tipi come
+  elenco software e non pubblicare route pianificate come gia' operative.
+- T079: persistenza Integrazione, endpoint 1:1 per software, revisioni test,
+  scope sorgente/tipo, audit integrazione. Preservare UUID/public_id di modelli,
+  versioni, campi, sezioni, generazioni e audit. Nessuna integrazione automatica
+  da legacy/seed/env: eventuale associazione legacy e' esplicita e richiede test.
+  Incremento 0012: registro/audit vuoti e FK ownership nullable con contesto
+  coerente; unico codice globale preservato temporaneamente. Downgrade
+  bloccato con configurazioni/audit, nessuna perdita silenziosa. Incremento
+  successivo: endpoint e namespace scoped con consumer adeguati insieme.
+  Incremento 0013 implementato: nuova tabella endpoint software vuota e
+  namespace scoped; precedente tabella rinominata storico, senza ORM/runtime.
+  Associazione admin esplicita con audit atomico e contesto identico. Consumer
+  legacy rifiutano ambiguita' e catalogo filtra per tipo UUID risolto.
+- T080: lettura dell'intera mappa discovery e validazione di tutti i tipi,
+  cache in memoria per sorgente/revisione. Contratto comune ricorsivo,
+  selezione tipo senza classificazione DB. HAL rimane trasporto, non PER_NODI.
+  Implementato MappaDiscovery in RAM; AdapterHTTP assembla tutte le radici
+  prima di validare/cache. Cache per namespace, scope sorgente/revisione e
+  URL; T081/T082 impostano tale scope dal registro. Nessuna replica DB.
+- T081: servizi/API admin e verifica revision-aware; nessun successo della
+  vecchia URL puo' abilitare configurazioni mutate durante HTTP.
+- T082: sostituire resolver operativo per tipo con sorgente DB verificata;
+  rimuovere il bypass/fallback `GEMODO_DISCOVERY_ENDPOINTS` dal target finale.
+- T083/T084: viste/navigazione manager e test di scope per contesto, sorgente
+  e codici uguali; autorizzazione prima di HTTP. I mapping ruoli restano 006.
+- Prima di accettare URL configurabili, T078/T081 definiscono policy di
+  approvazione destinazioni/SSRF, autenticazione verso sorgente se necessaria,
+  timeout, limiti e gestione errori. Nessuna credenziale in URL/log/esempi.
+
+Design T078: PUT con revisione_attesa, codice/contesto immutabili nel primo
+incremento; un tentativo di verifica attivo per integrazione, prenotazione
+atomica con scadenza senza mantenere transazione DB durante HTTP. Risultato
+superato -> 409 senza connessione. Egress allowlist di deployment vuota per
+default, TLS e protezione DNS rebinding; autenticazione sorgente aggiuntiva
+non supportata nel primo incremento, mai inoltro del token ACE.
+Le route manager restituiscono codici radice e albero per sorgente/tipo,
+non endpoint per livello. Nuove route errori 502/504; mapping esplicito in
+T080 rispetto all'adapter precedente 503. Non pubblicare questo design in
+Swagger operativo prima dell'implementazione. Validazione OpenAPI completa
+passata con riferimenti esterni, sei test contrattuali passati. Compatibilita'
+legacy definita nella policy T078; T079 deve adeguare il contratto admin e
+repository per tipi scoped prima di attivare codici duplicati.
+
+Il contratto amministrativo v0.2 dei tipi/esempi resta il riferimento del
+runtime precedente, non il contratto del nuovo onboarding per software.
+Modificarlo o deprecarlo solo con la relativa migrazione e documentazione.
+
+Ripresa US1/US2 2026-09-17: migration 0011 aggiunge definizioni proprietarie
+versionate in JSON e audit amministrativo distinto dai modelli. Nessun adapter
+puo' scrivere discovery esterni in queste tabelle. Il lock del tipo documento
+serializza revisione/generazione. Le API T021/T029 e la lettura amministrativa
+T045 sono backend, non implementazione dell'interfaccia Angular.
+Si completa il contratto prima del runtime; verifica connessione US3 e
+hash/runner restano fuori da questo incremento. Review esterna rinviata
+esplicitamente dall'utente, senza considerare superato il quality gate.
 
 Output:
 

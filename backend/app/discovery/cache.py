@@ -5,7 +5,7 @@ from threading import Event, RLock
 from time import monotonic
 from typing import Callable
 
-from app.discovery.schemas import CatalogoDiscovery
+from app.discovery.schemas import CatalogoDiscovery, MappaDiscovery
 
 
 class CacheDiscovery:
@@ -18,14 +18,14 @@ class CacheDiscovery:
         self.ttl_seconds = ttl_seconds
         self.max_entries = max_entries
         self.clock = clock
-        self._entries: OrderedDict[tuple[str, str], tuple[float, CatalogoDiscovery]] = OrderedDict()
+        self._entries: OrderedDict[tuple[str, ...], tuple[float, CatalogoDiscovery | MappaDiscovery]] = OrderedDict()
         self._lock = RLock()
-        self._pending: dict[tuple[str, str], Event] = {}
+        self._pending: dict[tuple[str, ...], Event] = {}
 
     def get_or_load(
-        self, key: tuple[str, str], load: Callable[[], CatalogoDiscovery],
+        self, key: tuple[str, ...], load: Callable[[], CatalogoDiscovery | MappaDiscovery],
         force: bool = False,
-    ) -> CatalogoDiscovery:
+    ) -> CatalogoDiscovery | MappaDiscovery:
         # Coalesce navigation fills per key, without locking during HTTP I/O.
         while True:
             with self._lock:

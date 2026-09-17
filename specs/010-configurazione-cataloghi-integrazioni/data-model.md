@@ -1,5 +1,96 @@
 # Data Model - Configurazione Cataloghi E Integrazioni
 
+## Target Confermato - Integrazione Per Software
+
+Persistenza target implementata con 0012/0013; onboarding HTTP, resolver
+registrato e viste manager ancora nei task T081-T084, non gia' operativi.
+MappaDiscovery implementata: cataloghi indicizzati per codice, non vuoti,
+identita' codice coerente e alberi validati tutti prima di cache. Catalogo
+per singolo tipo e' una selezione della stessa mappa; nessuna chiamata per
+livello. Cache copie profonde per namespace/sorgente/revisione/URL, RAM.
+
+ADR 0002 sostituisce l'associazione endpoint/tipo documento delle migration
+0010/0011. Il target non e' ancora il runtime: servono nuove migration e
+contratti, preservando gli identificativi e i dati proprietari esistenti.
+
+### Integrazione
+
+Implementazione T079 in due revisioni: 0012 crea registro vuoto e audit
+integrazione, aggiunge TipoDocumento.integrazione_id nullable con FK composita
+che impone il medesimo codice_contesto. Nessun backfill automatico: modelli e
+tipi esistenti mantengono gli ID e proprieta' non associata. Unicita' globale
+dei codici resta temporaneamente fino all'adeguamento consumer nella seconda
+revisione. Questa fondazione non attiva nuove sorgenti operative.
+Codice_contesto massimo 64 caratteri, coerente con TipoDocumento esistente.
+Seconda revisione 0013 implementata: endpoint per software, namespace scoped e archivio inerte
+degli esiti precedenti; runtime legacy da rimuovere nei task T081/T082.
+Downgrade 0012 ammesso solo se registro e audit sono vuoti e nessun tipo e'
+associato: altrimenti blocco esplicito, non perdita silenziosa di configurazioni
+o audit. Backup prima di qualsiasi migrazione sul DB operativo.
+
+EndpointIntegrazione non ha piu' tipo_documento_id o FK schema d'esempio:
+integrazione_id univoco, timeout 1..10s, revisione/contratto verificati, esito/data
+e prenotazione tentativo_id/scadenza (entrambi presenti o assenti). Per stati
+CONNESSO/ERRORE sono obbligatori i metadati della verifica. Esiti precedenti in
+endpoint_integrazione_storico senza ORM o letture runtime; nessun import nel
+registro. Codici univoci per integrazione; indice univoco per tipi non associati.
+Downgrade 0013 rifiutato se ci sono nuovi endpoint o codici duplicati; altrimenti
+restaura esattamente la tabella precedente. Associazione tramite servizio interno
+amministrativo, esplicita, con contesto uguale e audit atomico, senza trasferire
+un tipo gia' associato a un altro software. Nessun nuovo endpoint HTTP di
+associazione e' esposto in questo incremento.
+
+UUID stabile, codice interno univoco, nome visualizzato, codice_contesto,
+modalita' SINGOLO_ENDPOINT, versione_configurazione positiva e timestamp.
+Creazione solo admin, nessuna riga inserita automaticamente per GEBAN.
+codice_contesto e' la chiave esatta del JWT e non una sorgente di ruoli.
+Con tipi/modelli gia' associati, cambiarlo richiede una migrazione esplicita
+di ownership/permessi, non una rinomina che trasferisce implicitamente l'accesso.
+
+TipoDocumento aggiunge integrazione_id (nullable per storico non associato e
+futuro self-service). I tipi operativi integrati sono identificati da
+integrazione_id + codice esterno; codici uguali in sorgenti diverse sono distinti.
+codice_contesto del tipo deve coincidere con quello della sorgente associata.
+La configurazione minima del tipo necessaria a un modello non equivale a
+importare tutti i tipi/categorie/campi restituiti dal discovery.
+
+### EndpointIntegrazione Target
+
+integrazione_id sostituisce tipo_documento_id: relazione 0..1/1:1 con il
+software. URL configurabile, timeout, stato DEFINITO/CONNESSO/ERRORE,
+data/esito/motivi ultimo test, versione_configurazione_verificata e
+versione_contratto_comune_verificata. Il riferimento a SchemaDiscoveryGenerato
+non e' prerequisito dell'attivazione; gli esempi non determinano la forma comune.
+
+CONNESSO richiede verifica riuscita dell'intera risposta per URL/revisione
+correnti e contratto comune corrente. Il verifier controlla atomicamente
+che la configurazione non sia cambiata durante HTTP; un esito superato non
+sovrascrive lo stato nuovo. URL modificato -> DEFINITO; test fallito -> ERRORE.
+Una modifica ai soli esempi proprietari non disconnette la sorgente target.
+
+### Discovery E Audit Target
+
+La porta viene estesa in T080 per leggere tutti i CatalogoDiscovery della
+sorgente; la selezione di uno specifico tipo rimane un'operazione sul risultato
+in memoria. Cache per sorgente/configurazione, indice temporaneo dei percorsi,
+nessuna tabella catalogo o import automatico delle categorie.
+Il resolver include l'integrazione, mai il solo codice tipo documento.
+
+Audit amministrativo esteso per integrazione anche prima che esista un tipo
+o modello: creazione, modifica URL/configurazione, verifica e relativa revisione.
+Conservare l'audit per tipo esistente senza inventare collegamenti a GEBAN.
+Righe legacy non associate non diventano integrazioni operative attraverso
+seed/env; l'admin esegue un'associazione esplicita seguita da nuova verifica.
+
+Relazioni target:
+
+```text
+Integrazione 1--0..1 EndpointIntegrazione
+Integrazione 1--N TipoDocumento (solo configurazioni necessarie ai modelli)
+TipoDocumento 1--N ModelloDocumento -> versioni/contratti propri
+Integrazione 1--N Audit integrazione
+```
+
 ## Entita' riusate, non ridefinite qui
 
 Riallineamento FR-016 del 2026-09-17: le entita' di classificazione elencate
@@ -67,12 +158,39 @@ documento integrato.
 
 ## Entities
 
-### AttributoProfilo *(nuova, FR-003)*
+### DefinizioneStruttura (design US1/US2, 2026-09-17)
+
+Configurazione proprietaria per documentazione, mai risposta scaricata da GEBAN.
+Ogni salvataggio crea una revisione: UUID, tipo_documento_id, versione positiva,
+contenuto JSON object (tipologie, profili, combinazioni, campi), created_at.
+Unicita' tipo/versione. Le revisioni precedenti non vengono sovrascritte;
+gli attributi nella tabella AttributoProfilo rappresentano la sola revisione
+corrente, mentre il JSON storico conserva la definizione completa originale.
+Una definizione puo' essere incompleta; solo una definizione completa puo'
+generare lo schema/esempio. Codici univoci, combinazioni e riferimenti attributo
+sono validati prima del salvataggio. Il servizio serializza gli aggiornamenti
+con lock sul TipoDocumento, senza usare il catalogo esterno.
+
+SchemaDiscoveryGenerato aggiunge definizione_struttura_id (nullable solo per
+compatibilita' con la fondazione 0010); le nuove generazioni valorizzano sempre
+il riferimento. Il runtime precedente azzera l'abilitazione dell'endpoint
+quando cambia la definizione. Questo comportamento e' legacy: nel target ADR
+0002 un esempio illustrativo modificato non disconnette l'integrazione; T081
+deve rimuovere il collegamento, preservando versioni/schemi/modelli passati.
+
+### AuditEventoConfigurazione (design 2026-09-17)
+
+UUID, tipo_documento_id, tipo_evento, soggetto_id, client_id, payload_minimo JSON,
+created_at. Non richiede un modello esistente. Registra revisioni/id/versioni
+senza copiare URL, credenziali o il contenuto della definizione nell'audit.
+La scrittura audit e' nella stessa transazione della relativa operazione.
+
+### AttributoProfilo *(configurazione d'esempio, FR-003)*
 
 Fondazione implementata dalla migration 0010. Questa tabella conserva solo
 attributi dell'esempio/definizione GEMODO; nessun adapter HTTP vi scrive dati
-ricevuti da GEBAN. Il repository US1 resta sospeso finche' il design della
-definizione proprietaria completa non e' riallineato.
+ricevuti da GEBAN. Il repository US1 e' implementato per le revisioni
+proprietarie; non e' usato per popolare il catalogo esterno.
 
 Attributo aggiuntivo opzionale su un profilo/categoria, i cui valori ammessi e
 default variano per profilo — generalizza il caso "livello" osservato su
@@ -97,10 +215,10 @@ Validation:
 - `valori_ammessi` non vuoto se l'attributo e' referenziato da un campo
   obbligatorio (vedi `ModelloCampoRichiesto.validazione` sotto).
 
-### EndpointIntegrazione *(nuova, FR-008/FR-009)*
+### EndpointIntegrazione Legacy *(migration 0010, superata da ADR 0002)*
 
-Endpoint di discovery registrato per un tipo documento integrato. Assente per
-un tipo documento self-service (FR-010).
+Schema presente nelle fondazioni 0010/0011, non target del nuovo onboarding.
+Le regole per tipo/schema generato sotto sono storiche e da migrare con T079.
 
 Fields:
 
@@ -219,7 +337,7 @@ Un attributo profilo non rende implicitamente vincolato un campo senza regola
 esplicita: il collegamento del campo `livello` alle opzioni va documentato nel
 profilo di integrazione. Nessuna correzione automatica dei codici `*_em`.
 
-## Relationships
+## Relationships Legacy (0010/0011, Non Target ADR 0002)
 
 ```text
 TipoDocumento 1--1 EndpointIntegrazione (0..1, solo se integrato)
@@ -229,7 +347,7 @@ EndpointIntegrazione N--1 SchemaDiscoveryGenerato (schema_discovery_generato_id_
 ModelloCampoRichiesto N--1 AttributoProfilo (tramite validazione.fonte_opzioni, risolto per codice non per FK rigida)
 ```
 
-## State Transitions - EndpointIntegrazione
+## State Transitions Legacy - EndpointIntegrazione
 
 ```text
 (nessuna riga) -> DEFINITO   [registrazione URL, FR-008]
@@ -245,5 +363,4 @@ Rules:
 - solo `CONNESSO` rende il tipo documento utilizzabile per creare modelli
   (FR-009); questa regola e' enforced dalla porta di discovery, non da un
   controllo duplicato nel builder.
-- un tipo documento self-service e' sempre utilizzabile subito dopo User
-  Story 1 (SC-003), non entra mai in questo stato-macchina.
+- la sorgente self-service rimane rinviata, non si deduce dalla mancanza di endpoint.

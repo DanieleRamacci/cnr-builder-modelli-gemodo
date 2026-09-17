@@ -10,6 +10,23 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 ## Spec Inventory
 
+Decisione MVP corrente:
+
+T079/T080 implementati: migration 0012/0013 per registro software, audit,
+endpoint software e namespace scoped; archivio precedente inerte, senza ORM.
+Associazione legacy esplicita/auditata, codici ambigui rifiutati. AdapterHTTP
+valida e mette in cache RAM tutta la mappa multi-tipo per sorgente/revisione.
+Nuova API onboarding e resolver registrato restano T081-T084, non operativi.
+Test solo su PostgreSQL temporaneo e server HTTP locale.
+
+[ADR 0002](adr/0002-integrazioni-contesti-modelli-test.md) e
+[flusso e owner](../specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md).
+Integrazioni software create manualmente, contesto JWT e singolo endpoint
+multi-tipo; manager naviga discovery autorizzato e crea modello di test,
+PDF semplice non ufficiale senza editor visuale. Target ancora da sviluppare
+nei task Phase 12 della 010 e nelle spec owner: la descrizione runtime sotto
+non implica che registro software, frontend o PDF siano gia' disponibili.
+
 Aggiornamento corrente 2026-09-17, prevalente sulle evidenze storiche della
 tabella: feature attiva 010, FR-016/T061-T066 dismettono il catalogo esterno
 locale. AdapterLocale e API di classificazione eliminati; migration 0009
@@ -24,12 +41,14 @@ Il frontend builder non e' ancora implementato. Decisione confermata
 da pianificare nella spec 007; Swagger/ReDoc e pagina di test sono strumenti
 di documentazione API, non l'interfaccia del builder.
 
-Ripresa fondazioni amministrative 010: migration 0010 e ORM per esempi,
-schemi versionati ed endpoint, guard `GEMODO_ADMIN`, senza catalogo esterno
-persistente. Nessun endpoint amministrativo implementato. Test mirati: 8
-passati; suite non-e2e 214 passati, 12 e2e esclusi, nessuno saltato.
-Quality gate del nuovo incremento in attesa dell'autorizzazione
-all'invio a Claude. Dettagli: `specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md`.
+Ripresa backend amministrativo 010: migration 0010/0011 per esempi,
+revisioni, schemi, endpoint e audit; API di definizione, generazione/export
+e lettura dashboard con `GEMODO_ADMIN`, senza catalogo esterno persistente.
+Swagger/ReDoc: `/docs/configurazione-cataloghi`, `/redoc/configurazione-cataloghi`.
+Suite finale non-e2e: 221 passati, 12 e2e esclusi, nessuno saltato; 15 mirati.
+Registrazione/verifica endpoint US3 e risoluzione live dei riferimenti attributo
+restano aperte. Review esterna e hash/runner rinviati dall'utente; quality gate
+non superato per questi incrementi. Dettagli: `specs/010-configurazione-cataloghi-integrazioni/definizione-export.md`.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|

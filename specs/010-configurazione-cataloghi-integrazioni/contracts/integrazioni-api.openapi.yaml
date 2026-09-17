@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: GEMODO - Registro Software E Discovery Autorizzato
+  version: 0.1.0
+  description: >
+    Contratto di design T078, non ancora implementato o pubblicato dal backend.
+    Registro inizialmente vuoto, senza seed GEBAN. Un software ha un contesto
+    JWT e un singolo endpoint che puo' restituire piu' tipi documento.
+    La verifica usa la forma comune, non gli esempi amministrativi.
+    Policy operativa e scenari in integrazioni-policy.md.
+servers:
+  - url: /api/v1
+security:
+  - KeycloakBearer: []
+x-implementation-status: planned
+paths:
+  /configurazione/integrazioni:
+    get:
+      operationId: listIntegrazioniAdmin
+      summary: Elenco integrazioni registrate
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Array vuoto se nessuna integrazione registrata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IntegrazioneAdmin'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      operationId: createIntegrazione
+      summary: Registra software senza connessione automatica
+      x-required-role: GEMODO_ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IntegrazioneCreate'}
+            example: {codice: GEBAN, nome: GEBAN, codice_contesto: geban}
+      responses:
+        '201':
+          description: Creata in DEFINITO, revisione 1
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntegrazioneAdmin'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/InvalidInput'}
+  /configurazione/integrazioni/{integrazioneId}:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+    get:
+      operationId: getIntegrazioneAdmin
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Configurazione ed esito corrente
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntegrazioneAdmin'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      operationId: configureIntegrazione
+      summary: Configura URL e nome; controllo ottimistico revisione
+      description: >
+        Codice e contesto sono immutabili in questo incremento. Cambio URL o
+        timeout incrementa revisione e richiede verifica; cambio solo nome
+        incrementa revisione ma conserva la verifica della configurazione HTTP.
+      x-required-role: GEMODO_ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IntegrazioneUpdate'}
+      responses:
+        '200':
+          description: Configurazione salvata con audit atomico
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntegrazioneAdmin'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/InvalidInput'}
+  /configurazione/integrazioni/{integrazioneId}/verifica:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+    post:
+      operationId: verifyIntegrazione
+      summary: Verifica sincrona dell'intera mappa discovery
+      x-required-role: GEMODO_ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [revisione_attesa]
+              properties:
+                revisione_attesa: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: >
+            Test terminato e registrato; verificare stato CONNESSO oppure ERRORE.
+            HTTP 200 non significa automaticamente discovery conforme.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntegrazioneAdmin'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/InvalidInput'}
+  /builder/integrazioni:
+    get:
+      operationId: listIntegrazioniManager
+      description: >
+        Solo CONNESSE autorizzate per lettura nel singolo contesto. Nessun URL,
+        errore tecnico o configurazione admin. Permessi secondo spec 006.
+      responses:
+        '200':
+          description: Integrazioni visibili, eventualmente array vuoto
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/IntegrazioneVisibile'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /builder/integrazioni/{integrazioneId}/tipi-documento:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+    get:
+      operationId: listTipiDocumentoLive
+      description: Autorizzazione nel contesto prima di HTTP; nessun import DB.
+      responses:
+        '200':
+          description: Codici delle radici della mappa discovery corrente
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string, minLength: 1}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
+  /builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+      - name: codice
+        in: path
+        required: true
+        schema: {type: string, minLength: 1}
+    get:
+      operationId: getStrutturaLivePerIntegrazione
+      description: >
+        Albero ricorsivo del tipo richiesto. Il frontend naviga figli fino ai
+        campi senza endpoint per livello. Nessun URL sorgente esposto.
+      responses:
+        '200':
+          description: Struttura del tipo nel contesto autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: './geban-discovery-endpoint.openapi.yaml#/components/schemas/StrutturaTipoDocumento'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
+components:
+  securitySchemes:
+    KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    IntegrazioneId:
+      name: integrazioneId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  schemas:
+    IntegrazioneCreate:
+      type: object
+      additionalProperties: false
+      required: [codice, nome, codice_contesto]
+      properties:
+        codice: {type: string, minLength: 1, maxLength: 100}
+        nome: {type: string, minLength: 1, maxLength: 200}
+        codice_contesto:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Chiave esatta contexts del JWT, senza normalizzazione implicita
+    IntegrazioneUpdate:
+      type: object
+      additionalProperties: false
+      required: [revisione_attesa, nome, url, timeout_ms]
+      properties:
+        revisione_attesa: {type: integer, minimum: 1}
+        nome: {type: string, minLength: 1, maxLength: 200}
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: HTTPS approvato, senza credenziali o fragment; null rimuove endpoint
+        timeout_ms: {type: integer, minimum: 1000, maximum: 10000, default: 5000}
+    IntegrazioneVisibile:
+      type: object
+      additionalProperties: false
+      required: [id, codice, nome, codice_contesto]
+      properties:
+        id: {type: string, format: uuid}
+        codice: {type: string}
+        nome: {type: string}
+        codice_contesto: {type: string}
+      example:
+        id: 00000000-0000-4000-8000-000000000001
+        codice: SOFTWARE_DEMO
+        nome: Software demo
+        codice_contesto: demo
+    IntegrazioneAdmin:
+      type: object
+      additionalProperties: false
+      required: [id, codice, nome, codice_contesto, modalita, revisione, url, timeout_ms, stato, ultima_verifica]
+      properties:
+        id: {type: string, format: uuid}
+        codice: {type: string}
+        nome: {type: string}
+        codice_contesto: {type: string}
+        modalita: {type: string, enum: [SINGOLO_ENDPOINT]}
+        revisione: {type: integer, minimum: 1}
+        url: {type: string, nullable: true, format: uri}
+        timeout_ms: {type: integer, minimum: 1000, maximum: 10000}
+        stato: {type: string, enum: [DEFINITO, CONNESSO, ERRORE]}
+        ultima_verifica:
+          type: object
+          nullable: true
+          additionalProperties: false
+          required: [data, revisione, versione_contratto, esito, errori]
+          properties:
+            data: {type: string, format: date-time}
+            revisione: {type: integer, minimum: 1}
+            versione_contratto: {type: string}
+            esito: {type: string, enum: [CONFORME, NON_CONFORME, NON_RAGGIUNGIBILE]}
+            errori:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [codice, messaggio]
+                properties:
+                  codice: {type: string}
+                  messaggio: {type: string}
+                  percorso: {type: string}
+      example:
+        id: 00000000-0000-4000-8000-000000000001
+        codice: SOFTWARE_DEMO
+        nome: Software demo
+        codice_contesto: demo
+        modalita: SINGOLO_ENDPOINT
+        revisione: 1
+        url: null
+        timeout_ms: 5000
+        stato: DEFINITO
+        ultima_verifica: null
+    Errore:
+      type: object
+      additionalProperties: false
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+  responses:
+    Unauthorized:
+      description: JWT assente o non valido
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: ACCESSO_NON_AUTENTICATO, messaggio: Autenticazione richiesta}
+    Forbidden:
+      description: Operazione non autorizzata
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: ACCESSO_NON_AUTORIZZATO, messaggio: Operazione non autorizzata}
+    NotFound:
+      description: Risorsa inesistente o non visibile; risposta indistinguibile
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: RISORSA_NON_TROVATA, messaggio: Risorsa non disponibile}
+    Conflict:
+      description: Revisione superata, codice duplicato, test in corso o integrazione non connessa
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            revisione:
+              value: {codice: REVISIONE_SUPERATA, messaggio: Rileggere la configurazione corrente}
+            codiceDuplicato:
+              value: {codice: INTEGRAZIONE_DUPLICATA, messaggio: Codice integrazione gia' registrato}
+            verificaInCorso:
+              value: {codice: VERIFICA_IN_CORSO, messaggio: Verifica gia' avviata}
+            nonConnessa:
+              value: {codice: INTEGRAZIONE_NON_CONNESSA, messaggio: Integrazione non connessa}
+    InvalidInput:
+      description: Input invalido, URL non approvato o endpoint assente per verifica
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            input:
+              value: {codice: CONFIGURAZIONE_NON_VALIDA, messaggio: Configurazione non valida}
+            url:
+              value: {codice: DESTINAZIONE_NON_APPROVATA, messaggio: Destinazione non approvata}
+    SourceError:
+      description: Discovery non raggiungibile o non conforme; non restituisce elenco vuoto
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            trasporto:
+              value: {codice: DISCOVERY_NON_DISPONIBILE, messaggio: Discovery non disponibile}
+            struttura:
+              value: {codice: DISCOVERY_NON_CONFORME, messaggio: Discovery non conforme}
+    SourceTimeout:
+      description: Budget discovery scaduto
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: DISCOVERY_TIMEOUT, messaggio: Tempo disponibile per discovery scaduto}

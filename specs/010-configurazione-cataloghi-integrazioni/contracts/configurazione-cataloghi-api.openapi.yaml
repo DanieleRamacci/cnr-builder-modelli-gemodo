@@ -1,16 +1,21 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.2.0
+  version: 0.3.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
-    documentazione di discovery da consegnare agli integratori, registrare
-    endpoint esterni e verificarne la conformita' strutturale. Questo contratto
+    documentazione di discovery da consegnare agli integratori. Questo contratto
     descrive le API amministrative di GEMODO; non e' l'endpoint che il sistema
-    esterno deve implementare. Le API sono pianificate, non ancora esposte
-    nel runtime. Le strutture salvate sono esempi proprietari di documentazione,
+    esterno deve implementare. Registrazione e verifica per software sono
+    pianificate nel contratto separato integrazioni-api.openapi.yaml;
+    definizione e generazione/export documentazione sono l'incremento US1/US2.
+    Le strutture salvate sono esempi proprietari di documentazione,
     mai una copia del catalogo esterno. La verifica accetta valori differenti
     dagli esempi e valida soltanto la forma comune del discovery.
+    Registrazione/verifica endpoint per tipo sono ritirate, mai implementate.
+    Route storiche dal solo codice rifiutano SORGENTE_AMBIGUA (409) quando
+    esistono piu' tipi con lo stesso codice, invece di sceglierne uno.
+    Modifiche dell'esempio non disconnettono il software associato.
 servers:
   - url: /api/v1
 security:
@@ -79,6 +84,7 @@ paths:
           $ref: "#/components/responses/Conflict"
   /configurazione/tipi-documento/{codice}/struttura:
     put:
+      description: Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna modifica
       tags: [ConfigurazioneCataloghi]
       summary: Definisce o aggiorna la struttura catalogo di un tipo documento
       operationId: updateStrutturaTipoDocumento
@@ -131,8 +137,11 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/AmbiguousSource"
   /configurazione/tipi-documento/{codice}/schema-discovery:
     post:
+      description: Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna generazione
       tags: [ConfigurazioneCataloghi]
       summary: Genera una nuova versione dello schema/example di discovery
       operationId: generateSchemaDiscovery
@@ -154,8 +163,11 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/AmbiguousSource"
   /configurazione/tipi-documento/{codice}/schema-discovery/{versione}:
     get:
+      description: Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessun export
       tags: [ConfigurazioneCataloghi]
       summary: Esporta una versione dello schema/example di discovery
       operationId: getSchemaDiscovery
@@ -181,8 +193,13 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/AmbiguousSource"
   /configurazione/tipi-documento/{codice}/endpoint-integrazione:
     post:
+      deprecated: true
+      x-implementation-status: withdrawn
+      description: Disegno storico ritirato, non operativo; nuovo contratto integrazioni-api.openapi.yaml
       tags: [ConfigurazioneCataloghi]
       summary: Registra l'endpoint esterno e avvia la verifica strutturale
       operationId: registerEndpointIntegrazione
@@ -221,6 +238,9 @@ paths:
           $ref: "#/components/responses/DiscoveryNonDisponibile"
   /configurazione/tipi-documento/{codice}/endpoint-integrazione/verifica:
     post:
+      deprecated: true
+      x-implementation-status: withdrawn
+      description: Disegno storico ritirato, non operativo; verifica per software nel nuovo contratto
       tags: [ConfigurazioneCataloghi]
       summary: Ripete il test di connessione sull'endpoint registrato
       operationId: verifyEndpointIntegrazione
@@ -300,6 +320,15 @@ components:
           example:
             codice: TIPO_DOCUMENTO_ALREADY_EXISTS
             messaggio: Tipo documento gia' configurato
+    AmbiguousSource:
+      description: Codice tipo presente in piu' integrazioni; nessuna selezione automatica
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            codice: SORGENTE_AMBIGUA
+            messaggio: Indicare l'integrazione del tipo documento
     ValidationError:
       description: Payload non valido o definizione incompleta
       content:
@@ -330,14 +359,21 @@ components:
   schemas:
     TipoDocumentoCreate:
       type: object
+      additionalProperties: false
       required: [codice, nome, codice_contesto]
       properties:
         codice:
           type: string
+          minLength: 1
+          maxLength: 64
         nome:
           type: string
+          minLength: 1
+          maxLength: 255
         codice_contesto:
           type: string
+          minLength: 1
+          maxLength: 64
         struttura:
           $ref: "#/components/schemas/StrutturaTipoDocumento"
     TipoDocumentoDashboard:
@@ -356,6 +392,17 @@ components:
         versione_schema_corrente:
           type: integer
           nullable: true
+        versione_definizione:
+          type: integer
+          nullable: true
+        esito_ultimo_test:
+          type: object
+          nullable: true
+          additionalProperties: true
+        data_ultimo_test:
+          type: string
+          format: date-time
+          nullable: true
       example:
         codice: DOCUMENTO_DEMO
         nome: Documento demo
@@ -364,7 +411,14 @@ components:
         versione_schema_corrente: null
     StrutturaTipoDocumento:
       type: object
-      required: [tipologie, profili, combinazioni, campi]
+      additionalProperties: false
+      description: >
+        Definizione d'esempio proprietaria versionata. Liste omesse equivalgono
+        a liste vuote e producono una definizione incompleta. Codici univoci,
+        combinazioni riferite a tipologie/profili esistenti. La generazione
+        richiede almeno un elemento per lista e una combinazione per ogni
+        tipologia/profilo. Le opzioni dei campi dipendenti sono ereditate dal
+        profilo; non aggiungere enum/default propri a quei campi.
       properties:
         tipologie:
           type: array
@@ -384,6 +438,7 @@ components:
             $ref: "#/components/schemas/CampoContrattoDatiInput"
     TipologiaInput:
       type: object
+      additionalProperties: false
       required: [codice, descrizione]
       properties:
         codice:
@@ -395,6 +450,7 @@ components:
           nullable: true
     ProfiloInput:
       type: object
+      additionalProperties: false
       required: [codice, descrizione]
       properties:
         codice:
@@ -407,6 +463,8 @@ components:
             $ref: "#/components/schemas/AttributoProfiloInput"
     AttributoProfiloInput:
       type: object
+      additionalProperties: false
+      description: Valori string univoci; default incluso nelle opzioni; opzioni non vuote per campi obbligatori dipendenti
       required: [nome, valori_ammessi]
       properties:
         nome:
@@ -420,6 +478,7 @@ components:
           nullable: true
     CombinazioneInput:
       type: object
+      additionalProperties: false
       required: [codice_tipologia, codice_profilo]
       properties:
         codice_tipologia:
@@ -428,6 +487,7 @@ components:
           type: string
     CampoContrattoDatiInput:
       type: object
+      additionalProperties: false
       required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
       properties:
         codice:
@@ -455,6 +515,7 @@ components:
         dipende_da_attributo_profilo:
           type: string
           nullable: true
+          description: Nome di attributo presente in ogni profilo; in questo incremento supportato su campi string
     SchemaDiscoveryGenerato:
       type: object
       required: [codice_tipo_documento, versione, generato_il, schema]

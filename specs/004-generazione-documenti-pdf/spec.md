@@ -10,6 +10,17 @@
 
 ## Clarifications
 
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Prima consegna: PDF funzionale non ufficiale riconoscibile come TEST con
+titolo, etichette e valori nell'ordine della versione. Non e' un bando impaginato.
+Valori da richiesta validata, mai dal discovery; nessun bypass di pubblicazione,
+autorizzazione, placeholder, audit o storage della 005.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-06-22
 
 - Q: Stiamo creando la spec da zero? -> A: No. La spec esiste gia' come draft di copertura; questa sessione la integra con decisioni e vincoli emersi da catalogo/contratto dati, sezioni/placeholder, storage/idempotenza e sicurezza/audit.
@@ -133,6 +144,12 @@ errore di rendering non producono PDF ufficiale e restituiscono motivazione funz
 - **FR-016**: La generazione ufficiale richiesta tramite AI/MCP MUST rispettare validazione deterministica, autorizzazione, conferma esplicita e audit prima di produrre un documento ufficiale.
 - **FR-017**: Nel perimetro corrente il formato operativo supportato e' PDF; richieste di formati non supportati MUST essere rifiutate con errore funzionale.
 - **FR-018**: Il salvataggio del file, lo stato consultabile, il download e la gestione dei retry MUST seguire la spec storage/idempotenza e non sostituire i requisiti di questa feature.
+
+- **FR-019**: Il PDF di test MUST rendere titolo, etichette e valori validati
+  nell'ordine configurato tramite le sezioni minime versionate della 003;
+  contenuto e metadati MUST identificarlo come test non ufficiale.
+- **FR-020**: Il test MUST richiedere una versione pubblicata e i permessi di
+  generazione applicabili; payload invalido MUST NOT produrre PDF.
 
 ### Key Entities
 

@@ -1,5 +1,32 @@
 # Research - Configurazione Cataloghi E Integrazioni
 
+## Aggiornamento Corrente 2026-09-17
+
+Design T078: contratto separato per registro software e viste manager;
+codice/contesto immutabili evitano trasferimenti impliciti di proprieta'.
+Verifica sincrona con revisione e tentativo esclusivo a scadenza evita esiti
+superati senza lock DB mantenuto durante HTTP. Allowlist egress di deployment
+distinta dalla registrazione admin: creare un software non autorizza arbitrary
+HTTP. Nessun inoltro token ACE; sorgenti con credenziali aggiuntive rinviate.
+Alternativa scartata: attivazione basata su esempio per tipo o successo della
+vecchia URL, incompatibile con ADR 0002. Policy e limiti nel contratto T078.
+
+ADR 0002 prevale sul precedente design per tipo: registro software vuoto,
+contesto configurato e singolo endpoint con piu' tipi documento. Forma comune
+versionata, non esempio generato, governa la verifica. Phase 12 T078-T084 deve
+definire contratto, migrazione e nuovo runtime. Le decisioni storiche sotto
+non autorizzano fallback locali o onboarding GEBAN automatico.
+
+FR-016 e il data-model corrente prevalgono sui riferimenti storici ad
+AdapterLocale e tabelle esterne nelle decisioni del 2026-09-15 sotto.
+L'unico adapter runtime integrato e' HTTP con cache in memoria.
+US1/US2 riprese con definizioni d'esempio proprietarie versionate in JSON,
+schema generato collegato alla revisione e audit amministrativo (0011).
+Nessun discovery esterno viene persistito come definizione d'esempio.
+Connessione US3 e risoluzione live dei riferimenti attributo restano da fare;
+self-service, hash/runner e soglie sono rinviati. La review esterna e' rinviata
+su richiesta dell'utente, senza derogare al quality gate di completamento.
+
 Nessun "NEEDS CLARIFICATION" residuo nel Technical Context del `plan.md`: le
 scelte tecniche riusano stack e convenzioni gia' validate da `001`/`002`. Questo
 documento registra le decisioni di design specifiche di questa spec, emerse

@@ -23,6 +23,7 @@ abbiano un solo punto da cui partire.
 
 | Contratto | Spec owner | API scope | Stato |
 |---|---|---|---|
+| [`configurazione-cataloghi-api.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/configurazione-cataloghi-api.openapi.yaml) | `010` | Amministrazione integrazioni | US1/US2 e lettura dashboard implementate; connessione/verifica US3 pianificate; `/docs/configurazione-cataloghi`, `/redoc/configurazione-cataloghi` |
 | [`builder-discovery-api.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/builder-discovery-api.openapi.yaml) | `010` FR-016 | Builder, discovery ricorsiva, creazione modello/versione | Implementato; `/docs/builder-discovery`, `/redoc/builder-discovery` |
 | [`geban-catalog-api.openapi.yaml`](../../specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml) | `001-catalogo-contratto-geban` | GEBAN (catalogo, campi, validazione) | Implementato |
 | [`geban-discovery-endpoint.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml) | `010-configurazione-cataloghi-integrazioni` | **Non un'API GEMODO** — contratto che il sistema esterno GEBAN deve implementare (endpoint di discovery per `BANDO_CONCORSO`) | Consegnato al team GEBAN come riferimento (2026-09-15); combinazioni tipologia-profilo e meccanismo esatto del campo `livello` ancora da confermare con loro |

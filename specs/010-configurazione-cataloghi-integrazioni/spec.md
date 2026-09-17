@@ -16,6 +16,27 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-17: integrazione per software e MVP senza editor
+
+- Q: Da dove nasce la voce GEBAN nell'admin? -> A: Da una creazione esplicita
+  dell'admin; l'elenco integrazioni parte vuoto. Nessun seed, token o URL
+  configurato crea automaticamente un'integrazione operativa.
+- Q: Cosa registra l'admin? -> A: Nome, codice stabile, contesto esatto del JWT
+  e un singolo endpoint discovery per software. L'integrazione e' distinta
+  dai tipi documento; un endpoint puo' restituire piu' tipi nel suo contesto.
+- Q: Qual e' il prerequisito della verifica? -> A: La configurazione dell'URL
+  e la forma comune versionata, non una definizione d'esempio per ciascun tipo.
+  La verifica valida tutti i tipi/nodi/campi restituiti, senza imporre valori
+  o numero di livelli degli esempi. Multi-endpoint PER_NODI e' rinviato.
+- Q: Chi crea il modello? -> A: Un manager con permesso nel contesto target;
+  se autorizzato in due contesti li vede entrambi. Naviga il discovery reale
+  fino alla foglia e crea una BOZZA di test, senza editor visuale. PDF minimo
+  non ufficiale dopo il normale workflow; owner 001/002/003/004/005/007.
+
+Decisione canonica: [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Sostituisce il design dell'endpoint per tipo documento. US1/US2 restano strumenti
+facoltativi di documentazione, non prerequisiti dell'onboarding del software.
+
 ### Session 2026-09-17: dismissione del catalogo esterno locale
 
 Il catalogo delle categorie/tipologie/combinazioni GEBAN non viene persistito
@@ -97,7 +118,7 @@ dal catalogo GEBAN; non giustificano un fallback per un'integrazione non conness
 
 ## User Scenarios & Testing *(mandatory)*
 
-### Decisione 2026-09-17: verifica autonoma delle variazioni GEBAN
+### Decisione 2026-09-17: verifica autonoma delle variazioni GEBAN (rinviata nel MVP)
 
 GEBAN espone il discovery completo su
 `https://geban-service.test.si.cnr.it/api/v1/gemodo/discovery`.
@@ -136,8 +157,8 @@ dati, cosi' da avere un'unica sorgente per generare sia la documentazione per un
 integratore esterno sia, in un incremento self-service successivo, una
 definizione proprietaria GEMODO (non il registro globale legacy).
 
-**Why this priority**: senza questo passo nessun altro passo del flusso di
-onboarding (generazione contratto, registrazione endpoint) puo' iniziare.
+**Why this priority**: questo passo abilita la generazione della documentazione
+d'esempio US2. Non blocca creazione/verifica dell'integrazione software US3.
 
 **Independent Test**: un operatore puo' creare un tipo documento con almeno una
 tipologia, un profilo e un campo, e vederlo salvato come "definito" senza che sia
@@ -186,27 +207,27 @@ comune viene accettato dal test di connessione della User Story 3.
 
 ### User Story 3 - Registrare l'endpoint e attivare l'integrazione (Priority: P1)
 
-Come operatore GEMODO, voglio registrare l'URL dell'endpoint fornito dal team
-esterno e verificarne la conformita' allo schema generato, cosi' che il contesto
-documentale diventi "connesso" e disponibile per la creazione di modelli.
+Come admin GEMODO, voglio creare da zero un'integrazione per software, indicare
+nome, codice_contesto e URL discovery singolo e verificarne la forma comune,
+cosi' che i tipi documento restituiti diventino navigabili dai manager autorizzati.
+Non devo prima definire categorie/campi o generare esempi per quei tipi.
 
 **Why this priority**: senza un endpoint registrato e verificato, un tipo
 documento integrato resta definito ma inutilizzabile — evita che un operatore
 inizi a creare modelli contro un'integrazione che non funziona ancora.
 
-**Independent Test**: registrando un endpoint di prova che rispetta la forma
-comune dello schema, anche con valori reali diversi dagli esempi, il tipo
-documento passa a "connesso"; registrando un endpoint che non rispetta la forma
-comune (attributi obbligatori mancanti, tipi dato errati, nodi non validi) o
-irraggiungibile, resta "non connesso" con un errore esplicito.
+**Independent Test**: su un elenco vuoto creare un software demo con contesto e
+URL; verificare una risposta con due tipi documento e nessuna definizione
+d'esempio locale. Entrambi sono disponibili ai manager di quel contesto solo
+dopo CONNESSO. Una risposta non conforme o irraggiungibile produce ERRORE.
 
 **Acceptance Scenarios**:
 
-1. **Given** un tipo documento definito (User Story 1) con contratto generato
-   (User Story 2), **When** l'operatore registra un endpoint e il test di
-   connessione ha successo, **Then** il tipo documento risulta "connesso".
+1. **Given** un'integrazione creata dall'admin con contesto e URL, **When**
+   la verifica della forma comune riesce su tutti i tipi restituiti, **Then**
+   l'integrazione risulta CONNESSO senza richiedere US1/US2.
 2. **Given** un endpoint registrato restituisce una risposta che viola la forma
-   comune del contratto generato, **When** viene testato, **Then** il sistema
+   comune versionata, **When** viene testato, **Then** il sistema
    segnala l'errore e non marca il contesto come connesso.
 3. **Given** un endpoint registrato e' temporaneamente irraggiungibile in fase di
    *creazione modello* (non di sola consultazione), **When** un operatore prova a
@@ -231,13 +252,14 @@ manca prima che un utente possa creare modelli per quel contesto.
 (le User Story 1-3 bastano a rendere un'integrazione funzionante anche senza
 questa vista).
 
-**Independent Test**: la dashboard mostra correttamente lo stato di ogni tipo
-documento configurato (definito / connesso / errore ultima verifica).
+**Independent Test**: la dashboard admin elenca le integrazioni create,
+non i tipi documento dedotti dai seed; mostra nome, contesto, endpoint,
+stato, data ed esito. Su installazione senza configurazioni l'elenco e' vuoto.
 
 **Acceptance Scenarios**:
 
-1. **Given** esistono tipi documento in stati diversi, **When** l'operatore apre
-   la dashboard, **Then** vede per ciascuno lo stato corrente e, se applicabile,
+1. **Given** esistono integrazioni in stati diversi, **When** l'operatore apre
+   la dashboard, **Then** vede per ciascuna lo stato corrente e, se applicabile,
    l'esito dell'ultimo test di connessione.
 
 ### Edge Cases
@@ -249,6 +271,13 @@ documento configurato (definito / connesso / errore ultima verifica).
   fallito) — il contesto resta "non connesso", non entra in uno stato ambiguo.
 - Un tipo documento definito ma mai connesso: deve restare non utilizzabile per la
   creazione di modelli, non generare un errore generico non distinguibile da altri.
+- Due integrazioni espongono lo stesso codice tipo documento: l'identita'
+  include l'integrazione, senza mescolare dati o permessi.
+- Token con ruolo manager in un contesto e solo lettura in un altro: il secondo
+  non abilita creazione modello. L'autorizzazione precede la chiamata HTTP.
+- URL modificato mentre una verifica e' in corso: l'esito della vecchia URL
+  non abilita la configurazione nuova. Una risposta parzialmente conforme
+  (un tipo valido e uno invalido) non abilita l'integrazione intera.
 - Ridefinizione di una struttura (tipologie/profili/campi) per un tipo documento
   gia' connesso e con modelli pubblicati: i modelli esistenti non devono essere
   invalidati silenziosamente (FR-013).
@@ -285,10 +314,9 @@ documento configurato (definito / connesso / errore ultima verifica).
 - **FR-007**: Il sistema MUST permettere di esportare la documentazione generata
   in FR-006 per consegnarla a un team di sviluppo esterno.
 - **FR-008**: Il sistema MUST permettere di registrare l'URL di un endpoint
-  esterno per un tipo documento definito, e di eseguire un test di connessione che
-  verifichi la conformita' strutturale della risposta alla forma comune generata
-  in FR-006 prima di marcare il contesto come connesso; valori reali diversi dagli
-  esempi sono ammessi se rispettano quella forma.
+  esterno sull'integrazione software e verificare l'intera risposta contro la
+  forma comune versionata prima di marcarla CONNESSO. Non sono necessari
+  definizioni o schemi d'esempio locali; valori diversi dagli esempi sono validi.
 - **FR-009**: Un tipo documento integrato senza un endpoint registrato e
   verificato MUST restare non utilizzabile per la creazione di modelli; questo
   stato MUST essere visibile in una dashboard (User Story 4).
@@ -312,12 +340,12 @@ documento configurato (definito / connesso / errore ultima verifica).
   essere versionata: una modifica dopo che il contesto e' gia' connesso e in uso
   MUST NOT invalidare silenziosamente i modelli gia' creati con la struttura
   precedente.
-- **FR-014**: Il sistema MUST conservare sulla versione modello percorso,
+- **FR-014** *(rinviato nel MVP, non requisito del primo PDF di test)*: Il sistema MUST conservare sulla versione modello percorso,
   firma SHA-256 versionata e contratto necessario al confronto dei dati esterni,
   senza una replica persistente del catalogo. Il confronto MUST rilevare nuovi
   campi obbligatori, dipendenze modificate/rimosse e percorsi scomparsi, ignorando
   timestamp variabili e modifiche a rami o campi opzionali non utilizzati.
-- **FR-015**: Il sistema MUST prevedere una verifica periodica con una risposta
+- **FR-015** *(rinviato nel MVP insieme alle soglie)*: Il sistema MUST prevedere una verifica periodica con una risposta
   per integrazione/ciclo, esiti distinti dalla pubblicazione e motivi visibili.
   Un errore esterno MUST risultare non verificabile, mai allineato od obsoleto
   per il solo errore di connessione. Il controllo alla generazione appartiene
@@ -330,11 +358,29 @@ documento configurato (definito / connesso / errore ultima verifica).
   della sorgente integrata e rifiutare una sorgente non configurata, senza seed
   o dati locali di fallback. La ricerca di modelli GEMODO pubblicati resta locale,
   filtrata sui riferimenti del modello, senza ricopiare cataloghi esterni.
+- **FR-017**: Il sistema MUST gestire un'Integrazione distinta dal TipoDocumento,
+  con identificativo stabile, codice univoco, nome, codice_contesto e modalita'
+  SINGOLO_ENDPOINT. Nessun GEBAN preinstallato, dedotto o hardcoded nell'elenco.
+- **FR-018**: codice_contesto MUST corrispondere esattamente alla chiave contexts
+  del JWT. Configurarlo MUST NOT assegnare contesti/ruoli, sostituire mapping
+  della 006 o attribuire permessi attraverso il solo nome del software.
+- **FR-019**: Il discovery MUST identificare tipi/percorso rispetto
+  all'integrazione sorgente, supportare piu' tipi dallo stesso endpoint e
+  mantenerne categorie/campi in memoria, mai importarli come catalogo DB.
+- **FR-020**: Le viste manager MUST filtrare le sorgenti per permesso nel
+  singolo contesto e stato CONNESSO; piu' contesti autorizzati sono cumulabili
+  senza propagare permessi dall'uno all'altro. Il backend verifica lo stesso scope.
+- **FR-021**: La verifica MUST mostrare data/esito/motivi sanificati e la
+  configurazione verificata; nessun successo obsoleto o risposta parzialmente
+  conforme abilita la sorgente. Cambiare URL richiede nuova verifica; cambiare
+  esempi illustrativi non modifica l'esito della forma comune.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Tipo Documento**: configurazione proprietaria GEMODO con `codice_contesto`,
   non replica del catalogo esterno. Nessuna entita' Ufficio separata.
+- **Integrazione**: software sorgente creato dall'admin, con nome, contesto,
+  identificativo e endpoint; non una voce ricavata dal catalogo dei modelli.
 - **Nodi/Campi Discovery**: categorie/tipologie/profili e definizioni di campo
   della risposta esterna, tenuti in memoria; nessuna tabella locale di catalogo.
 - **Modello/Versione/Campo Richiesto**: entita' proprietarie persistenti,
@@ -346,13 +392,13 @@ documento configurato (definito / connesso / errore ultima verifica).
   (nome, valori ammessi, valore di default) — generalizza il caso "livello".
   Referenziato da un Campo Richiesto per rendere le sue opzioni dipendenti dal
   profilo scelto in fase di creazione modello.
-- **Endpoint Di Integrazione** *(nuova)*: URL registrato per un tipo documento
+- **Endpoint Di Integrazione** *(nuova)*: unico URL registrato per software
   integrato, stato (definito / connesso / errore ultima verifica), esito e data
   dell'ultimo test di connessione.
 - **Schema Di Discovery Generato** *(nuova)*: rappresentazione JSON Schema/esempio
   prodotta dalla definizione (FR-006), versionata, usata sia come documentazione
-  per l'integratore sia come riferimento per validare la forma delle risposte
-  reali dell'endpoint registrato (FR-008). Non contiene la lista autoritativa e
+  per l'integratore; il test FR-008 usa direttamente il contratto comune
+  versionato, non richiede questa generazione. Non contiene la lista autoritativa e
   definitiva dei valori operativi: quelli arrivano dall'API integrata.
 
 ## Success Criteria *(mandatory)*
@@ -362,14 +408,20 @@ documento configurato (definito / connesso / errore ultima verifica).
 - **SC-001**: Un operatore puo' definire un nuovo tipo documento completo
   (almeno una tipologia, un profilo, un campo) e ottenere lo schema generato senza
   scrivere codice.
-- **SC-002**: Un endpoint registrato che non rispetta lo schema generato viene
-  segnalato al momento della registrazione (test di connessione), non alla prima
-  chiamata in produzione durante la creazione di un modello.
+- **SC-002**: Un endpoint registrato che non rispetta la forma comune versionata
+  viene segnalato nel test di verifica, prima di consentire la creazione di
+  modelli. Un esempio locale non e' prerequisito ne' autorita' sui valori.
 - **SC-003** *(RINVIATO fuori dall'incremento FR-016)*: Un tipo documento self-service diventa utilizzabile per la
   creazione di modelli subito dopo la definizione (User Story 1), senza dover
   passare per la User Story 3.
 - **SC-004**: Nessun modello pubblicato viene invalidato da una successiva
   modifica alla definizione del suo tipo documento (FR-013).
+- **SC-005**: Senza creazioni admin, la lista integrazioni e' vuota anche con
+  token GEBAN, modelli demo o URL di ambiente presenti.
+- **SC-006**: Un admin puo' verificare una sorgente con almeno due tipi
+  documento senza creare definizioni d'esempio; un tipo non conforme impedisce CONNESSO.
+- **SC-007**: Nei test con due contesti, nessuna lettura/creazione manager
+  autorizzata in un contesto accede a dati o permessi dell'altro senza titolo.
 
 ## Assumptions
 
@@ -379,11 +431,9 @@ documento configurato (definito / connesso / errore ultima verifica).
 - Il primo caso d'uso reale e' GEBAN/`BANDO_CONCORSO`; lo schema di riferimento
   per questo caso e' `docs/adr/0001-esempio-discovery-geban.json` (esempio da
   consegnare al team GEBAN, non ancora un file consumato a runtime).
-- L'interfaccia di questo primo incremento e' una visualizzazione JSON ad albero
-  collassabile/espandibile, scelta esplicita per partire velocemente; puo'
-  evolvere in un'interfaccia piu' guidata (form/matrice) in un secondo tempo senza
-  cambiare lo schema logico sottostante (FR-001..FR-007 restano gli stessi
-  indipendentemente dalla UI che li implementa).
+- La sezione admin integrazioni usa tabella/lista e dettaglio con nome, contesto,
+  URL e risultati verifica. L'albero JSON resta per la documentazione US1/US2,
+  non obbliga l'admin a definire il catalogo reale. Le UI sono owner 007.
 - Fuori scope di questa spec: l'editor visuale del documento/sezioni/placeholder
   (`003`), la generazione PDF (`004`), la gestione granulare di permessi oltre a
   ruolo+contesto (`006`, FR-012 rimanda li' il dettaglio).

@@ -14,6 +14,31 @@ prima dell'implementazione di questo incremento.
 
 ## Clarifications
 
+### Sicurezza API Per Contesto - 2026-09-17
+
+Il controllo generale DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE non basta.
+Ogni richiesta deve essere autorizzata anche rispetto al contesto proprietario
+del modello, ricavato lato server e non dichiarato dal chiamante. Contesto
+utente/payload e external_context_id non concedono accesso. La verifica vale
+anche per contratto dati, validazione e generazione simulata.
+Stato osservato: controllo per contesto nelle scritture builder; enforcement
+nelle API consumatore ancora da implementare. Requisito bloccante per l'uso
+operativo, non certificato dalla precedente suite di test.
+
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Il discovery descrive i campi, non i valori: questi arrivano nella richiesta
+e sono validati contro la versione modello pubblicata. Il ruolo manager non
+attribuisce implicitamente generazione ufficiale. Il contratto corrente
+rifiuta gli extra: nel target gli opzionali sorgente riconosciuti ma non usati
+non vengono stampati, mentre gli sconosciuti sono errori. Il plan e l'OpenAPI
+devono definire riconoscimento e compatibilita' prima del cambio runtime,
+senza replicare il catalogo.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Riallineamento 2026-09-17 - 010 FR-016
 
 Catalogo esterno locale e API di classificazione ritirati nella feature 010;
@@ -557,6 +582,45 @@ risposta distingua i due casi.
   (mai per l'unione di tutti i contesti del token). Questa autorizzazione di scrittura
   (proprieta') resta distinta dall'autorizzazione di lettura/generazione di
   un'Applicazione (FR-025..FR-027), che non implica proprieta'.
+
+- **FR-032**: La validazione MUST richiedere presenza dei campi selezionati dal
+  modello anche se opzionali nel catalogo; un campo selezionato omesso produce
+  errore. Null e stringa vuota seguono i vincoli, non sono automaticamente validi.
+- **FR-033**: La policy MUST distinguere opzionali sorgente riconosciuti ma non
+  usati (non stampati) da sconosciuti (rifiutati). Identificazione e compatibilita'
+  MUST essere pianificate e versionate prima di cambiare il rifiuto corrente.
+
+### Requisiti API Per Contesto
+- **FR-034**: Ricerca catalogo MUST verificare autorizzazione sul contesto della
+  sorgente/tipo richiesto e filtrare prima di conteggio, ordinamento e paginazione.
+  Nessun modello di altri contesti puo' comparire in lista o metadati.
+- **FR-035**: Lettura contratto, validazione e generazione (anche simulata/test)
+  MUST risolvere versione -> modello -> sorgente/contesto lato server e verificare
+  il permesso relativo all'azione in quel contesto. Il solo ID non concede accesso.
+- **FR-036**: Contesto assente, proprieta' non risolvibile o mapping mancante
+  MUST negare accesso senza fallback a geban o ai permessi aggregati. Client e
+  profilo richiedente devono essere attivi e autorizzati al perimetro richiesto.
+- **FR-037**: Accesso fuori contesto MUST essere rifiutato senza dati, contratto,
+  esito dei campi, PDF o effetti di generazione. Per accesso diretto tramite ID,
+  risorsa inesistente e risorsa non visibile MUST avere risposta pubblica
+  indistinguibile (404 sanificato); per perimetro esplicitamente vietato in
+  ricerca, 403 sanificato. Motivo reale solo nell'audit autorizzato.
+- **FR-038**: Autorizzazione MUST precedere validazione dati, stato operativo e
+  rendering. Liste vuote 200 sono ammesse solo per perimetri autorizzati senza
+  corrispondenze; non devono mascherare un controllo omesso.
+
+### Accettazione Sicurezza Per Contesto
+
+1. Token geban autorizzato + modello geban pubblicato: accesso e validazione
+   consentiti; generazione solo con DOCUMENTI_GENERATORE.
+2. Stesso token + ID modello di altro contesto: nessun contratto, validazione
+   dei campi o generazione, anche indovinando ID o falsificando il payload.
+3. Due contesti nel token, permesso di generazione solo nel primo: secondo
+   negato; VIEWER nel secondo permette consultazione, non generazione.
+4. Contesto inesistente/non risolvibile, mapping o client disabilitato: negato.
+5. Ricerca e paginazione non rivelano modelli/conteggi di contesti non autorizzati.
+6. ID fuori contesto e inesistente: risposta pubblica indistinguibile; audit
+   sanificato del rifiuto senza token o payload sensibili.
 
 ### Key Entities *(include if feature involves data)*
 

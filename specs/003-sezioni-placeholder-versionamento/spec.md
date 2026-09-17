@@ -10,6 +10,17 @@
 
 ## Clarifications
 
+### Decisione MVP 2026-09-17 - ADR 0002
+
+L'editor visuale e' rinviato, non la struttura documentale versionata.
+Il modello di test usa GEMODO_DOCUMENT_V1 generato automaticamente con titolo,
+etichette e placeholder nell'ordine configurato: stessa grammatica e
+persistenza delle sezioni, senza template vivo o renderer alternativo.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-06-19
 
 - Q: Quale formato deve usare il contenuto delle sezioni? -> A: Contenuto strutturato controllato: paragrafi, titoli, liste, tabelle semplici, grassetto/corsivo e placeholder; HTML libero escluso.
@@ -149,6 +160,10 @@ placeholder non dichiarati nei campi richiesti.
 - **FR-010**: Il sistema MUST validare la compatibilita' tra tipo blocco e posizionamento, rifiutando layout fuori grammatica controllata.
 - **FR-011**: Il sistema MUST referenziare asset del modello tramite id, versione, storage reference e hash quando disponibile; gli asset non devono essere incorporati come contenuto libero.
 - **FR-012**: Le API interne della `003` MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; letture con `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, scritture e validazioni di pubblicazione con `GEMODO_MODELLI_GESTORE`.
+
+- **FR-013**: La struttura minima automatica MUST essere salvata nella versione
+  e validata con gli stessi controlli su grammatica e placeholder. Modifiche
+  successive MUST NOT alterare sezioni di versioni pubblicate.
 
 ### Key Entities
 

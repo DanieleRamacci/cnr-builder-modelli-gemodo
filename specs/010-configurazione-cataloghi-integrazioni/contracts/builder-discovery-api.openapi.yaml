@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Builder - selezione discovery ricorsiva
-  version: 0.2.0
+  version: 0.3.0
   description: >-
     Sostituisce la proiezione piatta tipologie/campi. Catalogo esterno solo
     in memoria; persistono modelli GEMODO, percorso e contratto per versione.
@@ -50,6 +50,7 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '502': {$ref: '#/components/responses/DiscoveryInvalid'}
         '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+        '409': {$ref: '#/components/responses/AmbiguousSource'}
   /api/v1/builder/modelli:
     post:
       x-required-role: GEMODO_MODELLI_GESTORE
@@ -103,6 +104,7 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '502': {$ref: '#/components/responses/DiscoveryInvalid'}
         '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+        '409': {$ref: '#/components/responses/AmbiguousSource'}
   /api/v1/builder/modelli/{modelloId}/versioni:
     post:
       x-required-role: GEMODO_MODELLI_GESTORE
@@ -150,6 +152,7 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '502': {$ref: '#/components/responses/DiscoveryInvalid'}
         '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+        '409': {$ref: '#/components/responses/AmbiguousSource'}
 components:
   schemas:
     ErrorResponse:
@@ -183,6 +186,12 @@ components:
         stato: {type: string}
         pubblicato_at: {type: [string, 'null'], format: date-time}
   responses:
+    AmbiguousSource:
+      description: Codice tipo ambiguo; nessuna lettura discovery o modifica
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {codice: SORGENTE_AMBIGUA, messaggio: Indicare l'integrazione del tipo documento}
     Unauthorized:
       description: Token assente/non valido.
       content:

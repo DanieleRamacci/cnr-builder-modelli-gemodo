@@ -24,6 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # Each spec adds its own entry here once it has a versioned OpenAPI contract
 # (infra/openapi/README.md keeps the human-readable inventory in sync).
 PUBLISHED_CONTRACTS: dict[str, Path] = {
+    "configurazione-cataloghi": REPO_ROOT
+    / "specs"
+    / "010-configurazione-cataloghi-integrazioni"
+    / "contracts"
+    / "configurazione-cataloghi-api.openapi.yaml",
     "geban-catalog": REPO_ROOT
     / "specs"
     / "001-catalogo-contratto-geban"

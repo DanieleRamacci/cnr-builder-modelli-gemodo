@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from time import monotonic
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urljoin, urlsplit
 
 import httpx
@@ -14,7 +14,7 @@ from app.common.errors import ErrorCode
 
 from app.discovery.cache import CacheDiscovery
 from app.discovery.errors import DiscoveryError, risposta_non_valida
-from app.discovery.schemas import CatalogoDiscovery
+from app.discovery.schemas import CatalogoDiscovery, MappaDiscovery
 
 
 def _origin(url: str) -> tuple[str, str, int]:
@@ -30,12 +30,22 @@ def _reject_constant(value: str) -> None:
     raise ValueError("Costante JSON non valida")
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Chiave JSON duplicata")
+        result[key] = value
+    return result
+
+
 class AdapterHTTP:
     def __init__(
         self, url: str, *, cache: CacheDiscovery | None = None,
         client: httpx.Client | None = None, timeout_seconds: float = 10,
         max_response_bytes: int = 2 * 1024 * 1024, max_pages: int = 64,
         max_depth: int = 64,
+        cache_scope: str | None = None,
     ) -> None:
         self.origin = _origin(url)
         if timeout_seconds <= 0 or max_response_bytes < 1 or max_pages < 1 or max_depth < 1:
@@ -47,25 +57,38 @@ class AdapterHTTP:
         self.max_response_bytes = max_response_bytes
         self.max_pages = max_pages
         self.max_depth = max_depth
+        self.cache_scope = cache_scope if cache_scope is not None else url
 
     def catalogo_discovery(
         self, codice_tipo_documento: str, forza_aggiornamento: bool = False
     ) -> CatalogoDiscovery:
-        return self.cache.get_or_load(
-            (self.url, codice_tipo_documento),
-            lambda: self._fetch(codice_tipo_documento), force=forza_aggiornamento,
-        )
+        try:
+            mappa = self.mappa_discovery(forza_aggiornamento=forza_aggiornamento)
+        except DiscoveryError as exc:
+            if exc.codice == ErrorCode.DISCOVERY_TIMEOUT:
+                raise DiscoveryError(ErrorCode.DISCOVERY_NON_DISPONIBILE,
+                                     "Impossibile contattare il servizio discovery", status_code=503) from None
+            raise
+        catalogo = mappa.cataloghi.get(codice_tipo_documento)
+        if catalogo is None:
+            raise risposta_non_valida()
+        return catalogo
 
-    def _fetch(self, codice: str) -> CatalogoDiscovery:
+    def mappa_discovery(self, forza_aggiornamento: bool = False) -> MappaDiscovery:
+        return cast(MappaDiscovery, self.cache.get_or_load(
+            ("discovery-map", self.cache_scope, self.url), self._fetch, force=forza_aggiornamento,
+        ))
+
+    def _fetch(self) -> MappaDiscovery:
         if self.client is not None:
-            return self._fetch_with_client(self.client, codice)
+            return self._fetch_with_client(self.client)
         with httpx.Client() as client:
-            return self._fetch_with_client(client, codice)
+            return self._fetch_with_client(client)
 
-    def _fetch_with_client(self, client: httpx.Client, codice: str) -> CatalogoDiscovery:
+    def _fetch_with_client(self, client: httpx.Client) -> MappaDiscovery:
         url: str | None = self.url
         seen: set[str] = set()
-        raccolta: dict[str, Any] | None = None
+        raccolta: dict[str, dict[str, Any]] = {}
         deadline = monotonic() + self.timeout_seconds
         total_bytes = 0
         try:
@@ -92,26 +115,33 @@ class AdapterHTTP:
                         if monotonic() > deadline:
                             raise httpx.TimeoutException("Discovery deadline")
                         raw.extend(chunk)
-                page = json.loads(raw, parse_constant=_reject_constant)
+                page = json.loads(raw, parse_constant=_reject_constant, object_pairs_hook=_unique_object)
                 fragments, next_href = self._page(page)
                 for fragment in fragments:
-                    if not isinstance(fragment, dict) or codice not in fragment:
+                    if not isinstance(fragment, dict) or not fragment:
                         raise risposta_non_valida()
-                    struttura = fragment[codice]
-                    if not isinstance(struttura, dict) or not isinstance(struttura.get("nodi"), list):
-                        raise risposta_non_valida()
-                    if raccolta is None:
-                        raccolta = dict(struttura)
-                        raccolta["nodi"] = list(struttura["nodi"])
-                    else:
-                        if raccolta.get("validita") != struttura.get("validita"):
+                    for codice, struttura in fragment.items():
+                        if not isinstance(struttura, dict) or not isinstance(struttura.get("nodi"), list):
                             raise risposta_non_valida()
-                        raccolta["nodi"].extend(struttura["nodi"])
+                        precedente = raccolta.get(codice)
+                        if precedente is None:
+                            raccolta[codice] = {**struttura, "nodi": list(struttura["nodi"])}
+                        else:
+                            if precedente.get("validita") != struttura.get("validita"):
+                                raise risposta_non_valida()
+                            precedente["nodi"].extend(struttura["nodi"])
                 url = urljoin(url, next_href) if next_href is not None else None
-            if raccolta is None:
+            if not raccolta:
                 raise risposta_non_valida()
-            self._check_depth(raccolta["nodi"])
-            return CatalogoDiscovery.model_validate({**raccolta, "codice_tipo_documento": codice})
+            cataloghi = {}
+            for codice, struttura in raccolta.items():
+                self._check_depth(struttura["nodi"])
+                cataloghi[codice] = CatalogoDiscovery.model_validate({**struttura, "codice_tipo_documento": codice})
+            return MappaDiscovery(cataloghi=cataloghi)
+        except httpx.TimeoutException:
+            raise DiscoveryError(
+                ErrorCode.DISCOVERY_TIMEOUT, "Tempo disponibile per discovery scaduto", status_code=504,
+            ) from None
         except httpx.RequestError:
             raise DiscoveryError(
                 ErrorCode.DISCOVERY_NON_DISPONIBILE, "Impossibile contattare il servizio discovery",

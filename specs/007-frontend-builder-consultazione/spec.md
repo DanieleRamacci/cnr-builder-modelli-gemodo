@@ -10,6 +10,19 @@
 
 ## Clarifications
 
+### Decisione MVP 2026-09-17 - ADR 0002
+
+Frontend Angular con Design Angular Kit. Admin: tabella integrazioni
+inizialmente vuota, creazione manuale, nome/contesto/singolo URL, verifica e
+data/esito/errori. Nessun GEBAN preinstallato. Manager: integrazioni connesse
+autorizzate, navigazione ricorsiva fino ai campi, creazione modello di test
+in BOZZA. Editor visuale e composizione manuale FR-011 sono rinviati oltre
+questo MVP: obiettivi successivi, non prerequisiti del PDF semplice.
+Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
+Questo e' il target confermato: non certifica il runtime corrente e non avvia
+l'implementazione di questa spec; la feature attiva resta 010.
+
+
 ### Session 2026-06-22
 
 - Q: Stiamo creando la spec da zero? -> A: No. La spec esiste gia' come draft di copertura; questa sessione la integra con decisioni emerse da builder, sezioni, storage/idempotenza e sicurezza.
@@ -125,7 +138,9 @@ e consultata nei suoi metadati.
 
 ### Functional Requirements
 
-- **FR-001**: L'interfaccia MUST permettere gestione di tipi documento e categorie secondo autorizzazione.
+- **FR-001**: L'interfaccia MUST permettere lettura dei tipi documento e categorie
+  della sorgente autorizzata, non modifica del catalogo esterno. Configurare
+  integrazioni resta riservato all'admin.
 - **FR-002**: L'interfaccia MUST permettere gestione di modelli, versioni, campi e sezioni.
 - **FR-003**: L'interfaccia MUST distinguere bozza, revisione, pubblicazione e archiviazione.
 - **FR-004**: L'interfaccia MUST mostrare errori di validazione del modello prima della pubblicazione.
@@ -145,6 +160,16 @@ e consultata nei suoi metadati.
 - **FR-018**: L'interfaccia MUST mostrare stati vuoti, caricamento, errore funzionale e salvataggio fallito in modo comprensibile per l'utente, senza presentare come completate operazioni non confermate dal servizio.
 - **FR-019**: Le azioni sensibili avviate dall'interfaccia, incluse pubblicazione, archiviazione, consultazione rilevante e download, MUST essere coerenti con gli eventi audit previsti dalla spec sicurezza.
 - **FR-020**: L'interfaccia MUST mantenere separati i percorsi operativi del builder GEMODO dalla consultazione/generazione documenti del flusso GEBAN.
+
+- **FR-021**: L'admin MUST poter creare, elencare e configurare integrazioni
+  con nome, codice_contesto e singolo endpoint, verificare e vedere stato,
+  data e motivi sanificati. Lista vuota MUST NOT essere riempita da seed/token/env.
+- **FR-022**: Il manager MUST poter navigare profondita' variabile fino alla
+  foglia, vedere campi/proprieta' e creare un modello senza editor. Creazione
+  e pubblicazione MUST essere azioni distinte e confermate dal backend.
+- **FR-023**: Visibilita' e azioni MUST rispettare i permessi per ciascun
+  contesto anche con token multicontesto; URL e funzioni amministrative MUST NOT
+  essere esposti al manager privo di autorizzazione amministrativa.
 
 ### Key Entities
 

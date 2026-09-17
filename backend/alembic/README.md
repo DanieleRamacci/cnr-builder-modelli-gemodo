@@ -47,6 +47,27 @@ DATABASE_URL=postgresql+psycopg://gemodo:gemodo@localhost:5432/gemodo uv run ale
 
 ## Regola per nuove migrations
 
+### Registro Software - 0012 (Spec 010)
+
+Revisione successiva 0013: nuovi endpoint per software (nessuna riga importata),
+codici tipo scoped e archivio inerte `endpoint_integrazione_storico` della
+configurazione precedente. Archivio senza ORM o fallback runtime; preserva
+identificativi ed esiti, non un catalogo esterno. Downgrade 0013 rifiutato con
+nuovi endpoint o codici duplicati; senza tali dati restaura lo storico esatto.
+Associazione tipo/software solo esplicita e auditata tramite servizio admin;
+il cambio schema non associa o connette automaticamente nessun software.
+
+Migration additiva: crea `integrazione` e `audit_evento_integrazione` vuoti,
+aggiunge `tipo_documento.integrazione_id` nullable con vincolo sul contesto.
+Non crea GEBAN dai dati esistenti e non cambia UUID/public_id dei modelli.
+Endpoint per software e codici tipo scoped sono l'incremento successivo T079:
+questa revisione da sola non attiva il nuovo onboarding.
+
+Downgrade 0012 bloccato se registro/audit contengono dati o esistono tipi
+associati. Non cancellare audit per forzare un rollback operativo: usare
+backup/procedura di ripristino concordata. Fare backup prima dell'upgrade;
+le verifiche di sviluppo usano solo PostgreSQL temporaneo Testcontainers.
+
 - Ogni migration deve restare tracciabile a una spec owner (vedi tabella sopra o quella
   aggiunta dalla nuova migration).
 - Nessuna migration puo' introdurre dati reali: i dati demo restano seed separati

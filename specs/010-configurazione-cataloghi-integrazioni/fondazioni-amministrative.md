@@ -1,5 +1,10 @@
 # Fondazioni Amministrative - 2026-09-17
 
+Nota storica del primo incremento: il successivo
+[incremento US1/US2](./definizione-export.md) implementa definizione,
+generazione/export e lettura dashboard. Le indicazioni sotto di API non
+implementate descrivono lo stato precedente, non il runtime corrente.
+
 Questo incremento riprende T005-T008 e T014, non implementa l'interfaccia
 Angular o gli endpoint amministrativi US1-US4.
 

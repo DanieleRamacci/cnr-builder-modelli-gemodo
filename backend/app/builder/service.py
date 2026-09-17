@@ -43,6 +43,7 @@ class BuilderService:
         self.discovery = discovery
 
     def _catalogo(self, codice: str, *, aggiornato: bool = False) -> CatalogoDiscovery:
+        self._resolve_tipo_documento(codice)
         porta = self.discovery if self.discovery is not None else discovery_per_tipo(codice)
         return porta.catalogo_discovery(codice, forza_aggiornamento=aggiornato)
 

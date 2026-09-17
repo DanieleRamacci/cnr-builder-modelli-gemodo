@@ -10,10 +10,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.discovery.schemas import CatalogoDiscovery
+from app.discovery.schemas import CatalogoDiscovery, MappaDiscovery
 
 
 class PortaDiscovery(Protocol):
+    def mappa_discovery(self, forza_aggiornamento: bool = False) -> MappaDiscovery: ...
+
     def catalogo_discovery(
         self, codice_tipo_documento: str, forza_aggiornamento: bool = False
     ) -> CatalogoDiscovery: ...

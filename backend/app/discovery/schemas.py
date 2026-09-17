@@ -96,3 +96,15 @@ class CatalogoDiscovery(BaseModel):
             indice[percorso] = nodo
             stack.extend((percorso, figlio) for figlio in nodo.figli or ())
         return indice
+
+
+class MappaDiscovery(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    cataloghi: dict[StrictStr, CatalogoDiscovery] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def verifica_identita(self) -> MappaDiscovery:
+        if any(codice != catalogo.codice_tipo_documento for codice, catalogo in self.cataloghi.items()):
+            raise ValueError("Codici tipo documento incoerenti")
+        return self
