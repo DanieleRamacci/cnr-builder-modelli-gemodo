@@ -19,6 +19,13 @@ Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
 Questo e' il target confermato: non certifica il runtime corrente e non avvia
 l'implementazione di questa spec; la feature attiva resta 010.
 
+### Implementazione 2026-09-17 - FR-019/020 (`plan.md`/`tasks.md`)
+
+Feature attivata per lo scope minimo necessario a 004 (vedi `plan.md`):
+riferimento documentale, stato, download e idempotenza di base via
+`backend/app/storage/`, storage fisico filesystem locale. FR-011 (piena),
+FR-012, FR-013, FR-015 restano non pianificati.
+
 
 ### Session 2026-06-22
 

@@ -19,7 +19,9 @@ from app.catalog.api import router as catalog_router
 from app.common.errors import install_error_handlers
 from app.configurazione.api import router as configurazione_router
 from app.configurazione.api import router_integrazioni as configurazione_integrazioni_router
+from app.generazione.api import router as generazione_router
 from app.quality.openapi_docs import router as openapi_docs_router
+from app.storage.api import router as storage_router
 from app.validation.api import router as validation_router
 
 app = FastAPI(
@@ -38,6 +40,8 @@ app = FastAPI(
 app.include_router(openapi_docs_router)
 app.include_router(catalog_router)
 app.include_router(validation_router)
+app.include_router(generazione_router)
+app.include_router(storage_router)
 app.include_router(builder_router)
 app.include_router(configurazione_router)
 app.include_router(configurazione_integrazioni_router)

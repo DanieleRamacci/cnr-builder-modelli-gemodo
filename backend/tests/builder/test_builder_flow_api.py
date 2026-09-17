@@ -362,7 +362,30 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
 
     generazione = builder_client.post("/api/v1/documenti/genera", json=payload)
     assert generazione.status_code == 200, generazione.text
-    assert generazione.json()["stato"] == "GENERAZIONE_SIMULATA"
+    esito = generazione.json()
+    assert esito["stato"] == "COMPLETATO"
+    riferimento = esito["riferimento_documentale"]
+    assert riferimento
+
+    stato = builder_client.get(f"/api/v1/documenti/{riferimento}")
+    assert stato.status_code == 200, stato.text
+    assert stato.json()["stato"] == "COMPLETATO"
+    assert stato.json()["modello_versione_id"] == modello_versione_id
+
+    download = builder_client.get(f"/api/v1/documenti/{riferimento}/download")
+    assert download.status_code == 200, download.text
+    assert download.headers["content-type"] == "application/pdf"
+    assert download.content.startswith(b"%PDF")
+    assert b"Bando pytest" in download.content
+
+    replay = builder_client.post("/api/v1/documenti/genera", json=payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["riferimento_documentale"] == riferimento
+
+    payload_diverso = {**payload, "dati": {**payload["dati"], "numero_posti": 99}}
+    conflitto = builder_client.post("/api/v1/documenti/genera", json=payload_diverso)
+    assert conflitto.status_code == 409, conflitto.text
+    assert conflitto.json()["codice"] == "RICHIESTA_IDEMPOTENTE_IN_CONFLITTO"
 
 
 @pytest.mark.integration

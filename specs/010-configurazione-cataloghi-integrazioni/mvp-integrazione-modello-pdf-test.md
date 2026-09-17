@@ -28,12 +28,12 @@ cambio runtime. Il comportamento corrente rifiuta gli extra.
 
 | Spec | Responsabilita' MVP | Stato del passaggio |
 | --- | --- | --- |
-| 010 | Registro software, endpoint, verifica, discovery autorizzato | T079/T080 implementati; HTTP/resolver/viste T081-T084 da implementare |
-| 002 | Modello da foglia live, contratto e workflow | Requisiti propagati; adeguamento da verificare |
-| 001 | API consumatore e validazione valori | Baseline presente; nuovi requisiti da pianificare |
-| 003 | Sezioni minime generate/versionate | Baseline presente; automatismo da pianificare |
-| 004 | PDF TEST reale | Da pianificare e implementare |
-| 005 | Storage, download e idempotenza | Da pianificare e implementare |
+| 010 | Registro software, endpoint, verifica, discovery autorizzato | T077-T083 implementati (registro, resolver, letture manager); T084 (prove avversarie) aperto |
+| 002 | Modello da foglia live, contratto e workflow | Reale (builder + integrazione connessa, vedi `test_builder_flow_api.py`) |
+| 001 | API consumatore e validazione valori | Reale; `POST /documenti/genera` ritirato a favore del contratto `004` |
+| 003 | Sezioni minime generate/versionate | Non toccato in questo incremento: il rendering FR-019/020 usa etichetta/valore ordinati direttamente dal contratto dati, non un motore di sezioni |
+| 004 | PDF TEST reale | Implementato per lo scope FR-019/020 (`backend/app/generazione/`); FR-001..018 non pianificati |
+| 005 | Storage, download e idempotenza | Implementato per lo scope minimo (`backend/app/storage/`): riferimento, stato, download, idempotenza di base su filesystem locale; FR-011 piena/FR-012/013/015 non pianificati |
 | 006 | JWT, client, permessi per contesto e audit | Baseline presente; nuovi casi da verificare |
 | 007 | Admin/manager Angular con Design Angular Kit | Da pianificare e implementare |
 
@@ -46,19 +46,25 @@ Spec Kit e cambio feature autorizzato; 004/005/007 necessitano plan/tasks.
 
 Gate di sicurezza prima dell'uso operativo: 001 FR-034..FR-038 e 006
 FR-014..FR-017 richiedono autorizzazione sul contesto della risorsa per
-catalogo, contratto, validazione e generazione anche simulata. Il solo permesso
-generale non basta. Runtime ancora da adeguare, tracciato nell'handoff T087.
+catalogo, contratto, validazione e generazione. Il solo permesso generale non
+basta. **Non ancora chiuso**: la generazione reale implementata in questo
+incremento riusa i ruoli globali esistenti (`DOCUMENTI_GENERATORE`/
+`DOCUMENTI_VIEWER`), non l'enforcement per-contesto tracciato in T087 - vale
+per uso di sviluppo/test, non ancora per uso operativo.
 
-Il backend contiene configurazione/export di esempi, registro software e
-endpoint per software nella persistenza; l'adapter valida tutta la mappa
-multi-tipo e usa cache RAM scoped. API admin onboarding e letture manager
-non sono ancora implementate; il resolver usa ancora URL di ambiente. Non sono
-disponibili le schermate admin/manager o il PDF reale qui descritti.
+Aggiornamento 2026-09-17: registro software, resolver builder e letture
+manager sono reali (T081-T083). Il flusso end-to-end descritto sopra (punti
+1-8) e' dimostrato per davvero in
+`backend/tests/builder/test_builder_flow_api.py::test_flusso_completo_creazione_pubblicazione_e_generazione_documento`:
+integrazione connessa -> modello creato dalla foglia live -> pubblicato ->
+generazione di un PDF di test reale -> stato/download reali (idempotenza
+inclusa). Non disponibili: le schermate admin/manager (007), il motore
+sezioni/placeholder vivo (003 resta non toccato - il rendering usa
+etichetta/valore ordinati direttamente dal contratto dati).
 
-Prossimo task T081: API admin registro/configurazione/verifica, con politica
-URL approvati/SSRF, versioni e tentativi concorrenti. T078-T080 completati;
-seguono resolver e letture manager/test T082-T084. Il contratto corrente
-per tipi/esempi rimane descrizione del runtime esistente, non del nuovo registro.
+Prossimo task T084: matrice di prova avversaria (SSRF con pinning della
+connessione anti DNS-rebinding, redirect, HAL ciclico, concorrenza sui
+tentativi di verifica).
 
 Le migrazioni devono preservare modelli, versioni, identificativi pubblici,
 campi, sezioni, generazioni e audit. Nessuna conversione automatica di seed,

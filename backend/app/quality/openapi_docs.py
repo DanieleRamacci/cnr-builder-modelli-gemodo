@@ -49,6 +49,16 @@ PUBLISHED_CONTRACTS: dict[str, Path] = {
     / "010-configurazione-cataloghi-integrazioni"
     / "contracts"
     / "integrazioni-api.openapi.yaml",
+    "generazione-documenti": REPO_ROOT
+    / "specs"
+    / "004-generazione-documenti-pdf"
+    / "contracts"
+    / "generazione-documenti-api.openapi.yaml",
+    "storage-documenti": REPO_ROOT
+    / "specs"
+    / "005-storage-idempotenza-consultazione"
+    / "contracts"
+    / "storage-documenti-api.openapi.yaml",
 }
 
 # Relative references keep their repository filename in the published contract.

@@ -265,6 +265,18 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
   meccanismo con cui si rappresenta "chi possiede", da entita' dedicata a campo
   diretto sul contesto gia' esistente.
 
+### Ritiro 2026-09-17 - generazione reale (004 FR-019/020)
+
+`POST /documenti/genera` (risposta simulata `GenerazioneDocumentoResponse`,
+`GENERAZIONE_SIMULATA`/`DATI_NON_VALIDI`) e' ritirato
+(`x-implementation-status: withdrawn` in `geban-catalog-api.openapi.yaml`,
+versione 0.6.0): lo stesso percorso HTTP e' ora implementato secondo
+`specs/004-generazione-documenti-pdf/contracts/generazione-documenti-api.openapi.yaml`,
+producendo un vero PDF di test. FR-019 di questa spec ("MUST NOT includere
+generazione PDF dettagliata") resta rispettato: il dettaglio vive in `004`,
+non qui. `POST /documenti/valida` e la validazione del payload restano
+invariati e di proprieta' di `001`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultare modelli pubblicati disponibili (Priority: P1)

@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: GEMODO - Storage E Consultazione Documenti (Incremento MVP FR-019/020)
+  version: 0.1.0
+  description: >
+    Stato e download del documento generato da 004. Riferimento opaco, mai il
+    path fisico o l'id interno. Idempotenza sulla chiave sistema_richiedente +
+    external_context_id + modello_versione_id, non descritta qui (e' interna a
+    004/generaDocumento) ma osservabile: un riferimento gia' esistente per la
+    stessa chiave/dati e' lo stesso restituito da una richiesta precedente.
+servers:
+  - url: /api/v1
+security:
+  - KeycloakBearer: []
+paths:
+  /documenti/{riferimento}:
+    parameters:
+      - {$ref: '#/components/parameters/Riferimento'}
+    get:
+      operationId: getStatoDocumento
+      summary: Stato e metadati minimi del documento generato
+      responses:
+        '200':
+          description: Stato corrente, anche per una generazione FALLITA
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StatoDocumento'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /documenti/{riferimento}/download:
+    parameters:
+      - {$ref: '#/components/parameters/Riferimento'}
+    get:
+      operationId: downloadDocumento
+      summary: Scarica il file, solo se la generazione e' COMPLETATO
+      responses:
+        '200':
+          description: Byte del PDF
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: Documento non ancora disponibile (FALLITO)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Errore'}
+components:
+  securitySchemes:
+    KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    Riferimento:
+      name: riferimento
+      in: path
+      required: true
+      schema: {type: string, minLength: 1}
+  schemas:
+    StatoDocumento:
+      type: object
+      additionalProperties: false
+      required: [riferimento, stato, tipo_output, nome_file, creato_il, modello_versione_id]
+      properties:
+        riferimento: {type: string}
+        stato: {type: string, enum: [COMPLETATO, FALLITO]}
+        tipo_output: {type: string, enum: [TEST]}
+        nome_file: {type: string}
+        hash_file: {type: string, nullable: true}
+        dimensione_byte: {type: integer, nullable: true}
+        creato_il: {type: string, format: date-time}
+        modello_versione_id: {type: integer, format: int64}
+        errore_messaggio: {type: string, nullable: true}
+    Errore:
+      type: object
+      additionalProperties: false
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+  responses:
+    Unauthorized:
+      description: JWT assente o non valido
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+    Forbidden:
+      description: Nessun ruolo di lettura documenti
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+    NotFound:
+      description: Riferimento inesistente
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}

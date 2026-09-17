@@ -12,7 +12,7 @@ from app.catalog import repository
 from app.catalog.models import ModelloCampoRichiesto
 from app.common.errors import ErrorCode, PayloadValidationDomainError
 from app.db.session import get_db
-from app.validation.schemas import ErroreValidazione, GenerazioneDocumentoResponse, ValidazioneRequest, ValidazioneResponse
+from app.validation.schemas import ErroreValidazione, ValidazioneRequest, ValidazioneResponse
 
 
 class PayloadValidationService:
@@ -62,27 +62,6 @@ class PayloadValidationService:
                 )
 
         return ValidazioneResponse(valido=not errors, errori=errors)
-
-    def generate_document_placeholder(self, request: ValidazioneRequest) -> GenerazioneDocumentoResponse:
-        validation = self.validate_payload(request)
-        if not validation.valido:
-            return GenerazioneDocumentoResponse(
-                stato="DATI_NON_VALIDI",
-                messaggio="Documento non generato: i dati ricevuti non sono coerenti con il contratto del modello.",
-                modello_versione_id=request.modello_versione_id,
-                external_context_id=request.external_context_id,
-                download_placeholder=None,
-                validazione=validation,
-            )
-
-        return GenerazioneDocumentoResponse(
-            stato="GENERAZIONE_SIMULATA",
-            messaggio="Chiamata ricevuta correttamente: i dati sono validi.",
-            modello_versione_id=request.modello_versione_id,
-            external_context_id=request.external_context_id,
-            download_placeholder="Qui sara' disponibile il link per scaricare il PDF generato.",
-            validazione=validation,
-        )
 
 
 def get_payload_validation_service(db: Session = Depends(get_db)) -> PayloadValidationService:

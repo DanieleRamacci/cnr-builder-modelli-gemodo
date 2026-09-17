@@ -157,7 +157,12 @@ Risultato atteso:
 }
 ```
 
-## Scenario 4 - Generazione simulata
+## Scenario 4 - Generazione reale (PDF di test)
+
+Ritirato dal 2026-09-17 (004 FR-019/020): `POST /documenti/genera` non e' piu'
+simulato. Vedi
+`specs/004-generazione-documenti-pdf/contracts/generazione-documenti-api.openapi.yaml`
+per il contratto corrente.
 
 Richiesta:
 
@@ -172,11 +177,11 @@ Risultato atteso:
 
 ```json
 {
-  "stato": "GENERAZIONE_SIMULATA",
-  "messaggio": "Chiamata ricevuta correttamente: i dati sono validi.",
+  "stato": "COMPLETATO",
+  "messaggio": "Documento di test generato correttamente.",
   "modello_versione_id": 1,
   "external_context_id": "BANDO-12345",
-  "download_placeholder": "Qui sara' disponibile il link per scaricare il PDF generato.",
+  "riferimento_documentale": "<uuid opaco>",
   "validazione": {
     "valido": true,
     "errori": []
@@ -184,8 +189,12 @@ Risultato atteso:
 }
 ```
 
-L'endpoint non genera ancora un PDF reale; serve per collaudare autenticazione,
-selezione modello e correttezza dei dati prima della spec `004-generazione-documenti-pdf`.
+Il PDF prodotto e' reale ma sempre etichettato TEST (nessun percorso
+"ufficiale" in questo incremento): titolo ed etichette/valori riflettono il
+contratto dati della versione modello, nell'ordine configurato. Stato e
+download del documento sono descritti in
+`specs/005-storage-idempotenza-consultazione/contracts/storage-documenti-api.openapi.yaml`
+(`GET /documenti/{riferimento}`, `GET /documenti/{riferimento}/download`).
 
 ## Scenario 5 - Campo obbligatorio mancante
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.5.0
+  version: 0.6.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -11,6 +11,9 @@ info:
     gemodo-backend e ruoli DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE.
     Versione 0.4.0 (010 FR-016): ritiro API classificazione locale;
     modelli e contratti delle versioni restano proprieta GEMODO.
+    Versione 0.6.0 (004 FR-019/020): ritiro di POST /documenti/genera
+    (simulato) - la generazione reale e' descritta nel contratto di 004,
+    stesso percorso HTTP.
 servers:
   - url: /api/v1
 security:
@@ -134,12 +137,15 @@ paths:
           $ref: "#/components/responses/Forbidden"
   /documenti/genera:
     post:
-      summary: Simula richiesta generazione documento
+      deprecated: true
+      x-implementation-status: withdrawn
+      summary: Simula richiesta generazione documento (ritirato)
       description: >
-        Endpoint temporaneo per collaudo GEBAN: valida token, versione modello e payload.
-        Se i dati sono corretti restituisce un esito OK e un testo placeholder dove in
-        seguito verra' restituito il link per scaricare il PDF generato. Non produce
-        ancora un file PDF reale.
+        Disegno storico ritirato, non operativo: la generazione e' reale dal
+        2026-09-17 (004 FR-019/020), descritta in
+        specs/004-generazione-documenti-pdf/contracts/generazione-documenti-api.openapi.yaml.
+        Stesso percorso HTTP, nuovo contratto - vedi 001 FR-019 (questa spec
+        non descrive il dettaglio della generazione PDF).
       operationId: generaDocumentoPlaceholder
       requestBody:
         required: true

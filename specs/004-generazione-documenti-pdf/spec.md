@@ -20,6 +20,13 @@ Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
 Questo e' il target confermato: non certifica il runtime corrente e non avvia
 l'implementazione di questa spec; la feature attiva resta 010.
 
+### Implementazione 2026-09-17 - FR-019/020 (`plan.md`/`tasks.md`)
+
+Feature attivata per lo scope FR-019/FR-020 soltanto (vedi `plan.md`):
+`POST /api/v1/documenti/genera` produce un PDF di test reale via
+`backend/app/generazione/`. FR-001..018 (bozza/ufficiale, hash, sezioni vive)
+restano non pianificati.
+
 
 ### Session 2026-06-22
 

@@ -29,6 +29,22 @@ Contratto `integrazioni-api.openapi.yaml` pubblicato (Swagger/ReDoc). Resta
 T084 (prove avversarie SSRF/rebinding/concorrenza). Suite non-e2e: 256
 passati, 12 esclusi.
 
+Aggiornamento 2026-09-17 (bis) - MVP end-to-end reale: implementato lo scope
+FR-019/020 di `004`/`005` (`specs/004-generazione-documenti-pdf/plan.md`,
+`specs/005-storage-idempotenza-consultazione/plan.md`), non pianificato in
+precedenza. `POST /documenti/genera` non e' piu' simulato: produce un PDF di
+test reale (`backend/app/generazione/`, `fpdf2`) e lo persiste con
+riferimento/stato/download/idempotenza reali (`backend/app/storage/`,
+filesystem locale, migration `0014`). `POST /documenti/genera` storico di
+`001` ritirato (`geban-catalog-api.openapi.yaml` 0.6.0). Dimostrato end-to-end
+in `test_flusso_completo_creazione_pubblicazione_e_generazione_documento`:
+integrazione connessa (010) -> modello dalla foglia live (002) -> pubblicato
+-> generazione reale (004) -> download reale (005). **Non chiuso**:
+l'autorizzazione per-contesto su queste API di consumo (001 FR-034..038, 006
+FR-014..017, gia' tracciata in T087) non e' ancora implementata - riusano i
+ruoli globali esistenti, adatto a sviluppo/test non a uso operativo. Suite
+non-e2e: 270 passati, 12 esclusi.
+
 [ADR 0002](adr/0002-integrazioni-contesti-modelli-test.md) e
 [flusso e owner](../specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md).
 Integrazioni software create manualmente, contesto JWT e singolo endpoint

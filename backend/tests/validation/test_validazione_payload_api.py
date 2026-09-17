@@ -133,32 +133,3 @@ def test_validazione_payload_accepts_missing_english_field_when_bando_inglese_fa
 
     assert response.status_code == 200
     assert response.json() == {"valido": True, "errori": []}
-
-
-@pytest.mark.integration
-def test_generazione_placeholder_success_reports_valid_data_and_future_download(validation_client):
-    response = validation_client.post("/api/v1/documenti/genera", json=_request_payload(_valid_dati()))
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["stato"] == "GENERAZIONE_SIMULATA"
-    assert body["messaggio"] == "Chiamata ricevuta correttamente: i dati sono validi."
-    assert body["modello_versione_id"] == 1
-    assert body["external_context_id"] == "test-context-001"
-    assert body["download_placeholder"] == "Qui sara' disponibile il link per scaricare il PDF generato."
-    assert body["validazione"] == {"valido": True, "errori": []}
-
-
-@pytest.mark.integration
-def test_generazione_placeholder_returns_validation_errors_without_download(validation_client):
-    dati = _valid_dati()
-    del dati["titolo_it"]
-
-    response = validation_client.post("/api/v1/documenti/genera", json=_request_payload(dati))
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["stato"] == "DATI_NON_VALIDI"
-    assert body["download_placeholder"] is None
-    assert body["validazione"]["valido"] is False
-    assert body["validazione"]["errori"][0]["codice"] == "CAMPO_OBBLIGATORIO"

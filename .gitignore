@@ -28,3 +28,6 @@ __pycache__/
 
 # Node (frontend/)
 node_modules/
+
+# Storage locale documenti generati (005, GEMODO_STORAGE_DIR di default)
+/data/documenti-generati/

@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.common.security import PrincipalGEMODO, require_documenti_generatore
-from app.validation.schemas import GenerazioneDocumentoResponse, ValidazioneRequest, ValidazioneResponse
+from app.validation.schemas import ValidazioneRequest, ValidazioneResponse
 from app.validation.service import PayloadValidationService, get_payload_validation_service
 
 router = APIRouter(prefix="/api/v1", tags=["validazione"])
@@ -18,12 +18,3 @@ def valida_payload(
     service: PayloadValidationService = Depends(get_payload_validation_service),
 ) -> ValidazioneResponse:
     return service.validate_payload(request)
-
-
-@router.post("/documenti/genera", response_model=GenerazioneDocumentoResponse)
-def genera_documento_placeholder(
-    request: ValidazioneRequest,
-    _: PrincipalGEMODO = Depends(require_documenti_generatore),
-    service: PayloadValidationService = Depends(get_payload_validation_service),
-) -> GenerazioneDocumentoResponse:
-    return service.generate_document_placeholder(request)
