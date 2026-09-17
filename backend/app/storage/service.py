@@ -12,11 +12,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.errors import DomainError
+from app.common.security import PrincipalGEMODO, ROLE_DOCUMENTI_VIEWER, verifica_permesso_contesto
 from app.core.settings import Settings, get_settings
 from app.db.session import get_db
 from app.storage import archivio, repository
 from app.storage.models import DocumentoGenerato
 from app.storage.schemas import StatoDocumento
+
+
+def _non_trovato() -> DomainError:
+    return DomainError("DOCUMENTO_NON_TROVATO", "Documento non trovato", status_code=404)
 
 
 def hash_dati(dati: dict[str, Any]) -> str:
@@ -112,16 +117,21 @@ class StorageDocumentiService:
             "modello_versione_id": modello_versione_id,
         })
 
-    def stato(self, riferimento: str) -> StatoDocumento:
+    def _risolvi_autorizzato(self, riferimento: str, principal: PrincipalGEMODO) -> DocumentoGenerato:
         documento = repository.by_riferimento(self.db, riferimento)
         if documento is None:
-            raise DomainError("DOCUMENTO_NON_TROVATO", "Documento non trovato", status_code=404)
-        return _proietta(documento)
+            raise _non_trovato()
+        codice_contesto = documento.versione.modello.tipo_documento.codice_contesto
+        if not verifica_permesso_contesto(principal, codice_contesto, ROLE_DOCUMENTI_VIEWER):
+            # A guessed/foreign riferimento (FR-037): identical to "does not exist".
+            raise _non_trovato()
+        return documento
 
-    def contenuto_per_download(self, riferimento: str) -> tuple[StatoDocumento, bytes]:
-        documento = repository.by_riferimento(self.db, riferimento)
-        if documento is None:
-            raise DomainError("DOCUMENTO_NON_TROVATO", "Documento non trovato", status_code=404)
+    def stato(self, riferimento: str, principal: PrincipalGEMODO) -> StatoDocumento:
+        return _proietta(self._risolvi_autorizzato(riferimento, principal))
+
+    def contenuto_per_download(self, riferimento: str, principal: PrincipalGEMODO) -> tuple[StatoDocumento, bytes]:
+        documento = self._risolvi_autorizzato(riferimento, principal)
         if documento.stato != "COMPLETATO":
             raise DomainError("DOCUMENTO_NON_DISPONIBILE", "Documento non disponibile per il download", status_code=409)
         return _proietta(documento), archivio.leggi(documento.percorso_file)

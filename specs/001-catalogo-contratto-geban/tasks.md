@@ -672,3 +672,71 @@ Task: T096 Add real e2e test in backend/tests/e2e/test_perimetro_profilo_geban.p
   coperto dal contratto/documentazione di discovery generato da `010`, non da un
   endpoint runtime GEMODO. Nessun nuovo consumatore va aggiunto a queste tre API
   nel frattempo.
+
+---
+
+## Terzo Incremento (2026-09-17): Enforcement Per-Contesto Lato Consumatore
+
+Clarification "Sicurezza API Per Contesto - 2026-09-17" in `spec.md`: il controllo
+generale `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` non basta, ogni richiesta va
+autorizzata anche sul contesto proprietario del modello. FR-034..FR-038, sezione
+"Accettazione Sicurezza Per Contesto". Numerazione task continua da T108.
+
+**Attenzione a non confondere questo asse con la Phase 9 sopra (US5, FR-025..027,
+T093-T102, ancora `[ ]` e non iniziata)**: quello e' il perimetro *fine-grained* per
+profilo di integrazione (quali categorie/tipologie/`modello_versione_id` specifici un
+profilo puo' vedere, via `ProfiloDiIntegrazione`/`is_operazione_autorizzata`), non
+ancora implementato. Questo incremento e' invece il gate *per-contesto* (a quale
+`codice_contesto` appartiene il tipo documento, e se il token ha un ruolo mappato per
+quel contesto specifico, via `ruoli_contesto`/`role_mappings`,
+`DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` applicata ai consumatori). Le due verifiche
+restano complementari e indipendenti: US5/FR-025..027 resta lavoro futuro aperto.
+
+**Goal**: nessuna API consumatore (ricerca catalogo, campi richiesti, validazione,
+generazione, stato/download documento) concede accesso, dati o effetti su un modello
+il cui `codice_contesto` non e' autorizzato dal token del chiamante — ne' in ricerca
+(403 sanificato su perimetro esplicito) ne' via ID diretto (404 sanificato,
+indistinguibile da risorsa inesistente).
+
+- [x] T109 [P] Aggiungere test end-to-end reali su Postgres (Testcontainers) che
+      coprono gli scenari 1, 2, 4, 5, 6 di "Accettazione Sicurezza Per Contesto" e il
+      comportamento con il flag disattivato, in
+      `backend/tests/common/test_autorizzazione_per_contesto.py` (nuovo file). Usa il
+      manifest reale (`infra/local/integration-profiles.local.yaml`) e la forma
+      esatta del JWT ACE (`contexts.<nome>.roles`), non un doppio mockato.
+- [x] T110 Aggiungere `verifica_permesso_contesto()` e la costante
+      `ROLE_DOCUMENTI_VIEWER`/`ROLE_DOCUMENTI_GENERATORE` gia' esistenti in
+      `backend/app/common/security.py`, dietro il nuovo flag
+      `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` (default off) in
+      `backend/app/core/settings.py` — rollout graduale: a flag spento il
+      comportamento odierno resta invariato per non rompere chiamanti/test esistenti.
+- [x] T111 Collegare T110 a `backend/app/catalog/service.py`: `search_modelli` nega
+      con 403 sanificato su un filtro esplicito fuori perimetro (FR-034);
+      `get_campi_richiesti` nega con 404 sanificato indistinguibile da versione
+      inesistente (FR-035/FR-037).
+- [x] T112 Collegare T110 a `backend/app/validation/service.py`
+      (`validate_payload`): stessa risposta 404 sanificata di una versione
+      inesistente quando il contesto non e' autorizzato (FR-035/FR-037/FR-038,
+      l'autorizzazione precede la validazione dati).
+- [x] T113 Collegare T110 a `backend/app/storage/service.py` (`stato`,
+      `contenuto_per_download`) e passare il `PrincipalGEMODO` reale attraverso
+      `backend/app/generazione/service.py` fino a `validate_payload` (FR-035/FR-037).
+- [ ] T114 Aggiungere un test esplicito per lo scenario 3 di "Accettazione Sicurezza
+      Per Contesto" (due contesti nello stesso token, permesso di generazione solo
+      nel primo: il secondo nega la generazione ma consente comunque la
+      consultazione se il ruolo li' mappa solo `DOCUMENTI_VIEWER`) — non ancora
+      coperto da T109, che testa solo l'isolamento VIEWER tra contesti, non la
+      distinzione VIEWER/GENERATORE all'interno del secondo contesto.
+- [ ] T115 Decidere e documentare quando `GEMODO_ENFORCE_CONTESTO_CONSUMATORE`
+      passa da `false` a `true` di default (readiness per l'uso operativo citata
+      dalla clarification 2026-09-17), aggiornare `docs/decision-register.yaml` e
+      `docs/quality-coverage-matrix.yaml` (FR-034..038 non hanno ancora una riga in
+      quel file) di conseguenza.
+
+**Checkpoint**: verificato per davvero su Postgres reale (Testcontainers) il
+2026-09-17 — `pytest -m integration` 141 passed (0 skipped), `pytest -q` (suite
+completa) 289 passed. Due bug reali trovati e corretti nel fixture di test durante
+la verifica (non nell'implementazione): `_principal()` non popolava `ruoli`
+aggregato, causando 403 dal gate di route prima del controllo per-contesto;
+`_crea_versione()` non impostava `public_id` su `ModelloDocumento`, causando un 500
+in `search_modelli`. T114/T115 restano aperti.

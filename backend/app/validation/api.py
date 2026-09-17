@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/v1", tags=["validazione"])
 @router.post("/documenti/valida", response_model=ValidazioneResponse)
 def valida_payload(
     request: ValidazioneRequest,
-    _: PrincipalGEMODO = Depends(require_documenti_generatore),
+    principal: PrincipalGEMODO = Depends(require_documenti_generatore),
     service: PayloadValidationService = Depends(get_payload_validation_service),
 ) -> ValidazioneResponse:
-    return service.validate_payload(request)
+    return service.validate_payload(request, principal)

@@ -18,7 +18,8 @@ from app.catalog.schemas import (
     ModelloSearchResponse,
     TipoCampo,
 )
-from app.common.errors import CatalogError, ErrorCode
+from app.common.errors import AuthorizationError, CatalogError, ErrorCode
+from app.common.security import PrincipalGEMODO, ROLE_DOCUMENTI_VIEWER, verifica_permesso_contesto
 from app.db.session import get_db
 
 
@@ -29,6 +30,7 @@ class CatalogService:
     def search_modelli(
         self,
         *,
+        principal: PrincipalGEMODO,
         tipo_documento: str,
         categoria: str | None = None,
         codice_tipologia: str | None = None,
@@ -44,6 +46,10 @@ class CatalogService:
                 "Tipo documento non configurato o non attivo",
                 status_code=400,
             )
+        if not verifica_permesso_contesto(principal, tipo.codice_contesto, ROLE_DOCUMENTI_VIEWER):
+            # Explicit filter on a forbidden perimeter -> sanitized 403 (FR-037),
+            # not the same 400 as a nonexistent/inactive tipo documento.
+            raise AuthorizationError()
 
         versions = repository.list_published_model_versions(
             self.db,
@@ -64,9 +70,13 @@ class CatalogService:
             modelli=[_modello_catalogo_schema(version) for version in versions],
         )
 
-    def get_campi_richiesti(self, modello_versione_id: int) -> CampiRichiestiResponse:
+    def get_campi_richiesti(self, modello_versione_id: int, principal: PrincipalGEMODO) -> CampiRichiestiResponse:
         version = repository.get_model_version_by_public_id(self.db, modello_versione_id)
-        if version is None:
+        if version is None or not verifica_permesso_contesto(
+            principal, version.modello.tipo_documento.codice_contesto, ROLE_DOCUMENTI_VIEWER,
+        ):
+            # Direct-ID access: nonexistent and out-of-context are the same public
+            # response (FR-037) - never reveal that a forbidden version exists.
             raise CatalogError(
                 ErrorCode.MODELLO_VERSIONE_NON_TROVATO,
                 "Versione modello non trovata",

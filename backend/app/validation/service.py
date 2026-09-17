@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.catalog import repository
 from app.catalog.models import ModelloCampoRichiesto
 from app.common.errors import ErrorCode, PayloadValidationDomainError
+from app.common.security import PrincipalGEMODO, ROLE_DOCUMENTI_GENERATORE, verifica_permesso_contesto
 from app.db.session import get_db
 from app.validation.schemas import ErroreValidazione, ValidazioneRequest, ValidazioneResponse
 
@@ -19,9 +20,13 @@ class PayloadValidationService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def validate_payload(self, request: ValidazioneRequest) -> ValidazioneResponse:
+    def validate_payload(self, request: ValidazioneRequest, principal: PrincipalGEMODO) -> ValidazioneResponse:
         version = repository.get_model_version_by_public_id(self.db, request.modello_versione_id)
-        if version is None:
+        if version is None or not verifica_permesso_contesto(
+            principal, version.modello.tipo_documento.codice_contesto, ROLE_DOCUMENTI_GENERATORE,
+        ):
+            # Direct-ID access: nonexistent and out-of-context are the same public
+            # response (FR-037) - never reveal that a forbidden version exists.
             raise PayloadValidationDomainError(
                 ErrorCode.MODELLO_VERSIONE_NON_TROVATO,
                 "Versione modello non trovata",

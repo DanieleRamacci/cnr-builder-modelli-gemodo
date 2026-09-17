@@ -27,10 +27,11 @@ def search_modelli(
     pubblicato_da: date | None = None,
     pubblicato_a: date | None = None,
     categoria: str | None = Query(default=None, include_in_schema=False),
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
+    principal: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
 ) -> ModelloSearchResponse:
     return service.search_modelli(
+        principal=principal,
         tipo_documento=tipo_documento,
         categoria=profilo or categoria,
         codice_tipologia=codice_tipologia,
@@ -44,7 +45,7 @@ def search_modelli(
 @router.get("/modelli/{modelloVersioneId}/campi-richiesti", response_model=CampiRichiestiResponse)
 def get_campi_richiesti(
     modelloVersioneId: int,
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
+    principal: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
 ) -> CampiRichiestiResponse:
-    return service.get_campi_richiesti(modelloVersioneId)
+    return service.get_campi_richiesti(modelloVersioneId, principal)

@@ -10,7 +10,13 @@ from sqlalchemy.orm import Session
 
 from app.catalog.schemas import ModalitaCatalogo
 from app.catalog.service import CatalogService
+from app.common.security import PrincipalGEMODO
 from tests.support.postgres import postgres_database_url
+
+PRINCIPAL = PrincipalGEMODO(
+    "viewer-test", "geban-backend", ("gemodo-backend",), ("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"),
+    "https://sso.example.test",
+)
 
 
 @pytest.mark.integration
@@ -24,12 +30,14 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
             service = CatalogService(session)
 
             modelli = service.search_modelli(
+                principal=PRINCIPAL,
                 tipo_documento="BANDO_CONCORSO",
                 categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
                 modalita=ModalitaCatalogo.OPERATIVA,
             )
             modelli_cp = service.search_modelli(
+                principal=PRINCIPAL,
                 tipo_documento="BANDO_CONCORSO",
                 categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="CP",
@@ -54,7 +62,7 @@ def test_catalog_service_filters_without_local_typology_allowlist(postgres_datab
     try:
         with Session(engine) as session:
             service = CatalogService(session)
-            response = service.search_modelli(tipo_documento="BANDO_CONCORSO", codice_tipologia="NON_CONFIGURATA")
+            response = service.search_modelli(principal=PRINCIPAL, tipo_documento="BANDO_CONCORSO", codice_tipologia="NON_CONFIGURATA")
     finally:
         engine.dispose()
 
@@ -70,7 +78,7 @@ def test_catalog_service_returns_empty_list_when_no_model_matches_context(postgr
     try:
         with Session(engine) as session:
             service = CatalogService(session)
-            response = service.search_modelli(tipo_documento="BANDO_CONCORSO", categoria="NON_CONFIGURATA")
+            response = service.search_modelli(principal=PRINCIPAL, tipo_documento="BANDO_CONCORSO", categoria="NON_CONFIGURATA")
     finally:
         engine.dispose()
 
@@ -89,6 +97,7 @@ def test_catalog_service_filters_historical_models_by_publication_dates(postgres
         with Session(engine) as session:
             service = CatalogService(session)
             matching = service.search_modelli(
+                principal=PRINCIPAL,
                 tipo_documento="BANDO_CONCORSO",
                 categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
@@ -97,6 +106,7 @@ def test_catalog_service_filters_historical_models_by_publication_dates(postgres
                 pubblicato_a=date.fromisoformat("2026-07-31"),
             )
             not_matching = service.search_modelli(
+                principal=PRINCIPAL,
                 tipo_documento="BANDO_CONCORSO",
                 categoria="COLLABORATORE_TECNICO_ER",
                 codice_tipologia="TD",
@@ -119,7 +129,7 @@ def test_catalog_service_returns_required_fields_contract(postgres_database_url,
     try:
         with Session(engine) as session:
             service = CatalogService(session)
-            response = service.get_campi_richiesti(1)
+            response = service.get_campi_richiesti(1, PRINCIPAL)
     finally:
         engine.dispose()
 

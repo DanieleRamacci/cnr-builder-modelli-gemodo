@@ -23,7 +23,7 @@ class GenerazioneDocumentiService:
         self.storage = storage
 
     def genera(self, request: ValidazioneRequest, principal: PrincipalGEMODO) -> EsitoGenerazione:
-        validazione = self.validazione.validate_payload(request)  # 404/409 se versione assente/non pubblicata
+        validazione = self.validazione.validate_payload(request, principal)  # 404/409 se versione assente/non pubblicata/fuori contesto
         version = catalog_repository.get_model_version_by_public_id(self.db, request.modello_versione_id)
         hash_richiesta = hash_dati(request.dati)
         esistente = self.storage.esistente_per_chiave(

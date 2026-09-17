@@ -44,6 +44,7 @@ class Settings:
     gemodo_integrazioni_allowlist: tuple[str, ...] = ()
     gemodo_integrazioni_allowlist_privato: tuple[str, ...] = ()
     gemodo_storage_dir: str = ""
+    gemodo_enforce_contesto_consumatore: bool = False
 
     @property
     def jwks_url(self) -> str:
@@ -79,4 +80,5 @@ def get_settings() -> Settings:
         gemodo_integrazioni_allowlist=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST"),
         gemodo_integrazioni_allowlist_privato=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO"),
         gemodo_storage_dir=os.getenv("GEMODO_STORAGE_DIR", str(repo_root / "data" / "documenti-generati")),
+        gemodo_enforce_contesto_consumatore=_bool_env("GEMODO_ENFORCE_CONTESTO_CONSUMATORE", False),
     )

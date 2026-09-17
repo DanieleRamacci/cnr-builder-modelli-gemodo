@@ -9,7 +9,7 @@ from app.main import app
 
 
 class FakeCatalogService:
-    def get_campi_richiesti(self, modello_versione_id: int) -> CampiRichiestiResponse:
+    def get_campi_richiesti(self, modello_versione_id: int, principal=None) -> CampiRichiestiResponse:
         return CampiRichiestiResponse(
             modello_versione_id=modello_versione_id,
             tipo_documento="BANDO_CONCORSO",
@@ -64,7 +64,7 @@ def test_get_campi_richiesti_returns_contract_response_with_lingua(monkeypatch):
 
 def test_get_campi_richiesti_rejects_non_published_version(monkeypatch):
     class NonPublishedCatalogService:
-        def get_campi_richiesti(self, modello_versione_id: int):
+        def get_campi_richiesti(self, modello_versione_id: int, principal=None):
             raise ApiError(
                 ErrorCode.MODELLO_VERSIONE_NON_PUBBLICATO,
                 "Versione modello non pubblicata",

@@ -21,9 +21,14 @@ Ogni richiesta deve essere autorizzata anche rispetto al contesto proprietario
 del modello, ricavato lato server e non dichiarato dal chiamante. Contesto
 utente/payload e external_context_id non concedono accesso. La verifica vale
 anche per contratto dati, validazione e generazione simulata.
-Stato osservato: controllo per contesto nelle scritture builder; enforcement
-nelle API consumatore ancora da implementare. Requisito bloccante per l'uso
-operativo, non certificato dalla precedente suite di test.
+Stato osservato (aggiornato 2026-09-17): enforcement nelle API consumatore
+implementato (`verifica_permesso_contesto`, T109-T113 in `tasks.md`) dietro il
+flag a rollout graduale `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` (default off) e
+verificato con una suite di test reale su Postgres (141 test di integrazione,
+289 nella suite completa). Requisito ancora bloccante per l'uso operativo finche'
+il flag non passa a `true` di default (T115); lo scenario 3 di "Accettazione
+Sicurezza Per Contesto" (distinzione VIEWER/GENERATORE tra due contesti dello
+stesso token) non ha ancora un test dedicato (T114).
 
 ### Decisione MVP 2026-09-17 - ADR 0002
 

@@ -240,6 +240,29 @@ def verify_scrittura_su_contesto(
         raise AuthorizationError()
 
 
+def verifica_permesso_contesto(
+    principal: PrincipalGEMODO,
+    codice_contesto: str,
+    permesso: str,
+    settings: Settings | None = None,
+) -> bool:
+    """Whether ``permesso`` is granted by ``codice_contesto`` alone (001 FR-034..038, 006 FR-014..017).
+
+    Gated behind ``GEMODO_ENFORCE_CONTESTO_CONSUMATORE`` (default off) for a staged
+    rollout: while off, every caller with the coarse role keeps today's behavior
+    (this returns True unconditionally) so existing callers/tests are unaffected;
+    once on, a caller must additionally hold ``permesso`` in the resource's own
+    context - no fallback to the aggregated/global role list (FR-036). Callers
+    decide the exact denial response themselves (404 sanitized for direct-ID
+    access per FR-037, 403 for an explicitly filtered search) since that varies
+    per route; this only answers the yes/no question.
+    """
+    settings = settings or get_settings()
+    if not settings.gemodo_enforce_contesto_consumatore:
+        return True
+    return permesso in _permessi_nel_contesto(principal, codice_contesto, settings)
+
+
 def contesti_con_permesso(
     principal: PrincipalGEMODO,
     permesso: str,

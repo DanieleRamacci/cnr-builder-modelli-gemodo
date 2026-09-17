@@ -16,13 +16,13 @@ Service = Annotated[StorageDocumentiService, Depends(get_storage_documenti_servi
 
 
 @router.get("/{riferimento}", response_model=StatoDocumento)
-def get_stato_documento(riferimento: str, _: Viewer, service: Service) -> StatoDocumento:
-    return service.stato(riferimento)
+def get_stato_documento(riferimento: str, principal: Viewer, service: Service) -> StatoDocumento:
+    return service.stato(riferimento, principal)
 
 
 @router.get("/{riferimento}/download")
-def download_documento(riferimento: str, _: Viewer, service: Service) -> Response:
-    stato, contenuto = service.contenuto_per_download(riferimento)
+def download_documento(riferimento: str, principal: Viewer, service: Service) -> Response:
+    stato, contenuto = service.contenuto_per_download(riferimento, principal)
     return Response(
         content=contenuto, media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{stato.nome_file}"'},
