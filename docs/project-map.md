@@ -10,6 +10,27 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 
 ## Spec Inventory
 
+Aggiornamento corrente 2026-09-17, prevalente sulle evidenze storiche della
+tabella: feature attiva 010, FR-016/T061-T066 dismettono il catalogo esterno
+locale. AdapterLocale e API di classificazione eliminati; migration 0009
+rimuove cinque tabelle preservando modelli GEMODO, versioni, contratti e audit.
+Backend builder collegato a discovery HTTP con URL esplicita per tipo
+(`GEMODO_DISCOVERY_ENDPOINTS`), senza fallback locale. Onboarding US1-US4,
+firme e runner restano aperti. Suite finale non-e2e: 206 passati, 12 esclusi.
+Configurazione e backup: `specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md`.
+
+Il frontend builder non e' ancora implementato. Decisione confermata
+2026-09-17: Angular con [Design Angular Kit](https://github.com/italia/design-angular-kit),
+da pianificare nella spec 007; Swagger/ReDoc e pagina di test sono strumenti
+di documentazione API, non l'interfaccia del builder.
+
+Ripresa fondazioni amministrative 010: migration 0010 e ORM per esempi,
+schemi versionati ed endpoint, guard `GEMODO_ADMIN`, senza catalogo esterno
+persistente. Nessun endpoint amministrativo implementato. Test mirati: 8
+passati; suite non-e2e 214 passati, 12 e2e esclusi, nessuno saltato.
+Quality gate del nuovo incremento in attesa dell'autorizzazione
+all'invio a Claude. Dettagli: `specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md`.
+
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
 | `001-catalogo-contratto-geban` | Catalogo modelli, contratto dati, validazione payload verso GEBAN | Primo incremento implementato (2026-07-31), 73/73 task completati; nomenclatura categorie/tipologie riallineata a GEBAN (2026-09-14, migration `0007`); secondo incremento (FR-025..FR-031: perimetro per-profilo, proprieta' via `codice_contesto` vs Applicazione consumatrice — entita' Ufficio rimossa il 2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO` — registro contratti dati, generalizzazione `TipologiaDocumento`) con decisioni `CONFERMATA`; migration `0008` (2026-09-16, reale su Postgres) aggiunge `tipo_documento.codice_contesto` e `registro_contratti_dati` (T085/T087 parziale — sistema_richiedente/profilo_integrazione restano su YAML, T088-T092 non fatti); gate readiness verde per PLAN, TASKS bloccato solo da `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`; T080 (generalizzazione tipologia) ancora da fare; suite `pytest -m "not e2e"` verde (147 test) | §3, §4, §5, §9.1-§9.5 | Prima spec operativa; espone catalogo, contratto campi, validazione payload e protezione JWT Keycloak minima. UUID resta chiave interna DB, mentre `public_id` intero stabile e' esposto a GEBAN come `modello_versione_id`. L'allow-list per-profilo (`categorie_ammessi`/`tipologie_ammessi`) e i `contratti_dati_ammessi` non sono ancora applicati dalle API reali (solo dal fixture di test mock-GEBAN) — bloccante prima di andare in produzione con generazione reale per GEBAN; direzione confermata, implementazione da pianificare in `plan.md` |
@@ -108,9 +129,10 @@ Stato sintetico:
   formalmente la fase `TASKS` completa; i task che non dipendono dalle soglie fini sono
   esplicitati in `tasks.md`.
 
-Regola operativa: non rimuovere le tre API legacy di classificazione della `001` prima
-che la User Story 2 della `010` produca davvero il contratto/documentazione di discovery
-che le sostituisce funzionalmente.
+Regola aggiornata FR-016: API legacy ritirate su indicazione esplicita del
+product owner nella feature 010. Non reintrodurre un catalogo locale come
+ponte per US1/US2; la documentazione di forma e' distinta dai dati operativi
+esterni. Il precedente prerequisito US2/T108 e' superato.
 
 ## Ordine Suggerito Di Approfondimento
 

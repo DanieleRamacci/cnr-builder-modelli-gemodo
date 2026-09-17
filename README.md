@@ -53,12 +53,18 @@ export GEMODO_USE_MOCK_PRINCIPAL=true
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 
-curl -s http://localhost:8000/api/v1/catalogo/tipi-documento
-curl -s "http://localhost:8000/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&categoria=DEMO"
+curl -s "http://localhost:8000/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=COLLABORATORE_TECNICO_ER&codice_tipologia=TD"
 curl -s http://localhost:8000/api/v1/catalogo/modelli/1/campi-richiesti
 ```
 
 Manifest e strumenti di qualita' principali:
+
+Dal 2026-09-17 il catalogo esterno locale e le API di classificazione sono
+dismessi (`010` FR-016, migration `0009`). Prima del deploy fare backup DB:
+il downgrade richiede un ripristino. Il builder usa discovery HTTP configurata
+con `GEMODO_DISCOVERY_ENDPOINTS`; senza URL risponde 503, mai con dati di seed.
+Modelli GEMODO, versioni e relativi contratti restano persistenti.
+Configurazione e prova: [incremento discovery](specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md).
 
 - `infra/local/quality-readiness.local.yaml`: readiness complessiva della feature 009.
 - `infra/local/integration-profiles.local.yaml`: profili di integrazione GEBAN/GEMODO.

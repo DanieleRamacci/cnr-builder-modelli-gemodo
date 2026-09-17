@@ -2,6 +2,16 @@
 
 ## Nota Di Riallineamento (2026-09-15, Cascading ADR 0001)
 
+Aggiornamento vincolante 2026-09-17 (`010` FR-016): categorie, tipologie,
+classificazione e registro globale legacy sono dismessi, non piu' entita'
+locali riusabili. Le sezioni storiche sotto non autorizzano a reintrodurli.
+`ModelloDocumento` conserva codici e `percorso_categorizzazione`, senza FK
+al catalogo esterno; versioni, struttura documentale, campi e audit sono
+GEMODO-owned e restano persistenti. Fonte canonica: data-model della 010.
+
+Il testo che segue fino alla porta di discovery e' una nota storica superata
+da FR-016: non descrive entita' riusabili o adapter locali correnti.
+
 `TipoDocumento`, `CategoriaDocumento`, `TipologiaDocumento` e
 `RegistroContrattiDati` sono definite per intero in
 `specs/001-catalogo-contratto-geban/data-model.md` (che possiede queste entita';
@@ -27,23 +37,18 @@ un tipo documento integrato) fa fede `001`. In particolare, per il builder:
 
 Interfaccia astratta che il builder usa per sapere cosa e' disponibile per un tipo
 documento, indipendentemente da dove arrivano i dati. Progettata e implementata
-per intero (porta + due adapter, modulo `backend/app/discovery/`) dalla
+nel modulo `backend/app/discovery/` dalla
 `specs/010-configurazione-cataloghi-integrazioni/data-model.md`, che e' la fonte
 canonica della firma esatta — qui solo un riferimento per il builder, non
 ridefinirla se cambia li'.
 
 ```text
-PortaDiscovery.tipologie_disponibili(codice_tipo_documento) -> list[TipologiaDisponibile]
-PortaDiscovery.profili_disponibili(codice_tipo_documento, codice_tipologia) -> list[ProfiloDisponibile]
-PortaDiscovery.attributi_profilo(codice_tipo_documento, codice_profilo) -> list[AttributoDisponibile]
-PortaDiscovery.campi_disponibili(codice_tipo_documento) -> list[CampoDisponibile]
+PortaDiscovery.catalogo_discovery(codice_tipo_documento, forza_aggiornamento=False) -> CatalogoDiscovery
+CatalogoDiscovery.indice_percorsi() -> dict[tuple[str, ...], NodoDiscovery]
 ```
 
-Due implementazioni (adapter), scelte in base a come e' configurato il tipo
-documento:
-
-- **AdapterLocale**: legge direttamente `CategoriaDocumento`/`TipologiaDocumento`/
-  `RegistroContrattiDati` di GEMODO (tipo documento self-service).
+Implementazione integrata corrente; self-service resta da progettare secondo
+la 010, non viene simulato col vecchio catalogo:
 - **AdapterHTTP**: chiama l'endpoint di discovery registrato per il tipo
   documento (tipo documento integrato, es. GEBAN), con cache **in memoria di
   processo** a TTL breve (mai una tabella DB — deciso 2026-09-15, vedi
@@ -52,12 +57,16 @@ documento:
   e' irraggiungibile oltre la finestra di cache, il builder riceve un errore
   funzionale di connessione, mai un elenco vuoto silenzioso.
 
-Il builder (creazione modello, scelta campi/placeholder) dipende sempre e solo
-dalla porta astratta, mai da uno dei due adapter direttamente — permette di
-cambiare un tipo documento da self-service a integrato (o viceversa) senza
-toccare il codice del builder.
+Il builder dipende dalla porta astratta. Nel runtime corrente l'URL e'
+configurato operativamente tramite `GEMODO_DISCOVERY_ENDPOINTS`; onboarding
+amministrativo e selezione per stato sono ancora task aperti nella 010.
 
-## Entities *(riferimento a `001`, vedi nota sopra)*
+## Entities (Archivio Storico, Non Schema Runtime)
+
+Le entita', validazioni e relazioni seguenti documentano il progetto precedente.
+Per lo schema corrente fa fede il data-model della 010: nessuna CategoriaDocumento
+o TipologiaBandoSOL persistente, nessuna FK verso tali entita'. I riferimenti del
+modello sono codici e `percorso_categorizzazione`, verificati sulla discovery HTTP.
 
 ### TipoDocumento
 
@@ -247,7 +256,7 @@ Validation:
 - letture builder consentite a `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`.
 - scritture e transizioni consentite solo a `GEMODO_MODELLI_GESTORE`.
 
-## Relationships
+## Relationships (Archivio Storico, Superato Da FR-016)
 
 ```text
 TipoDocumento 1--N CategoriaDocumento

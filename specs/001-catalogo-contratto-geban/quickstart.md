@@ -226,10 +226,9 @@ GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=COLLABORATORE
 
 Risultato atteso:
 
-- risposta di errore funzionale, non un elenco vuoto;
-- codice errore `TIPOLOGIA_SOL_NON_VALIDA`;
-- le tipologie/procedure ammesse sono TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB
-  (vedi `infra/local/postgres/seed-demo-catalog.yaml`).
+- HTTP 200 con `modelli: []` (contratto v0.4/010 FR-016);
+- nessuna allowlist locale e nessun errore TIPOLOGIA_SOL_NON_VALIDA nella ricerca;
+- il seed storico non e' sorgente delle tipologie disponibili nel builder.
 
 ## Scenario 9 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
 

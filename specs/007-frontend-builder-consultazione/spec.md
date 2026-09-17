@@ -177,7 +177,8 @@ e consultata nei suoi metadati.
 ## Assumptions
 
 - Le API backend necessarie sono definite nelle spec builder, generazione, storage e sicurezza.
-- Il design visuale dettagliato verra' definito dopo la conferma dello stack frontend.
+- Decisione confermata il 2026-09-17: l'interfaccia sara' sviluppata con Angular e [Design Angular Kit](https://github.com/italia/design-angular-kit), usando i componenti e gli stili del kit. Il piano tecnico dovra' fissare versioni Angular/kit compatibili e gli eventuali componenti specialistici dell'editor.
+- L'interfaccia del builder non e' ancora implementata: il modulo backend `app.builder` espone API, mentre Swagger/ReDoc e la pagina di test non costituiscono il frontend previsto da questa spec. Questa decisione non avvia i task della 007.
 - La nomenclatura dei ruoli applicativi segue la spec sicurezza, inclusi i ruoli `GEMODO_*`, `DOCUMENTI_*` e `SYSTEM_GEBAN`.
 - Il frontend non e' fonte autoritativa per autorizzazioni, stato di pubblicazione, audit, idempotenza o disponibilita' file.
 - La consultazione del payload completo e degli audit dettagliati e' limitata ai casi autorizzati e non sostituisce la fonte dati GEBAN.

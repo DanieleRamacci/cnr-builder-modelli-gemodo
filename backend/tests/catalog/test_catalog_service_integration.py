@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.catalog.schemas import ModalitaCatalogo
 from app.catalog.service import CatalogService
-from app.common.errors import ApiError
 from tests.support.postgres import postgres_database_url
 
 
@@ -24,9 +23,6 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
         with Session(engine) as session:
             service = CatalogService(session)
 
-            tipi = service.list_tipi_documento()
-            profili = service.list_profili("BANDO_CONCORSO")
-            classificazione = service.get_classificazione("BANDO_CONCORSO")
             modelli = service.search_modelli(
                 tipo_documento="BANDO_CONCORSO",
                 categoria="COLLABORATORE_TECNICO_ER",
@@ -42,10 +38,6 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
     finally:
         engine.dispose()
 
-    assert [item.codice for item in tipi.items] == ["BANDO_CONCORSO"]
-    assert "COLLABORATORE_TECNICO_ER" in [item.codice for item in profili.profili]
-    td = next(item for item in classificazione.tipologie if item.codice == "TD")
-    assert "COLLABORATORE_TECNICO_ER" in [item.codice for item in td.profili]
     assert len(modelli.modelli) == 1
     assert modelli.modelli[0].modello_versione_id == 1
     assert modelli.modelli[0].stato == "PUBBLICATO"
@@ -54,7 +46,7 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
 
 
 @pytest.mark.integration
-def test_catalog_service_rejects_unconfigured_tipologia_sol(postgres_database_url, monkeypatch):
+def test_catalog_service_filters_without_local_typology_allowlist(postgres_database_url, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", postgres_database_url)
     command.upgrade(Config("alembic.ini"), "head")
 
@@ -62,12 +54,11 @@ def test_catalog_service_rejects_unconfigured_tipologia_sol(postgres_database_ur
     try:
         with Session(engine) as session:
             service = CatalogService(session)
-            with pytest.raises(ApiError) as exc_info:
-                service.search_modelli(tipo_documento="BANDO_CONCORSO", codice_tipologia="NON_CONFIGURATA")
+            response = service.search_modelli(tipo_documento="BANDO_CONCORSO", codice_tipologia="NON_CONFIGURATA")
     finally:
         engine.dispose()
 
-    assert exc_info.value.codice == "TIPOLOGIA_SOL_NON_VALIDA"
+    assert response.modelli == []
 
 
 @pytest.mark.integration

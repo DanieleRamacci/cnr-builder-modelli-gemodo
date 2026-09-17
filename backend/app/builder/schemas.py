@@ -3,42 +3,31 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from pydantic import BaseModel, ConfigDict
+from app.discovery.schemas import CatalogoDiscovery
 
-
-class TipologiaStrutturaSchema(BaseModel):
-    codice: str
-    descrizione: str
-    profili: list[dict[str, str]]
-
-
-class CampoStrutturaSchema(BaseModel):
-    codice: str
-    etichetta: str
-    tipo_dato: str
-    obbligatorio: bool
-    lingua: str
-    ordine: int
-    validazione: dict[str, Any] | None = None
-
-
-class StrutturaDisponibileResponse(BaseModel):
-    tipo_documento: str
-    tipologie: list[TipologiaStrutturaSchema]
-    campi: list[CampoStrutturaSchema]
+StrutturaDisponibileResponse = CatalogoDiscovery
 
 
 class CreaModelloRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    codice: str
-    nome: str
-    codice_tipo_documento: str
-    codice_categoria: str
+    codice: str = Field(min_length=1, max_length=128)
+    nome: str = Field(min_length=1, max_length=255)
+    codice_tipo_documento: str = Field(min_length=1)
+    percorso_categorizzazione: list[str] | None = Field(default=None, min_length=1, max_length=64)
+    codice_categoria: str | None = None
     codice_tipologia: str | None = None
-    variante: str = "STANDARD"
+    variante: str = Field(default="STANDARD", min_length=1, max_length=64)
+
+    @model_validator(mode="after")
+    def verifica_selezione(self) -> CreaModelloRequest:
+        if self.percorso_categorizzazione is None and not self.codice_categoria:
+            raise ValueError("Indicare percorso_categorizzazione oppure codice_categoria")
+        if self.percorso_categorizzazione is not None and any(not codice for codice in self.percorso_categorizzazione):
+            raise ValueError("Il percorso non puo' contenere codici vuoti")
+        return self
 
 
 class ModelloResponse(BaseModel):
@@ -49,6 +38,7 @@ class ModelloResponse(BaseModel):
     codice_tipo_documento: str
     codice_categoria: str
     codice_tipologia: str | None
+    percorso_categorizzazione: list[str]
     variante: str
 
 

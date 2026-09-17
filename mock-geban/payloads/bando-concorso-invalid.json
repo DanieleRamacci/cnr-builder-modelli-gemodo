@@ -1,5 +1,5 @@
 {
-  "_comment": "Payload demo non valido per E2E-002 (spec 009, edge cases spec.md): campo obbligatorio mancante (numero_posti), tipologia SOL non valida, campi inglesi mancanti pur avendo bando_inglese=true. 'atteso_errori' documenta gli errori funzionali attesi (infra/openapi/errors.md) per i test/scenario runner, non fa parte del payload che verrebbe inviato.",
+  "_comment": "Payload demo non valido per E2E-002: numero_posti e campi inglesi mancanti con bando_inglese=true. La ricerca v0.4 non valida contro una allowlist di tipologie locale (010 FR-016). atteso_errori e' metadato del test, non parte del payload inviato.",
   "demo_marker": "DEMO",
   "sistema_richiedente": "GEBAN",
   "client_id": "geban-backend",
@@ -38,11 +38,6 @@
       "campo": "dati.numero_posti",
       "codice": "CAMPO_OBBLIGATORIO",
       "motivo": "numero_posti non presente nel payload"
-    },
-    {
-      "campo": "tipologia_bando.codice",
-      "codice": "TIPOLOGIA_SOL_NON_VALIDA",
-      "motivo": "XX_NON_VALIDA non e' una delle tipologie GEBAN/SOL ammesse (TDPNRR, CD, DIR, TD, CP, RS, CATP, TI, SDIP, MOB)"
     },
     {
       "campo": "dati.titolo_en",

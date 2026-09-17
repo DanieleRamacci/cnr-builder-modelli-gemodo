@@ -3,20 +3,17 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.catalog.service import get_catalog_service
-from app.common.errors import ApiError, ErrorCode
+from app.catalog.schemas import ModelloSearchResponse
 from app.main import app
 
 
 class FakeCatalogService:
     def search_modelli(self, **kwargs):
-        raise ApiError(
-            ErrorCode.TIPOLOGIA_SOL_NON_VALIDA,
-            "Tipologia GEBAN/SOL non configurata",
-            status_code=400,
-        )
+        return ModelloSearchResponse(tipo_documento=kwargs["tipo_documento"],
+                                    codice_tipologia=kwargs["codice_tipologia"], modelli=[])
 
 
-def test_search_modelli_rejects_unconfigured_tipologia_sol(monkeypatch):
+def test_search_modelli_returns_empty_for_unmatched_external_code(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     app.dependency_overrides[get_catalog_service] = lambda: FakeCatalogService()
     try:
@@ -28,5 +25,5 @@ def test_search_modelli_rejects_unconfigured_tipologia_sol(monkeypatch):
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 400
-    assert response.json()["codice"] == "TIPOLOGIA_SOL_NON_VALIDA"
+    assert response.status_code == 200
+    assert response.json()["modelli"] == []

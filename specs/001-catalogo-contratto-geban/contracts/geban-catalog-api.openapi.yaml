@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.3.0
+  version: 0.4.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -9,71 +9,14 @@ info:
     docs/decision-register.yaml, DEC-001-TIPOLOGIE-SOL e DEC-001-LINGUA-IT-EN.
     Versione 0.3.0: le API operative richiedono JWT Bearer Keycloak con audience
     gemodo-backend e ruoli DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE.
+    Versione 0.4.0 (010 FR-016): ritiro API classificazione locale;
+    modelli e contratti delle versioni restano proprieta GEMODO.
 servers:
   - url: /api/v1
 security:
   - KeycloakBearer: []
   - KeycloakSSO: []
 paths:
-  /catalogo/tipi-documento:
-    get:
-      summary: Elenco tipi documento disponibili
-      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
-      operationId: listTipiDocumento
-      responses:
-        "200":
-          description: Tipi documento disponibili
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TipoDocumentoListResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /catalogo/tipi-documento/{codiceTipoDocumento}/profili:
-    get:
-      summary: Elenco profili per tipo documento
-      description: Richiede ruolo DOCUMENTI_VIEWER o DOCUMENTI_GENERATORE.
-      operationId: listProfiliDocumento
-      parameters:
-        - $ref: "#/components/parameters/CodiceTipoDocumento"
-      responses:
-        "200":
-          description: Profili disponibili
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProfiloDocumentoListResponse"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione:
-    get:
-      summary: Albero classificazione per tipo documento
-      description: >
-        Restituisce l'albero configurato per il tipo documento: tipologie/procedure
-        GEBAN/SOL disponibili e profili associati. Il mapping tecnico SOL resta interno
-        e non viene esposto nella risposta.
-      operationId: getClassificazioneDocumento
-      parameters:
-        - $ref: "#/components/parameters/CodiceTipoDocumento"
-      responses:
-        "200":
-          description: Classificazione ad albero per il tipo documento
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClassificazioneCatalogoResponse"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
   /catalogo/modelli:
     get:
       summary: Ricerca modelli pubblicati
@@ -95,12 +38,9 @@ paths:
           in: query
           required: false
           description: >
-            Nodo di primo livello dell'albero GEBAN/SOL selezionato da
-            /catalogo/tipi-documento/{codiceTipoDocumento}/classificazione. Se presente,
-            deve corrispondere a una tipologia/procedura bando configurata (perimetro
-            iniziale: CP, TD, TI, IR, MOB); un valore non riconosciuto produce
-            errore TIPOLOGIA_SOL_NON_VALIDA, non un elenco vuoto. Il codice SOL tecnico
-            associato resta metadato interno.
+            Codice della tipologia nella discovery esterna, confrontato con i
+            riferimenti salvati nei soli modelli GEMODO. Nessuna allowlist locale;
+            se non esistono modelli pubblicati corrispondenti restituisce elenco vuoto.
           schema:
             type: string
         - name: modalita
@@ -245,12 +185,6 @@ components:
             profile: Profilo utente CNR
             email: Email utente CNR
   parameters:
-    CodiceTipoDocumento:
-      name: codiceTipoDocumento
-      in: path
-      required: true
-      schema:
-        type: string
     ModelloVersioneId:
       name: modelloVersioneId
       in: path
@@ -290,64 +224,6 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
-    TipoDocumentoListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/TipoDocumento"
-    TipoDocumento:
-      type: object
-      required: [codice, descrizione]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
-    ProfiloDocumentoListResponse:
-      type: object
-      required: [tipo_documento, profili]
-      properties:
-        tipo_documento:
-          type: string
-        profili:
-          type: array
-          items:
-            $ref: "#/components/schemas/ProfiloDocumento"
-    ClassificazioneCatalogoResponse:
-      type: object
-      required: [tipo_documento, tipologie]
-      properties:
-        tipo_documento:
-          type: string
-        tipologie:
-          type: array
-          items:
-            $ref: "#/components/schemas/TipologiaCatalogo"
-    TipologiaCatalogo:
-      type: object
-      required: [codice, descrizione, profili]
-      properties:
-        codice:
-          type: string
-          example: TD
-        descrizione:
-          type: string
-          example: Tempo determinato
-        profili:
-          type: array
-          items:
-            $ref: "#/components/schemas/ProfiloDocumento"
-    ProfiloDocumento:
-      type: object
-      required: [codice, descrizione]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
     ModelloSearchResponse:
       type: object
       required: [tipo_documento, modelli]

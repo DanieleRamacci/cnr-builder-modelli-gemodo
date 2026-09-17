@@ -1,0 +1,62 @@
+{
+  "reviewer_id": "primary",
+  "valid": true,
+  "message": "Claude Code reviewer completed",
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "finding_type": "application",
+      "category": "regression",
+      "title": "GEBAN-facing /catalogo/modelli silently drops TIPOLOGIA_SOL_NON_VALIDA validation, contradicting the feature's own 'must not break contract' guarantee",
+      "path": "backend/app/catalog/service.py",
+      "line": 29,
+      "evidence": "search_modelli() no longer calls repository.get_tipologia_sol_by_codice(...) and no longer raises CatalogError(ErrorCode.TIPOLOGIA_SOL_NON_VALIDA, ...) for an unrecognized codice_tipologia (the check and the TipologiaBandoSOL table it used were removed). backend/tests/catalog/test_catalogo_tipologia_sol.py was rewritten in the same diff: the test that asserted `status_code==400` and `codice=='TIPOLOGIA_SOL_NON_VALIDA'` was renamed to test_search_modelli_returns_empty_for_unmatched_external_code and now asserts `status_code==200` and `modelli==[]`. This contradicts still-unmodified, explicit documentation: specs/001-catalogo-contratto-geban/spec.md:186 ('codice errore TIPOLOGIA_SOL_NON_VALIDA restano invariati per non rompere il contratto'), specs/001-catalogo-contratto-geban/tasks.md:141/148 ('TIPOLOGIA_SOL_NON_VALIDA, not an empty list'), docs/quality-coverage-matrix.yaml:105 ('produce TIPOLOGIA_SOL_NON_VALIDA, non lista vuota silenziosa'), infra/openapi/errors.md:17 (publishes the code for this exact scenario), and mock-geban/scenarios/expected-outcomes.yaml + mock-geban/payloads/bando-concorso-invalid.json (still encode the old expected outcome). Only specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml was bumped to 0.4.0 to describe the new 'empty list' behavior in this same diff; none of the other five artifacts were reconciled, and feature 001 (already reviewed PASS today, not in this run's review_scope) has a document set that does not include that contract file, so this behavior change would not have tripped the quality gate's own change detection.",
+      "recommendation": "Either restore the explicit TIPOLOGIA_SOL_NON_VALIDA rejection for an unrecognized codice_tipologia on the still-active /catalogo/modelli endpoint (validating against the values now sourced from discovery/model references instead of the dropped table), or, if the empty-list behavior is truly the intended new contract, update specs/001's spec.md/tasks.md/research.md/quickstart.md, docs/quality-coverage-matrix.yaml, infra/openapi/errors.md and the mock-geban fixtures to match, and add feature 001's OpenAPI contract file to its tracked document set so this kind of change trips needs_review next time.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "HIGH",
+      "finding_type": "application",
+      "category": "missing_requirement",
+      "title": "Self-service tipo documento flow (FR-010 / US3 Acceptance Scenario 4 / SC-003) is now unimplementable \u2014 AdapterLocale and RegistroContrattiDati were deleted with no replacement",
+      "path": "backend/app/discovery/configuration.py",
+      "line": 17,
+      "evidence": "spec.md FR-010 (unmodified, still an unqualified MUST) requires that a self-service tipo documento (no external system) 'MUST usare l'adapter locale del Registro Contratti Dati... rendendo il contesto utilizzabile senza richiedere la registrazione di un endpoint'. This diff deletes backend/app/discovery/adapter_locale.py entirely and the alembic migration (0009_ritiro_catalogo_esterno_locale.py) drops the registro_contratti_dati table and its ORM class outright. discovery_per_tipo() (configuration.py:17-31) now has exactly one code path \u2014 an explicit URL from GEMODO_DISCOVERY_ENDPOINTS \u2014 and raises DiscoveryError(DISCOVERY_NON_CONFIGURATA, status 503) if that URL is missing, with no branch for a self-service context. The new test backend/tests/builder/test_builder_flow_api.py::test_missing_or_invalid_config_does_not_fall_back_to_seed explicitly locks in that any tipo documento without a configured URL \u2014 including a self-service one \u2014 now gets a 503 instead of being 'subito utilizzabile' as SC-003 requires. The app/configurazione module that plan.md names as the eventual replacement (T001-T046) is entirely unimplemented (does not exist on disk), and specs/002-builder-modelli/data-model.md was quietly amended in this same diff to say 'self-service resta da progettare secondo la 010' \u2014 an acknowledgment buried in a reference doc that contradicts spec.md's own unqualified FR-010/SC-003 wording, which was not updated.",
+      "recommendation": "Either reconcile spec.md (mark FR-010/US3 Scenario 4/SC-003 as explicitly deferred/out-of-scope for this increment, consistent with the 002 data-model.md note) or restore a working self-service path before declaring this increment done. Do not leave a MUST requirement of the active feature silently unsatisfiable by a change in the same feature.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "application",
+      "category": "edge_case",
+      "title": "CacheDiscovery's single RLock serializes unrelated discovery fetches, not just the requested key",
+      "path": "backend/app/discovery/cache.py",
+      "line": 29,
+      "evidence": "get_or_load() acquires self._lock for the full duration of load() (an HTTP round-trip through AdapterHTTP._fetch, timeout up to 10s by default) regardless of which key is being loaded \u2014 the lock is per-CacheDiscovery-instance, not per-key. AdapterHTTP instances (and thus their CacheDiscovery) are cached per-URL via @lru_cache in discovery_per_tipo() (configuration.py:12-14), and GEBAN's real deployment exposes one discovery URL for the whole catalog (spec.md: 'GEBAN espone il discovery completo su .../discovery'), so multiple tipo documento codes are expected to share one AdapterHTTP/cache instance. A cold-cache or forza_aggiornamento=True fetch for one tipo documento (e.g. triggered by crea_modello or crea_versione, which both pass aggiornato=True) will block every other concurrent discovery lookup sharing that URL for up to the full timeout, even though those other lookups target different cache keys.",
+      "recommendation": "Scope the lock to the individual key (e.g. a per-key lock or double-checked locking keyed by `key`) so a slow/stalled fetch for one tipo documento cannot stall unrelated lookups sharing the same AdapterHTTP instance.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "workflow",
+      "category": "other",
+      "title": "Feature 010's tracked document set omits all three OpenAPI contracts it actively maintains, so contract-only edits won't trigger needs_review",
+      "path": ".adev/review-ledger.json",
+      "line": 135,
+      "evidence": "The ledger's documents array for specs/010-configurazione-cataloghi-integrazioni (lines 135-141, mirrored in feature_inventory of this review's request.json) lists only contracts/esempio-discovery-per-nodi/README.md, data-model.md, incremento-discovery.md, plan.md, research.md, spec.md, tasks.md. It excludes contracts/configurazione-cataloghi-api.openapi.yaml and contracts/geban-discovery-endpoint.openapi.yaml \u2014 both of which plan.md's own 'Project Structure' section names as blocking Phase 1 design deliverables and both of which changed in this very diff \u2014 and excludes the new contracts/builder-discovery-api.openapi.yaml, which app/quality/openapi_docs.py now actively serves (PUBLISHED_CONTRACTS['builder-discovery']). Because document_hash / needs_review is computed only from the tracked list, an edit to any of these three contracts alone would not flip needs_review for 010, and (per finding above) an analogous gap on feature 001's contract already let a real behavior change through undetected.",
+      "recommendation": "Add all three contract files under specs/010-.../contracts/ to the feature's tracked document list (and, more generally, audit every feature's list against its plan.md 'Project Structure' to make sure every referenced contract file is covered) so contract-only changes correctly trigger re-review.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "finding_type": "workflow",
+      "category": "other",
+      "title": "Feature 010 still has no checklists/requirements.md",
+      "path": "specs/010-configurazione-cataloghi-integrazioni",
+      "line": null,
+      "evidence": "Every other feature in feature_inventory (001,002,003,...,009) has a checklists/requirements.md; 010 does not, and specs/010-configurazione-cataloghi-integrazioni/tasks.md's own Phase 8 notes already self-report this: 'Checklist requisiti assente: rilievo LOW da recuperare prima del completamento della feature.'",
+      "recommendation": "Add specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md before declaring the feature complete, as the team's own notes already commit to doing.",
+      "reviewer_id": "primary"
+    }
+  ]
+}

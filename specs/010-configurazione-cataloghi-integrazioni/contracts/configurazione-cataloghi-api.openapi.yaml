@@ -1,13 +1,16 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
     documentazione di discovery da consegnare agli integratori, registrare
     endpoint esterni e verificarne la conformita' strutturale. Questo contratto
     descrive le API amministrative di GEMODO; non e' l'endpoint che il sistema
-    esterno deve implementare.
+    esterno deve implementare. Le API sono pianificate, non ancora esposte
+    nel runtime. Le strutture salvate sono esempi proprietari di documentazione,
+    mai una copia del catalogo esterno. La verifica accetta valori differenti
+    dagli esempi e valida soltanto la forma comune del discovery.
 servers:
   - url: /api/v1
 security:
@@ -20,7 +23,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Elenco tipi documento configurati e stato integrazione
       operationId: listTipiDocumentoConfigurati
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       responses:
         "200":
           description: Elenco sintetico per dashboard amministrativa
@@ -35,7 +38,7 @@ paths:
                   value:
                     - codice: BANDO_CONCORSO
                       nome: Bando di concorso
-                      codice_contesto: GEBAN
+                      codice_contesto: geban
                       stato_integrazione: CONNESSO
                       versione_schema_corrente: 3
         "401":
@@ -46,7 +49,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Crea un tipo documento configurabile
       operationId: createTipoDocumento
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       requestBody:
         required: true
         content:
@@ -58,10 +61,10 @@ paths:
                 value:
                   codice: BANDO_CONCORSO
                   nome: Bando di concorso
-                  codice_contesto: GEBAN
+                  codice_contesto: geban
       responses:
         "201":
-          description: Tipo documento creato in stato DEFINITO
+          description: Tipo documento creato; INCOMPLETO se manca una definizione completa
           content:
             application/json:
               schema:
@@ -79,7 +82,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Definisce o aggiorna la struttura catalogo di un tipo documento
       operationId: updateStrutturaTipoDocumento
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
       requestBody:
@@ -133,7 +136,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Genera una nuova versione dello schema/example di discovery
       operationId: generateSchemaDiscovery
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
       responses:
@@ -156,7 +159,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Esporta una versione dello schema/example di discovery
       operationId: getSchemaDiscovery
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
         - name: versione
@@ -183,7 +186,7 @@ paths:
       tags: [ConfigurazioneCataloghi]
       summary: Registra l'endpoint esterno e avvia la verifica strutturale
       operationId: registerEndpointIntegrazione
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
       requestBody:
@@ -212,14 +215,16 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "422":
+        "502":
           $ref: "#/components/responses/DiscoveryNonConforme"
+        "503":
+          $ref: "#/components/responses/DiscoveryNonDisponibile"
   /configurazione/tipi-documento/{codice}/endpoint-integrazione/verifica:
     post:
       tags: [ConfigurazioneCataloghi]
       summary: Ripete il test di connessione sull'endpoint registrato
       operationId: verifyEndpointIntegrazione
-      x-required-role: "Da allineare con specs/006; distinto da GEMODO_MODELLI_GESTORE"
+      x-required-role: GEMODO_ADMIN
       parameters:
         - $ref: "#/components/parameters/CodiceTipoDocumento"
       responses:
@@ -235,8 +240,10 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "422":
+        "502":
           $ref: "#/components/responses/DiscoveryNonConforme"
+        "503":
+          $ref: "#/components/responses/DiscoveryNonDisponibile"
 components:
   securitySchemes:
     KeycloakBearer:
@@ -245,8 +252,8 @@ components:
       bearerFormat: JWT
       description: >
         Token Keycloak riusato dagli endpoint protetti di GEMODO. Il ruolo
-        amministrativo esatto e' definito dalla feature 006 e deve restare
-        distinto da GEMODO_MODELLI_GESTORE.
+        GEMODO_ADMIN e' richiesto, come previsto dalla feature 006 FR-005/FR-005a.
+        Il solo ruolo GEMODO_MODELLI_GESTORE non autorizza queste operazioni.
   parameters:
     CodiceTipoDocumento:
       name: codice
@@ -264,8 +271,8 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: AUTH_REQUIRED
-            message: Autenticazione richiesta
+            codice: ACCESSO_NON_AUTENTICATO
+            messaggio: Token Bearer mancante o non valido
     Forbidden:
       description: Utente autenticato ma non autorizzato alla configurazione cataloghi
       content:
@@ -273,8 +280,8 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: CONFIGURAZIONE_CATALOGHI_FORBIDDEN
-            message: Ruolo amministrativo richiesto
+            codice: ACCESSO_NON_AUTORIZZATO
+            messaggio: Operazione non autorizzata
     NotFound:
       description: Risorsa non trovata
       content:
@@ -282,8 +289,8 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: TIPO_DOCUMENTO_NOT_FOUND
-            message: Tipo documento non trovato
+            codice: TIPO_DOCUMENTO_NOT_FOUND
+            messaggio: Tipo documento non trovato
     Conflict:
       description: Risorsa gia' esistente o stato non compatibile
       content:
@@ -291,8 +298,8 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: TIPO_DOCUMENTO_ALREADY_EXISTS
-            message: Tipo documento gia' configurato
+            codice: TIPO_DOCUMENTO_ALREADY_EXISTS
+            messaggio: Tipo documento gia' configurato
     ValidationError:
       description: Payload non valido o definizione incompleta
       content:
@@ -300,8 +307,8 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: DEFINIZIONE_INCOMPLETA
-            message: Almeno una tipologia, un profilo e un campo sono richiesti
+            codice: DEFINIZIONE_INCOMPLETA
+            messaggio: Almeno una tipologia, un profilo e un campo sono richiesti
     DiscoveryNonConforme:
       description: Endpoint esterno raggiunto ma risposta non conforme alla forma comune
       content:
@@ -309,8 +316,17 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            code: DISCOVERY_STRUCTURE_INVALID
-            message: Nodo foglia senza campi oppure campo documento incompleto
+            codice: DISCOVERY_NON_CONFORME
+            messaggio: Nodo foglia senza campi oppure campo documento incompleto
+    DiscoveryNonDisponibile:
+      description: Endpoint irraggiungibile; test fallito registrato senza dichiarare obsolete le versioni modello
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            codice: DISCOVERY_NON_DISPONIBILE
+            messaggio: Servizio discovery non disponibile
   schemas:
     TipoDocumentoCreate:
       type: object
@@ -322,6 +338,8 @@ components:
           type: string
         codice_contesto:
           type: string
+        struttura:
+          $ref: "#/components/schemas/StrutturaTipoDocumento"
     TipoDocumentoDashboard:
       type: object
       required: [codice, nome, codice_contesto, stato_integrazione]
@@ -338,6 +356,12 @@ components:
         versione_schema_corrente:
           type: integer
           nullable: true
+      example:
+        codice: DOCUMENTO_DEMO
+        nome: Documento demo
+        codice_contesto: demo
+        stato_integrazione: INCOMPLETO
+        versione_schema_corrente: null
     StrutturaTipoDocumento:
       type: object
       required: [tipologie, profili, combinazioni, campi]
@@ -412,13 +436,15 @@ components:
           type: string
         tipo:
           type: string
-          enum: [string, number, integer, boolean, date, datetime, object, array]
+          enum: [string, number, boolean, date, object, array]
         lingua:
           type: string
+          enum: [IT, EN]
         obbligatorio:
           type: boolean
         ordine:
           type: integer
+          minimum: 1
         descrizione:
           type: string
           nullable: true
@@ -448,6 +474,23 @@ components:
             foglie con campi documento. I valori sono esempi/documentazione,
             non sorgente autoritativa dei valori reali dell'integratore.
           additionalProperties: true
+      example:
+        codice_tipo_documento: DOCUMENTO_DEMO
+        versione: 1
+        generato_il: "2026-09-17T12:00:00Z"
+        schema:
+          DOCUMENTO_DEMO:
+            validita: "2026-09-17T12:00:00Z"
+            nodi:
+              - codice: DEMO
+                descrizione: Categoria dimostrativa
+                campi:
+                  - codice: titolo
+                    etichetta: Titolo
+                    tipo: string
+                    lingua: IT
+                    obbligatorio: true
+                    ordine: 1
     EndpointIntegrazioneRequest:
       type: object
       required: [url]
@@ -478,15 +521,24 @@ components:
         esito_ultimo_test:
           type: object
           additionalProperties: true
+      example:
+        codice_tipo_documento: DOCUMENTO_DEMO
+        stato: CONNESSO
+        verificato_il: "2026-09-17T12:00:00Z"
+        versione_schema_usata: 1
+        esito_ultimo_test:
+          messaggio: Forma comune conforme; valori degli esempi non vincolanti
     ErrorResponse:
       type: object
-      required: [code, message]
+      required: [codice, messaggio]
       properties:
-        code:
+        codice:
           type: string
-        message:
+        messaggio:
           type: string
-        details:
-          type: object
+        dettagli:
+          type: array
           nullable: true
-          additionalProperties: true
+          items:
+            type: object
+            additionalProperties: true

@@ -102,7 +102,7 @@ coverage:
     scenario_id: E2E-001
     contract_ref: backend/tests/catalog/test_catalogo_tipologia_sol.py
     stato: COPERTO
-    note: codice_tipologia non configurato produce TIPOLOGIA_SOL_NON_VALIDA, non lista vuota silenziosa
+    note: "FR-020 aggiornato da 010 FR-016/v0.4: filtro senza modelli corrispondenti restituisce HTTP 200 e lista vuota; nessuna allowlist locale"
 
   - id: COV-012
     spec_owner: specs/001-catalogo-contratto-geban

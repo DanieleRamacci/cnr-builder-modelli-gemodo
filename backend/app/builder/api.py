@@ -13,12 +13,10 @@ import uuid
 from fastapi import APIRouter, Depends
 
 from app.builder.schemas import (
-    CampoStrutturaSchema,
     CreaModelloRequest,
     CreaVersioneRequest,
     ModelloResponse,
     StrutturaDisponibileResponse,
-    TipologiaStrutturaSchema,
     VersioneResponse,
 )
 from app.builder.service import BuilderService, get_builder_service
@@ -35,8 +33,9 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         codice=modello.codice,
         nome=modello.nome,
         codice_tipo_documento=modello.tipo_documento.codice,
-        codice_categoria=modello.categoria_documento.codice,
-        codice_tipologia=modello.tipologia_bando_sol.codice if modello.tipologia_bando_sol else None,
+        codice_categoria=modello.codice_categoria,
+        codice_tipologia=modello.codice_tipologia,
+        percorso_categorizzazione=modello.percorso_categorizzazione,
         variante=modello.variante,
     )
 
@@ -52,36 +51,13 @@ def _versione_response(versione: ModelloDocumentoVersione) -> VersioneResponse:
     )
 
 
-@router.get("/tipi-documento/{codiceTipoDocumento}/struttura-disponibile", response_model=StrutturaDisponibileResponse)
+@router.get("/tipi-documento/{codiceTipoDocumento}/struttura-disponibile", response_model=StrutturaDisponibileResponse, response_model_exclude_none=True)
 def get_struttura_disponibile(
     codiceTipoDocumento: str,
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ) -> StrutturaDisponibileResponse:
-    tipologie, campi = service.struttura_disponibile(principal, codiceTipoDocumento)
-    return StrutturaDisponibileResponse(
-        tipo_documento=codiceTipoDocumento,
-        tipologie=[
-            TipologiaStrutturaSchema(
-                codice=t.codice,
-                descrizione=t.descrizione,
-                profili=[{"codice": p.codice, "descrizione": p.descrizione} for p in t.profili],
-            )
-            for t in tipologie
-        ],
-        campi=[
-            CampoStrutturaSchema(
-                codice=c.codice,
-                etichetta=c.etichetta,
-                tipo_dato=c.tipo_dato,
-                obbligatorio=c.obbligatorio,
-                lingua=c.lingua,
-                ordine=c.ordine,
-                validazione=c.validazione,
-            )
-            for c in campi
-        ],
-    )
+    return service.struttura_disponibile(principal, codiceTipoDocumento)
 
 
 @router.post("/modelli", response_model=ModelloResponse, status_code=201)

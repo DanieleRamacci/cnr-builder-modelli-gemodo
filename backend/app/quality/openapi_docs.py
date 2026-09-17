@@ -34,7 +34,15 @@ PUBLISHED_CONTRACTS: dict[str, Path] = {
     / "010-configurazione-cataloghi-integrazioni"
     / "contracts"
     / "geban-discovery-endpoint.openapi.yaml",
+    "builder-discovery": REPO_ROOT
+    / "specs"
+    / "010-configurazione-cataloghi-integrazioni"
+    / "contracts"
+    / "builder-discovery-api.openapi.yaml",
 }
+
+# Relative references keep their repository filename in the published contract.
+PUBLISHED_CONTRACTS["geban-discovery-endpoint.openapi"] = PUBLISHED_CONTRACTS["geban-discovery-endpoint"]
 
 router = APIRouter(tags=["quality"])
 

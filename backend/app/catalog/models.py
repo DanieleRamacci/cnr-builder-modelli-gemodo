@@ -24,78 +24,10 @@ class TipoDocumento(Base):
     stato: Mapped[str] = mapped_column(String(32), nullable=False, default="BOZZA")
     spec_owner: Mapped[str] = mapped_column(String(128), nullable=False)
     codice_contesto: Mapped[str] = mapped_column(String(64), nullable=False)
-    tipologia_bando_sol_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipologia_bando_sol.id", ondelete="SET NULL"), nullable=True
-    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    categorie: Mapped[list[CategoriaDocumento]] = relationship(back_populates="tipo_documento")
     modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="tipo_documento")
-    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="tipo_documento")
-    registri_contratti_dati: Mapped[list[RegistroContrattiDati]] = relationship(back_populates="tipo_documento")
-
-
-class CategoriaDocumento(Base):
-    __tablename__ = "categoria_documento"
-    __table_args__ = (UniqueConstraint("tipo_documento_id", "codice", name="uq_categoria_documento_tipo_codice"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
-    )
-    codice: Mapped[str] = mapped_column(String(64), nullable=False)
-    nome: Mapped[str] = mapped_column(String(255), nullable=False)
-    stato: Mapped[str] = mapped_column(String(32), nullable=False, default="ATTIVA")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="categorie")
-    modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="categoria_documento")
-    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="categoria_documento")
-
-
-class TipologiaBandoSOL(Base):
-    __tablename__ = "tipologia_bando_sol"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    codice: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
-    codice_sol: Mapped[str] = mapped_column(String(128), nullable=False)
-    descrizione: Mapped[str] = mapped_column(String(255), nullable=False)
-    attiva: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-
-    modelli: Mapped[list[ModelloDocumento]] = relationship(back_populates="tipologia_bando_sol")
-    classificazioni: Mapped[list[ClassificazioneCatalogo]] = relationship(back_populates="tipologia_bando_sol")
-
-
-class ClassificazioneCatalogo(Base):
-    __tablename__ = "classificazione_catalogo"
-    __table_args__ = (
-        UniqueConstraint(
-            "tipo_documento_id",
-            "tipologia_bando_sol_id",
-            "categoria_documento_id",
-            name="uq_classificazione_catalogo_albero",
-        ),
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
-    )
-    tipologia_bando_sol_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipologia_bando_sol.id", ondelete="CASCADE"), nullable=False
-    )
-    categoria_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("categoria_documento.id", ondelete="CASCADE"), nullable=False
-    )
-    attiva: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-
-    tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="classificazioni")
-    tipologia_bando_sol: Mapped[TipologiaBandoSOL] = relationship(back_populates="classificazioni")
-    categoria_documento: Mapped[CategoriaDocumento] = relationship(back_populates="classificazioni")
 
 
 class ModelloDocumento(Base):
@@ -106,12 +38,9 @@ class ModelloDocumento(Base):
     tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
     )
-    categoria_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("categoria_documento.id", ondelete="CASCADE"), nullable=False
-    )
-    tipologia_bando_sol_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipologia_bando_sol.id", ondelete="SET NULL"), nullable=True
-    )
+    codice_categoria: Mapped[str] = mapped_column(String(128), nullable=False)
+    codice_tipologia: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    percorso_categorizzazione: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
     public_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True)
     codice: Mapped[str] = mapped_column(String(128), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -121,8 +50,6 @@ class ModelloDocumento(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="modelli")
-    categoria_documento: Mapped[CategoriaDocumento] = relationship(back_populates="modelli")
-    tipologia_bando_sol: Mapped[TipologiaBandoSOL | None] = relationship(back_populates="modelli")
     versioni: Mapped[list[ModelloDocumentoVersione]] = relationship(back_populates="modello")
 
 
@@ -176,31 +103,6 @@ class ModelloCampoRichiesto(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     versione_modello: Mapped[ModelloDocumentoVersione] = relationship(back_populates="campi")
-
-
-class RegistroContrattiDati(Base):
-    """Contratto dati riusabile scoped per tipo documento (livello 2).
-
-    Distinto da ModelloCampoRichiesto (livello 1, specifico di una versione
-    modello): vincola quali campi un modello di questo tipo documento puo'
-    dichiarare (DEC-001-REGISTRO-CONTRATTI-DATI).
-    """
-
-    __tablename__ = "registro_contratti_dati"
-    __table_args__ = (UniqueConstraint("tipo_documento_id", "codice", name="uq_registro_contratti_tipo_codice"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
-    )
-    codice: Mapped[str] = mapped_column(String(128), nullable=False)
-    versione: Mapped[int] = mapped_column(Integer, nullable=False)
-    campi: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
-    stato: Mapped[str] = mapped_column(String(32), nullable=False, default="ATTIVO")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="registri_contratti_dati")
 
 
 class AuditEventoModello(Base):

@@ -49,6 +49,7 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-gemodo-backend}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
       DOCUMENTALE_MOCK_URL: http://documentale-mock:9000
+      GEMODO_DISCOVERY_ENDPOINTS: ${GEMODO_DISCOVERY_ENDPOINTS:-}
     ports:
       - "8000:8000"
     depends_on:

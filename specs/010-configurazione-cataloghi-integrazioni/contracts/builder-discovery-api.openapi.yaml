@@ -1,0 +1,238 @@
+openapi: 3.1.0
+info:
+  title: Builder - selezione discovery ricorsiva
+  version: 0.2.0
+  description: >-
+    Sostituisce la proiezione piatta tipologie/campi. Catalogo esterno solo
+    in memoria; persistono modelli GEMODO, percorso e contratto per versione.
+    URL operativamente configurato per tipo documento, senza fallback locale.
+    Onboarding amministrativo e controllo variazioni sono incrementi separati.
+security:
+  - KeycloakBearer: []
+  - KeycloakSSO: []
+paths:
+  /api/v1/builder/tipi-documento/{codiceTipoDocumento}/struttura-disponibile:
+    get:
+      x-required-role: GEMODO_MODELLI_GESTORE
+      parameters:
+        - name: codiceTipoDocumento
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Albero reale con profondita variabile, campi solo nelle foglie.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [codice_tipo_documento, validita, nodi]
+                properties:
+                  codice_tipo_documento: {type: string}
+                  validita: {type: string, format: date-time}
+                  nodi:
+                    type: array
+                    items:
+                      $ref: './geban-discovery-endpoint.openapi.yaml#/components/schemas/NodoCategorizzazione'
+              example:
+                codice_tipo_documento: BANDO_CONCORSO
+                validita: '2026-09-17T00:00:00Z'
+                nodi:
+                  - codice: TD
+                    descrizione: Tempo determinato
+                    figli:
+                      - codice: RICERCATORE
+                        descrizione: Ricercatore
+                        campi:
+                          - {codice: titolo_it, etichetta: Titolo, tipo: string, lingua: IT, obbligatorio: true, ordine: 1}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '502': {$ref: '#/components/responses/DiscoveryInvalid'}
+        '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+  /api/v1/builder/modelli:
+    post:
+      x-required-role: GEMODO_MODELLI_GESTORE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [codice, nome, codice_tipo_documento]
+              anyOf:
+                - required: [percorso_categorizzazione]
+                - required: [codice_categoria]
+              properties:
+                codice: {type: string, minLength: 1, maxLength: 128}
+                nome: {type: string, minLength: 1, maxLength: 255}
+                codice_tipo_documento: {type: string, minLength: 1}
+                percorso_categorizzazione:
+                  type: array
+                  minItems: 1
+                  maxItems: 64
+                  items: {type: string, minLength: 1}
+                codice_categoria: {type: [string, 'null']}
+                codice_tipologia: {type: [string, 'null']}
+                variante: {type: string, default: STANDARD, maxLength: 64}
+            example:
+              codice: BANDO_TD_RICERCATORE
+              nome: Bando TD ricercatore
+              codice_tipo_documento: BANDO_CONCORSO
+              percorso_categorizzazione: [TD, RICERCATORE]
+      responses:
+        '201':
+          description: Modello salvato con codici e percorso, senza FK al catalogo esterno.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ModelloResponse'}
+              example:
+                id: '00000000-0000-0000-0000-000000000001'
+                public_id: 1
+                codice: BANDO_TD_RICERCATORE
+                nome: Bando TD ricercatore
+                codice_tipo_documento: BANDO_CONCORSO
+                codice_categoria: RICERCATORE
+                codice_tipologia: TD
+                percorso_categorizzazione: [TD, RICERCATORE]
+                variante: STANDARD
+        '400': {$ref: '#/components/responses/BadSelection'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '502': {$ref: '#/components/responses/DiscoveryInvalid'}
+        '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+  /api/v1/builder/modelli/{modelloId}/versioni:
+    post:
+      x-required-role: GEMODO_MODELLI_GESTORE
+      parameters:
+        - name: modelloId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [campi]
+              additionalProperties: false
+              properties:
+                campi:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [codice]
+                    properties:
+                      codice: {type: string}
+                      lingua: {type: string, default: IT}
+            example:
+              campi: [{codice: titolo_it, lingua: IT}]
+      responses:
+        '201':
+          description: Contratto dei campi della sola foglia selezionata salvato nella versione.
+          content:
+            application/json:
+              example:
+                id: '00000000-0000-0000-0000-000000000002'
+                public_id: 1
+                modello_id: '00000000-0000-0000-0000-000000000001'
+                numero_versione: 1
+                stato: BOZZA
+                pubblicato_at: null
+              schema: {$ref: '#/components/schemas/VersioneResponse'}
+        '400': {$ref: '#/components/responses/BadSelection'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '502': {$ref: '#/components/responses/DiscoveryInvalid'}
+        '503': {$ref: '#/components/responses/DiscoveryUnavailable'}
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+        dettagli: {type: array, items: {type: object}}
+    ModelloResponse:
+      type: object
+      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante]
+      properties:
+        id: {type: string, format: uuid}
+        public_id: {type: [integer, 'null']}
+        codice: {type: string}
+        nome: {type: string}
+        codice_tipo_documento: {type: string}
+        codice_categoria: {type: string}
+        codice_tipologia: {type: [string, 'null']}
+        percorso_categorizzazione: {type: array, items: {type: string}}
+        variante: {type: string}
+    VersioneResponse:
+      type: object
+      required: [id, public_id, modello_id, numero_versione, stato, pubblicato_at]
+      properties:
+        id: {type: string, format: uuid}
+        public_id: {type: [integer, 'null']}
+        modello_id: {type: string, format: uuid}
+        numero_versione: {type: integer}
+        stato: {type: string}
+        pubblicato_at: {type: [string, 'null'], format: date-time}
+  responses:
+    Unauthorized:
+      description: Token assente/non valido.
+      content:
+        application/json:
+          example: {codice: ACCESSO_NON_AUTENTICATO, messaggio: Token Bearer mancante o non valido}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Forbidden:
+      description: Scrittura non autorizzata sul contesto del tipo documento.
+      content:
+        application/json:
+          example: {codice: ACCESSO_NON_AUTORIZZATO, messaggio: Operazione non autorizzata}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    BadSelection:
+      description: Percorso necessario/ambiguo/incoerente o campi duplicati.
+      content:
+        application/json:
+          example: {codice: CONTESTO_NON_VALIDO, messaggio: Indicare il percorso completo}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    NotFound:
+      description: Tipo, modello, percorso foglia o campo assente.
+      content:
+        application/json:
+          example: {codice: CONTESTO_NON_VALIDO, messaggio: Percorso non disponibile o non foglia}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    DiscoveryInvalid:
+      description: Risposta esterna non conforme alla forma comune.
+      content:
+        application/json:
+          example: {codice: DISCOVERY_NON_CONFORME, messaggio: La risposta discovery non rispetta il contratto}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    DiscoveryUnavailable:
+      description: URL non configurata o servizio irraggiungibile, senza fallback locale.
+      content:
+        application/json:
+          examples:
+            configurazione:
+              value: {codice: DISCOVERY_NON_CONFIGURATA, messaggio: Endpoint discovery non configurato per questo tipo documento}
+            servizio:
+              value: {codice: DISCOVERY_NON_DISPONIBILE, messaggio: Impossibile contattare il servizio discovery}
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+  securitySchemes:
+    KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
+    KeycloakSSO:
+      type: oauth2
+      description: Login CNR con Authorization Code e PKCE, come il catalogo operativo.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://sso.test.si.cnr.it/auth/realms/cnr/protocol/openid-connect/auth
+          tokenUrl: https://sso.test.si.cnr.it/auth/realms/cnr/protocol/openid-connect/token
+          scopes:
+            openid: Identita OpenID Connect
+            profile: Profilo utente CNR
+            email: Email utente CNR

@@ -1,5 +1,11 @@
 # Tasks: Catalogo Modelli E Contratto Dati GEBAN
 
+**Riallineamento 2026-09-17 (010 FR-016)**: catalogo esterno locale e API
+classificazione ritirati. Goal/task del primo incremento sotto sono storico;
+per FR-020 vale la ricerca v0.4 aggiornata nella spec: filtro senza
+corrispondenze -> 200/modelli vuoti, non TIPOLOGIA_SOL_NON_VALIDA.
+Task di rinomina tabelle del catalogo T080-T084 sono SUPERATI/SOSPESI.
+
 **Input**: Design documents from `specs/001-catalogo-contratto-geban/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/geban-catalog-api.openapi.yaml`, `quickstart.md`
@@ -137,8 +143,8 @@ typologies (FR-020).
 
 **Independent Test**: With demo data containing published and non-published versions,
 catalog calls return only valid published versions in operative mode and archived
-historical versions in historical mode; an unrecognized `codice_tipologia` returns
-`TIPOLOGIA_SOL_NON_VALIDA`, not an empty list.
+historical versions in historical mode. In v0.4 an unmatched `codice_tipologia`
+returns an empty list; the old allowlist/error behavior is retired.
 
 ### Tests for User Story 1
 
@@ -357,11 +363,18 @@ Task: T054 Add bando_inglese=false does-not-require-English test in backend/test
 
 ## Notes
 
+Riallineamento documentale 010 FR-016, 2026-09-17: T029/T030 e la validazione
+locale di T032/T039 sono evidenze storiche ritirate, non requisiti runtime.
+T080-T084 sono SUPERATI/SOSPESI: non rinominare/reintrodurre tabelle del catalogo
+eliminate da migration 0009. Semantica corrente v0.4: codice_tipologia e profilo
+filtrano i soli modelli GEMODO, senza corrispondenze -> 200/modelli vuoti.
+Le note storiche su TIPOLOGIA_SOL_NON_VALIDA non prevalgono su FR-020 aggiornato.
+Questa modifica non esegue nuovi task implementativi della 001.
+
 - All operative calls after catalog selection require `modello_versione_id` (int64,
   `DEC-001-IDENTIFICATIVI-MODELLO`).
 - Campi extra in payload are blocking validation errors.
-- `codice_tipologia` non riconosciuto e' un errore funzionale (`TIPOLOGIA_SOL_NON_VALIDA`),
-  mai un filtro silenzioso.
+- `codice_tipologia` senza modelli corrispondenti restituisce lista vuota (v0.4).
 - Campi `lingua=EN` sono obbligatori solo se `bando_inglese=true`.
 - API operative protette: catalogo/campi richiedono token valido con
   `DOCUMENTI_VIEWER` o `DOCUMENTI_GENERATORE`; validazione payload richiede

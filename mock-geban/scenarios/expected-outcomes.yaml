@@ -29,7 +29,6 @@ scenario_outcomes:
     output_attesi: []
     errori_attesi:
       - CAMPO_OBBLIGATORIO
-      - TIPOLOGIA_SOL_NON_VALIDA
       - CAMPO_INGLESE_MANCANTE
 
   - scenario_id: E2E-003

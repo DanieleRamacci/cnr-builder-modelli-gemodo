@@ -28,53 +28,6 @@ class TipoCampo(StrEnum):
     OBJECT = "object"
 
 
-class TipoDocumentoSchema(BaseModel):
-    codice: str
-    descrizione: str
-
-
-class TipoDocumentoListResponse(BaseModel):
-    items: list[TipoDocumentoSchema]
-
-
-class ProfiloDocumentoSchema(BaseModel):
-    codice: str
-    descrizione: str
-
-
-class ProfiloDocumentoListResponse(BaseModel):
-    tipo_documento: str
-    profili: list[ProfiloDocumentoSchema]
-
-
-class TipologiaCatalogoSchema(BaseModel):
-    codice: str
-    descrizione: str
-    profili: list[ProfiloDocumentoSchema]
-
-
-class ClassificazioneCatalogoResponse(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "tipo_documento": "BANDO_CONCORSO",
-                "tipologie": [
-                    {
-                        "codice": "TD",
-                        "descrizione": "Tempo determinato",
-                        "profili": [
-                            {"codice": "COLLABORATORE_TECNICO_ER", "descrizione": "Collaboratore Tecnico E.R."}
-                        ],
-                    }
-                ],
-            }
-        }
-    )
-
-    tipo_documento: str
-    tipologie: list[TipologiaCatalogoSchema]
-
-
 class ModelloCatalogoSchema(BaseModel):
     modello_id: int = Field(..., ge=1)
     modello_versione_id: int = Field(..., ge=1)
@@ -140,7 +93,3 @@ class CampiRichiestiResponse(BaseModel):
     profilo: str | None = None
     campi: list[CampoRichiestoSchema]
     schema_: dict[str, Any] = Field(alias="schema")
-
-
-CategoriaDocumentoSchema = ProfiloDocumentoSchema
-CategoriaDocumentoListResponse = ProfiloDocumentoListResponse

@@ -8,15 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.catalog.models import CategoriaDocumento, ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione
-
-
-def get_categoria_by_codice(db: Session, tipo_documento_id: uuid.UUID, codice: str) -> CategoriaDocumento | None:
-    stmt = select(CategoriaDocumento).where(
-        CategoriaDocumento.tipo_documento_id == tipo_documento_id,
-        CategoriaDocumento.codice == codice,
-    )
-    return db.scalar(stmt)
+from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione
 
 
 def _prossimo_public_id(db: Session, model) -> int:
@@ -30,16 +22,18 @@ def crea_modello(
     codice: str,
     nome: str,
     tipo_documento_id: uuid.UUID,
-    categoria_documento_id: uuid.UUID,
-    tipologia_bando_sol_id: uuid.UUID | None,
+    codice_categoria: str,
+    codice_tipologia: str | None,
+    percorso_categorizzazione: list[str],
     variante: str,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
         id=uuid.uuid4(),
         public_id=_prossimo_public_id(db, ModelloDocumento),
         tipo_documento_id=tipo_documento_id,
-        categoria_documento_id=categoria_documento_id,
-        tipologia_bando_sol_id=tipologia_bando_sol_id,
+        codice_categoria=codice_categoria,
+        codice_tipologia=codice_tipologia,
+        percorso_categorizzazione=percorso_categorizzazione,
         codice=codice,
         nome=nome,
         variante=variante,
@@ -55,8 +49,6 @@ def get_modello(db: Session, modello_id: uuid.UUID) -> ModelloDocumento | None:
         select(ModelloDocumento)
         .options(
             joinedload(ModelloDocumento.tipo_documento),
-            joinedload(ModelloDocumento.categoria_documento),
-            joinedload(ModelloDocumento.tipologia_bando_sol),
         )
         .where(ModelloDocumento.id == modello_id)
     )
@@ -108,8 +100,7 @@ def get_versione_pubblicata_corrente(
     db: Session,
     *,
     tipo_documento_id: uuid.UUID,
-    categoria_documento_id: uuid.UUID,
-    tipologia_bando_sol_id: uuid.UUID | None,
+    percorso_categorizzazione: list[str],
     variante: str,
     escludi_versione_id: uuid.UUID,
 ) -> ModelloDocumentoVersione | None:
@@ -118,8 +109,7 @@ def get_versione_pubblicata_corrente(
         .join(ModelloDocumento, ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id)
         .where(
             ModelloDocumento.tipo_documento_id == tipo_documento_id,
-            ModelloDocumento.categoria_documento_id == categoria_documento_id,
-            ModelloDocumento.tipologia_bando_sol_id == tipologia_bando_sol_id,
+            ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
             ModelloDocumento.variante == variante,
             ModelloDocumentoVersione.stato == "PUBBLICATO",
             ModelloDocumentoVersione.id != escludi_versione_id,

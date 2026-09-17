@@ -23,8 +23,9 @@ from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloD
 from app.common.errors import BuilderDomainError, ErrorCode
 from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto
 from app.db.session import get_db
-from app.discovery.adapter_locale import AdapterLocale
-from app.discovery.schemas import CampoDisponibile, TipologiaDisponibile
+from app.discovery.configuration import discovery_per_tipo
+from app.discovery.port import PortaDiscovery
+from app.discovery.schemas import CatalogoDiscovery
 
 TRANSIZIONI_VALIDE: dict[str, set[str]] = {
     "BOZZA": {"IN_REVISIONE"},
@@ -37,54 +38,61 @@ TRANSIZIONI_VALIDE: dict[str, set[str]] = {
 
 
 class BuilderService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, discovery: PortaDiscovery | None = None) -> None:
         self.db = db
-        self.discovery = AdapterLocale(db)
+        self.discovery = discovery
 
-    def struttura_disponibile(self, principal: PrincipalGEMODO, codice_tipo_documento: str) -> tuple[list[TipologiaDisponibile], list[CampoDisponibile]]:
+    def _catalogo(self, codice: str, *, aggiornato: bool = False) -> CatalogoDiscovery:
+        porta = self.discovery if self.discovery is not None else discovery_per_tipo(codice)
+        return porta.catalogo_discovery(codice, forza_aggiornamento=aggiornato)
+
+    def struttura_disponibile(self, principal: PrincipalGEMODO, codice_tipo_documento: str) -> CatalogoDiscovery:
         tipo = self._resolve_tipo_documento(codice_tipo_documento)
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
-        return (
-            self.discovery.tipologie_disponibili(codice_tipo_documento),
-            self.discovery.campi_disponibili(codice_tipo_documento),
-        )
+        return self._catalogo(codice_tipo_documento)
 
     def crea_modello(self, principal: PrincipalGEMODO, request: CreaModelloRequest) -> ModelloDocumento:
         tipo = self._resolve_tipo_documento(request.codice_tipo_documento)
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
 
-        tipologie = self.discovery.tipologie_disponibili(request.codice_tipo_documento)
-        tipologia_scelta = None
-        if request.codice_tipologia is not None:
-            tipologia_scelta = next((t for t in tipologie if t.codice == request.codice_tipologia), None)
-            if tipologia_scelta is None:
+        indice = self._catalogo(request.codice_tipo_documento, aggiornato=True).indice_percorsi()
+
+        def riferimenti(percorso: tuple[str, ...]) -> tuple[str, str | None]:
+            nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+            categoria = next((n.codice for n in reversed(nodi) if n.tipo_livello == "profilo"), percorso[-1])
+            tipologia = next((n.codice for n in nodi if n.tipo_livello == "tipologia"), None)
+            return categoria, tipologia
+
+        if request.percorso_categorizzazione is not None:
+            percorso = tuple(request.percorso_categorizzazione)
+            foglia = indice.get(percorso)
+            if foglia is None or foglia.campi is None:
+                raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, "Percorso non disponibile o non foglia", status_code=404)
+            categoria, tipologia = riferimenti(percorso)
+            if ((request.codice_categoria is not None and request.codice_categoria != categoria)
+                or (request.codice_tipologia is not None and request.codice_tipologia != tipologia)):
+                raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, "Codici incoerenti con il percorso scelto", status_code=400)
+        else:
+            candidati = [p for p, n in indice.items() if n.campi is not None
+                         and riferimenti(p)[0] == request.codice_categoria
+                         and (request.codice_tipologia is None or riferimenti(p)[1] == request.codice_tipologia)]
+            if len(candidati) != 1:
                 raise BuilderDomainError(
                     ErrorCode.CONTESTO_NON_VALIDO,
-                    "Tipologia non disponibile per questo tipo documento",
-                    status_code=404,
+                    "Selezione ambigua: indicare il percorso completo" if candidati else "Categoria/tipologia non disponibile",
+                    status_code=400 if candidati else 404,
                 )
-            if not any(p.codice == request.codice_categoria for p in tipologia_scelta.profili):
-                raise BuilderDomainError(
-                    ErrorCode.CONTESTO_NON_VALIDO,
-                    "Categoria non ammessa per la tipologia scelta",
-                    status_code=404,
-                )
-
-        categoria = builder_repository.get_categoria_by_codice(self.db, tipo.id, request.codice_categoria)
-        if categoria is None:
-            raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, "Categoria non trovata", status_code=404)
-
-        tipologia_row = None
-        if request.codice_tipologia is not None:
-            tipologia_row = catalog_repository.get_tipologia_sol_by_codice(self.db, request.codice_tipologia)
+            percorso = candidati[0]
+            categoria, tipologia = riferimenti(percorso)
 
         modello = builder_repository.crea_modello(
             self.db,
             codice=request.codice,
             nome=request.nome,
             tipo_documento_id=tipo.id,
-            categoria_documento_id=categoria.id,
-            tipologia_bando_sol_id=tipologia_row.id if tipologia_row else None,
+            codice_categoria=categoria,
+            codice_tipologia=tipologia,
+            percorso_categorizzazione=list(percorso),
             variante=request.variante,
         )
         registra_evento(
@@ -106,9 +114,17 @@ class BuilderService:
             raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
 
+        foglia = self._catalogo(modello.tipo_documento.codice, aggiornato=True).indice_percorsi().get(
+            tuple(modello.percorso_categorizzazione)
+        )
+        if foglia is None or foglia.campi is None:
+            raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, "Il ramo del modello non e' piu' disponibile", status_code=404)
+        chiavi = [(campo.codice, campo.lingua) for campo in campi_richiesti]
+        if len(set(chiavi)) != len(chiavi):
+            raise BuilderDomainError(ErrorCode.CAMPO_NON_AMMESSO, "Campi duplicati nella versione", status_code=400)
         disponibili = {
             (campo.codice, campo.lingua): campo
-            for campo in self.discovery.campi_disponibili(modello.tipo_documento.codice)
+            for campo in foglia.campi
         }
         campi_modello: list[ModelloCampoRichiesto] = []
         for richiesto in campi_richiesti:
@@ -117,7 +133,7 @@ class BuilderService:
             if sorgente is None:
                 raise BuilderDomainError(
                     ErrorCode.CAMPO_NON_AMMESSO,
-                    f"Campo '{richiesto.codice}' ({richiesto.lingua}) non presente nel registro contratti dati",
+                    f"Campo '{richiesto.codice}' ({richiesto.lingua}) non presente nel ramo discovery selezionato",
                     status_code=404,
                 )
             campi_modello.append(
@@ -125,7 +141,8 @@ class BuilderService:
                     id=uuid.uuid4(),
                     codice=sorgente.codice,
                     etichetta=sorgente.etichetta,
-                    tipo_dato=sorgente.tipo_dato,
+                    tipo_dato=sorgente.tipo,
+                    descrizione=sorgente.descrizione,
                     obbligatorio=sorgente.obbligatorio,
                     lingua=sorgente.lingua,
                     ordine=sorgente.ordine,
@@ -166,8 +183,7 @@ class BuilderService:
             precedente = builder_repository.get_versione_pubblicata_corrente(
                 self.db,
                 tipo_documento_id=modello.tipo_documento_id,
-                categoria_documento_id=modello.categoria_documento_id,
-                tipologia_bando_sol_id=modello.tipologia_bando_sol_id,
+                percorso_categorizzazione=modello.percorso_categorizzazione,
                 variante=modello.variante,
                 escludi_versione_id=versione.id,
             )

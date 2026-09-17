@@ -1,0 +1,51 @@
+{
+  "reviewer_id": "primary",
+  "valid": true,
+  "message": "Claude Code reviewer completed",
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "category": "dependency_impact",
+      "finding_type": "workflow",
+      "title": "specs/002-builder-modelli/data-model.md not updated after PortaDiscovery redesign",
+      "path": "specs/002-builder-modelli/data-model.md",
+      "line": 36,
+      "evidence": "Lines 36-39 still describe PortaDiscovery.tipologie_disponibili / profili_disponibili / attributi_profilo / campi_disponibili as the port's four methods. This diff's specs/010-configurazione-cataloghi-integrazioni/data-model.md:24 redefines the canonical port as a single catalogo_discovery(codice_tipo_documento, forza_aggiornamento=False) -> CatalogoDiscovery method (matching backend/app/discovery/port.py), and 010's doc explicitly tells readers to consult the 002 note for the port shape ('la 002 la consuma senza ridefinirla, vedi nota in specs/002-builder-modelli/data-model.md'). Two of the four methods listed in 002 (profili_disponibili, attributi_profilo) were never implemented in backend/app/discovery/adapter_locale.py even before this diff, so the cross-referenced doc was already partly aspirational and is now fully out of sync with the real interface.",
+      "recommendation": "Update the PortaDiscovery section of specs/002-builder-modelli/data-model.md to reference catalogo_discovery (or replace it with a pointer to 010's data-model.md) so the two mutually cross-referencing specs stay consistent.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "other",
+      "finding_type": "application",
+      "title": "Discovery error codes bypass the shared ErrorCode registry",
+      "path": "backend/app/discovery/errors.py",
+      "line": 12,
+      "evidence": "DiscoveryError is raised with raw string codes 'DISCOVERY_NON_CONFORME' (errors.py:12) and 'DISCOVERY_NON_DISPONIBILE' (adapter_http.py:80-82, 114-116) instead of app.common.errors.ErrorCode members. Every other DomainError subclass in the codebase (CatalogError in app/catalog/service.py, BuilderDomainError in app/builder/service.py, PayloadValidationDomainError in app/validation/service.py) is always constructed with an ErrorCode enum value, and backend tests (e.g. tests/catalog/test_catalogo_categorie_api.py) assert against that enum. ErrorCode is a closed StrEnum that does not list these two new codes, so it silently stops being the single source of truth for valid API error codes.",
+      "recommendation": "Add DISCOVERY_NON_CONFORME and DISCOVERY_NON_DISPONIBILE as members of app.common.errors.ErrorCode and raise DiscoveryError with those enum members, matching the pattern used by every other domain error in the codebase.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "LOW",
+      "category": "missing_requirement",
+      "finding_type": "repo_hygiene",
+      "title": "Active feature 010 has no requirements checklist",
+      "path": "specs/010-configurazione-cataloghi-integrazioni",
+      "line": null,
+      "evidence": "Every other feature directory in feature_inventory (specs/001 through specs/009) contains checklists/requirements.md; specs/010-configurazione-cataloghi-integrazioni does not, and review_scope.included_documents for 010 correspondingly omits it. FR-001..FR-015, including the two requirements added in this diff (FR-014, FR-015), have no checklist-based traceability for this active/READY feature.",
+      "recommendation": "Run the Spec Kit checklist step for feature 010 to produce checklists/requirements.md, covering at minimum FR-012 (GEMODO_ADMIN), FR-014 and FR-015, before closing out the increment.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "INFO",
+      "category": "other",
+      "finding_type": "workflow",
+      "title": "9 of 10 Spec Kit features remain unreviewed since 2026-09-01",
+      "path": ".adev/review-ledger.json",
+      "line": null,
+      "evidence": "feature_inventory.features in the review request lists specs/001-catalogo-contratto-geban through specs/009-fondamenta-mock-test-qualita all with review_status CHANGED or FAILED, last_verdict FAIL, last_reviewed_at 2026-09-01T14:17:13Z, and needs_review true; feature_inventory.reviewed_features is empty and none have been re-reviewed since that date.",
+      "recommendation": "Schedule re-review passes for specs/001 through specs/009 against their current documents (not only the active feature 010) to clear the standing FAIL verdicts in the ledger, as the review instructions require checking features_needing_review even when they are not the active feature.",
+      "reviewer_id": "primary"
+    }
+  ]
+}

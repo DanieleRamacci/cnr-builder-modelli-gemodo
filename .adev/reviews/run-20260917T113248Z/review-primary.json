@@ -1,0 +1,40 @@
+{
+  "reviewer_id": "primary",
+  "valid": true,
+  "message": "Claude Code reviewer completed",
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "finding_type": "workflow",
+      "category": "missing_requirement",
+      "title": "T059 marked done but 002/data-model.md still documents retired CategoriaDocumento/TipologiaBandoSOL as live FK entities",
+      "path": "specs/002-builder-modelli/data-model.md",
+      "line": 80,
+      "evidence": "The 2026-09-17 preamble (lines 3-31) says FR-016 dismisses categorie/tipologie/classificazione and that 'le sezioni storiche sotto non autorizzano a reintrodurli', but the rest of the same file (Entities section) still fully defines '### CategoriaDocumento' (lines 80-97, fields codice_tipo_documento/codice/descrizione/attiva, validation 'una categoria non attiva non puo' essere usata...') and '### TipologiaBandoSOL' (lines 125-141, with the full TDPNRR/CD/DIR/... enumeration), and the Relationships block (lines 253-257) still shows 'TipoDocumento 1--N CategoriaDocumento', 'CategoriaDocumento 1--N ModelloDocumento', 'TipologiaBandoSOL 1--N ModelloDocumento'. Migration backend/alembic/versions/0009_ritiro_catalogo_esterno_locale.py (part of this same diff) drops the categoria_documento, tipologia_bando_sol and classificazione_catalogo tables and removes their FK columns from modello_documento entirely, replacing them with plain codice_categoria/codice_tipologia/percorso_categorizzazione fields (see backend/app/catalog/models.py ModelloDocumento). T059 in tasks.md is checked '[x]' as 'Riallineare il riferimento documentale alla porta condivisa ... alla porta canonica della 010', and only the Porta Di Discovery section was actually rewritten - the contradicting legacy entity/relationship sections were left in place.",
+      "recommendation": "Rewrite or delete the CategoriaDocumento/TipologiaBandoSOL Entities sections and the Relationships diagram in specs/002-builder-modelli/data-model.md so they reflect the current schema (codice_categoria/codice_tipologia/percorso_categorizzazione, no FK to a local classification table), consistent with specs/010-configurazione-cataloghi-integrazioni/data-model.md. A top-of-file disclaimer is not sufficient when ~150 lines of contradicting schema detail follow it - a reader or future implementer skimming the Entities/Relationships sections will design against tables that no longer exist.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "workflow",
+      "category": "missing_requirement",
+      "title": "001/data-model.md still describes the retired classification tables as a DB-backed 'cache locale', contradicting the in-memory-only cache this same diff implements",
+      "path": "specs/001-catalogo-contratto-geban/data-model.md",
+      "line": 12,
+      "evidence": "Lines 12-18 state that for an integrated tipo documento (e.g. BANDO_CONCORSO) 'le righe sono una cache locale a TTL breve, popolate/aggiornate da un adapter HTTP che chiama l'endpoint di discovery registrato', and lines 24-29 say 'infra/local/postgres/seed-demo-catalog.yaml continua a esistere e a popolare queste tabelle' for CategoriaDocumento/TipologiaDocumento/RegistroContrattiDati. But backend/alembic/versions/0009_ritiro_catalogo_esterno_locale.py (this diff) drops categoria_documento, tipologia_bando_sol, classificazione_catalogo and registro_contratti_dati outright, and the actual AdapterHTTP cache (backend/app/discovery/cache.py CacheDiscovery) is explicitly process-memory only with a 60s TTL, never persisted to any DB table (confirmed by specs/010-configurazione-cataloghi-integrazioni/data-model.md and research.md, which repeatedly stress 'mai una tabella DB persistente'). specs/001 is listed in review_scope.included_features with review_status CHANGED/needs_review true, yet its data-model.md was not touched in this diff even though 001/tasks.md and 001/spec.md were updated with the FR-016 riallineamento note.",
+      "recommendation": "Update specs/001-catalogo-contratto-geban/data-model.md to remove the 'cache locale a TTL breve' / DB-table framing for integrated tipo documento and state plainly that classification data now lives only in the in-memory CacheDiscovery (010), with zero DB persistence; also clarify that infra/local/postgres/seed-demo-catalog.yaml's categorie/classificazioni/tipologie_sol sections are legacy fixtures consumed only by the quality-gate validator (backend/app/quality/seed_demo.py), not live seed data for tables that exist anymore.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "tooling",
+      "category": "insufficient_test",
+      "title": "adev's tracked-document set for feature 010 omits the OpenAPI YAML contracts changed in this diff",
+      "path": "specs/010-configurazione-cataloghi-integrazioni/tasks.md",
+      "line": 475,
+      "evidence": "review_scope.included_documents for specs/010-configurazione-cataloghi-integrazioni (request.json) lists only markdown files (spec.md, plan.md, tasks.md, research.md, data-model.md, checklists/requirements.md, incremento-discovery.md, contracts/esempio-discovery-per-nodi/README.md) - it never lists contracts/configurazione-cataloghi-api.openapi.yaml, contracts/geban-discovery-endpoint.openapi.yaml, or the new contracts/builder-discovery-api.openapi.yaml, even though all three changed/were added in this diff and are the Contract-First deliverables the constitution (Principle II) requires to gate runtime implementation. tasks.md T071 already self-tracks this exact gap as SOSPESO: 'il CLI adev censisce documenti markdown ma non YAML OpenAPI ... review esplicita del diff dei contratti resta obbligatoria anche quando needs_review non cambia'.",
+      "recommendation": "Until adev's document-hash tracking is extended to include *.yaml/*.yml files under specs/**/contracts/, reviewers must manually diff every OpenAPI contract on each run (as T071 already mandates) since needs_review/document_hash will not flag contract-only changes; consider fixing adev's document glob so contract drift is caught automatically instead of relying on a manual note in tasks.md.",
+      "reviewer_id": "primary"
+    }
+  ]
+}

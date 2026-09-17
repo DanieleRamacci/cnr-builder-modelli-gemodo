@@ -16,6 +16,21 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-17: dismissione del catalogo esterno locale
+
+Il catalogo delle categorie/tipologie/combinazioni GEBAN non viene persistito
+in GEMODO. Si rimuovono ORM, repository e API di classificazione del vecchio
+flusso, oltre al fallback del builder sul seed locale. I modelli creati in
+GEMODO, le versioni, il contratto selezionato e lo storico restano persistenti:
+sono prodotti del servizio, non una replica del catalogo GEBAN.
+Il modello conserva codici e percorso esterno, senza FK a tabelle di
+classificazione locale. Prima della creazione modello/versione la selezione
+deve essere verificata su una foglia della porta ricorsiva.
+Questa decisione sostituisce le precedenti note di riuso delle entita'
+CategoriaDocumento/TipologiaBandoSOL/ClassificazioneCatalogo della 001.
+La configurazione self-service e la documentazione di esempio sono distinte
+dal catalogo GEBAN; non giustificano un fallback per un'integrazione non connessa.
+
 ### Session 2026-09-15
 
 - Q: Serve imporre un solo endpoint HTTP a ogni sistema che si integra? -> A: No.
@@ -82,13 +97,44 @@ DOCUMENTO`).
 
 ## User Scenarios & Testing *(mandatory)*
 
+### Decisione 2026-09-17: verifica autonoma delle variazioni GEBAN
+
+GEBAN espone il discovery completo su
+`https://geban-service.test.si.cnr.it/api/v1/gemodo/discovery`.
+Non si richiedono ID numerici o versioni esterne per ogni campo. GEMODO
+identifica il ramo con il percorso completo dei codici e conserva sulla versione
+del modello una firma SHA-256 dei dati rilevanti alla creazione. I codici devono
+essere stabili: una modifica semantica non esposta nella risposta non e' rilevabile.
+
+La firma usa chiavi ordinate, campi ordinati per codice e opzioni ordinate dove
+l'ordine non ha significato. Include percorso, definizioni rilevanti dei campi
+(codice, tipo, obbligatorieta', vincoli), attributi utilizzati e default.
+Esclude timestamp di acquisizione, `validita` variabile a ogni richiesta e
+dettagli puramente descrittivi. Rileva anche nuovi campi obbligatori nel ramo;
+nuovi campi opzionali non utilizzati non rendono da soli il modello incompatibile.
+
+Il controllo recupera il catalogo corrente e ricalcola la firma del ramo.
+Una firma diversa avvia il confronto con il contratto immutabile del modello:
+la firma da sola non spiega la differenza e non determina automaticamente
+l'obsolescenza. Un percorso scomparso viene segnalato esplicitamente.
+Non si conserva una replica persistente dell'intero catalogo GEBAN: si salvano
+solo contratto del modello, firma, data/esito verifica e differenze rilevanti.
+
+Un runner periodico recupera una risposta per integrazione e ciclo, indicizza
+i rami in memoria e confronta i modelli interessati. Un'indisponibilita' esterna
+produce un esito non verificabile, non una dichiarazione di obsolescenza.
+Il controllo e' previsto anche prima della nuova generazione ufficiale, con
+ownership del percorso di generazione nella spec 004. Frequenza, timeout,
+politica di indisponibilita' e soglie di blocco/avviso restano da dettagliare.
+Le versioni pubblicate non si aggiornano automaticamente.
+
 ### User Story 1 - Definire la struttura di un tipo documento (Priority: P1)
 
 Come operatore GEMODO, voglio definire — tramite una visualizzazione JSON ad
 albero — un tipo documento con le sue tipologie, profili e campi del contratto
 dati, cosi' da avere un'unica sorgente per generare sia la documentazione per un
-integratore esterno sia, per un contesto self-service, il Registro Contratti Dati
-interno.
+integratore esterno sia, in un incremento self-service successivo, una
+definizione proprietaria GEMODO (non il registro globale legacy).
 
 **Why this priority**: senza questo passo nessun altro passo del flusso di
 onboarding (generazione contratto, registrazione endpoint) puo' iniziare.
@@ -166,10 +212,12 @@ irraggiungibile, resta "non connesso" con un errore esplicito.
    *creazione modello* (non di sola consultazione), **When** un operatore prova a
    creare un modello, **Then** l'operazione fallisce con errore esplicito, non con
    un menu vuoto silenzioso.
-4. **Given** un tipo documento self-service (nessun sistema esterno), **When**
+4. **RINVIATO fuori dall'incremento FR-016**: **Given** un tipo documento self-service (nessun sistema esterno), **When**
    l'operatore lo configura, **Then** il flusso si ferma alla User Story 1/2:
    nessuna registrazione di endpoint richiesta, il contesto risulta subito
-   utilizzabile tramite l'adapter locale del Registro Contratti Dati.
+   utilizzabile tramite una sorgente proprietaria canonica da implementare in
+   US1/T036. Nel runtime dell'incremento FR-016, assenza di URL produce 503:
+   non implica self-service e non abilita alcun fallback locale.
 
 ---
 
@@ -205,8 +253,8 @@ documento configurato (definito / connesso / errore ultima verifica).
   gia' connesso e con modelli pubblicati: i modelli esistenti non devono essere
   invalidati silenziosamente (FR-013).
 - Un attributo profilo-dipendente (es. livello) i cui valori ammessi cambiano nel
-  tempo lato sistema esterno: la data di validita' del contratto (User Story 2)
-  permette di distinguere modelli creati con versioni diverse della definizione.
+  tempo lato sistema esterno: firma e contratto del modello consentono il
+  confronto anche senza una data di validita' esterna stabile.
 
 ## Requirements *(mandatory)*
 
@@ -244,33 +292,56 @@ documento configurato (definito / connesso / errore ultima verifica).
 - **FR-009**: Un tipo documento integrato senza un endpoint registrato e
   verificato MUST restare non utilizzabile per la creazione di modelli; questo
   stato MUST essere visibile in una dashboard (User Story 4).
-- **FR-010**: Per un tipo documento self-service (nessun sistema esterno), il
-  flusso MUST usare l'adapter locale del Registro Contratti Dati di GEMODO,
-  rendendo il contesto utilizzabile senza richiedere la registrazione di un
-  endpoint (`DEC-002-PORTS-ADAPTERS-DISCOVERY`).
+- **FR-010** *(RINVIATO fuori dall'incremento FR-016, non criterio di chiusura
+  della dismissione)*: un futuro tipo documento self-service MUST usare una
+  definizione proprietaria GEMODO tramite PortaDiscovery senza endpoint esterno.
+  Non usare le tabelle/AdapterLocale legacy ritirati. Progettazione della
+  sorgente richiesta prima di US1/T036; nel runtime corrente una URL mancante
+  produce DISCOVERY_NON_CONFIGURATA, non attiva implicitamente self-service.
 - **FR-011**: Il client HTTP che interroga un endpoint registrato MUST gestire
   trasparentemente la paginazione se presente, assemblando il risultato completo
   prima di restituirlo al resto del sistema — la definizione (FR-001..FR-007) MUST
   restare indipendente da questo dettaglio di trasporto.
 - **FR-012**: L'accesso a questa interfaccia di amministrazione MUST essere
-  riservato a un ruolo amministrativo distinto da `GEMODO_MODELLI_GESTORE` (che
+  riservato a `GEMODO_ADMIN`, gia' previsto dalla `006` FR-005/FR-005a,
+  distinto da `GEMODO_MODELLI_GESTORE` (che
   opera sui modelli di un tipo documento gia' connesso, non sulla sua
-  definizione) — meccanismo esatto di autorizzazione da dettagliare con la `006`.
+  definizione). Il backend applica il ruolo, senza attribuirlo implicitamente
+  ai ruoli GEBAN di gestione modelli.
 - **FR-013**: Ogni definizione (tipo documento, tipologie, profili, campi) MUST
   essere versionata: una modifica dopo che il contesto e' gia' connesso e in uso
   MUST NOT invalidare silenziosamente i modelli gia' creati con la struttura
   precedente.
+- **FR-014**: Il sistema MUST conservare sulla versione modello percorso,
+  firma SHA-256 versionata e contratto necessario al confronto dei dati esterni,
+  senza una replica persistente del catalogo. Il confronto MUST rilevare nuovi
+  campi obbligatori, dipendenze modificate/rimosse e percorsi scomparsi, ignorando
+  timestamp variabili e modifiche a rami o campi opzionali non utilizzati.
+- **FR-015**: Il sistema MUST prevedere una verifica periodica con una risposta
+  per integrazione/ciclo, esiti distinti dalla pubblicazione e motivi visibili.
+  Un errore esterno MUST risultare non verificabile, mai allineato od obsoleto
+  per il solo errore di connessione. Il controllo alla generazione appartiene
+  alla `004` e richiede la politica di indisponibilita' esplicita.
+- **FR-016**: Il sistema MUST dismettere il catalogo esterno locale: tabelle
+  categorie/tipologie/combinazioni, FK dai modelli, repository e API di
+  classificazione ritirate e adapter locale del vecchio builder. Una migration
+  MUST preservare identificativi/versioni/contratti dei modelli, convertendo
+  i riferimenti precedenti in codici/percorso. Il builder MUST usare il discovery
+  della sorgente integrata e rifiutare una sorgente non configurata, senza seed
+  o dati locali di fallback. La ricerca di modelli GEMODO pubblicati resta locale,
+  filtrata sui riferimenti del modello, senza ricopiare cataloghi esterni.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Tipo Documento** (incluso `codice_contesto`), **Categoria/Profilo Documento**,
-  **Tipologia Documento**, **Campo Richiesto** *(riferimento, definite in `001`)*:
-  questa spec ne aggiunge l'interfaccia di *creazione/definizione*, non ridefinisce
-  le entita' stesse. Nessuna entita' `Ufficio` (`DEC-001-CONTESTO-SOSTITUISCE-
-  UFFICIO`, 2026-09-15): il proprietario di un tipo documento e' un campo diretto
-  (`codice_contesto`), non un'entita' separata da amministrare qui.
-- **Registro Contratti Dati** *(riferimento, `001`)*: destinazione della
-  definizione per un tipo documento self-service.
+- **Tipo Documento**: configurazione proprietaria GEMODO con `codice_contesto`,
+  non replica del catalogo esterno. Nessuna entita' Ufficio separata.
+- **Nodi/Campi Discovery**: categorie/tipologie/profili e definizioni di campo
+  della risposta esterna, tenuti in memoria; nessuna tabella locale di catalogo.
+- **Modello/Versione/Campo Richiesto**: entita' proprietarie persistenti,
+  con percorso selezionato e contratto della sola versione, senza FK esterne.
+- **Definizione Proprietaria Self-service** *(rinviata, FR-010)*: futura
+  sorgente locale esplicita tramite PortaDiscovery, distinta dagli esempi
+  destinati a integrazioni esterne. Il registro globale legacy non esiste piu'.
 - **Attributo Profilo** *(nuova)*: attributo aggiuntivo opzionale su un profilo
   (nome, valori ammessi, valore di default) — generalizza il caso "livello".
   Referenziato da un Campo Richiesto per rendere le sue opzioni dipendenti dal
@@ -294,7 +365,7 @@ documento configurato (definito / connesso / errore ultima verifica).
 - **SC-002**: Un endpoint registrato che non rispetta lo schema generato viene
   segnalato al momento della registrazione (test di connessione), non alla prima
   chiamata in produzione durante la creazione di un modello.
-- **SC-003**: Un tipo documento self-service diventa utilizzabile per la
+- **SC-003** *(RINVIATO fuori dall'incremento FR-016)*: Un tipo documento self-service diventa utilizzabile per la
   creazione di modelli subito dopo la definizione (User Story 1), senza dover
   passare per la User Story 3.
 - **SC-004**: Nessun modello pubblicato viene invalidato da una successiva

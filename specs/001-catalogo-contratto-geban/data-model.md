@@ -1,6 +1,22 @@
 # Data Model - Catalogo Modelli E Contratto Dati GEBAN
 
-## Nota Sull'Ownership Dei Dati (Cascading ADR 0001, 2026-09-15)
+## Modello Corrente (2026-09-17, 010 FR-016)
+
+Fonte canonica: [data-model della 010](../010-configurazione-cataloghi-integrazioni/data-model.md).
+Il catalogo esterno e' letto via HTTP e conservato soltanto in memoria di
+processo con TTL; non esistono tabelle di cache del catalogo, AdapterLocale
+o fallback ai seed. CategoriaDocumento, TipologiaDocumento/TipologiaBandoSOL,
+ClassificazioneCatalogo e RegistroContrattiDati sotto sono entita' ritirate.
+ModelloDocumento conserva codici e percorso di categorizzazione, senza FK
+verso categorie/tipologie esterne. Restano persistenti configurazione del tipo,
+modelli GEMODO, versioni, campi selezionati e audit. Il self-service e' rinviato
+e non autorizza a reintrodurre le tabelle ritirate.
+
+Le sezioni successive sono archivio del progetto precedente, non schema
+runtime o istruzioni di implementazione; i relativi seed e riferimenti DB
+servono soltanto alla storia delle migrazioni precedenti alla 0009.
+
+## Nota Storica Sull'Ownership Dei Dati (Superata Da FR-016)
 
 `docs/adr/0001-ownership-dati-esterni-e-onboarding-contesti.md` e le decisioni
 `DEC-001-OWNERSHIP-DATI-ESTERNI`/`DEC-002-PORTS-ADAPTERS-DISCOVERY` (entrambe

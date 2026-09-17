@@ -76,7 +76,15 @@ mentre consultazioni interne possono richiedere storico e filtri di pubblicazion
 - Solo catalogo corrente: perde visibilita' storica.
 - Solo catalogo completo: troppo rumoroso per il flusso operativo.
 
-## Decision: tipologia GEBAN/SOL validata contro un elenco configurato
+## Decisione corrente 2026-09-17: filtri sui modelli, non allowlist locale
+
+010 FR-016/v0.4 ritira il catalogo esterno locale. Ricerca con codice_tipologia
+non corrispondente ai modelli restituisce 200/modelli vuoti; selezione builder
+verifica discovery corrente. La precedente garanzia di errore invariato non
+vale per la ricerca v0.4. Le due decisioni sotto sono storico superseded,
+non autorizzano un catalogo locale o il rename delle tabelle ormai eliminate.
+
+## Decision storica superata: tipologia GEBAN/SOL validata contro un elenco configurato
 
 **Rationale**: `009` ha confermato (`DEC-001-TIPOLOGIE-SOL`) la validazione contro un
 elenco configurato; il perimetro iniziale dei bandi e' ora espresso come procedure
@@ -204,7 +212,7 @@ contratto dati del tipo documento.
   scartato, impedirebbe la condivisione di un contratto fra piu' Applicazioni
   autorizzate allo stesso tipo documento.
 
-### Decision: generalizzare `TipologiaBandoSOL` a `TipologiaDocumento` ora
+### Decision storica superata da FR-016: generalizzare `TipologiaBandoSOL`
 
 **Rationale** (`DEC-001-GENERALIZZAZIONE-TIPOLOGIA`): la tabella `tipologia_bando_sol`
 era globale (non scoped per tipo documento) e nominata/modellata specificamente per

@@ -1,81 +1,21 @@
-"""Repository helpers for catalog reads."""
+"""Read GEMODO-owned model versions, not an external classification mirror."""
 
 from __future__ import annotations
 
 from datetime import date, datetime, time
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.catalog.models import (
-    CategoriaDocumento,
-    ClassificazioneCatalogo,
-    ModelloCampoRichiesto,
-    ModelloDocumento,
-    ModelloDocumentoVersione,
-    RegistroContrattiDati,
-    TipoDocumento,
-    TipologiaBandoSOL,
-)
-
+from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 
 STATO_ATTIVO = "ATTIVA"
 STATO_PUBBLICATO = "PUBBLICATO"
-STATO_REGISTRO_ATTIVO = "ATTIVO"
-
-
-def list_tipi_documento(db: Session) -> list[TipoDocumento]:
-    return list(db.scalars(select(TipoDocumento).order_by(TipoDocumento.codice)))
 
 
 def get_tipo_documento_by_codice(db: Session, codice: str) -> TipoDocumento | None:
     return db.scalar(select(TipoDocumento).where(TipoDocumento.codice == codice))
-
-
-def list_categorie_by_tipo_codice(db: Session, codice_tipo_documento: str) -> list[CategoriaDocumento]:
-    stmt = (
-        select(CategoriaDocumento)
-        .join(TipoDocumento, CategoriaDocumento.tipo_documento_id == TipoDocumento.id)
-        .where(TipoDocumento.codice == codice_tipo_documento)
-        .order_by(CategoriaDocumento.codice)
-    )
-    return list(db.scalars(stmt))
-
-
-def list_classificazione_by_tipo_codice(db: Session, codice_tipo_documento: str) -> list[ClassificazioneCatalogo]:
-    stmt = (
-        select(ClassificazioneCatalogo)
-        .join(TipoDocumento, ClassificazioneCatalogo.tipo_documento_id == TipoDocumento.id)
-        .join(TipologiaBandoSOL, ClassificazioneCatalogo.tipologia_bando_sol_id == TipologiaBandoSOL.id)
-        .join(CategoriaDocumento, ClassificazioneCatalogo.categoria_documento_id == CategoriaDocumento.id)
-        .options(
-            joinedload(ClassificazioneCatalogo.tipologia_bando_sol),
-            joinedload(ClassificazioneCatalogo.categoria_documento),
-        )
-        .where(
-            TipoDocumento.codice == codice_tipo_documento,
-            ClassificazioneCatalogo.attiva.is_(True),
-            TipologiaBandoSOL.attiva.is_(True),
-            CategoriaDocumento.stato == STATO_ATTIVO,
-        )
-        .order_by(TipologiaBandoSOL.codice, CategoriaDocumento.codice)
-    )
-    return list(db.scalars(stmt))
-
-
-def get_tipologia_sol_by_codice(db: Session, codice: str) -> TipologiaBandoSOL | None:
-    return db.scalar(select(TipologiaBandoSOL).where(TipologiaBandoSOL.codice == codice, TipologiaBandoSOL.attiva.is_(True)))
-
-
-def list_registri_contratti_attivi_by_tipo_codice(db: Session, codice_tipo_documento: str) -> list[RegistroContrattiDati]:
-    stmt = (
-        select(RegistroContrattiDati)
-        .join(TipoDocumento, RegistroContrattiDati.tipo_documento_id == TipoDocumento.id)
-        .where(TipoDocumento.codice == codice_tipo_documento, RegistroContrattiDati.stato == STATO_REGISTRO_ATTIVO)
-        .order_by(RegistroContrattiDati.codice)
-    )
-    return list(db.scalars(stmt))
 
 
 def _day_start(value: date) -> datetime:
@@ -84,33 +24,6 @@ def _day_start(value: date) -> datetime:
 
 def _day_end(value: date) -> datetime:
     return datetime.combine(value, time.max)
-
-
-def _published_versions_stmt(
-    *,
-    historical: bool = False,
-    data_riferimento: date | None = None,
-    pubblicato_da: date | None = None,
-    pubblicato_a: date | None = None,
-) -> Select[tuple[ModelloDocumentoVersione]]:
-    stmt = select(ModelloDocumentoVersione).where(ModelloDocumentoVersione.stato == STATO_PUBBLICATO)
-    if not historical:
-        at = data_riferimento or date.today()
-        stmt = stmt.where(
-            (
-                ModelloDocumentoVersione.data_inizio_validita.is_(None)
-                | (ModelloDocumentoVersione.data_inizio_validita <= _day_end(at))
-            ),
-            (
-                ModelloDocumentoVersione.data_fine_validita.is_(None)
-                | (ModelloDocumentoVersione.data_fine_validita >= _day_start(at))
-            ),
-        )
-    if historical and pubblicato_da is not None:
-        stmt = stmt.where(ModelloDocumentoVersione.pubblicato_at >= _day_start(pubblicato_da))
-    if historical and pubblicato_a is not None:
-        stmt = stmt.where(ModelloDocumentoVersione.pubblicato_at <= _day_end(pubblicato_a))
-    return stmt
 
 
 def list_published_model_versions(
@@ -125,30 +38,32 @@ def list_published_model_versions(
     pubblicato_a: date | None = None,
 ) -> list[ModelloDocumentoVersione]:
     stmt = (
-        _published_versions_stmt(
-            historical=historical,
-            data_riferimento=data_riferimento,
-            pubblicato_da=pubblicato_da,
-            pubblicato_a=pubblicato_a,
-        )
-        .options(
-            joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipo_documento),
-            joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.categoria_documento),
-            joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipologia_bando_sol),
-        )
+        select(ModelloDocumentoVersione)
+        .where(ModelloDocumentoVersione.stato == STATO_PUBBLICATO)
+        .options(joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipo_documento))
         .join(ModelloDocumento, ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id)
         .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
-        .join(CategoriaDocumento, ModelloDocumento.categoria_documento_id == CategoriaDocumento.id)
-        .order_by(TipoDocumento.codice, CategoriaDocumento.codice, ModelloDocumento.codice, ModelloDocumentoVersione.versione)
+        .order_by(TipoDocumento.codice, ModelloDocumento.codice_categoria,
+                  ModelloDocumento.codice, ModelloDocumentoVersione.versione)
     )
+    if not historical:
+        at = data_riferimento or date.today()
+        stmt = stmt.where(
+            ModelloDocumentoVersione.data_inizio_validita.is_(None)
+            | (ModelloDocumentoVersione.data_inizio_validita <= _day_end(at)),
+            ModelloDocumentoVersione.data_fine_validita.is_(None)
+            | (ModelloDocumentoVersione.data_fine_validita >= _day_start(at)),
+        )
+    if historical and pubblicato_da is not None:
+        stmt = stmt.where(ModelloDocumentoVersione.pubblicato_at >= _day_start(pubblicato_da))
+    if historical and pubblicato_a is not None:
+        stmt = stmt.where(ModelloDocumentoVersione.pubblicato_at <= _day_end(pubblicato_a))
     if codice_tipo_documento:
         stmt = stmt.where(TipoDocumento.codice == codice_tipo_documento)
     if codice_categoria:
-        stmt = stmt.where(CategoriaDocumento.codice == codice_categoria)
+        stmt = stmt.where(ModelloDocumento.codice_categoria == codice_categoria)
     if codice_tipologia:
-        stmt = stmt.join(TipologiaBandoSOL, ModelloDocumento.tipologia_bando_sol_id == TipologiaBandoSOL.id).where(
-            TipologiaBandoSOL.codice == codice_tipologia
-        )
+        stmt = stmt.where(ModelloDocumento.codice_tipologia == codice_tipologia)
     return list(db.scalars(stmt))
 
 
@@ -159,10 +74,7 @@ def get_model_version(db: Session, modello_versione_id: UUID) -> ModelloDocument
 def get_model_version_by_public_id(db: Session, modello_versione_id: int) -> ModelloDocumentoVersione | None:
     stmt = (
         select(ModelloDocumentoVersione)
-        .options(
-            joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipo_documento),
-            joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.categoria_documento),
-        )
+        .options(joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipo_documento))
         .where(ModelloDocumentoVersione.public_id == modello_versione_id)
     )
     return db.scalar(stmt)

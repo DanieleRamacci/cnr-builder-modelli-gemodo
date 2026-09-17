@@ -8,21 +8,15 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.catalog import repository
-from app.catalog.models import CategoriaDocumento, ModelloDocumentoVersione, TipoDocumento
+from app.catalog.models import ModelloDocumentoVersione
 from app.catalog.schemas import (
     CampiRichiestiResponse,
     CampoRichiestoSchema,
-    ClassificazioneCatalogoResponse,
     LinguaCampo,
     ModalitaCatalogo,
     ModelloCatalogoSchema,
     ModelloSearchResponse,
-    ProfiloDocumentoListResponse,
-    ProfiloDocumentoSchema,
     TipoCampo,
-    TipologiaCatalogoSchema,
-    TipoDocumentoListResponse,
-    TipoDocumentoSchema,
 )
 from app.common.errors import CatalogError, ErrorCode
 from app.db.session import get_db
@@ -31,51 +25,6 @@ from app.db.session import get_db
 class CatalogService:
     def __init__(self, db: Session) -> None:
         self.db = db
-
-    def list_tipi_documento(self) -> TipoDocumentoListResponse:
-        items = [
-            _tipo_documento_schema(tipo)
-            for tipo in repository.list_tipi_documento(self.db)
-            if tipo.stato == repository.STATO_ATTIVO
-        ]
-        return TipoDocumentoListResponse(items=items)
-
-    def list_profili(self, codice_tipo_documento: str) -> ProfiloDocumentoListResponse:
-        tipo = repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
-        if tipo is None or tipo.stato != repository.STATO_ATTIVO:
-            raise CatalogError(
-                ErrorCode.CONTESTO_NON_VALIDO,
-                "Tipo documento non configurato o non attivo",
-                status_code=404,
-            )
-        profili = [
-            _categoria_documento_schema(categoria)
-            for categoria in repository.list_categorie_by_tipo_codice(self.db, codice_tipo_documento)
-            if categoria.stato == repository.STATO_ATTIVO
-        ]
-        return ProfiloDocumentoListResponse(tipo_documento=codice_tipo_documento, profili=profili)
-
-    def list_categorie(self, codice_tipo_documento: str) -> ProfiloDocumentoListResponse:
-        return self.list_profili(codice_tipo_documento)
-
-    def get_classificazione(self, codice_tipo_documento: str) -> ClassificazioneCatalogoResponse:
-        tipo = repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
-        if tipo is None or tipo.stato != repository.STATO_ATTIVO:
-            raise CatalogError(
-                ErrorCode.CONTESTO_NON_VALIDO,
-                "Tipo documento non configurato o non attivo",
-                status_code=404,
-            )
-        grouped: dict[str, TipologiaCatalogoSchema] = {}
-        for row in repository.list_classificazione_by_tipo_codice(self.db, codice_tipo_documento):
-            tipologia = row.tipologia_bando_sol
-            categoria = row.categoria_documento
-            item = grouped.setdefault(
-                tipologia.codice,
-                TipologiaCatalogoSchema(codice=tipologia.codice, descrizione=tipologia.descrizione, profili=[]),
-            )
-            item.profili.append(_categoria_documento_schema(categoria))
-        return ClassificazioneCatalogoResponse(tipo_documento=codice_tipo_documento, tipologie=list(grouped.values()))
 
     def search_modelli(
         self,
@@ -93,12 +42,6 @@ class CatalogService:
             raise CatalogError(
                 ErrorCode.CONTESTO_NON_VALIDO,
                 "Tipo documento non configurato o non attivo",
-                status_code=400,
-            )
-        if codice_tipologia and repository.get_tipologia_sol_by_codice(self.db, codice_tipologia) is None:
-            raise CatalogError(
-                ErrorCode.TIPOLOGIA_SOL_NON_VALIDA,
-                "Tipologia GEBAN/SOL non configurata",
                 status_code=400,
             )
 
@@ -140,7 +83,7 @@ class CatalogService:
         return CampiRichiestiResponse(
             modello_versione_id=modello_versione_id,
             tipo_documento=version.modello.tipo_documento.codice,
-            profilo=version.modello.categoria_documento.codice,
+            profilo=version.modello.codice_categoria,
             campi=field_schemas,
             schema_=_json_schema_for_fields(field_schemas),
         )
@@ -148,14 +91,6 @@ class CatalogService:
 
 def get_catalog_service(db: Session = Depends(get_db)) -> CatalogService:
     return CatalogService(db)
-
-
-def _tipo_documento_schema(tipo: TipoDocumento) -> TipoDocumentoSchema:
-    return TipoDocumentoSchema(codice=tipo.codice, descrizione=tipo.nome)
-
-
-def _categoria_documento_schema(categoria: CategoriaDocumento) -> ProfiloDocumentoSchema:
-    return ProfiloDocumentoSchema(codice=categoria.codice, descrizione=categoria.nome)
 
 
 def _date_only(value):

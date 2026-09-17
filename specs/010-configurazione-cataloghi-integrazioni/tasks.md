@@ -16,12 +16,17 @@
 
 - [ ] T001 Creare lo scheletro dei moduli `backend/app/discovery/` e
       `backend/app/configurazione/` (`__init__.py`, struttura da `plan.md`)
+      IN CORSO 2026-09-17: discovery presente; configurazione include
+      __init__, models e security. API/schema/repository/service seguono T019.
 - [ ] T002 [P] Completare `contracts/configurazione-cataloghi-api.openapi.yaml`
       come contratto amministrativo pre-runtime: path, payload, risposte
       success/error con esempi, security scheme `KeycloakBearer` riusato da
       `001`, note di autorizzazione collegate a T014. Questo task e' un gate di
       contract-first: nessun endpoint runtime T021/T029/T040/T045 puo' iniziare
       prima che il contratto sia allineato.
+      IN CORSO: v0.2 riallinea envelope errori, ruoli, tipi campo ed esempi;
+      resta da chiudere il design della definizione US1 e verificare tutti
+      i payload amministrativi prima degli endpoint runtime.
 
 ---
 
@@ -40,10 +45,11 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 - [x] T004 *(soddisfatta dalla migration `001`/`0008`, 2026-09-16)* Migration
       `registro_contratti_dati` (schema gia' deciso in `001`) — gia' introdotta
       da `backend/alembic/versions/0008_contesto_registro_contratti_audit.py`
-- [ ] T005 [P] Migration `attributo_profilo` (`data-model.md`)
-- [ ] T006 [P] Migration `endpoint_integrazione` (`data-model.md`)
-- [ ] T007 [P] Migration `schema_discovery_generato` (`data-model.md`)
-- [ ] T008 Modelli SQLAlchemy `AttributoProfilo`, `EndpointIntegrazione`,
+- [x] T005 [P] Migration `attributo_profilo` (`data-model.md`), 0010:
+      solo attributi dell'esempio proprietario, nessuna replica GEBAN.
+- [x] T006 [P] Migration `endpoint_integrazione` (`data-model.md`), 0010
+- [x] T007 [P] Migration `schema_discovery_generato` (`data-model.md`), 0010
+- [x] T008 Modelli SQLAlchemy `AttributoProfilo`, `EndpointIntegrazione`,
       `SchemaDiscoveryGenerato` in `backend/app/configurazione/models.py`
 - [x] T009 *(implementata 2026-09-16, forma ridotta)* Interfaccia astratta
       `PortaDiscovery` e DTO in `backend/app/discovery/port.py`/`schemas.py`:
@@ -60,9 +66,14 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `backend/app/discovery/adapter_locale.py`, legge `ClassificazioneCatalogo`/
       `TipologiaBandoSOL`/`CategoriaDocumento`/`RegistroContrattiDati` reali —
       verificato su Postgres reale, non solo unit test in memoria.
-- [ ] T011 [P] Implementare la cache in memoria di processo (TTL breve, mai
+- [x] T011 [P] *(2026-09-17: TTL 60s configurabile, capienza limitata,
+      copie isolate, riempimenti sincronizzati, nessun fallback scaduto)*
+      Implementare la cache in memoria di processo (TTL breve, mai
       persistente) in `backend/app/discovery/cache.py`
-- [ ] T012 Implementare `AdapterHTTP` in `backend/app/discovery/adapter_http.py`
+- [x] T012 *(2026-09-17: risposta completa e envelope HAL documentato,
+      parsing ricorsivo, cache escludibile, limiti e errori espliciti;
+      lettura reale GEBAN riuscita, nessun collegamento automatico al builder)*
+      Implementare `AdapterHTTP` in `backend/app/discovery/adapter_http.py`
       (client `httpx`, paginazione HAL trasparente, usa T011, solleva errore
       funzionale di connessione se il sistema esterno non risponde oltre la
       finestra di cache — depende da T009-T011). *(2026-09-16, chiarito dal
@@ -74,16 +85,23 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `specs/010-configurazione-cataloghi-integrazioni/contracts/
       geban-discovery-endpoint.openapi.yaml`. L'unica parte a forma fissa e'
       il singolo campo (`CampoContrattoDati`), letto solo sui nodi foglia.
-      Nessun codice oggi legge dal vero endpoint GEBAN — `AdapterLocale`
+      L'adapter HTTP e' ora verificato anche sul vero endpoint GEBAN;
+      la selezione runtime dell'adapter nel builder resta T041. `AdapterLocale`
       (T010) legge solo le tabelle locali `001`, a 2 livelli fissi perche'
       quella e' la forma reale locale di `BANDO_CONCORSO`, non un vincolo
       sui dati che GEBAN potra' restituire.)*
-- [ ] T013 [P] Server di test locale che simula l'envelope HAL di GEBAN
-      (`_embedded`/`_links`/`page`) in `backend/tests/discovery/support/`, usato
-      da tutti i test dell'adapter HTTP invece di chiamare GEBAN reale
-- [ ] T014 Coordinare con `006` il ruolo amministrativo di FR-012 (distinto da
-      `GEMODO_MODELLI_GESTORE`); bloccante per T021/T029/T040/T045 se il ruolo
-      non esiste ancora nella `006`
+- [x] T013 [P] *(2026-09-17)* Server HTTP locale che simula la risposta
+      completa e l'envelope HAL documentato (`_embedded.discovery`/`_links.next`)
+      in `backend/tests/discovery/conftest.py`, usato
+      dai test di trasporto reale/paginazione; i test di errore usano trasporti
+      controllati. Nessun test automatico chiama GEBAN reale.
+- [x] T014 Applicare `GEMODO_ADMIN` gia' previsto in `006` FR-005/FR-005a
+      al contratto e ai guard amministrativi FR-012; testare rifiuto del solo
+      `GEMODO_MODELLI_GESTORE`. Bloccante per T021/T029/T040/T045;
+      nessun nuovo ruolo o mapping implicito dei ruoli GEBAN.
+      Guard riusabile `app.configurazione.security.require_configurazione_admin`;
+      test 401/403 e successo admin. Gli endpoint non sono ancora implementati;
+      la loro applicazione del guard sara' verificata nei contract test US1-US4.
 
 **Checkpoint**: porta di discovery e tabelle pronte — le user story possono partire.
 
@@ -110,10 +128,10 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Repository di scrittura per
-      `TipoDocumento`/`CategoriaDocumento`/`TipologiaBandoSOL`/`AttributoProfilo`
-      in `backend/app/configurazione/repository.py` (riusa modelli `001` per le
-      prime tre, non li ridefinisce)
+- [ ] T019 [P] [US1] Repository della definizione/esempio proprietario in
+      `backend/app/configurazione/repository.py`: riusa `TipoDocumento`, mai
+      categorie/tipologie/registro globali ritirati da FR-016. SOSPESO finche'
+      il design US1 della persistenza della definizione e' riallineato.
 - [ ] T020 [US1] `DefinizioneStrutturaService` (crea/aggiorna tipo documento +
       tipologie + profili + campi in un'unica transazione) in
       `backend/app/configurazione/service.py` — depende da T019
@@ -210,7 +228,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 - [ ] T040 [US3] Endpoint `POST /configurazione/tipi-documento/{codice}/endpoint-integrazione`
       (registra + testa) e `POST .../endpoint-integrazione/verifica` (ri-testa),
       protetti dal ruolo FR-012 (T014)
-- [ ] T041 [US3] Collegare `PortaDiscovery.*_disponibili` allo stato
+- [ ] T041 [US3] Collegare `PortaDiscovery.catalogo_discovery` allo stato
       `EndpointIntegrazione.stato`: un tipo documento non `CONNESSO` (e non
       self-service) MUST rifiutare la richiesta con errore esplicito invece di
       interrogare l'adapter (FR-009) — depende da T009, T038
@@ -274,6 +292,49 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ## Dependencies & Execution Order
 
+### Riallineamento discovery e verifica variazioni (2026-09-17)
+
+- [x] T053 *(2026-09-17: DTO ricorsivi, validazione e test dedicati)*
+      Progettare DTO ricorsivi e `PortaDiscovery.catalogo_discovery`
+      secondo `data-model.md`; aggiungere test su profondita' variabile,
+      figli/campi esclusivi, codici duplicati fra fratelli e ricerca per percorso.
+      T009 e' completata solo nella forma storica, non soddisfa questa estensione.
+      Prerequisito di T012/T041 e T054.
+- [x] T054 *(2026-09-17: nuovo metodo canonico e metodi legacy dell'adapter
+      locale mantenuti; test di regressione su Postgres reale)*
+      Evolvere porta e adapter locale mantenendo i consumatori esistenti
+      funzionanti; documentare compatibilita' dei metodi storici, test di regressione
+      builder su Postgres reale. Nessun parser HTTP a livelli fissi.
+- [ ] T055 [FR-014] Progettare persistenza per versione modello e migration
+      dei metadati di firma/dipendenze/esito; definire algoritmo versionato,
+      normalizzazione e matrice blocco/avviso, compresi nuovi obbligatori,
+      attributi usati e campo opzionale necessario al modello. Aggiornare
+      contratto amministrativo prima di esporre esiti runtime.
+- [ ] T056 [FR-014] Implementare firma SHA-256 e confronto con il contratto
+      della versione modello; testare ordinamenti, timestamp variabili,
+      ramo scomparso, nuovi obbligatori, opzionali non usati e variazioni di
+      tipo/vincoli. Dipende da T053-T055 e dal contratto allineato.
+- [ ] T057 [FR-015] Implementare runner configurabile con una risposta per
+      integrazione/ciclo, indice temporaneo in memoria, no sovrapposizioni,
+      timeout/retry limitati ed esito NON_VERIFICABILE per errori esterni.
+      Testare che non scarichi il catalogo per ogni modello. Dipende da T012/T056.
+- [ ] T058 [FR-015] Esporre data/esito/motivi della verifica nella dashboard,
+      auditare transizioni e notificare cambiamenti di esito senza duplicati.
+      Dipende da T055-T057 e T045; mantenere separata la pubblicazione.
+- [x] T059 [P] Riallineare il riferimento documentale alla porta condivisa in
+      `specs/002-builder-modelli/data-model.md` alla porta canonica della 010;
+      rilievo MEDIUM della review indipendente 2026-09-17, non nuovo task
+      implementativo del builder 002.
+- [x] T060 [P] Consolidare `DISCOVERY_NON_CONFORME` e
+      `DISCOVERY_NON_DISPONIBILE` in `app.common.errors.ErrorCode`, mantenendo
+      nomi e status pubblici invariati; rilievo MEDIUM della review 2026-09-17.
+
+Questi task devono precedere il checkpoint finale T051/T052. T055 chiude
+le soglie fini di compatibilita' prima di T056; il controllo di generazione
+rimane da pianificare nella spec 004. T050, appartenente alla 001, non e'
+autorizzato implicitamente dal completamento della 010: rispettare il cambio
+di feature previsto da AGENTS.md.
+
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: nessuna dipendenza.
@@ -328,6 +389,41 @@ Task: T037 Ridefinizione dopo CONNESSO -> torna DEFINITO
 
 ## Notes
 
+### Incremento implementativo 2026-09-17
+
+Perimetro: T011-T013 e T053-T054, infrastruttura discovery condivisa.
+Il builder esistente usa ancora i metodi locali legacy dell'AdapterLocale:
+T041 e l'onboarding US1-US4 non sono completati. Non si dichiara pronta la pagina
+per creare modelli dai dati live GEBAN. Non si modificano generazione ufficiale,
+regole di unicita' delle varianti o versioni pubblicate.
+T001-T002/T005-T008/T014 e tutte le user story non completate sono esplicitamente
+SOSPESI per questo incremento, da riprendere col flusso Spec Kit.
+T055-T058 sono SOSPESI finche' persistenza e policy fini sono progettate;
+la firma approvata non e' ancora implementata.
+Il rischio residuo e' l'assenza di selezione dell'adapter registrato e di controllo
+dei modelli esistenti: l'incremento non abilita la nuova integrazione in produzione.
+
+Verifica: suite finale non-e2e 189 passati, 12 e2e esclusi; discovery + builder
+48 passati su HTTP locale/Postgres reale. Il client reale
+ha letto 10 tipologie, 65 foglie e 16 campi per TD/RICERCATORE.
+Revisione indipendente `adev review`: PASS il 2026-09-17, report in
+`.adev/last-review.yml`. Nessun rilievo HIGH/CRITICAL; due MEDIUM tracciati
+in T059/T060. Checklist requisiti assente: rilievo LOW da recuperare prima
+del completamento della feature. La PASS riguarda questo incremento,
+non dichiara completata la feature 010 o le altre feature del repository.
+
+### Decisione registrata 2026-09-17 - lavoro da pianificare
+
+La verifica autonoma delle variazioni tramite firma SHA-256 del ramo e confronto
+con il contratto del modello e' approvata e descritta in `spec.md`.
+Questo non marca completata alcuna implementazione. Al prossimo riallineamento
+di plan/data-model/tasks occorre dettagliare persistenza della firma per versione,
+normalizzazione, confronto compatibilita', runner con una chiamata per integrazione,
+esiti non verificabili e test su modifiche rilevanti/non rilevanti.
+Il controllo prima della generazione va coordinato con la spec 004 senza iniziare
+qui task appartenenti a un'altra feature. Frequenza e soglie blocco/avviso
+restano aperte; non si dichiara risolta tutta DEC-001-VERSIONING-RIFERIMENTI-ESTERNI.
+
 - Nessun endpoint viene mai generato dinamicamente per tipo documento (vedi
   conversazione 2026-09-15): tutte le operazioni di questa spec restano sui
   quattro endpoint fissi elencati in T021/T029/T040/T045 — cambiano solo i
@@ -345,3 +441,70 @@ Task: T037 Ridefinizione dopo CONNESSO -> torna DEFINITO
 - `001/tasks.md` T108 (ritiro API di classificazione legacy) dipende da T050 di
   questa spec, non il contrario: non rimuovere le API GEBAN-facing prima che
   il sostituto (US2) sia realmente funzionante.
+
+## Phase 8: Convergence - dismissione catalogo esterno locale (2026-09-17)
+
+La decisione FR-016 sostituisce il precedente vincolo T050/T108 per il ritiro
+delle API legacy. Per questo incremento T004/T009/T010/T054 sono storici,
+non architettura da conservare. US1-US4, firme e runner restano sospesi;
+non si dichiara completato T041 con una configurazione operativa dell'URL.
+
+- [x] T061 [FR-016] Allineare il contratto builder alla struttura ricorsiva
+      e alla selezione tramite percorso generico prima delle modifiche runtime.
+- [x] T062 [FR-016] Migration 0009: migrare riferimenti dei modelli a codici
+      e percorso, eliminare FK e tabelle del catalogo esterno locale e il registro
+      globale legacy. Preservare identificativi, versioni, campi e audit.
+- [x] T063 [FR-016] Eliminare ORM/repository/API/DTO legacy e AdapterLocale;
+      conservare ricerca dei soli modelli GEMODO e contratti delle loro versioni.
+- [x] T064 [FR-016] Collegare il builder a discovery HTTP tramite URL esplicito
+      configurato per tipo documento, senza seed/fallback locale; selezionare
+      foglie per percorso e usare esclusivamente i loro campi nelle versioni.
+- [x] T065 [FR-016] Testare su Postgres reale preservazione dei dati migrati,
+      assenza delle tabelle ritirate e flusso HTTP -> modello -> pubblicazione;
+      coprire profondita' variabile, ambiguita', errori e isolamento dei rami.
+- [x] T066 [FR-016] Documentare configurazione, migrazione non reversibile
+      senza backup, ritiro API e stato residuo; suite deterministica e review
+      indipendente prima di dichiarare conclusa questa dismissione.
+      Suite: 206 test passati, 12 e2e esclusi. Review indipendente PASS:
+      `.adev/reviews/review-20260917T113248Z.json`. Nessuna migrazione su DB
+      operativo. Rilievi documentali residui tracciati in T072; tooling T071.
+
+## Phase 9: Convergence - rilievi review indipendente
+
+- [x] T067 [FR-016] Riallineare spec/task/research/quickstart 001, matrice
+      copertura, catalogo errori e fixture mock alla ricerca v0.4: filtri sui
+      modelli proprietari, lista vuota senza corrispondenze, nessuna allowlist
+      locale. Non dichiarare invariata la vecchia semantica dell'errore tipologia.
+- [x] T068 [FR-016] Esplicitare in FR-010, US3 scenario 4 e SC-003 il rinvio
+      self-service fuori dall'incremento di dismissione; progettare la sorgente
+      proprietaria distinta dal catalogo esterno prima dei task US1/T036.
+- [x] T069 [FR-016] Evitare che la cache serializzi HTTP per chiavi diverse;
+      test di concorrenza, deduplicazione per chiave e sblocco su errore.
+- [x] T070 [P] Checklist qualita' dei requisiti per il perimetro di dismissione.
+- [ ] T071 [P] SOSPESO: il CLI adev censisce documenti markdown ma non YAML
+      OpenAPI; segnalare il gap di tracking per 001/010 e pianificare correzione
+      del tooling senza modificare globalmente il CLI o falsificare il ledger.
+      Rilievo MEDIUM, non bloccante secondo la policy; review esplicita del diff
+      dei contratti resta obbligatoria anche quando needs_review non cambia.
+
+- [x] T072 [P] Riallineare i data-model storici 001/002 al ritiro FR-016,
+      rendendo esplicita la prevalenza del modello canonico 010 e la natura
+      storica delle vecchie entita'/relazioni; registrare Angular con Design
+      Angular Kit per il frontend futuro, senza avviare task della spec 007.
+
+## Phase 10: Ripresa fondazioni amministrative (2026-09-17)
+
+Incremento autorizzato: T005-T008/T014. Migration 0010 introduce solo
+configurazione proprietaria ed esempi, senza seed esterni o nuovi fallback.
+T001/T002 sono IN CORSO; T019 e US1-US4 non sono dichiarati completati.
+T055-T058 restano sospesi sulla classificazione delle differenze, richiesta
+al product owner. Nessuna migrazione viene eseguita sul DB operativo.
+
+- [ ] T073 [P] Verificare fondazioni con PostgreSQL reale (vincoli,
+      isolamento per tipo, upgrade/downgrade 0010), sicurezza 401/403/admin,
+      regressioni complete e review indipendente; documentare esito e residui.
+      IN CORSO: 8 test mirati passati su PostgreSQL reale; suite finale
+      214 passati, 12 e2e esclusi, nessuno saltato (24.17s).
+      Review indipendente bloccata dalla policy di esecuzione:
+      invio del repository/diff a Claude richiede autorizzazione esplicita
+      dell'utente. Il PASS precedente copre solo FR-016, non questo incremento.

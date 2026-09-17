@@ -23,11 +23,16 @@ abbiano un solo punto da cui partire.
 
 | Contratto | Spec owner | API scope | Stato |
 |---|---|---|---|
+| [`builder-discovery-api.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/builder-discovery-api.openapi.yaml) | `010` FR-016 | Builder, discovery ricorsiva, creazione modello/versione | Implementato; `/docs/builder-discovery`, `/redoc/builder-discovery` |
 | [`geban-catalog-api.openapi.yaml`](../../specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml) | `001-catalogo-contratto-geban` | GEBAN (catalogo, campi, validazione) | Implementato |
 | [`geban-discovery-endpoint.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml) | `010-configurazione-cataloghi-integrazioni` | **Non un'API GEMODO** — contratto che il sistema esterno GEBAN deve implementare (endpoint di discovery per `BANDO_CONCORSO`) | Consegnato al team GEBAN come riferimento (2026-09-15); combinazioni tipologia-profilo e meccanismo esatto del campo `livello` ancora da confermare con loro |
 | Generazione documento/PDF | `004-generazione-documenti-pdf` | GEBAN | Da produrre prima dell'implementazione runtime |
 | Stato, riferimento, download, idempotenza | `005-storage-idempotenza-consultazione` | GEBAN | Da produrre prima dell'implementazione runtime |
 | API interne builder (tipi, categorie, modelli, versioni) | `002-builder-modelli` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
+
+FR-016: categorie/tipologie esterne non sono piu' API interne del builder;
+classificazione locale della 001 ritirata (404). La riga 002 indica solo
+operazioni future non coperte dal contratto discovery della 010.
 | API interne sezioni/placeholder | `003-sezioni-placeholder-versionamento` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
 | Endpoint di sicurezza/introspezione applicativa | `006-sicurezza-autorizzazioni-audit` | INTERNO | Da produrre prima dell'implementazione runtime |
 

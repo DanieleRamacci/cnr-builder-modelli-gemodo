@@ -14,6 +14,16 @@ prima dell'implementazione di questo incremento.
 
 ## Clarifications
 
+### Riallineamento 2026-09-17 - 010 FR-016
+
+Catalogo esterno locale e API di classificazione ritirati nella feature 010;
+modelli e contratti GEMODO persistono. Contratto catalogo v0.4: `codice_tipologia`
+e `profilo` sono filtri sui riferimenti dei modelli, non valori validati contro
+una allowlist locale. Assenza di corrispondenze: 200 con modelli vuoti.
+TIPOLOGIA_SOL_NON_VALIDA non e' piu' emesso dalla ricerca; la garanzia storica
+di semantica invariata sotto e' superata esplicitamente da questa decisione.
+Selezione/creazione builder valida invece il percorso contro discovery corrente.
+
 ### Session 2026-06-19
 
 - Q: Come deve comportarsi la validazione quando il payload contiene campi non previsti dal contratto dati? -> A: I campi non previsti rendono il payload non valido.
@@ -182,9 +192,9 @@ li'); il design puntuale resta da completare in `plan.md` prima di generare nuov
   piu' codice sopra: `TipologiaBandoSOL` diventa `TipologiaDocumento`, scoped per
   `TipoDocumento` invece che globale, con un `riferimento_esterno` opzionale (era
   `codice_sol` obbligatorio) cosi' un tipo documento senza un'integrazione esterna
-  equivalente a SOL non deve popolarlo. Il parametro pubblico `codice_tipologia` e il
-  codice errore `TIPOLOGIA_SOL_NON_VALIDA` restano invariati per non rompere il
-  contratto OpenAPI gia' pubblicato.
+  equivalente a SOL non deve popolarlo. Il nome pubblico `codice_tipologia`
+  resta invariato. La garanzia iniziale sull'errore
+  TIPOLOGIA_SOL_NON_VALIDA e' superata dal contratto v0.4/010 FR-016.
 - Q: Dove viene definita la lista di Uffici e la loro proprieta' sui tipi documento?
   -> A: Nello stesso file dove gia' vive `tipi_documento:`
   (`infra/local/postgres/seed-demo-catalog.yaml`, o un successore rinominato quando
@@ -402,7 +412,7 @@ risposta distingua i due casi.
 - La versione modello viene archiviata dopo essere stata proposta a GEBAN ma prima della
   validazione del payload: la validazione deve fallire e richiedere a GEBAN di ricaricare
   il catalogo.
-- `codice_tipologia` non corrisponde a nessuna tipologia GEBAN/SOL configurata.
+- `codice_tipologia` non corrisponde a nessun modello: ricerca vuota, non errore.
 - Il payload ha `bando_inglese: true` ma uno o piu' campi obbligatori in lingua
   inglese sono assenti o vuoti.
 - Il payload ha `bando_inglese: false` (o assente) e valorizza comunque campi in
@@ -412,10 +422,10 @@ risposta distingua i due casi.
 
 ### Functional Requirements
 
-- **FR-001**: Il servizio MUST esporre a GEBAN i tipi documento disponibili per l'uso
-  operativo.
-- **FR-002**: Il servizio MUST esporre a GEBAN i profili disponibili per un tipo
-  documento attivo.
+- **FR-001** *(RITIRATO da 010 FR-016)*: elenco tipi della classificazione
+  locale non e' piu' API GEMODO; disponibilita' esterna proviene da discovery.
+- **FR-002** *(RITIRATO da 010 FR-016)*: elenco profili/classificazione locale
+  non e' piu' API GEMODO; profili provengono dalla risposta discovery esterna.
 - **FR-003**: Il servizio MUST restituire a GEBAN solo versioni modello in stato
   `PUBBLICATO` e valide per il contesto richiesto quando il catalogo e' usato in modalita'
   operativa.
@@ -487,11 +497,11 @@ risposta distingua i due casi.
   completare catalogo, contratto dati o validazione payload.
 - **FR-019**: La specifica di questa feature MUST NOT includere builder frontend,
   generazione PDF dettagliata, firma, protocollo o pubblicazione.
-- **FR-020**: Quando la richiesta di catalogo o validazione indica `codice_tipologia`,
-  il servizio MUST verificare che corrisponda a una tipologia/procedura bando GEBAN/SOL
-  configurata (perimetro iniziale: CP, TD, TI, IR, MOB) e MUST
-  restituire un errore funzionale distinto quando non corrisponde, invece di un
-  risultato vuoto silenzioso.
+- **FR-020** *(riallineato da 010 FR-016, contratto v0.4)*: ricerca modelli MUST
+  filtrare `codice_tipologia` sui riferimenti dei modelli GEMODO, senza allowlist
+  esterna locale. Nessuna corrispondenza MUST restituire 200 con `modelli: []`.
+  La validazione dei dati si basa sul contratto della versione selezionata;
+  il builder verifica percorso/campi contro discovery, non contro un elenco seed.
 - **FR-021**: Il contratto dati di un campo MUST poter dichiarare una lingua (`IT` o
   `EN`); un campo in lingua `EN` MUST essere obbligatorio solo quando il payload
   contiene un flag di contesto `bando_inglese` con valore `true`, e facoltativo

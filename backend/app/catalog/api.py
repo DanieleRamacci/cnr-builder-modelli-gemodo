@@ -8,55 +8,13 @@ from fastapi import APIRouter, Depends, Query
 
 from app.catalog.schemas import (
     CampiRichiestiResponse,
-    ClassificazioneCatalogoResponse,
     ModalitaCatalogo,
     ModelloSearchResponse,
-    ProfiloDocumentoListResponse,
-    TipoDocumentoListResponse,
 )
 from app.catalog.service import CatalogService, get_catalog_service
 from app.common.security import PrincipalGEMODO, require_documenti_viewer
 
 router = APIRouter(prefix="/api/v1/catalogo", tags=["catalogo"])
-
-
-@router.get("/tipi-documento", response_model=TipoDocumentoListResponse)
-def list_tipi_documento(
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
-    service: CatalogService = Depends(get_catalog_service),
-) -> TipoDocumentoListResponse:
-    return service.list_tipi_documento()
-
-
-@router.get("/tipi-documento/{codiceTipoDocumento}/profili", response_model=ProfiloDocumentoListResponse)
-def list_profili_documento(
-    codiceTipoDocumento: str,
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
-    service: CatalogService = Depends(get_catalog_service),
-) -> ProfiloDocumentoListResponse:
-    return service.list_profili(codiceTipoDocumento)
-
-
-@router.get(
-    "/tipi-documento/{codiceTipoDocumento}/categorie",
-    response_model=ProfiloDocumentoListResponse,
-    include_in_schema=False,
-)
-def list_categorie_documento_compat(
-    codiceTipoDocumento: str,
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
-    service: CatalogService = Depends(get_catalog_service),
-) -> ProfiloDocumentoListResponse:
-    return service.list_profili(codiceTipoDocumento)
-
-
-@router.get("/tipi-documento/{codiceTipoDocumento}/classificazione", response_model=ClassificazioneCatalogoResponse)
-def get_classificazione_documento(
-    codiceTipoDocumento: str,
-    _: PrincipalGEMODO = Depends(require_documenti_viewer),
-    service: CatalogService = Depends(get_catalog_service),
-) -> ClassificazioneCatalogoResponse:
-    return service.get_classificazione(codiceTipoDocumento)
 
 
 @router.get("/modelli", response_model=ModelloSearchResponse)

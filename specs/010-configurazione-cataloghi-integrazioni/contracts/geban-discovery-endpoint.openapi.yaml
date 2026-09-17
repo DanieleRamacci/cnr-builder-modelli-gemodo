@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.3.0
+  version: 0.4.0
   description: >
     Questo file descrive la modalita ad albero completo. La proposta alternativa
     a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
@@ -95,6 +95,25 @@ info:
     contenuto logico atteso, non impone un formato di trasporto specifico
     (FR-011, `specs/010-configurazione-cataloghi-integrazioni/spec.md`).
 
+    L'envelope paginato supportato e' esplicito: `_embedded.discovery` e'
+    un array di frammenti DiscoveryResponse; `_links.next.href` e' il link
+    opzionale alla pagina successiva. I frammenti del tipo documento richiesto
+    hanno la stessa `validita` e contengono porzioni disgiunte di `nodi` alla
+    radice. GEMODO concatena i nodi, non sovrascrive rami duplicati.
+    Link e redirect verso altre origini non sono seguiti. Il discovery GEBAN
+    attuale usa la risposta completa, senza questo envelope.
+
+    Limiti iniziali dell'adapter, configurabili: 10 secondi complessivi,
+    2 MiB complessivi di JSON decompresso, 64 pagine, 64 livelli.
+    Il superamento dei limiti produce `DISCOVERY_NON_CONFORME` (HTTP 502 in
+    GEMODO); errori di connessione, timeout o risposta HTTP esterna diversa
+    da 200 producono `DISCOVERY_NON_DISPONIBILE` (HTTP 503 in GEMODO).
+    Questi codici sono esiti del client GEMODO, non errori che GEBAN deve emettere.
+    Il server esterno restituisce Content-Type application/json.
+    `livelloBase` e' un alias tollerato di `livello_base`: valori discordanti
+    se entrambi presenti sono errore. Nessuna inferenza automatica dei vincoli
+    del campo livello dalla sola presenza degli attributi sul profilo.
+
 
     **Autenticazione dell'endpoint esterno**: da concordare con il team GEBAN,
     non ancora specificata in questa prima versione del contratto.
@@ -133,9 +152,9 @@ paths:
         fissi. Solo il primo ramo di ciascun livello e' compilato per esteso.
 
 
-        Chiamato da GEMODO solo in fase di definizione/navigazione struttura
-        (mai in fase di validazione/generazione documento, che usa sempre i
-        dati gia' snapshottati nel modello pubblicato). Il test di connessione
+        Chiamato da GEMODO per navigazione e verifica della compatibilita'
+        corrente; la validazione dei valori ricevuti resta contro il contratto
+        immutabile del modello. Il test di connessione
         verifica la forma della risposta, non l'uguaglianza dei valori reali
         rispetto agli esempi.
       operationId: getDiscovery
@@ -149,6 +168,19 @@ paths:
               examples:
                 bandoConcorso:
                   $ref: "#/components/examples/BandoConcorsoDiscoveryExample"
+        "503":
+          description: Catalogo temporaneamente non disponibile (esempio di errore esterno)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [codice, messaggio]
+                properties:
+                  codice: {type: string}
+                  messaggio: {type: string}
+              example:
+                codice: CATALOGO_NON_DISPONIBILE
+                messaggio: Servizio temporaneamente non disponibile
 components:
   examples:
     BandoConcorsoDiscoveryExample:
@@ -289,9 +321,9 @@ components:
           type: string
           format: date-time
           description: >
-            Data/ora di riferimento di questa classificazione
-            (`DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`). GEMODO la mostra
-            insieme a ogni modello creato a partire da questa risposta.
+            Data/ora fornita dal sistema esterno, mostrabile come metadato.
+            Nel servizio attuale varia a ogni richiesta: non e' una versione
+            affidabile del catalogo ed e' esclusa dalle firme di compatibilita'.
         nodi:
           type: array
           description: Primo livello dell'albero di categorizzazione di questo tipo documento.

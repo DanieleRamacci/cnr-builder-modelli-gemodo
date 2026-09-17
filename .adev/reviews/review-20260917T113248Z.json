@@ -1,0 +1,292 @@
+{
+  "schema": "adev.review_report.v1",
+  "created_at": "2026-09-17T11:43:31.921962+00:00",
+  "mode": "cross_model",
+  "verdict": "PASS",
+  "reasons": [],
+  "run_directory": ".adev/reviews/run-20260917T113248Z",
+  "active_feature": {
+    "status": "READY",
+    "path": ".specify/feature.json",
+    "feature_directory": "specs/010-configurazione-cataloghi-integrazioni",
+    "resolved_path": "specs/010-configurazione-cataloghi-integrazioni"
+  },
+  "feature_inventory": {
+    "ledger_path": ".adev/review-ledger.json",
+    "features": [
+      {
+        "path": "specs/001-catalogo-contratto-geban",
+        "active": false,
+        "document_hash": "0ccc15bbe343dbb4a9ffb11c7203fc07d0b6cc87150b3ac00a687cfd1ab52069",
+        "documents": [
+          "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+          "specs/001-catalogo-contratto-geban/data-model.md",
+          "specs/001-catalogo-contratto-geban/plan.md",
+          "specs/001-catalogo-contratto-geban/quickstart.md",
+          "specs/001-catalogo-contratto-geban/research.md",
+          "specs/001-catalogo-contratto-geban/spec.md",
+          "specs/001-catalogo-contratto-geban/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/002-builder-modelli",
+        "active": false,
+        "document_hash": "86f3b50884a3014cd886fbbb9b7fdbbab51a443e8d7be885cb39b11b37c35f4d",
+        "documents": [
+          "specs/002-builder-modelli/checklists/requirements.md",
+          "specs/002-builder-modelli/data-model.md",
+          "specs/002-builder-modelli/plan.md",
+          "specs/002-builder-modelli/quickstart.md",
+          "specs/002-builder-modelli/research.md",
+          "specs/002-builder-modelli/spec.md",
+          "specs/002-builder-modelli/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-17T11:26:27.045742+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260917T104745Z"
+      },
+      {
+        "path": "specs/003-sezioni-placeholder-versionamento",
+        "active": false,
+        "document_hash": "faf4118ad7fceb20215bf9c431b0a9e153470c9a8e32280a2c7cd35997f3324b",
+        "documents": [
+          "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
+          "specs/003-sezioni-placeholder-versionamento/data-model.md",
+          "specs/003-sezioni-placeholder-versionamento/plan.md",
+          "specs/003-sezioni-placeholder-versionamento/quickstart.md",
+          "specs/003-sezioni-placeholder-versionamento/research.md",
+          "specs/003-sezioni-placeholder-versionamento/spec.md",
+          "specs/003-sezioni-placeholder-versionamento/tasks.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/004-generazione-documenti-pdf",
+        "active": false,
+        "document_hash": "89de49336ea26b71865154e5ed4ff0f0911a3f9006d913a0ef4e84ff088dbbe3",
+        "documents": [
+          "specs/004-generazione-documenti-pdf/checklists/requirements.md",
+          "specs/004-generazione-documenti-pdf/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/005-storage-idempotenza-consultazione",
+        "active": false,
+        "document_hash": "6ff3b996962e6b4c55fa8fedd2bb21bc10031a2966dbbe5c88d0de254180cc48",
+        "documents": [
+          "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
+          "specs/005-storage-idempotenza-consultazione/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/006-sicurezza-autorizzazioni-audit",
+        "active": false,
+        "document_hash": "424b827bb858aef4963022b348d7f652ed7a1312f0a275ab6e5143be49fa642c",
+        "documents": [
+          "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
+          "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
+          "specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md",
+          "specs/006-sicurezza-autorizzazioni-audit/plan.md",
+          "specs/006-sicurezza-autorizzazioni-audit/quickstart.md",
+          "specs/006-sicurezza-autorizzazioni-audit/research.md",
+          "specs/006-sicurezza-autorizzazioni-audit/spec.md",
+          "specs/006-sicurezza-autorizzazioni-audit/tasks.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/007-frontend-builder-consultazione",
+        "active": false,
+        "document_hash": "604ea389da37cb924d98e2943219a1ede28c0a2b2b78f0b462a76554623a6342",
+        "documents": [
+          "specs/007-frontend-builder-consultazione/checklists/requirements.md",
+          "specs/007-frontend-builder-consultazione/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/008-ai-mcp-readiness",
+        "active": false,
+        "document_hash": "2737385644f9349c1f39654af1f3f9ec2739091b7db3d8139f6bbd16f9f455c0",
+        "documents": [
+          "specs/008-ai-mcp-readiness/checklists/requirements.md",
+          "specs/008-ai-mcp-readiness/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/009-fondamenta-mock-test-qualita",
+        "active": false,
+        "document_hash": "98e3080572bc7b95e4ff2d5a87a21d55625e3777660cef721fd93ae6aa4fd936",
+        "documents": [
+          "specs/009-fondamenta-mock-test-qualita/checklists/requirements.md",
+          "specs/009-fondamenta-mock-test-qualita/data-model.md",
+          "specs/009-fondamenta-mock-test-qualita/plan.md",
+          "specs/009-fondamenta-mock-test-qualita/quickstart.md",
+          "specs/009-fondamenta-mock-test-qualita/research.md",
+          "specs/009-fondamenta-mock-test-qualita/spec.md",
+          "specs/009-fondamenta-mock-test-qualita/tasks.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/010-configurazione-cataloghi-integrazioni",
+        "active": true,
+        "document_hash": "6c09d564a17e90a955bb73d3ffe9bcf06d4c7feca49b3ce8c011465c6cd5ad20",
+        "documents": [
+          "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+          "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+          "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+          "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+          "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+          "specs/010-configurazione-cataloghi-integrazioni/research.md",
+          "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+          "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-17T11:26:27.045742+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260917T104745Z"
+      }
+    ],
+    "features_needing_review": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/010-configurazione-cataloghi-integrazioni"
+    ],
+    "reviewed_features": [
+      "specs/003-sezioni-placeholder-versionamento",
+      "specs/004-generazione-documenti-pdf",
+      "specs/005-storage-idempotenza-consultazione",
+      "specs/006-sicurezza-autorizzazioni-audit",
+      "specs/007-frontend-builder-consultazione",
+      "specs/008-ai-mcp-readiness",
+      "specs/009-fondamenta-mock-test-qualita"
+    ]
+  },
+  "review_scope": {
+    "included_features": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/010-configurazione-cataloghi-integrazioni"
+    ],
+    "included_documents": [
+      "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+      "specs/001-catalogo-contratto-geban/data-model.md",
+      "specs/001-catalogo-contratto-geban/plan.md",
+      "specs/001-catalogo-contratto-geban/quickstart.md",
+      "specs/001-catalogo-contratto-geban/research.md",
+      "specs/001-catalogo-contratto-geban/spec.md",
+      "specs/001-catalogo-contratto-geban/tasks.md",
+      "specs/002-builder-modelli/checklists/requirements.md",
+      "specs/002-builder-modelli/data-model.md",
+      "specs/002-builder-modelli/plan.md",
+      "specs/002-builder-modelli/quickstart.md",
+      "specs/002-builder-modelli/research.md",
+      "specs/002-builder-modelli/spec.md",
+      "specs/002-builder-modelli/tasks.md",
+      "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+      "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+      "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+      "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+      "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+      "specs/010-configurazione-cataloghi-integrazioni/research.md",
+      "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+      "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
+    ]
+  },
+  "reviewers": [
+    {
+      "reviewer_id": "primary",
+      "provider": "claude_code",
+      "session_id": "53dbe5a6f2004799a51174d7dbe08a7e",
+      "isolated": true,
+      "valid": true,
+      "message": "Claude Code reviewer completed",
+      "finding_count": 3,
+      "artifact": ".adev/reviews/run-20260917T113248Z/review-primary.json"
+    }
+  ],
+  "regression_results": [
+    {
+      "category": "commands",
+      "command": "uv --directory backend run pytest -m \"not e2e\"",
+      "exit_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0\nrootdir: /Users/danieleramacci/Desktop/CNR/geban/builder-modello-bando/backend\nconfigfile: pytest.ini\ntestpaths: tests\nplugins: anyio-4.14.2\ncollected 218 items / 12 deselected / 206 selected\n\ntests/builder/test_builder_flow_api.py ....................              [  9%]\ntests/catalog/test_campi_richiesti_api.py ..                             [ 10%]\ntests/catalog/test_catalog_service_integration.py .....                  [ 13%]\ntests/catalog/test_catalogo_modelli_api.py ...                           [ 14%]\ntests/catalog/test_catalogo_tipologia_sol.py .                           [ 15%]\ntests/catalog/test_ritiro_catalogo_migration.py .                        [ 15%]\ntests/catalog/test_ritiro_classificazione_api.py ....                    [ 17%]\ntests/common/test_api_error_response.py ..                               [ 18%]\ntests/common/test_security_jwt.py ...............                        [ 25%]\ntests/contract/test_mock_geban_scenarios_contract.py ........            [ 29%]\ntests/contract/test_open_decisions_contract.py ...................       [ 38%]\ntests/contract/test_quality_readiness_contract.py ..........             [ 43%]\ntests/discovery/test_builder_docs.py .                                   [ 44%]\ntests/discovery/test_cache_concurrency.py ...                            [ 45%]\ntests/discovery/test_discovery.py ............................           [ 59%]\ntests/discovery/test_pagination.py ............                          [ 65%]\ntests/integration/test_coverage_matrix.py ............................   [ 78%]\ntests/integration/test_environment_verification.py ...........           [ 83%]\ntests/integration/test_integration_profiles.py ...                       [ 85%]\ntests/integration/test_open_decision_gates.py .........                  [ 89%]\ntests/integration/test_seed_demo_validation.py ............              [ 95%]\ntests/validation/test_validazione_payload_api.py .........               [100%]\n\n===================== 206 passed, 12 deselected in 38.96s ======================\n",
+      "stderr": ""
+    }
+  ],
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "finding_type": "workflow",
+      "category": "missing_requirement",
+      "title": "T059 marked done but 002/data-model.md still documents retired CategoriaDocumento/TipologiaBandoSOL as live FK entities",
+      "path": "specs/002-builder-modelli/data-model.md",
+      "line": 80,
+      "evidence": "The 2026-09-17 preamble (lines 3-31) says FR-016 dismisses categorie/tipologie/classificazione and that 'le sezioni storiche sotto non autorizzano a reintrodurli', but the rest of the same file (Entities section) still fully defines '### CategoriaDocumento' (lines 80-97, fields codice_tipo_documento/codice/descrizione/attiva, validation 'una categoria non attiva non puo' essere usata...') and '### TipologiaBandoSOL' (lines 125-141, with the full TDPNRR/CD/DIR/... enumeration), and the Relationships block (lines 253-257) still shows 'TipoDocumento 1--N CategoriaDocumento', 'CategoriaDocumento 1--N ModelloDocumento', 'TipologiaBandoSOL 1--N ModelloDocumento'. Migration backend/alembic/versions/0009_ritiro_catalogo_esterno_locale.py (part of this same diff) drops the categoria_documento, tipologia_bando_sol and classificazione_catalogo tables and removes their FK columns from modello_documento entirely, replacing them with plain codice_categoria/codice_tipologia/percorso_categorizzazione fields (see backend/app/catalog/models.py ModelloDocumento). T059 in tasks.md is checked '[x]' as 'Riallineare il riferimento documentale alla porta condivisa ... alla porta canonica della 010', and only the Porta Di Discovery section was actually rewritten - the contradicting legacy entity/relationship sections were left in place.",
+      "recommendation": "Rewrite or delete the CategoriaDocumento/TipologiaBandoSOL Entities sections and the Relationships diagram in specs/002-builder-modelli/data-model.md so they reflect the current schema (codice_categoria/codice_tipologia/percorso_categorizzazione, no FK to a local classification table), consistent with specs/010-configurazione-cataloghi-integrazioni/data-model.md. A top-of-file disclaimer is not sufficient when ~150 lines of contradicting schema detail follow it - a reader or future implementer skimming the Entities/Relationships sections will design against tables that no longer exist.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "workflow",
+      "category": "missing_requirement",
+      "title": "001/data-model.md still describes the retired classification tables as a DB-backed 'cache locale', contradicting the in-memory-only cache this same diff implements",
+      "path": "specs/001-catalogo-contratto-geban/data-model.md",
+      "line": 12,
+      "evidence": "Lines 12-18 state that for an integrated tipo documento (e.g. BANDO_CONCORSO) 'le righe sono una cache locale a TTL breve, popolate/aggiornate da un adapter HTTP che chiama l'endpoint di discovery registrato', and lines 24-29 say 'infra/local/postgres/seed-demo-catalog.yaml continua a esistere e a popolare queste tabelle' for CategoriaDocumento/TipologiaDocumento/RegistroContrattiDati. But backend/alembic/versions/0009_ritiro_catalogo_esterno_locale.py (this diff) drops categoria_documento, tipologia_bando_sol, classificazione_catalogo and registro_contratti_dati outright, and the actual AdapterHTTP cache (backend/app/discovery/cache.py CacheDiscovery) is explicitly process-memory only with a 60s TTL, never persisted to any DB table (confirmed by specs/010-configurazione-cataloghi-integrazioni/data-model.md and research.md, which repeatedly stress 'mai una tabella DB persistente'). specs/001 is listed in review_scope.included_features with review_status CHANGED/needs_review true, yet its data-model.md was not touched in this diff even though 001/tasks.md and 001/spec.md were updated with the FR-016 riallineamento note.",
+      "recommendation": "Update specs/001-catalogo-contratto-geban/data-model.md to remove the 'cache locale a TTL breve' / DB-table framing for integrated tipo documento and state plainly that classification data now lives only in the in-memory CacheDiscovery (010), with zero DB persistence; also clarify that infra/local/postgres/seed-demo-catalog.yaml's categorie/classificazioni/tipologie_sol sections are legacy fixtures consumed only by the quality-gate validator (backend/app/quality/seed_demo.py), not live seed data for tables that exist anymore.",
+      "reviewer_id": "primary"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding_type": "tooling",
+      "category": "insufficient_test",
+      "title": "adev's tracked-document set for feature 010 omits the OpenAPI YAML contracts changed in this diff",
+      "path": "specs/010-configurazione-cataloghi-integrazioni/tasks.md",
+      "line": 475,
+      "evidence": "review_scope.included_documents for specs/010-configurazione-cataloghi-integrazioni (request.json) lists only markdown files (spec.md, plan.md, tasks.md, research.md, data-model.md, checklists/requirements.md, incremento-discovery.md, contracts/esempio-discovery-per-nodi/README.md) - it never lists contracts/configurazione-cataloghi-api.openapi.yaml, contracts/geban-discovery-endpoint.openapi.yaml, or the new contracts/builder-discovery-api.openapi.yaml, even though all three changed/were added in this diff and are the Contract-First deliverables the constitution (Principle II) requires to gate runtime implementation. tasks.md T071 already self-tracks this exact gap as SOSPESO: 'il CLI adev censisce documenti markdown ma non YAML OpenAPI ... review esplicita del diff dei contratti resta obbligatoria anche quando needs_review non cambia'.",
+      "recommendation": "Until adev's document-hash tracking is extended to include *.yaml/*.yml files under specs/**/contracts/, reviewers must manually diff every OpenAPI contract on each run (as T071 already mandates) since needs_review/document_hash will not flag contract-only changes; consider fixing adev's document glob so contract drift is caught automatically instead of relying on a manual note in tasks.md.",
+      "reviewer_id": "primary"
+    }
+  ]
+}

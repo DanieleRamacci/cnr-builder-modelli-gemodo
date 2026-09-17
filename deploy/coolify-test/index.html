@@ -327,6 +327,12 @@
         <h2>Documentazione</h2>
         <div class="body doc-grid">
           <div class="box">
+            <a href="/docs/builder-discovery" target="_blank" rel="noreferrer">Swagger builder discovery</a>
+          </div>
+          <div class="box">
+            <a href="/redoc/builder-discovery" target="_blank" rel="noreferrer">ReDoc builder discovery</a>
+          </div>
+          <div class="box">
             <a href="/docs/geban-catalog" target="_blank" rel="noreferrer">Swagger catalogo GEBAN</a>
             <span>Console interattiva del contratto OpenAPI versionato. Usa Authorize per login SSO con gemodo-frontend.</span>
           </div>
@@ -388,7 +394,7 @@
             </div>
             <div class="box">
               <strong>3. Esegui le chiamate</strong>
-              <span>Prova prima classificazione, poi modelli filtrando per tipologia e profilo, quindi campi e validazione.</span>
+              <span>Modelli GEMODO pubblicati, contratti delle versioni e validazione.</span>
             </div>
           </div>
           <p class="note">
@@ -449,22 +455,12 @@
         <div class="body api-list">
           <div class="api-row">
             <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/tipi-documento</code><br /><span class="note">Elenca i tipi documento disponibili.</span></div>
-            <code>DOCUMENTI_VIEWER</code>
+            <div><code>/api/v1/builder/tipi-documento/{codice}/struttura-disponibile</code></div>
+            <code>GEMODO_MODELLI_GESTORE</code>
           </div>
           <div class="api-row">
             <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/tipi-documento/{codice}/profili</code><br /><span class="note">Elenca i profili attivi per un tipo documento.</span></div>
-            <code>DOCUMENTI_VIEWER</code>
-          </div>
-          <div class="api-row">
-            <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/tipi-documento/{codice}/classificazione</code><br /><span class="note">Restituisce l'albero tipologie/procedure SOL -> profili; il codice SOL resta interno.</span></div>
-            <code>DOCUMENTI_VIEWER</code>
-          </div>
-          <div class="api-row">
-            <span class="method">GET</span>
-            <div><code>/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;codice_tipologia=TD&amp;profilo=COLLABORATORE_TECNICO_ER</code><br /><span class="note">Restituisce versioni modello pubblicate e valide per il nodo dell'albero scelto. Ogni combinazione della classificazione bandi ha un modello demo temporaneo.</span></div>
+            <div><code>/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&amp;codice_tipologia=TD&amp;profilo=COLLABORATORE_TECNICO_ER</code></div>
             <code>DOCUMENTI_VIEWER</code>
           </div>
           <div class="api-row">
