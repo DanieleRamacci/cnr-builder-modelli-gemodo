@@ -113,6 +113,7 @@ def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> Prin
         sistemi,
         client_id=str(client_id),
         context_roles=context_roles,
+        interactive_client=str(client_id) in settings.gemodo_allowed_interactive_clients,
     )
     normalized_roles = tuple(dict.fromkeys([*direct_roles, *sorted(external_permissions)]))
     return PrincipalGEMODO(
@@ -232,6 +233,7 @@ def _permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str, set
         sistemi,
         client_id=principal.client_id,
         context_roles={codice_contesto: ruoli_nel_contesto},
+        interactive_client=principal.client_id in settings.gemodo_allowed_interactive_clients,
     )
 
 

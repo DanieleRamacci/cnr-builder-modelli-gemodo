@@ -72,6 +72,15 @@ Setup eseguito manualmente in Admin Console sul realm `cnr` di test:
 
 ## Principio Di Base
 
+Aggiornamento normativo 2026-09-18: per l'accesso utenti via ACE non si
+assegnano ruoli GEMODO aggiuntivi in Keycloak. I permessi sono derivati da
+`contexts.<contesto>.roles` tramite mapping backend. Il client di login
+autorizzato non deve comparire nei client tecnici di ogni integrazione.
+Questa regola sostituisce le indicazioni di assegnazione manuale dei ruoli
+utente riportate sotto per il precedente setup diretto; i service account
+mantengono i controlli tecnici. Riferimento comune per tutte le integrazioni:
+[ADR 0003](../../docs/adr/0003-accesso-utenti-contesti-ace.md).
+
 GEMODO non gestisce utenti, password o assegnazione ufficiale dei ruoli.
 
 La fonte di identita' e ruoli e':

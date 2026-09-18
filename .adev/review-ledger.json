@@ -2,9 +2,9 @@
   "schema": "adev.review_ledger.v1",
   "features": {
     "specs/001-catalogo-contratto-geban": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "b89c22da44953d288e067d8cc0603bbabe125a1699115db858e99d9488555f18",
       "documents": [
         "specs/001-catalogo-contratto-geban/checklists/requirements.md",
@@ -15,12 +15,12 @@
         "specs/001-catalogo-contratto-geban/spec.md",
         "specs/001-catalogo-contratto-geban/tasks.md"
       ],
-      "review_count": 7
+      "review_count": 8
     },
     "specs/002-builder-modelli": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "fcf30e4c035d60a78540324bd0ed66f481567636f82a75c846387f0d2f8008fc",
       "documents": [
         "specs/002-builder-modelli/checklists/requirements.md",
@@ -31,12 +31,12 @@
         "specs/002-builder-modelli/spec.md",
         "specs/002-builder-modelli/tasks.md"
       ],
-      "review_count": 8
+      "review_count": 9
     },
     "specs/003-sezioni-placeholder-versionamento": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "9727406001ce2ec95563ae23076cc0968ec186a6f73a0bb515c27f75e71a36b3",
       "documents": [
         "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
@@ -47,12 +47,12 @@
         "specs/003-sezioni-placeholder-versionamento/spec.md",
         "specs/003-sezioni-placeholder-versionamento/tasks.md"
       ],
-      "review_count": 6
+      "review_count": 7
     },
     "specs/004-generazione-documenti-pdf": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "11725637db52f03c65a447a5435ed22502c5e1b00d40fb4ae06eb986d04130dc",
       "documents": [
         "specs/004-generazione-documenti-pdf/checklists/requirements.md",
@@ -60,12 +60,12 @@
         "specs/004-generazione-documenti-pdf/spec.md",
         "specs/004-generazione-documenti-pdf/tasks.md"
       ],
-      "review_count": 6
+      "review_count": 7
     },
     "specs/005-storage-idempotenza-consultazione": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "d01835b0e5f7ec2ab6a17e39fb32ec1a9eefa29d79918aaf595e181a421ebcd8",
       "documents": [
         "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
@@ -73,13 +73,13 @@
         "specs/005-storage-idempotenza-consultazione/spec.md",
         "specs/005-storage-idempotenza-consultazione/tasks.md"
       ],
-      "review_count": 6
+      "review_count": 7
     },
     "specs/006-sicurezza-autorizzazioni-audit": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
-      "document_hash": "c43e257b75d133e5ca12dadda81c58071103ff49109b937410df652dd2c80347",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
+      "document_hash": "f219e1f38f4d276592317041a4724b93ff18ce73c96d0a499aa76cadeb3654fb",
       "documents": [
         "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
         "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
@@ -90,13 +90,13 @@
         "specs/006-sicurezza-autorizzazioni-audit/spec.md",
         "specs/006-sicurezza-autorizzazioni-audit/tasks.md"
       ],
-      "review_count": 6
+      "review_count": 7
     },
     "specs/007-frontend-builder-consultazione": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
-      "document_hash": "0854ec76e5c7550caba651d6133f6d447e6245dfed1284dd8d35649c9b826602",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
+      "document_hash": "60c09e3dddb031349ac2b408308160d4fb4e60e20bfaa59d67b304aaee73ff83",
       "documents": [
         "specs/007-frontend-builder-consultazione/checklists/requirements.md",
         "specs/007-frontend-builder-consultazione/data-model.md",
@@ -106,7 +106,7 @@
         "specs/007-frontend-builder-consultazione/spec.md",
         "specs/007-frontend-builder-consultazione/tasks.md"
       ],
-      "review_count": 6
+      "review_count": 7
     },
     "specs/008-ai-mcp-readiness": {
       "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
@@ -136,9 +136,9 @@
       "review_count": 2
     },
     "specs/010-configurazione-cataloghi-integrazioni": {
-      "last_reviewed_at": "2026-09-18T11:26:07.044125+00:00",
+      "last_reviewed_at": "2026-09-18T13:26:11.453229+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260918T112604Z",
+      "last_run_directory": ".adev/reviews/run-20260918T132608Z",
       "document_hash": "990268b461d677c88c366c7825d5f2105f1176da96240c2d110713e94f272f7c",
       "documents": [
         "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
@@ -154,8 +154,8 @@
         "specs/010-configurazione-cataloghi-integrazioni/spec.md",
         "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
       ],
-      "review_count": 7
+      "review_count": 8
     }
   },
-  "updated_at": "2026-09-18T11:26:07.044125+00:00"
+  "updated_at": "2026-09-18T13:26:11.453229+00:00"
 }

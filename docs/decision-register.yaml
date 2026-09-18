@@ -10,6 +10,21 @@
 # SC-002: il 100% delle decisioni di §17 deve avere owner qui.
 
 decisions:
+  - id: DEC-007-ACCESSO-ACE-CONTESTI
+    titolo: Accesso utenti GEMODO tramite contesti ACE
+    owner_spec: specs/007-frontend-builder-consultazione
+    spec_interessate:
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      ADR 0003: client interattivi autorizzati derivano i permessi dai mapping
+      di contexts senza iscrizione nei profili tecnici e senza assegnazioni
+      aggiuntive di ruoli GEMODO agli utenti. Isolamento per contesto invariato;
+      controlli client/profilo tecnici mantenuti.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-18
   - id: DEC-009-NOME-SERVIZIO
     titolo: Nome definitivo del servizio
     owner_spec: specs/009-fondamenta-mock-test-qualita

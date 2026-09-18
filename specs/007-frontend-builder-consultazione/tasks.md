@@ -18,6 +18,13 @@ backend+mock-geban veri, mai mock della logica di dominio).
 
 ## Phase 1: Setup
 
+- [x] T037 Correggere autorizzazione ACE dei client interattivi: derivare
+      permessi dai mapping per contesto senza iscrizione nei profili tecnici;
+      documentare ADR 0003 e verificare isolamento, ruoli sconosciuti e client tecnici.
+      Implementato il 2026-09-18; 33 test common, 292 test backend non-e2e
+      e 38 test frontend passati. Review indipendente residua: Claude non
+      autenticato (adev FAIL, nessun esito di revisione valido).
+
 **Purpose**: sostituire il placeholder `frontend/package.json` con un vero
 progetto Angular, avviabile da `infra/local/compose.yaml`.
 
@@ -334,7 +341,7 @@ FR-022/FR-023).
 
 ### Tests for User Story 5
 
-- [ ] T020 [P] [US5] Unit test (Vitest) per la lista integrazioni manager:
+- [x] T020 [P] [US5] Unit test (Vitest) per la lista integrazioni manager:
       isolamento multi-contesto riflesso in UI (solo le integrazioni del
       proprio contesto, anche con token multi-contesto - vedi
       `test_multicontext_token_does_not_leak_permission_across_contexts`
@@ -382,7 +389,7 @@ a User Story 4, l'MVP ADR 0002 e' completo.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T036 Diagnosi 401 immediatamente dopo login sul server: forzare nuovo
+- [x] T036 Diagnosi 401 immediatamente dopo login sul server: forzare nuovo
       accesso con prompt login; distinguere rifiuto backend da refresh
       fallito e registrare nei log solo la classe di errore JWT, audience
       non corrispondente o Bearer assente. IN CORSO: 37 test frontend e 16
@@ -390,6 +397,9 @@ a User Story 4, l'MVP ADR 0002 e' completo.
       aperta: risposta ACCESSO_NON_AUTENTICATO e header Bearer presente
       confermati dall'utente. Serve il motivo di rifiuto nei log backend;
       non esclusa rimozione header nel percorso proxy.
+      CHIUSO 2026-09-18: causa ImmatureSignatureError identificata e corretta
+      con leeway JWT configurabile; log server successivi forniti dall'utente
+      confermano GET/PUT/verifica con 200. La nota IN CORSO sopra e' storica.
 
 - [ ] T035 Correzione dal collaudo server: refresh fallito non deve inviare
       richieste con token scaduto; lista distingue errore da vuoto e mostra
@@ -422,9 +432,26 @@ sandbox sull'apertura dei socket. Server dev disponibile su porta 4201.
       `infra/local/compose.yaml` reale (non solo unitaria, coerente con la
       pratica gia' seguita per le altre spec) e registrare l'esito in
       `quickstart.md`
-- [ ] T032 Rivedere `docs/decision-register.yaml` per collegare eventuali
+- [x] T032 Rivedere `docs/decision-register.yaml` per collegare eventuali
       decisioni aperte specifiche di questo incremento (se emerse durante
       l'implementazione - nessuna nota gia' oggi)
+      Registrata DEC-007-ACCESSO-ACE-CONTESTI e ADR 0003, 2026-09-18.
+
+## Residui dopo correzione ACE (2026-09-18)
+
+Le altre spec non sono dichiarate complete da questa correzione condivisa.
+006 ha gia' i task implementativi chiusi; ADR 0003 aggiorna il contratto
+di accesso utenti. 002/010 restano owner dei rispettivi residui funzionali.
+Il gate indipendente resta pendente per tutte le spec interessate: reviewer
+Claude non autenticato. Il comando regressione interno ad adev ha inoltre
+fallito per accesso sandbox alla cache uv; la stessa suite eseguita con
+permessi di test ha passato 292 test. Nessun PASS del gate viene dichiarato.
+
+T014/T023/T031: SOSPESI per questo incremento di sicurezza, collaudo browser
+su stack reale ancora necessario. T011-T013/T015-T019 e T021-T030/T035:
+stato precedente conservato; i test presenti passano, ma le verifiche
+integrali dei singoli requisiti e dei workflow non sono sostituite dai test ACE.
+US5 non e' completata dalla sola correzione di accesso.
 
 ---
 

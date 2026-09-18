@@ -80,11 +80,13 @@ def permessi_da_ruoli_esterni(
     *,
     client_id: str,
     context_roles: dict[str, tuple[str, ...]],
+    interactive_client: bool = False,
 ) -> set[str]:
     """Derive GEMODO permissions from configured ACE/context roles.
 
-    Only active systems, active clients and active profiles are considered. Unknown
-    external roles never grant permissions.
+    Only active systems and profiles are considered. Trusted interactive clients
+    use context mappings independently of technical profile client membership;
+    other callers must also be active admitted clients. Unknown roles grant nothing.
     """
 
     permessi: set[str] = set()
@@ -92,13 +94,13 @@ def permessi_da_ruoli_esterni(
         if sistema.stato != StatoSistemaRichiedente.ATTIVO:
             continue
         client = _client_attivo(sistema, client_id)
-        if client is None:
+        if client is None and not interactive_client:
             continue
-        context_ammessi = set(client.token_contexts)
+        context_ammessi = set(client.token_contexts) if client and not interactive_client else set()
         for profilo in sistema.profili_integrazione:
             if profilo.stato != StatoProfiloIntegrazione.ATTIVO:
                 continue
-            if client_id not in profilo.client_ammessi:
+            if not interactive_client and client_id not in profilo.client_ammessi:
                 continue
             for mapping in profilo.role_mappings:
                 if context_ammessi and mapping.token_context not in context_ammessi:

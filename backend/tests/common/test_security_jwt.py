@@ -4,6 +4,7 @@ from datetime import timedelta
 from dataclasses import replace
 
 import pytest
+import yaml
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
@@ -344,6 +345,45 @@ def test_missing_role_is_forbidden():
 
     with pytest.raises(AuthorizationError):
         require_documenti_generatore(principal)
+
+
+@pytest.mark.parametrize("role,manager", [("ROLE_MANAGER#geban", True), ("ROLE_USER#geban", False), ("ROLE_UNKNOWN#geban", False)])
+def test_interactive_ace_permissions_are_scoped_without_profile_client_registration(tmp_path, role, manager):
+    keys = JwtTestKeys()
+    settings = _settings(integration_profiles_path=_write_integration_profiles(tmp_path))
+    token = signed_token(keys, client_id="gemodo-frontend", roles=None,
+                         contexts={"geban": [role], "other": ["ROLE_MANAGER#other"]})
+    principal = decode_principal_from_token(token, settings=settings, signing_key=keys.public_pem)
+    assert principal.ruoli_diretti == ()
+    assert (ROLE_GEMODO_MODELLI_GESTORE in principal.ruoli) is manager
+    assert security_module.contesti_con_permesso(
+        principal, ROLE_GEMODO_MODELLI_GESTORE, ("geban", "other"), settings=settings
+    ) == ({"geban"} if manager else set())
+
+
+def test_technical_client_does_not_gain_interactive_context_permissions(tmp_path):
+    keys = JwtTestKeys()
+    settings = _settings(integration_profiles_path=_write_integration_profiles(tmp_path))
+    token = signed_token(keys, client_id="geban-backend", roles=None,
+                         contexts={"geban": ["ROLE_MANAGER#geban"]})
+    principal = decode_principal_from_token(token, settings=settings, signing_key=keys.public_pem)
+    assert principal.ruoli == ()
+
+
+@pytest.mark.parametrize("target", ["system", "profile"])
+def test_interactive_context_permissions_require_active_configuration(tmp_path, target):
+    from pathlib import Path
+    path = Path(_write_integration_profiles(tmp_path))
+    manifest = yaml.safe_load(path.read_text())
+    system = manifest["sistemi_richiedenti"][0]
+    entity = system if target == "system" else system["profili_integrazione"][0]
+    entity["stato"] = "SOSPESO"
+    path.write_text(yaml.safe_dump(manifest))
+    keys = JwtTestKeys()
+    token = signed_token(keys, client_id="gemodo-frontend", roles=None,
+                         contexts={"geban": ["ROLE_MANAGER#geban"]})
+    principal = decode_principal_from_token(token, settings=_settings(integration_profiles_path=str(path)), signing_key=keys.public_pem)
+    assert principal.ruoli == ()
 
 
 def test_missing_token_returns_401_error_envelope():

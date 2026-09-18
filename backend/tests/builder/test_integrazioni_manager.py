@@ -84,7 +84,9 @@ def _rimuovi_integrazione(db_engine, integrazione_id):
 
 
 @pytest.mark.integration
-def test_manager_sees_only_connected_integrations_authorized_in_their_context(manager_client, db_engine, discovery_server):
+@pytest.mark.parametrize("client_id", ["geri-angular-public", "gemodo-frontend"])
+def test_manager_sees_only_connected_integrations_authorized_in_their_context(manager_client, db_engine, discovery_server, monkeypatch, client_id):
+    monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", client_id)
     url, responses, _ = discovery_server
     responses["/discovery"] = (200, fragment())
     autorizzata = _crea_integrazione(db_engine, codice_contesto="geban", url=url + "/discovery")

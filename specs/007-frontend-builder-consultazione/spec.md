@@ -262,6 +262,13 @@ integrazioni e le azioni consentite sono sempre determinate dal backend.
 
 ### Key Entities
 
+Autorizzazione ACE confermata il 2026-09-18: i client interattivi autorizzati
+derivano i permessi dai mapping di `contexts.<contesto>.roles`, senza essere
+censiti nei client tecnici di ciascun profilo. Non sono richieste assegnazioni
+aggiuntive di ruoli GEMODO agli utenti. Sistemi/profili inattivi, ruoli e contesti
+non configurati non concedono permessi; ogni risorsa resta isolata per contesto.
+Le chiamate tecniche conservano i controlli sul client e sul profilo ammesso.
+
 - **Utente Builder**: operatore interno del servizio modelli.
 - **Utente Consultazione**: utente o client autorizzato a visualizzare stato e metadati di generazioni documento.
 - **Schermata Modello**: vista di gestione modello/versione.

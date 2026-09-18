@@ -194,3 +194,10 @@ esterni. Il precedente prerequisito US2/T108 e' superato.
 
 L'ordine mette prima il flusso GEBAN e il dominio configurabile, poi sicurezza e
 generazione, quindi frontend, test e predisposizione AI.
+# Regola comune di accesso ACE
+
+Per tutte le integrazioni, l'accesso utenti tramite GEMODO usa i ruoli di
+`contexts.<contesto>.roles`, senza assegnazioni aggiuntive di ruoli GEMODO.
+Il client di login autorizzato non deve essere censito in ogni profilo tecnico.
+Mapping espliciti e isolamento per contesto restano obbligatori:
+[ADR 0003](adr/0003-accesso-utenti-contesti-ace.md).

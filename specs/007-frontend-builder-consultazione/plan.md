@@ -20,6 +20,12 @@ restano scope futuro oltre questo incremento.
 
 ## Technical Context
 
+Aggiornamento 2026-09-18, ADR 0003: autorizzazione utente derivata dai mapping
+ACE in contexts per client interattivi autorizzati, indipendentemente dalle
+liste di client tecnici dei profili. La normalizzazione globale e il controllo
+per singola risorsa usano la stessa policy backend. Non servono ruoli GEMODO
+aggiuntivi assegnati agli utenti; sistemi/profili inattivi non concedono accesso.
+
 **Language/Version**: TypeScript 5.9 su Angular 21.2 (standalone components,
 signals, nessun `NgModule`).
 
