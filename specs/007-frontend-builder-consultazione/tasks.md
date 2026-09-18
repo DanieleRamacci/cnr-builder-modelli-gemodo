@@ -114,10 +114,45 @@ fase sia completa.
       `curl http://localhost:4200/api/v1/test` con `ng serve` + proxy attivi.
       4 unit test Vitest reali (`api-client.spec.ts`, incl. mappatura errore
       409 e fallback su risposta senza envelope) - 6/6 test totali passati.
-- [ ] T009 [P] Implementare il modulo di autenticazione Keycloak
-      (`keycloak-js` + `keycloak-angular`, Authorization Code + PKCE, client
-      id `gemodo-frontend`) in `frontend/src/app/auth/`, incluso
-      l'interceptor Bearer che il client HTTP (T008) usa per ogni chiamata
+- [x] T009 [P] *(2026-09-18)* Implementato il modulo di autenticazione
+      Keycloak (`keycloak-angular@21` + `keycloak-js`, Authorization Code +
+      PKCE `S256`, client id `gemodo-frontend`) in
+      `frontend/src/app/auth/` (`keycloak-config.ts` per il parsing di
+      `KEYCLOAK_ISSUER_URL`, `keycloak.providers.ts` per `provideKeycloak` +
+      `includeBearerTokenInterceptor` limitato a `/^\/api\//`).
+      **Problema reale trovato durante l'implementazione, non previsto in
+      `research.md`**: l'issuer/client id non possono essere costanti a
+      build-time (differiscono per ambiente) ma il builder esbuild di
+      Angular NON sostituisce `process.env` a build-time come farebbe Vite
+      (verificato con un build di prova: il riferimento resta
+      `process.env[...]` nel bundle, che lancerebbe `ReferenceError` in
+      browser). Risolto con un pattern di runtime-config standard:
+      `public/runtime-config.json` (default committato con gli stessi
+      valori di default del backend), rigenerato dai veri env var del
+      container a *startup* (non build) da
+      `scripts/genera-runtime-config.sh`, richiamato dal `CMD` del
+      `Dockerfile` prima di `ng serve`; `main.ts` lo recupera con `fetch`
+      prima di chiamare `bootstrapApplication` (`app.config.ts` e' ora una
+      funzione `buildAppConfig(runtimeConfig)`, non piu' una costante
+      statica).
+      **Verificato per davvero, non solo a compile-time**: avviato un
+      Keycloak reale standalone (stessa immagine/stesso import di realm di
+      `infra/local/compose.yaml` `keycloak-local`, solo su porta 8081 per
+      evitare un conflitto locale) con il realm `gemodo-local` gia'
+      preparato in questo repo (redirect URI `http://localhost:4200/*` gia'
+      registrato). Un browser reale (Playwright, non un mock) che apre
+      l'app viene rediretto correttamente alla vera pagina di login
+      Keycloak con `client_id=gemodo-frontend`,
+      `redirect_uri=http://localhost:4200/`, `response_type=code`,
+      `code_challenge_method=S256` e un `code_challenge` presente - prova
+      concreta che l'intero flusso Authorization Code + PKCE e' cablato
+      correttamente end-to-end. **Non verificato**: il completamento di un
+      login reale (nessun utente precaricato nel realm offline, andrebbe
+      creato via API admin) - fuori scope per una verifica automatica senza
+      credenziali reali; il resto del flusso (redirect corretto, parametri
+      OIDC corretti) e' la parte davvero a rischio di errore di
+      configurazione ed e' quella verificata. 3 nuovi unit test Vitest
+      (`keycloak-config.spec.ts`) - 9/9 test totali passati.
 - [ ] T010 [P] Implementare la shell applicativa (layout, navigazione,
       componenti Design Angular Kit condivisi) in `frontend/src/app/shell/`
 

@@ -1,0 +1,4 @@
+{
+  "keycloakIssuerUrl": "https://sso.test.si.cnr.it/auth/realms/cnr",
+  "keycloakClientId": "gemodo-frontend"
+}
