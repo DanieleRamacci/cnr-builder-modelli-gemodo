@@ -211,6 +211,13 @@ BOZZA, verificabile anche da Swagger.
 
 ### Richiesta di collaudo 2026-09-18
 
+La creazione dell'integrazione e' persistente e distinta dalla configurazione
+dell'endpoint. Dopo nuovo login l'admin puo' riprenderla dalla lista anche
+senza URL, con stato UI Da completare. Un errore di lettura non deve essere
+confuso con registro vuoto. Il refresh fallito blocca le richieste protette;
+la UI offre nuovo login mantenendo il percorso del record. Nessun retry
+automatico delle scritture dopo un errore di autenticazione.
+
 La shell mostra nome e icona utente in alto a destra. Il profilo permette
 di visualizzare esplicitamente il token della propria sessione e fare logout.
 La home mostra Integrazione servizi agli admin e Crea modello ai manager;

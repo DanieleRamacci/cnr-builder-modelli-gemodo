@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { IntegrazioniListaComponent } from './integrazioni-lista.component';
 import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
@@ -54,7 +54,24 @@ describe('IntegrazioniListaComponent', () => {
     fixture = TestBed.createComponent(IntegrazioniListaComponent);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Non verificato');
+    expect(text).toContain('Da completare');
+    expect(fixture.nativeElement.querySelector('tbody a').getAttribute('href')).toBe(
+      '/00000000-0000-4000-8000-000000000001',
+    );
+  });
+
+  it('shows a failed load instead of an empty registry and allows retry', () => {
+    service.lista.mockReturnValue(
+      throwError(() => ({ status: 503, messaggio: 'Servizio non disponibile' })),
+    );
+    fixture = TestBed.createComponent(IntegrazioniListaComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Servizio non disponibile');
+    expect(fixture.nativeElement.textContent).not.toContain('Nessuna integrazione');
+    service.lista.mockReturnValue(of([integrazione({})]));
+    fixture.nativeElement.querySelector('button').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Da completare');
   });
 
   it('shows a positive badge for CONNESSO', () => {

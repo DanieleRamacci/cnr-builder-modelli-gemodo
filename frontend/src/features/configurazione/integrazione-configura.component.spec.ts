@@ -94,7 +94,8 @@ describe('IntegrazioneConfiguraComponent', () => {
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Destinazione non approvata');
+    expect(text).toContain('URL discovery non autorizzato');
+    expect(text).toContain('integrazione resta salvata');
   });
 
   it('shows a load failure and lets the user retry', () => {

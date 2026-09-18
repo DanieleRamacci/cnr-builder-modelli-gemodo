@@ -1,3 +1,10 @@
+<a routerLink="/configurazione" class="d-inline-block mb-3">Tutte le integrazioni</a>
+@if (sessioneScaduta()) {
+  <div class="alert alert-warning" role="alert">
+    Sessione non valida. L'integrazione salvata resta disponibile.
+  </div>
+  <button type="button" class="btn btn-primary mb-3" (click)="accedi()">Accedi nuovamente</button>
+}
 @if (caricando()) {
   <p role="status">Caricamento...</p>
 }

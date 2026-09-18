@@ -1,0 +1,313 @@
+{
+  "schema": "adev.review_report.v1",
+  "created_at": "2026-09-18T11:19:47.224073+00:00",
+  "mode": "cross_model",
+  "verdict": "FAIL",
+  "reasons": [
+    "malformed reviewer report",
+    "failed regression command: commands:uv --directory backend run pytest -m \"not e2e\""
+  ],
+  "run_directory": ".adev/reviews/run-20260918T111944Z",
+  "active_feature": {
+    "status": "READY",
+    "path": ".specify/feature.json",
+    "feature_directory": "specs/007-frontend-builder-consultazione",
+    "resolved_path": "specs/007-frontend-builder-consultazione"
+  },
+  "feature_inventory": {
+    "ledger_path": ".adev/review-ledger.json",
+    "features": [
+      {
+        "path": "specs/001-catalogo-contratto-geban",
+        "active": false,
+        "document_hash": "b89c22da44953d288e067d8cc0603bbabe125a1699115db858e99d9488555f18",
+        "documents": [
+          "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+          "specs/001-catalogo-contratto-geban/data-model.md",
+          "specs/001-catalogo-contratto-geban/plan.md",
+          "specs/001-catalogo-contratto-geban/quickstart.md",
+          "specs/001-catalogo-contratto-geban/research.md",
+          "specs/001-catalogo-contratto-geban/spec.md",
+          "specs/001-catalogo-contratto-geban/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/002-builder-modelli",
+        "active": false,
+        "document_hash": "fcf30e4c035d60a78540324bd0ed66f481567636f82a75c846387f0d2f8008fc",
+        "documents": [
+          "specs/002-builder-modelli/checklists/requirements.md",
+          "specs/002-builder-modelli/data-model.md",
+          "specs/002-builder-modelli/plan.md",
+          "specs/002-builder-modelli/quickstart.md",
+          "specs/002-builder-modelli/research.md",
+          "specs/002-builder-modelli/spec.md",
+          "specs/002-builder-modelli/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/003-sezioni-placeholder-versionamento",
+        "active": false,
+        "document_hash": "9727406001ce2ec95563ae23076cc0968ec186a6f73a0bb515c27f75e71a36b3",
+        "documents": [
+          "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
+          "specs/003-sezioni-placeholder-versionamento/data-model.md",
+          "specs/003-sezioni-placeholder-versionamento/plan.md",
+          "specs/003-sezioni-placeholder-versionamento/quickstart.md",
+          "specs/003-sezioni-placeholder-versionamento/research.md",
+          "specs/003-sezioni-placeholder-versionamento/spec.md",
+          "specs/003-sezioni-placeholder-versionamento/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/004-generazione-documenti-pdf",
+        "active": false,
+        "document_hash": "11725637db52f03c65a447a5435ed22502c5e1b00d40fb4ae06eb986d04130dc",
+        "documents": [
+          "specs/004-generazione-documenti-pdf/checklists/requirements.md",
+          "specs/004-generazione-documenti-pdf/plan.md",
+          "specs/004-generazione-documenti-pdf/spec.md",
+          "specs/004-generazione-documenti-pdf/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/005-storage-idempotenza-consultazione",
+        "active": false,
+        "document_hash": "d01835b0e5f7ec2ab6a17e39fb32ec1a9eefa29d79918aaf595e181a421ebcd8",
+        "documents": [
+          "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
+          "specs/005-storage-idempotenza-consultazione/plan.md",
+          "specs/005-storage-idempotenza-consultazione/spec.md",
+          "specs/005-storage-idempotenza-consultazione/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/006-sicurezza-autorizzazioni-audit",
+        "active": false,
+        "document_hash": "c43e257b75d133e5ca12dadda81c58071103ff49109b937410df652dd2c80347",
+        "documents": [
+          "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
+          "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
+          "specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md",
+          "specs/006-sicurezza-autorizzazioni-audit/plan.md",
+          "specs/006-sicurezza-autorizzazioni-audit/quickstart.md",
+          "specs/006-sicurezza-autorizzazioni-audit/research.md",
+          "specs/006-sicurezza-autorizzazioni-audit/spec.md",
+          "specs/006-sicurezza-autorizzazioni-audit/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/007-frontend-builder-consultazione",
+        "active": true,
+        "document_hash": "9afc44bc694b5228a4bd0423d8b0227c183e81b642c4d510cbaa7aabc0241c62",
+        "documents": [
+          "specs/007-frontend-builder-consultazione/checklists/requirements.md",
+          "specs/007-frontend-builder-consultazione/data-model.md",
+          "specs/007-frontend-builder-consultazione/plan.md",
+          "specs/007-frontend-builder-consultazione/quickstart.md",
+          "specs/007-frontend-builder-consultazione/research.md",
+          "specs/007-frontend-builder-consultazione/spec.md",
+          "specs/007-frontend-builder-consultazione/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      },
+      {
+        "path": "specs/008-ai-mcp-readiness",
+        "active": false,
+        "document_hash": "2737385644f9349c1f39654af1f3f9ec2739091b7db3d8139f6bbd16f9f455c0",
+        "documents": [
+          "specs/008-ai-mcp-readiness/checklists/requirements.md",
+          "specs/008-ai-mcp-readiness/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/009-fondamenta-mock-test-qualita",
+        "active": false,
+        "document_hash": "98e3080572bc7b95e4ff2d5a87a21d55625e3777660cef721fd93ae6aa4fd936",
+        "documents": [
+          "specs/009-fondamenta-mock-test-qualita/checklists/requirements.md",
+          "specs/009-fondamenta-mock-test-qualita/data-model.md",
+          "specs/009-fondamenta-mock-test-qualita/plan.md",
+          "specs/009-fondamenta-mock-test-qualita/quickstart.md",
+          "specs/009-fondamenta-mock-test-qualita/research.md",
+          "specs/009-fondamenta-mock-test-qualita/spec.md",
+          "specs/009-fondamenta-mock-test-qualita/tasks.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/010-configurazione-cataloghi-integrazioni",
+        "active": false,
+        "document_hash": "990268b461d677c88c366c7825d5f2105f1176da96240c2d110713e94f272f7c",
+        "documents": [
+          "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+          "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+          "specs/010-configurazione-cataloghi-integrazioni/contracts/integrazioni-policy.md",
+          "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+          "specs/010-configurazione-cataloghi-integrazioni/definizione-export.md",
+          "specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md",
+          "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+          "specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md",
+          "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+          "specs/010-configurazione-cataloghi-integrazioni/research.md",
+          "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+          "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-18T10:14:50.459336+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260918T101447Z"
+      }
+    ],
+    "features_needing_review": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/003-sezioni-placeholder-versionamento",
+      "specs/004-generazione-documenti-pdf",
+      "specs/005-storage-idempotenza-consultazione",
+      "specs/006-sicurezza-autorizzazioni-audit",
+      "specs/007-frontend-builder-consultazione",
+      "specs/010-configurazione-cataloghi-integrazioni"
+    ],
+    "reviewed_features": [
+      "specs/008-ai-mcp-readiness",
+      "specs/009-fondamenta-mock-test-qualita"
+    ]
+  },
+  "review_scope": {
+    "included_features": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/003-sezioni-placeholder-versionamento",
+      "specs/004-generazione-documenti-pdf",
+      "specs/005-storage-idempotenza-consultazione",
+      "specs/006-sicurezza-autorizzazioni-audit",
+      "specs/007-frontend-builder-consultazione",
+      "specs/010-configurazione-cataloghi-integrazioni"
+    ],
+    "included_documents": [
+      "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+      "specs/001-catalogo-contratto-geban/data-model.md",
+      "specs/001-catalogo-contratto-geban/plan.md",
+      "specs/001-catalogo-contratto-geban/quickstart.md",
+      "specs/001-catalogo-contratto-geban/research.md",
+      "specs/001-catalogo-contratto-geban/spec.md",
+      "specs/001-catalogo-contratto-geban/tasks.md",
+      "specs/002-builder-modelli/checklists/requirements.md",
+      "specs/002-builder-modelli/data-model.md",
+      "specs/002-builder-modelli/plan.md",
+      "specs/002-builder-modelli/quickstart.md",
+      "specs/002-builder-modelli/research.md",
+      "specs/002-builder-modelli/spec.md",
+      "specs/002-builder-modelli/tasks.md",
+      "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
+      "specs/003-sezioni-placeholder-versionamento/data-model.md",
+      "specs/003-sezioni-placeholder-versionamento/plan.md",
+      "specs/003-sezioni-placeholder-versionamento/quickstart.md",
+      "specs/003-sezioni-placeholder-versionamento/research.md",
+      "specs/003-sezioni-placeholder-versionamento/spec.md",
+      "specs/003-sezioni-placeholder-versionamento/tasks.md",
+      "specs/004-generazione-documenti-pdf/checklists/requirements.md",
+      "specs/004-generazione-documenti-pdf/plan.md",
+      "specs/004-generazione-documenti-pdf/spec.md",
+      "specs/004-generazione-documenti-pdf/tasks.md",
+      "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
+      "specs/005-storage-idempotenza-consultazione/plan.md",
+      "specs/005-storage-idempotenza-consultazione/spec.md",
+      "specs/005-storage-idempotenza-consultazione/tasks.md",
+      "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
+      "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
+      "specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md",
+      "specs/006-sicurezza-autorizzazioni-audit/plan.md",
+      "specs/006-sicurezza-autorizzazioni-audit/quickstart.md",
+      "specs/006-sicurezza-autorizzazioni-audit/research.md",
+      "specs/006-sicurezza-autorizzazioni-audit/spec.md",
+      "specs/006-sicurezza-autorizzazioni-audit/tasks.md",
+      "specs/007-frontend-builder-consultazione/checklists/requirements.md",
+      "specs/007-frontend-builder-consultazione/data-model.md",
+      "specs/007-frontend-builder-consultazione/plan.md",
+      "specs/007-frontend-builder-consultazione/quickstart.md",
+      "specs/007-frontend-builder-consultazione/research.md",
+      "specs/007-frontend-builder-consultazione/spec.md",
+      "specs/007-frontend-builder-consultazione/tasks.md",
+      "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+      "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+      "specs/010-configurazione-cataloghi-integrazioni/contracts/integrazioni-policy.md",
+      "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+      "specs/010-configurazione-cataloghi-integrazioni/definizione-export.md",
+      "specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md",
+      "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+      "specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md",
+      "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+      "specs/010-configurazione-cataloghi-integrazioni/research.md",
+      "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+      "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
+    ]
+  },
+  "reviewers": [
+    {
+      "reviewer_id": "primary",
+      "provider": "claude_code",
+      "session_id": "d7e844486322485fb6b69f2975837b24",
+      "isolated": true,
+      "valid": false,
+      "message": "{\"duration_api_ms\":0,\"stop_reason\":\"stop_sequence\",\"session_id\":\"e4bed5a7-900f-47ae-abfd-608f970aebc6\",\"total_cost_usd\":0,\"usage\":{\"output_tokens_details\":{\"thinking_tokens\":0},\"input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":0,\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"\",\"iterations\":[],\"speed\":\"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":null,\"result\":\"Not logged in \u00b7 Please run /login\",\"type\":\"result\",\"duration_ms\":605,\"uuid\":\"10ac1bb0-31a0-490e-8fcb-28c7398a7195\",\"queued_turn_count\":0}\n",
+      "finding_count": 0,
+      "artifact": ".adev/reviews/run-20260918T111944Z/review-primary.json"
+    }
+  ],
+  "regression_results": [
+    {
+      "category": "commands",
+      "command": "uv --directory backend run pytest -m \"not e2e\"",
+      "exit_code": 1,
+      "stdout": "onError: [Errno 1] Operation not permitted\n\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:478: PermissionError\n______________ ERROR at setup of test_empty_map_is_not_connected _______________\n\n    @pytest.fixture\n    def discovery_server():\n        responses = {}\n        requests = []\n    \n        class Handler(BaseHTTPRequestHandler):\n            def do_GET(self):\n                requests.append(self.path)\n                status, body = responses.get(self.path, (404, {\"errore\": \"Not found\"}))\n                raw = json.dumps(body).encode()\n                self.send_response(status)\n                self.send_header(\"Content-Type\", \"application/json\")\n                self.send_header(\"Content-Length\", str(len(raw)))\n                self.end_headers()\n                self.wfile.write(raw)\n    \n            def log_message(self, format, *args):\n                pass\n    \n>       server = ThreadingHTTPServer((\"127.0.0.1\", 0), Handler)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/discovery/conftest.py:29: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:457: in __init__\n    self.server_bind()\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py:136: in server_bind\n    socketserver.TCPServer.server_bind(self)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <http.server.ThreadingHTTPServer object at 0x110ea6ff0>\n\n    def server_bind(self):\n        \"\"\"Called by constructor to bind the socket.\n    \n        May be overridden.\n    \n        \"\"\"\n        if self.allow_reuse_address and hasattr(socket, \"SO_REUSEADDR\"):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\n        # Since Linux 6.12.9, SO_REUSEPORT is not allowed\n        # on other address families than AF_INET/AF_INET6.\n        if (\n            self.allow_reuse_port and hasattr(socket, \"SO_REUSEPORT\")\n            and self.address_family in (socket.AF_INET, socket.AF_INET6)\n        ):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)\n>       self.socket.bind(self.server_address)\nE       PermissionError: [Errno 1] Operation not permitted\n\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:478: PermissionError\n__________ ERROR at setup of test_real_http_single_response_and_cache __________\n\n    @pytest.fixture\n    def discovery_server():\n        responses = {}\n        requests = []\n    \n        class Handler(BaseHTTPRequestHandler):\n            def do_GET(self):\n                requests.append(self.path)\n                status, body = responses.get(self.path, (404, {\"errore\": \"Not found\"}))\n                raw = json.dumps(body).encode()\n                self.send_response(status)\n                self.send_header(\"Content-Type\", \"application/json\")\n                self.send_header(\"Content-Length\", str(len(raw)))\n                self.end_headers()\n                self.wfile.write(raw)\n    \n            def log_message(self, format, *args):\n                pass\n    \n>       server = ThreadingHTTPServer((\"127.0.0.1\", 0), Handler)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/discovery/conftest.py:29: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:457: in __init__\n    self.server_bind()\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py:136: in server_bind\n    socketserver.TCPServer.server_bind(self)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <http.server.ThreadingHTTPServer object at 0x110e38470>\n\n    def server_bind(self):\n        \"\"\"Called by constructor to bind the socket.\n    \n        May be overridden.\n    \n        \"\"\"\n        if self.allow_reuse_address and hasattr(socket, \"SO_REUSEADDR\"):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\n        # Since Linux 6.12.9, SO_REUSEPORT is not allowed\n        # on other address families than AF_INET/AF_INET6.\n        if (\n            self.allow_reuse_port and hasattr(socket, \"SO_REUSEPORT\")\n            and self.address_family in (socket.AF_INET, socket.AF_INET6)\n        ):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)\n>       self.socket.bind(self.server_address)\nE       PermissionError: [Errno 1] Operation not permitted\n\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:478: PermissionError\n_____________ ERROR at setup of test_real_http_hal_assembles_pages _____________\n\n    @pytest.fixture\n    def discovery_server():\n        responses = {}\n        requests = []\n    \n        class Handler(BaseHTTPRequestHandler):\n            def do_GET(self):\n                requests.append(self.path)\n                status, body = responses.get(self.path, (404, {\"errore\": \"Not found\"}))\n                raw = json.dumps(body).encode()\n                self.send_response(status)\n                self.send_header(\"Content-Type\", \"application/json\")\n                self.send_header(\"Content-Length\", str(len(raw)))\n                self.end_headers()\n                self.wfile.write(raw)\n    \n            def log_message(self, format, *args):\n                pass\n    \n>       server = ThreadingHTTPServer((\"127.0.0.1\", 0), Handler)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/discovery/conftest.py:29: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:457: in __init__\n    self.server_bind()\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py:136: in server_bind\n    socketserver.TCPServer.server_bind(self)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <http.server.ThreadingHTTPServer object at 0x110ea4c20>\n\n    def server_bind(self):\n        \"\"\"Called by constructor to bind the socket.\n    \n        May be overridden.\n    \n        \"\"\"\n        if self.allow_reuse_address and hasattr(socket, \"SO_REUSEADDR\"):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\n        # Since Linux 6.12.9, SO_REUSEPORT is not allowed\n        # on other address families than AF_INET/AF_INET6.\n        if (\n            self.allow_reuse_port and hasattr(socket, \"SO_REUSEPORT\")\n            and self.address_family in (socket.AF_INET, socket.AF_INET6)\n        ):\n            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)\n>       self.socket.bind(self.server_address)\nE       PermissionError: [Errno 1] Operation not permitted\n\n/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py:478: PermissionError\n=========================== short test summary info ============================\nERROR tests/discovery/test_discovery_map.py::test_one_response_validates_all_types_and_shares_navigation_cache\nERROR tests/discovery/test_discovery_map.py::test_invalid_unselected_type_rejects_entire_response\nERROR tests/discovery/test_discovery_map.py::test_hal_pages_may_contain_different_document_types\nERROR tests/discovery/test_discovery_map.py::test_empty_map_is_not_connected\nERROR tests/discovery/test_pagination.py::test_real_http_single_response_and_cache\nERROR tests/discovery/test_pagination.py::test_real_http_hal_assembles_pages\n=========== 196 passed, 81 skipped, 12 deselected, 6 errors in 3.84s ===========\n",
+      "stderr": ""
+    }
+  ],
+  "findings": []
+}

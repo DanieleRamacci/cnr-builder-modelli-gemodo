@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import Keycloak from 'keycloak-js';
 
 import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
 import type { ApiError } from '../../shared/api-error';
@@ -23,13 +24,20 @@ const BADGE: Record<
 @Component({
   selector: 'app-integrazione-configura',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './integrazione-configura.component.html',
 })
 export class IntegrazioneConfiguraComponent {
   private readonly service = inject(IntegrazioniAdminService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
+  private readonly keycloak = inject(Keycloak, { optional: true });
+  protected readonly sessioneScaduta = signal(false);
+  protected accedi(): void {
+    void this.keycloak?.login({
+      redirectUri: window.location.origin + '/configurazione/' + this.id,
+    });
+  }
   private readonly id = this.route.snapshot.paramMap.get('id')!;
 
   protected readonly form = this.fb.nonNullable.group({
@@ -64,6 +72,7 @@ export class IntegrazioneConfiguraComponent {
         });
       },
       error: (error: ApiError) => {
+        this.sessioneScaduta.set(error.status === 401);
         this.caricando.set(false);
         this.erroreCaricamento.set(error.messaggio);
       },
@@ -97,8 +106,13 @@ export class IntegrazioneConfiguraComponent {
           this.integrazione.set(integrazione);
         },
         error: (error: ApiError) => {
+          this.sessioneScaduta.set(error.status === 401);
           this.salvando.set(false);
-          this.erroreServer.set(error.messaggio);
+          this.erroreServer.set(
+            error.codice === 'DESTINAZIONE_NON_APPROVATA'
+              ? "URL discovery non autorizzato dal deployment. L'integrazione resta salvata; la configurazione dell'URL non e' stata applicata."
+              : error.messaggio,
+          );
           if (error.codice === 'REVISIONE_SUPERATA') {
             this.caricaStatoCorrente();
           }
@@ -120,6 +134,7 @@ export class IntegrazioneConfiguraComponent {
         this.integrazione.set(integrazione);
       },
       error: (error: ApiError) => {
+        this.sessioneScaduta.set(error.status === 401);
         this.verificando.set(false);
         if (error.codice === 'VERIFICA_IN_CORSO') {
           this.infoServer.set(error.messaggio);

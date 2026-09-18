@@ -1,5 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import Keycloak from 'keycloak-js';
+import type { ApiError } from '../../shared/api-error';
 
 import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
 
@@ -27,11 +29,35 @@ export class IntegrazioniListaComponent {
 
   protected readonly integrazioni = signal<IntegrazioneAdmin[]>([]);
   protected readonly caricamento = signal(true);
+  protected readonly errore = signal<string | null>(null);
+  protected readonly sessioneScaduta = signal(false);
+  private readonly keycloak = inject(Keycloak, { optional: true });
 
   constructor() {
-    this.service.lista().subscribe((integrazioni) => {
-      this.integrazioni.set(integrazioni);
-      this.caricamento.set(false);
+    this.carica();
+  }
+
+  protected accedi(): void {
+    void this.keycloak?.login({ redirectUri: window.location.origin + '/configurazione' });
+  }
+  protected carica(): void {
+    this.caricamento.set(true);
+    this.errore.set(null);
+    this.sessioneScaduta.set(false);
+    this.service.lista().subscribe({
+      next: (integrazioni) => {
+        this.integrazioni.set(integrazioni);
+        this.caricamento.set(false);
+      },
+      error: (error: ApiError) => {
+        this.caricamento.set(false);
+        this.sessioneScaduta.set(error.status === 401);
+        this.errore.set(
+          error.status === 401
+            ? 'Sessione non valida. Accedi nuovamente: le integrazioni salvate restano disponibili.'
+            : error.messaggio,
+        );
+      },
     });
   }
 

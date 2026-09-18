@@ -1,13 +1,10 @@
-import {
-  INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
-  includeBearerTokenInterceptor,
-  provideKeycloak,
-} from 'keycloak-angular';
+import { provideKeycloak } from 'keycloak-angular';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import type { EnvironmentProviders, Provider } from '@angular/core';
 
 import { parseIssuerUrl } from './keycloak-config';
 import type { RuntimeConfig } from '../runtime-config';
+import { sessionInterceptor } from './session.interceptor';
 
 /**
  * All routes in this MVP require authentication (spec.md FR-021..023): admin and
@@ -26,12 +23,6 @@ export function provideKeycloakAuth(config: RuntimeConfig): (Provider | Environm
         checkLoginIframe: false,
       },
     }),
-    provideHttpClient(withInterceptors([includeBearerTokenInterceptor])),
-    {
-      provide: INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
-      // Only the backend, proxied through /api by ng serve (proxy.conf.js) - never
-      // an external origin, so a token is never sent where it should not be.
-      useValue: [{ urlPattern: /^\/api\// }],
-    },
+    provideHttpClient(withInterceptors([sessionInterceptor])),
   ];
 }

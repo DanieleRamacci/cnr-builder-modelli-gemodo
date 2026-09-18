@@ -377,6 +377,13 @@ a User Story 4, l'MVP ADR 0002 e' completo.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
+- [ ] T035 Correzione dal collaudo server: refresh fallito non deve inviare
+      richieste con token scaduto; lista distingue errore da vuoto e mostra
+      record senza URL come Da completare. Login esplicito mantiene il
+      percorso dell'integrazione salvata. IN CORSO: 36 test frontend passati
+      e lint passato; verifica finale e collaudo server residui. Confermato
+      nel backend il commit prima della configurazione dell'endpoint.
+
 - [x] T034 Shell/profilo e home richiesti nel collaudo server: nome e icona
       utente, token su richiesta, logout, accesso admin/manager e messaggio
       di mancata autorizzazione. Verificati con test home/profilo e build
