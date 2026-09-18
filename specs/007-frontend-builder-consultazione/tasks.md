@@ -84,18 +84,36 @@ fase sia completa.
       esistere), piu' `/openapi/builder-modelli.yaml`, `/docs/builder-modelli`,
       `/redoc/builder-modelli` interrogati via `TestClient` reale (200 su
       tutti e tre). Suite completa: 295 passati, 0 falliti.
-- [ ] T007 [P] Generare i tipi TypeScript dai 4 contratti OpenAPI necessari
-      (`integrazioni`, `configurazione-cataloghi`, `builder-discovery`,
-      `builder-modelli`, quest'ultimo dopo T006) via `openapi-typescript`,
-      script `frontend/scripts/genera-tipi-api.sh` + output in
-      `frontend/src/shared/api-types/`
-- [ ] T008 Implementare il client HTTP condiviso (wrapper sottile su
-      `HttpClient`, non un SDK generato) in
+- [x] T007 [P] *(2026-09-18)* Generati i tipi TypeScript dai 4 contratti
+      OpenAPI necessari (`integrazioni`, `configurazione-cataloghi`,
+      `builder-discovery`, `builder-modelli`) via `openapi-typescript`,
+      script `frontend/scripts/genera-tipi-api.sh` (portabile su bash 3.2 di
+      macOS - niente array associativi) + output in
+      `frontend/src/shared/api-types/*.d.ts`. Verificato per davvero: il
+      `$ref` cross-spec di `builder-modelli-api.openapi.yaml` verso
+      `geban-discovery-endpoint.openapi.yaml` (in `010`, non nella stessa
+      cartella di `002`) risolto correttamente in `StrutturaTipoDocumento`;
+      `tsc --noEmit` pulito sui file generati; `ng build` invariato.
+- [x] T008 *(2026-09-18)* Implementato il client HTTP condiviso (wrapper
+      sottile su `HttpClient`, non un SDK generato) in
       `frontend/src/shared/api-client.ts`, con mappatura esplicita
-      dell'envelope di errore backend (`{codice, messaggio}`) verso un tipo
-      UI-friendly, senza logica di retry automatico sui conflitti
-      ottimistici (`REVISIONE_SUPERATA` resta un caso da gestire nel
-      componente chiamante, mai nascosto qui)
+      dell'envelope di errore backend (`{codice, messaggio}`) verso `ApiError`
+      (`frontend/src/shared/api-error.ts`), senza logica di retry automatico
+      sui conflitti ottimistici. **Trovato e risolto un problema reale non
+      previsto in `research.md`**: il backend non ha `CORSMiddleware` (nessun
+      match nel codice), quindi il browser non puo' chiamare
+      `http://localhost:8000` direttamente da `http://localhost:4200` (origini
+      diverse). Aggiunto `frontend/proxy.conf.js` (letto da `ng serve` tramite
+      `angular.json` `serve.options.proxyConfig`, target da
+      `GEMODO_API_BASE_URL`) cosi' il browser parla solo con l'origine del
+      dev-server e non serve CORS lato backend; corretto anche il valore di
+      `GEMODO_API_BASE_URL` in `infra/local/compose.yaml`
+      (era `http://localhost:8000`, sbagliato per la rete Docker interna dove
+      gira il proxy - ora `http://backend:8000`). Verificato per davvero: un
+      backend fittizio reale su `:8000` raggiunto con successo tramite
+      `curl http://localhost:4200/api/v1/test` con `ng serve` + proxy attivi.
+      4 unit test Vitest reali (`api-client.spec.ts`, incl. mappatura errore
+      409 e fallback su risposta senza envelope) - 6/6 test totali passati.
 - [ ] T009 [P] Implementare il modulo di autenticazione Keycloak
       (`keycloak-js` + `keycloak-angular`, Authorization Code + PKCE, client
       id `gemodo-frontend`) in `frontend/src/app/auth/`, incluso

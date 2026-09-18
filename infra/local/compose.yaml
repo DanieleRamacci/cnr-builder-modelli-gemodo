@@ -72,7 +72,10 @@ services:
     build:
       context: ../../frontend
     environment:
-      GEMODO_API_BASE_URL: http://localhost:8000
+      # backend, non localhost: questo URL e' usato dal proxy del dev-server
+      # Angular (frontend/proxy.conf.js), eseguito DENTRO il container - non
+      # dal browser, che parla solo con localhost:4200 (niente CORS da configurare).
+      GEMODO_API_BASE_URL: http://backend:8000
       KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_FRONTEND_CLIENT_ID:-gemodo-frontend}
     ports:
