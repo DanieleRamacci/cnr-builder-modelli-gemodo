@@ -49,6 +49,11 @@ PUBLISHED_CONTRACTS: dict[str, Path] = {
     / "010-configurazione-cataloghi-integrazioni"
     / "contracts"
     / "integrazioni-api.openapi.yaml",
+    "builder-modelli": REPO_ROOT
+    / "specs"
+    / "002-builder-modelli"
+    / "contracts"
+    / "builder-modelli-api.openapi.yaml",
     "generazione-documenti": REPO_ROOT
     / "specs"
     / "004-generazione-documenti-pdf"

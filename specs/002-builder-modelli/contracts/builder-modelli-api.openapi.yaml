@@ -1,457 +1,302 @@
 openapi: 3.0.3
 info:
-  title: GEBAN GEMODO Builder Modelli API
-  version: 0.2.0
+  title: GEMODO - Builder Modelli
+  version: 0.3.0
   description: >
-    API interne protette da Keycloak JWT Bearer per configurare tipi documento,
-    categorie, modelli, varianti e versioni. Le letture richiedono
-    GEMODO_MODELLI_VIEWER o GEMODO_MODELLI_GESTORE; scritture e transizioni richiedono
-    GEMODO_MODELLI_GESTORE.
+    Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
+    integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
+    locale del builder, un design pre-010 mai implementato cosi'. Oggi tipi
+    documento/categorie sono letti in sola lettura dalla discovery live
+    dell'integrazione connessa (vedi integrazioni-api.openapi.yaml, gia'
+    pubblicato) - questo contratto copre solo le route realmente implementate in
+    backend/app/builder/api.py che quel contratto non gia' copre: lettura
+    struttura disponibile per un tipo documento gia' associato, creazione
+    modello/versione, transizioni di stato BOZZA -> IN_REVISIONE -> APPROVATO ->
+    PUBBLICATO. Nessuna route di archiviazione/sospensione/bozza-derivata esiste
+    ancora (Nota Implementazione 2026-09-16 in tasks.md).
 servers:
   - url: /api/v1/builder
 security:
   - KeycloakBearer: []
 paths:
-  /tipi-documento:
+  /tipi-documento/{codiceTipoDocumento}/struttura-disponibile:
+    parameters:
+      - {$ref: '#/components/parameters/CodiceTipoDocumento'}
     get:
-      summary: Lista tipi documento
-      operationId: listTipiDocumentoBuilder
+      operationId: getStrutturaDisponibile
+      summary: Struttura discovery del tipo documento gia' associato a un'integrazione
+      description: >
+        Risolve l'integrazione dal codice_contesto di TipoDocumento (non richiede
+        di conoscere l'integrazioneId, a differenza delle route /builder/integrazioni/*
+        di integrazioni-api.openapi.yaml). Nessun import DB, sempre letto live.
+      x-required-role: GEMODO_MODELLI_GESTORE
       responses:
-        "200":
-          description: Tipi documento configurati
+        '200':
+          description: Albero discovery corrente del tipo documento
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/TipoDocumentoListResponse"
-    post:
-      summary: Crea tipo documento
-      operationId: createTipoDocumento
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TipoDocumentoUpsertRequest"
-      responses:
-        "201":
-          description: Tipo documento creato
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TipoDocumento"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /tipi-documento/{codice}/categorie:
-    get:
-      summary: Lista categorie per tipo documento
-      operationId: listCategorieBuilder
-      parameters:
-        - $ref: "#/components/parameters/CodiceTipoDocumento"
-      responses:
-        "200":
-          description: Categorie configurate
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CategoriaDocumentoListResponse"
-    post:
-      summary: Crea categoria documento
-      operationId: createCategoriaDocumento
-      parameters:
-        - $ref: "#/components/parameters/CodiceTipoDocumento"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CategoriaDocumentoUpsertRequest"
-      responses:
-        "201":
-          description: Categoria creata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CategoriaDocumento"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: {$ref: '../../010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml#/components/schemas/StrutturaTipoDocumento'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
   /modelli:
-    get:
-      summary: Lista modelli builder
-      operationId: listModelliBuilder
-      parameters:
-        - name: tipo_documento
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: categoria
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: codice_tipologia
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Modelli configurati
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloListResponse"
     post:
-      summary: Crea modello documento
-      operationId: createModelloDocumento
+      operationId: creaModello
+      summary: Crea un modello in BOZZA a partire da un percorso o categoria/tipologia risolti in discovery
+      description: >
+        Autorizzazione per il singolo contesto del tipo documento target
+        (verify_scrittura_su_contesto), mai sull'unione dei contesti del token.
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento target)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/ModelloCreateRequest"
+            schema: {$ref: '#/components/schemas/CreaModelloRequest'}
+            example:
+              codice: bando-ricercatore-td-standard-v1
+              nome: Bando ricercatore TD standard
+              codice_tipo_documento: BANDO_CONCORSO
+              percorso_categorizzazione: [TD, RICERCATORE]
+              variante: STANDARD
       responses:
-        "201":
-          description: Modello creato
+        '201':
+          description: Modello creato in stato BOZZA (senza ancora una versione)
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloDocumento"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: {$ref: '#/components/schemas/Modello'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /modelli/{modelloId}/versioni:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
     post:
-      summary: Crea nuova versione modello
-      operationId: createVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/VersioneCreateRequest"
-      responses:
-        "201":
-          description: Versione creata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-  /modelli/{modelloId}/versioni/{versioneId}:
-    put:
-      summary: Aggiorna versione modificabile
-      operationId: updateVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
+      operationId: creaVersione
+      summary: Crea la versione 1 in BOZZA, campi scelti dalla foglia discovery del modello
+      description: >
+        I campi devono appartenere al ramo/foglia gia' selezionato dal modello in
+        discovery corrente (rifetch aggiornato); nessun campo non ammesso o
+        duplicato.
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento del modello)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/VersioneUpdateRequest"
+            schema: {$ref: '#/components/schemas/CreaVersioneRequest'}
+            example:
+              campi:
+                - {codice: codice_bando, lingua: IT}
+                - {codice: titolo_it, lingua: IT}
       responses:
-        "200":
-          description: Versione aggiornata
+        '201':
+          description: Versione creata in stato BOZZA
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /modelli/{modelloId}/versioni/{versioneId}/bozza-derivata:
+              schema: {$ref: '#/components/schemas/Versione'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /modelli/{modelloId}/versioni/{versioneId}/invia-revisione:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+      - {$ref: '#/components/parameters/VersioneId'}
     post:
-      summary: Crea bozza derivata da versione pubblicata
-      operationId: createBozzaDerivata
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
+      operationId: inviaRevisione
+      summary: Transizione BOZZA -> IN_REVISIONE
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento del modello)
       responses:
-        "201":
-          description: Bozza derivata creata
+        '200':
+          description: Versione in stato IN_REVISIONE
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: {$ref: '#/components/schemas/Versione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /modelli/{modelloId}/versioni/{versioneId}/approva:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+      - {$ref: '#/components/parameters/VersioneId'}
     post:
-      summary: Approva una versione in revisione
-      operationId: approvaVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
+      operationId: approvaVersione
+      summary: Transizione IN_REVISIONE -> APPROVATO
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento del modello)
       responses:
-        "200":
-          description: Versione approvata
+        '200':
+          description: Versione in stato APPROVATO
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: {$ref: '#/components/schemas/Versione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /modelli/{modelloId}/versioni/{versioneId}/pubblica:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+      - {$ref: '#/components/parameters/VersioneId'}
     post:
-      summary: Pubblica una versione approvata
-      operationId: pubblicaVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
+      operationId: pubblicaVersione
+      summary: Transizione APPROVATO -> PUBBLICATO
+      description: >
+        Archivia automaticamente la precedente versione corrente della stessa
+        variante, se presente (non restituita in risposta - rileggere il catalogo
+        per confermarlo).
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento del modello)
       responses:
-        "200":
-          description: Versione pubblicata; precedente corrente archiviata se presente
+        '200':
+          description: Versione in stato PUBBLICATO, ora esposta dal catalogo (001)
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/PubblicazioneResponse"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /modelli/{modelloId}/versioni/{versioneId}/archivia:
-    post:
-      summary: Archivia versione pubblicata
-      operationId: archiviaVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
-      responses:
-        "200":
-          description: Versione archiviata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /modelli/{modelloId}/versioni/{versioneId}/sospendi:
-    post:
-      summary: Sospende una versione pubblicata
-      operationId: sospendiVersioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
-      responses:
-        "200":
-          description: Versione sospesa
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModelloVersione"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: {$ref: '#/components/schemas/Versione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
-    KeycloakBearer:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
   parameters:
     CodiceTipoDocumento:
-      name: codice
+      name: codiceTipoDocumento
       in: path
       required: true
-      schema:
-        type: string
+      schema: {type: string, minLength: 1}
     ModelloId:
       name: modelloId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
+      schema: {type: string, format: uuid}
     VersioneId:
       name: versioneId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
+      schema: {type: string, format: uuid}
+  schemas:
+    CreaModelloRequest:
+      type: object
+      additionalProperties: false
+      required: [codice, nome, codice_tipo_documento]
+      description: >
+        percorso_categorizzazione XOR codice_categoria (+ codice_tipologia
+        opzionale se il percorso e' altrimenti ambiguo) - vedi verifica_selezione
+        in backend/app/builder/schemas.py.
+      properties:
+        codice: {type: string, minLength: 1, maxLength: 128}
+        nome: {type: string, minLength: 1, maxLength: 255}
+        codice_tipo_documento: {type: string, minLength: 1}
+        percorso_categorizzazione:
+          type: array
+          nullable: true
+          minItems: 1
+          maxItems: 64
+          items: {type: string, minLength: 1}
+        codice_categoria: {type: string, nullable: true}
+        codice_tipologia: {type: string, nullable: true}
+        variante: {type: string, minLength: 1, maxLength: 64, default: STANDARD}
+    Modello:
+      type: object
+      additionalProperties: false
+      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante]
+      properties:
+        id: {type: string, format: uuid}
+        public_id: {type: integer, nullable: true}
+        codice: {type: string}
+        nome: {type: string}
+        codice_tipo_documento: {type: string}
+        codice_categoria: {type: string}
+        codice_tipologia: {type: string, nullable: true}
+        percorso_categorizzazione: {type: array, items: {type: string}}
+        variante: {type: string}
+    CreaVersioneRequest:
+      type: object
+      additionalProperties: false
+      required: [campi]
+      properties:
+        campi:
+          type: array
+          items: {$ref: '#/components/schemas/CampoVersione'}
+    CampoVersione:
+      type: object
+      additionalProperties: false
+      required: [codice]
+      properties:
+        codice: {type: string}
+        lingua: {type: string, default: IT}
+    Versione:
+      type: object
+      additionalProperties: false
+      required: [id, public_id, modello_id, numero_versione, stato, pubblicato_at]
+      properties:
+        id: {type: string, format: uuid}
+        public_id: {type: integer, nullable: true}
+        modello_id: {type: string, format: uuid}
+        numero_versione: {type: integer}
+        stato: {type: string, enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]}
+        pubblicato_at: {type: string, format: date-time, nullable: true}
+    Errore:
+      type: object
+      additionalProperties: false
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
   responses:
     Unauthorized:
-      description: JWT mancante, scaduto o non valido
+      description: JWT assente o non valido
       content:
         application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            code: ACCESSO_NON_AUTENTICATO
-            message: Token Bearer mancante o non valido
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: ACCESSO_NON_AUTENTICATO, messaggio: Autenticazione richiesta}
     Forbidden:
-      description: JWT valido ma ruolo non autorizzato per la route builder
+      description: Ruolo/contesto non autorizzato (mai sull'unione dei contesti del token)
       content:
         application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            code: ACCESSO_NON_AUTORIZZATO
-            message: Ruolo non autorizzato per l'operazione builder
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: ACCESSO_NON_AUTORIZZATO, messaggio: Operazione non autorizzata}
+    NotFound:
+      description: Modello/versione inesistente, tipo documento non trovato, o ramo non piu' disponibile in discovery
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            modello: {value: {codice: MODELLO_NON_TROVATO, messaggio: Modello non trovato}}
+            versione: {value: {codice: MODELLO_VERSIONE_NON_TROVATO, messaggio: Versione non trovata}}
+            ramo: {value: {codice: CONTESTO_NON_VALIDO, messaggio: Il ramo del modello non e' piu' disponibile}}
     Conflict:
-      description: Operazione non consentita nello stato corrente o per vincolo di unicita'
+      description: Integrazione non connessa o transizione di stato non valida
       content:
         application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-  schemas:
-    TipoDocumentoListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/TipoDocumento"
-    TipoDocumento:
-      type: object
-      required: [codice, descrizione, attivo]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
-        attivo:
-          type: boolean
-    TipoDocumentoUpsertRequest:
-      type: object
-      required: [codice, descrizione]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
-        attivo:
-          type: boolean
-          default: true
-    CategoriaDocumentoListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CategoriaDocumento"
-    CategoriaDocumento:
-      type: object
-      required: [codice_tipo_documento, codice, descrizione, attiva]
-      properties:
-        codice_tipo_documento:
-          type: string
-        codice:
-          type: string
-        descrizione:
-          type: string
-        attiva:
-          type: boolean
-    CategoriaDocumentoUpsertRequest:
-      type: object
-      required: [codice, descrizione]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
-        attiva:
-          type: boolean
-          default: true
-    ModelloListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ModelloDocumento"
-    ModelloDocumento:
-      type: object
-      required: [id, codice, descrizione, codice_tipo_documento, codice_categoria, variante, attivo]
-      properties:
-        id:
-          type: integer
-          format: int64
-        codice:
-          type: string
-        descrizione:
-          type: string
-        codice_tipo_documento:
-          type: string
-        codice_categoria:
-          type: string
-        codice_tipologia:
-          type: string
-        variante:
-          type: string
-          default: STANDARD
-        attivo:
-          type: boolean
-    ModelloCreateRequest:
-      type: object
-      required: [codice, descrizione, codice_tipo_documento, codice_categoria]
-      properties:
-        codice:
-          type: string
-        descrizione:
-          type: string
-        codice_tipo_documento:
-          type: string
-        codice_categoria:
-          type: string
-        codice_tipologia:
-          type: string
-        variante:
-          type: string
-          default: STANDARD
-    VersioneCreateRequest:
-      type: object
-      properties:
-        derivata_da_versione_id:
-          type: integer
-          format: int64
-        motivo_versione:
-          type: string
-    VersioneUpdateRequest:
-      type: object
-      properties:
-        data_inizio_validita:
-          type: string
-          format: date
-        data_fine_validita:
-          type: string
-          format: date
-        motivo_versione:
-          type: string
-    ModelloVersione:
-      type: object
-      required: [id, modello_documento_id, numero_versione, stato]
-      properties:
-        id:
-          type: integer
-          format: int64
-        modello_documento_id:
-          type: integer
-          format: int64
-        numero_versione:
-          type: integer
-        stato:
-          type: string
-          enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]
-        derivata_da_versione_id:
-          type: integer
-          format: int64
-        motivo_versione:
-          type: string
-    PubblicazioneResponse:
-      type: object
-      required: [pubblicata]
-      properties:
-        pubblicata:
-          $ref: "#/components/schemas/ModelloVersione"
-        archiviata_precedente:
-          $ref: "#/components/schemas/ModelloVersione"
-    ErrorResponse:
-      type: object
-      required: [code, message]
-      properties:
-        code:
-          type: string
-        message:
-          type: string
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            nonConnessa: {value: {codice: INTEGRAZIONE_NON_CONNESSA, messaggio: Integrazione non connessa}}
+            transizione: {value: {codice: TRANSIZIONE_STATO_NON_VALIDA, messaggio: Transizione di stato non valida}}
+    InvalidInput:
+      description: Selezione percorso/categoria incoerente o campi non ammessi/duplicati
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            percorso: {value: {codice: CONTESTO_NON_VALIDO, messaggio: Codici incoerenti con il percorso scelto}}
+            campi: {value: {codice: CAMPO_NON_AMMESSO, messaggio: Campi duplicati nella versione}}
+    SourceError:
+      description: Discovery non raggiungibile o non conforme
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            trasporto: {value: {codice: DISCOVERY_NON_DISPONIBILE, messaggio: Discovery non disponibile}}
+            struttura: {value: {codice: DISCOVERY_NON_CONFORME, messaggio: Discovery non conforme}}
+    SourceTimeout:
+      description: Budget discovery scaduto
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          example: {codice: DISCOVERY_TIMEOUT, messaggio: Tempo disponibile per discovery scaduto}

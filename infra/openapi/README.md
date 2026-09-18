@@ -30,11 +30,13 @@ abbiano un solo punto da cui partire.
 | [`generazione-documenti-api.openapi.yaml`](../../specs/004-generazione-documenti-pdf/contracts/generazione-documenti-api.openapi.yaml) | `004-generazione-documenti-pdf` | GEBAN | Implementato per lo scope MVP FR-019/020 (PDF di test reale); `/docs/generazione-documenti`, `/redoc/generazione-documenti` |
 | [`storage-documenti-api.openapi.yaml`](../../specs/005-storage-idempotenza-consultazione/contracts/storage-documenti-api.openapi.yaml) | `005-storage-idempotenza-consultazione` | GEBAN | Implementato per lo scope MVP FR-019/020 (riferimento, stato, download, idempotenza di base); `/docs/storage-documenti`, `/redoc/storage-documenti` |
 | [`geban-discovery-endpoint.openapi.yaml`](../../specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml) | `010-configurazione-cataloghi-integrazioni` | **Non un'API GEMODO** — contratto che il sistema esterno GEBAN deve implementare (endpoint di discovery per `BANDO_CONCORSO`) | Consegnato al team GEBAN come riferimento (2026-09-15); combinazioni tipologia-profilo e meccanismo esatto del campo `livello` ancora da confermare con loro |
-| API interne builder (tipi, categorie, modelli, versioni) | `002-builder-modelli` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
+| [`builder-modelli-api.openapi.yaml`](../../specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml) | `002-builder-modelli` | ADMIN/BUILDER - struttura disponibile, creazione modello/versione, transizioni BOZZA→IN_REVISIONE→APPROVATO→PUBBLICATO | Implementato (007 T006, 2026-09-18); sostituisce la 0.2.0 (CRUD tipi/categorie mai implementato cosi'); `/docs/builder-modelli`, `/redoc/builder-modelli`; nessuna route di archiviazione/sospensione/bozza-derivata |
 
 FR-016: categorie/tipologie esterne non sono piu' API interne del builder;
-classificazione locale della 001 ritirata (404). La riga 002 indica solo
-operazioni future non coperte dal contratto discovery della 010.
+classificazione locale della 001 ritirata (404). Le letture di tipi/categorie/
+struttura vivono in `integrazioni-api.openapi.yaml` (`/builder/integrazioni/*`,
+gia' pubblicato dalla 010); `builder-modelli-api.openapi.yaml` copre solo cio'
+che quel contratto non gia' copre (creazione/ciclo di vita di modello/versione).
 | API interne sezioni/placeholder | `003-sezioni-placeholder-versionamento` | ADMIN/BUILDER | Da produrre prima dell'implementazione runtime |
 | Endpoint di sicurezza/introspezione applicativa | `006-sicurezza-autorizzazioni-audit` | INTERNO | Da produrre prima dell'implementazione runtime |
 

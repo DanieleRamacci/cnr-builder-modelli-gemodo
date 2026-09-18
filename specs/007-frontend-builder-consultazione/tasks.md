@@ -65,14 +65,25 @@ incremento (client HTTP tipizzato, autenticazione, shell applicativa).
 **⚠️ CRITICAL**: nessun task di User Story 4/5 puo' iniziare prima che questa
 fase sia completa.
 
-- [ ] T006 Verificare `specs/002-builder-modelli/contracts/
-      builder-modelli-api.openapi.yaml` contro l'implementazione reale di
-      `backend/app/builder/api.py` (drift atteso dopo i riallineamenti
-      discovery/integrazioni T081-T083 della 010) e correggerlo; registrarlo
-      in `PUBLISHED_CONTRACTS` (`backend/app/quality/openapi_docs.py`) cosi'
-      da avere `/docs/builder-modelli` e `/redoc/builder-modelli` reali
-      (gap Foundational gia' descritto in `research.md`) - **task lato
-      backend**, prerequisito di T008
+- [x] T006 *(2026-09-18)* Verificato `specs/002-builder-modelli/contracts/
+      builder-modelli-api.openapi.yaml` contro `backend/app/builder/api.py`:
+      drift totale, non solo parziale - la 0.2.0 descriveva un CRUD
+      tipi-documento/categorie mai implementato cosi' (quello spazio e' ora
+      coperto in sola lettura da `integrazioni-api.openapi.yaml`,
+      `/builder/integrazioni/*`) e transizioni
+      (`bozza-derivata`/`archivia`/`sospendi`) inesistenti, mentre mancavano
+      le 6 route reali (`struttura-disponibile`, creazione modello/versione,
+      `invia-revisione`/`approva`/`pubblica`). Riscritto interamente (0.3.0),
+      scope ridotto a cio' che `integrazioni-api.openapi.yaml` non gia'
+      copre. Registrato in `PUBLISHED_CONTRACTS`
+      (`backend/app/quality/openapi_docs.py`) e in
+      `infra/openapi/README.md`. Verificato per davvero: nuovo
+      `backend/tests/builder/test_builder_modelli_contract.py` (validita'
+      strutturale incl. `$ref` esterno cross-spec, esempi validati contro i
+      propri schema, regressione esplicita sulle route che NON devono
+      esistere), piu' `/openapi/builder-modelli.yaml`, `/docs/builder-modelli`,
+      `/redoc/builder-modelli` interrogati via `TestClient` reale (200 su
+      tutti e tre). Suite completa: 295 passati, 0 falliti.
 - [ ] T007 [P] Generare i tipi TypeScript dai 4 contratti OpenAPI necessari
       (`integrazioni`, `configurazione-cataloghi`, `builder-discovery`,
       `builder-modelli`, quest'ultimo dopo T006) via `openapi-typescript`,
