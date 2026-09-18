@@ -3,6 +3,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideDesignAngularKit } from 'design-angular-kit';
+import Keycloak from 'keycloak-js';
 
 import { App } from './app';
 import { RUNTIME_CONFIG } from './runtime-config';
@@ -27,6 +28,9 @@ describe('App', () => {
             keycloakClientId: 'gemodo-frontend',
           },
         },
+        // Shell reads Keycloak.tokenParsed directly (isAdmin) to enable/hide nav
+        // items - UI-only, see shell.component.ts.
+        { provide: Keycloak, useValue: { tokenParsed: undefined } },
       ],
     }).compileComponents();
   });

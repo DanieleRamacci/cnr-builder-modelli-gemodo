@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: In pianificazione (2026-09-18) - primo incremento scoperto in `plan.md`/
+**Status**: In implementazione (2026-09-18) - primo incremento descritto in `plan.md`/
 `tasks.md`, scope MVP ADR 0002 (User Story 4/5 sotto), User Story 1/2/3 restano Draft/
 scope futuro.
 
@@ -21,8 +21,9 @@ autorizzate, navigazione ricorsiva fino ai campi, creazione modello di test
 in BOZZA. Editor visuale e composizione manuale FR-011 sono rinviati oltre
 questo MVP: obiettivi successivi, non prerequisiti del PDF semplice.
 Vedi [ADR 0002](../../docs/adr/0002-integrazioni-contesti-modelli-test.md).
-Questo e' il target confermato: non certifica il runtime corrente e non avvia
-l'implementazione di questa spec; la feature attiva resta 010.
+Questo e' il target confermato. Dal 2026-09-18 la feature attiva in
+`.specify/feature.json` e' 007; l'implementazione segue `tasks.md` e non e'
+ancora certificata come completa.
 
 
 ### Session 2026-06-22
@@ -275,7 +276,7 @@ BOZZA, verificabile anche da Swagger.
 
 - Le API backend necessarie sono definite nelle spec builder, generazione, storage e sicurezza.
 - Decisione confermata il 2026-09-17: l'interfaccia sara' sviluppata con Angular e [Design Angular Kit](https://github.com/italia/design-angular-kit), usando i componenti e gli stili del kit. Il piano tecnico dovra' fissare versioni Angular/kit compatibili e gli eventuali componenti specialistici dell'editor.
-- L'interfaccia del builder non e' ancora implementata: il modulo backend `app.builder` espone API, mentre Swagger/ReDoc e la pagina di test non costituiscono il frontend previsto da questa spec. Questa decisione non avvia i task della 007.
+- Il frontend Angular e' in implementazione secondo `tasks.md`: shell e autenticazione sono verificate, le schermate admin sono in collaudo e il flusso manager resta da implementare. Swagger/ReDoc e la pagina di test non sostituiscono il frontend previsto da questa spec.
 - La nomenclatura dei ruoli applicativi segue la spec sicurezza, inclusi i ruoli `GEMODO_*`, `DOCUMENTI_*` e `SYSTEM_GEBAN`.
 - Il frontend non e' fonte autoritativa per autorizzazioni, stato di pubblicazione, audit, idempotenza o disponibilita' file.
 - La consultazione del payload completo e degli audit dettagliati e' limitata ai casi autorizzati e non sostituisce la fonte dati GEBAN.

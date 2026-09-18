@@ -6,7 +6,9 @@ import {
   ItNavBarComponent,
   ItNavBarItemComponent,
 } from 'design-angular-kit';
+import Keycloak from 'keycloak-js';
 
+import { hasClientRole } from '../auth/roles';
 import { RUNTIME_CONFIG } from '../runtime-config';
 
 /**
@@ -32,4 +34,8 @@ export class ShellComponent {
   // Undefined until the separately-deployed docs (deploy/coolify-test/) have a
   // real URL - see GEMODO_EXTERNAL_DOCS_URL in scripts/genera-runtime-config.sh.
   protected readonly externalDocsUrl = inject(RUNTIME_CONFIG).externalDocsUrl;
+
+  // UI-only (spec.md FR-023): hides the link, never the real authorization -
+  // adminGuard + the backend's require_admin are what actually protect the route.
+  protected readonly isAdmin = hasClientRole(inject(Keycloak), 'gemodo-backend', 'GEMODO_ADMIN');
 }

@@ -7,11 +7,13 @@
   <div navItems>
     <it-navbar>
       <div navItems>
-        <it-navbar-item>
-          <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
-            >Configurazione</a
-          >
-        </it-navbar-item>
+        @if (isAdmin) {
+          <it-navbar-item>
+            <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+              >Configurazione</a
+            >
+          </it-navbar-item>
+        }
         <it-navbar-item>
           <a routerLink="/builder" routerLinkActive="active" class="nav-link">Builder</a>
         </it-navbar-item>

@@ -41,7 +41,8 @@ services:
 
   backend:
     build:
-      context: ../../backend
+      context: ../..
+      dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-gemodo}:${POSTGRES_PASSWORD:-gemodo}@postgres:5432/${POSTGRES_DB:-gemodo}
       KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
@@ -84,14 +85,14 @@ services:
     depends_on:
       - backend
 
-  mock-geban:
-    build:
-      context: ../../mock-geban
-    environment:
-      GEMODO_API_BASE_URL: http://backend:8000
-      GEBAN_CLIENT_ID: geban-backend
-    depends_on:
-      - backend
+  # Discovery demo reale; il runner mock-geban resta un tool separato.
+  discovery-mock:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./discovery-mock/discovery.json:/usr/share/nginx/html/discovery.json:ro
+      - ./discovery-mock/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "9100:80"
 
   # Fallback opzionale: Keycloak containerizzato per sviluppo offline o CI senza rete verso
   # sso.test.si.cnr.it. Non fa parte dei servizi minimi di default.

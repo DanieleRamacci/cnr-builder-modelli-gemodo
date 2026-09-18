@@ -10,7 +10,7 @@ obiettivo di questo incremento.
 
 - Docker in esecuzione.
 - `infra/local/compose.yaml` con almeno i servizi minimi di default
-  (`postgres`, `backend`, `frontend`, `mock-geban`) - vedi
+  (`postgres`, `backend`, `frontend`, `discovery-mock`) - vedi
   `infra/local/README.md` per l'avvio.
 - Migrazioni Alembic applicate (`alembic upgrade head` dentro il servizio
   `backend`, o all'avvio se gia' automatizzato dal compose).
@@ -24,12 +24,18 @@ obiettivo di questo incremento.
 
 ```bash
 cd infra/local
-docker compose up -d postgres backend frontend mock-geban
+docker compose up -d postgres backend frontend discovery-mock
 # verifica che mock-geban esponga un endpoint discovery raggiungibile dal
-# backend, es. http://mock-geban:9000/discovery (vedi mock-geban/README.md)
+# backend: http://discovery-mock/discovery
 ```
 
 Apri `http://localhost:4200`.
+
+Per il discovery locale configurare l'origine `http://discovery-mock:80`
+in `GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO` prima di avviare il backend.
+Il servizio `discovery-mock` serve dati demo conformi al contratto ad
+albero completo, non la proposta PER_NODI. Il runner `mock-geban` e' distinto.
+Per il collaudo sul server seguire [frontend-server-test.md](../../docs/frontend-server-test.md).
 
 ## Scenario 1 - Admin registra e verifica un'integrazione
 

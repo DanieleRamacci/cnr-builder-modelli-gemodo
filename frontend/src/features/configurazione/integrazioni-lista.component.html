@@ -1,0 +1,58 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1>Integrazioni</h1>
+  <a routerLink="nuova" class="btn btn-primary">Nuova integrazione</a>
+</div>
+
+@if (caricamento()) {
+  <p>Caricamento...</p>
+} @else if (integrazioni().length === 0) {
+  <p>Nessuna integrazione registrata. Creane una per iniziare.</p>
+} @else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Codice</th>
+        <th scope="col">Nome</th>
+        <th scope="col">Contesto</th>
+        <th scope="col">Stato</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (integrazione of integrazioni(); track integrazione.id) {
+        <tr>
+          <td>{{ integrazione.codice }}</td>
+          <td>{{ integrazione.nome }}</td>
+          <td>{{ integrazione.codice_contesto }}</td>
+          <td>
+            <span
+              class="badge"
+              [class.text-bg-secondary]="badge(integrazione.stato).variant === 'neutro'"
+              [class.text-bg-success]="badge(integrazione.stato).variant === 'positivo'"
+              [class.text-bg-danger]="badge(integrazione.stato).variant === 'errore'"
+            >
+              {{ badge(integrazione.stato).label }}
+            </span>
+            @if (integrazione.ultima_verifica) {
+              <div class="small text-muted">
+                {{ integrazione.ultima_verifica.data }} - v{{
+                  integrazione.ultima_verifica.versione_contratto
+                }}
+              </div>
+            }
+            @if (integrazione.ultima_verifica?.errori?.length) {
+              <ul class="small text-danger mb-0">
+                @for (errore of integrazione.ultima_verifica?.errori; track errore.codice) {
+                  <li>{{ errore.messaggio }}</li>
+                }
+              </ul>
+            }
+          </td>
+          <td>
+            <a [routerLink]="[integrazione.id]" class="btn btn-sm btn-outline-primary">Configura</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

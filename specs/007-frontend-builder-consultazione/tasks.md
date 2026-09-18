@@ -231,6 +231,38 @@ User Story 4).
 
 ## Phase 3: User Story 4 - Registrare e verificare un'integrazione (Priority: P1) 🎯 MVP
 
+**IN CORSO (2026-09-18, ripresa del lavoro di Claude)**: T011-T013 e
+T015-T019 hanno codice nel worktree, ma restano da verificare integralmente
+contro i requisiti prima della chiusura. Vitest: 25 test passati; lint,
+Prettier e TypeScript passati. Build di produzione verificata con successo
+fuori dal sandbox (il codice 134 e' riproducibile solo nel sandbox).
+T014 e' scritto ma non ancora eseguito: serve uno stack con Keycloak e
+discovery HTTP reali. Corretto il contesto di build backend del compose
+locale per allinearlo ai COPY del Dockerfile; `docker compose build backend`
+verificato con successo. Il servizio `mock-geban`
+attuale non espone l'endpoint discovery descritto nel quickstart: questo
+prerequisito va completato prima del checkpoint US4 e di T031.
+
+- [x] T033 [US4] *(2026-09-18)* Prerequisito di collaudo emerso alla ripresa: predisporre
+      un discovery HTTP reale con dati demo conformi al contratto 0.4.0,
+      relativo avvio ripetibile e allowlist locale. Il compose punta a
+      `mock-geban/`, che non contiene un Dockerfile e oggi contiene solo
+      il runner scenari. Allineare il quickstart alla configurazione
+      effettivamente collaudata, prima di eseguire T014/T023/T031.
+      Implementato `infra/local/discovery-mock/` con nginx e dati demo;
+      avviato con compose e validato via HTTP reale usando `AdapterHTTP`.
+      Il servizio sostituisce la definizione non avviabile del runner nel
+      compose. I test e2e completi restano da eseguire.
+
+**Checkpoint server di test (2026-09-18)**: immagine frontend target
+`production` compilata con successo; 26 test Vitest, lint e Prettier
+passati. Corretto il caricamento fallito della pagina configurazione
+(errore visibile e Riprova) e impedite azioni concorrenti di salvataggio/
+verifica. Istruzioni in `docs/frontend-server-test.md`. Le modifiche sono
+locali: deploy possibile dopo pubblicazione sul branch usato da Coolify.
+Questo checkpoint non certifica US4: T014 e review indipendente restano
+aperti. La review configurata con Claude non parte senza autenticazione.
+
 **Goal**: un admin crea, configura e verifica un'integrazione dall'interfaccia,
 senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
 

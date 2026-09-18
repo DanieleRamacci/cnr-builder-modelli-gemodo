@@ -1,0 +1,40 @@
+<h1>Nuova integrazione</h1>
+
+<form [formGroup]="form" (submit)="$event.preventDefault(); invia()">
+  <div class="mb-3">
+    <label for="codice" class="form-label">Codice</label>
+    <input id="codice" type="text" class="form-control" formControlName="codice" maxlength="100" />
+    @if (form.controls.codice.invalid && form.controls.codice.touched) {
+      <div class="text-danger small">Il codice e' obbligatorio (max 100 caratteri).</div>
+    }
+  </div>
+
+  <div class="mb-3">
+    <label for="nome" class="form-label">Nome</label>
+    <input id="nome" type="text" class="form-control" formControlName="nome" maxlength="200" />
+    @if (form.controls.nome.invalid && form.controls.nome.touched) {
+      <div class="text-danger small">Il nome e' obbligatorio (max 200 caratteri).</div>
+    }
+  </div>
+
+  <div class="mb-3">
+    <label for="codiceContesto" class="form-label">Codice contesto</label>
+    <input
+      id="codiceContesto"
+      type="text"
+      class="form-control"
+      formControlName="codiceContesto"
+      maxlength="64"
+    />
+    <div class="form-text">Chiave esatta di contexts nel token (es. geban).</div>
+    @if (form.controls.codiceContesto.invalid && form.controls.codiceContesto.touched) {
+      <div class="text-danger small">Il codice contesto e' obbligatorio (max 64 caratteri).</div>
+    }
+  </div>
+
+  @if (erroreServer()) {
+    <div class="alert alert-danger" role="alert">{{ erroreServer() }}</div>
+  }
+
+  <button type="submit" class="btn btn-primary" [disabled]="inviando()">Crea</button>
+</form>

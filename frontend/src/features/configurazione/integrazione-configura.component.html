@@ -1,0 +1,91 @@
+@if (caricando()) {
+  <p role="status">Caricamento...</p>
+}
+@if (erroreCaricamento()) {
+  <div class="alert alert-danger" role="alert">{{ erroreCaricamento() }}</div>
+  <button type="button" class="btn btn-outline-primary" (click)="caricaStatoCorrente()">
+    Riprova
+  </button>
+}
+@if (integrazione(); as corrente) {
+  <h1>{{ corrente.codice }}</h1>
+
+  <p>
+    <span
+      class="badge"
+      [class.text-bg-secondary]="badge(corrente.stato).variant === 'neutro'"
+      [class.text-bg-success]="badge(corrente.stato).variant === 'positivo'"
+      [class.text-bg-danger]="badge(corrente.stato).variant === 'errore'"
+    >
+      {{ badge(corrente.stato).label }}
+    </span>
+    @if (corrente.ultima_verifica) {
+      <span class="small text-muted ms-2">
+        {{ corrente.ultima_verifica.data }} - v{{ corrente.ultima_verifica.versione_contratto }}
+      </span>
+    }
+  </p>
+
+  @if (corrente.ultima_verifica?.errori?.length) {
+    <ul class="text-danger">
+      @for (errore of corrente.ultima_verifica?.errori; track errore.codice) {
+        <li>{{ errore.messaggio }}</li>
+      }
+    </ul>
+  }
+
+  <form [formGroup]="form" (submit)="$event.preventDefault(); salvaConfigurazione()">
+    <div class="mb-3">
+      <label for="nome" class="form-label">Nome</label>
+      <input id="nome" type="text" class="form-control" formControlName="nome" maxlength="200" />
+    </div>
+
+    <div class="mb-3">
+      <label for="url" class="form-label">URL discovery</label>
+      <input
+        id="url"
+        type="text"
+        class="form-control"
+        formControlName="url"
+        placeholder="https://..."
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="timeoutMs" class="form-label">Timeout (ms)</label>
+      <input
+        id="timeoutMs"
+        type="number"
+        class="form-control"
+        formControlName="timeoutMs"
+        min="1000"
+        max="10000"
+      />
+    </div>
+
+    @if (erroreServer()) {
+      <div class="alert alert-danger" role="alert">{{ erroreServer() }}</div>
+    }
+    @if (infoServer()) {
+      <div class="alert alert-info" role="status">{{ infoServer() }}</div>
+    }
+
+    <button
+      type="submit"
+      class="btn btn-primary"
+      [disabled]="salvando() || verificando() || caricando() || !!erroreCaricamento()"
+    >
+      Salva configurazione
+    </button>
+    <button
+      type="button"
+      class="btn btn-outline-primary ms-2"
+      [disabled]="
+        verificando() || salvando() || caricando() || !!erroreCaricamento() || !corrente.url
+      "
+      (click)="avviaVerifica()"
+    >
+      Verifica
+    </button>
+  </form>
+}

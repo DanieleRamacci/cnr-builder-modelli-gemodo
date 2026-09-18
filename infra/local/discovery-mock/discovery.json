@@ -1,0 +1,21 @@
+{
+  "BANDO_CONCORSO": {
+    "validita": "2026-09-18T00:00:00Z",
+    "nodi": [{
+      "codice": "TD",
+      "descrizione": "DEMO - Tempo determinato",
+      "figli": [{
+        "codice": "RICERCATORE",
+        "descrizione": "DEMO - Ricercatore",
+        "campi": [{
+          "codice": "titolo_it",
+          "etichetta": "Titolo",
+          "tipo": "string",
+          "lingua": "IT",
+          "ordine": 1,
+          "obbligatorio": true
+        }]
+      }]
+    }]
+  }
+}
