@@ -4,7 +4,9 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: In pianificazione (2026-09-18) - primo incremento scoperto in `plan.md`/
+`tasks.md`, scope MVP ADR 0002 (User Story 4/5 sotto), User Story 1/2/3 restano Draft/
+scope futuro.
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §11 e §16.6.
 
@@ -115,6 +117,76 @@ e consultata nei suoi metadati.
 4. **Given** una generazione non recuperabile o non ancora completata, **When** l'utente
    richiede il download, **Then** l'interfaccia mostra uno stato coerente e non suggerisce
    che il file sia disponibile.
+
+---
+
+### User Story 4 - Registrare e verificare un'integrazione (Priority: P1)
+
+*(Aggiunta 2026-09-18 in fase di planning: FR-021 esisteva gia' senza una User Story
+che ne organizzasse gli scenari di accettazione - stesso gap gia' visto e corretto per
+FR-025..030 della spec 001. Questa e User Story 5 sono l'MVP confermato dall'ADR 0002;
+le User Story 1/2/3 sopra restano scope futuro, non prerequisito.)*
+
+Come amministratore GEMODO, voglio registrare un'integrazione con un software esterno,
+configurarne l'endpoint discovery e verificarne la conformita', cosi' da attivarla per i
+manager del suo contesto senza toccare file di configurazione o fare un deploy.
+
+**Why this priority**: senza questo, nessuna integrazione puo' mai diventare `CONNESSO` se
+non tramite intervento diretto sul database - e' il prerequisito di ogni altro uso operativo
+del catalogo esterno (010).
+
+**Independent Test**: un admin puo' creare un'integrazione, vederla in stato "Non
+verificato", configurarne l'URL e ottenere "Connesso" o "Errore" con motivi sanificati dopo
+una verifica reale, senza mai eseguire una chiamata API a mano.
+
+**Acceptance Scenarios**:
+
+1. **Given** nessuna integrazione esiste ancora, **When** l'admin apre la schermata,
+   **Then** la tabella e' vuota - nessun software preinstallato (FR-021).
+2. **Given** un'integrazione appena creata, **When** l'admin la vede in lista, **Then** e'
+   in stato "Non verificato" senza URL.
+3. **Given** un'integrazione con URL configurato verso una sorgente conforme, **When**
+   l'admin avvia la verifica, **Then** lo stato diventa "Connesso" con data e versione
+   contratto visibili.
+4. **Given** un'integrazione con URL irraggiungibile o con forma non conforme, **When** la
+   verifica fallisce, **Then** lo stato diventa "Errore" con motivi sanificati, mai uno stack
+   trace o un dettaglio tecnico grezzo.
+5. **Given** una riconfigurazione basata su una revisione non piu' corrente, **When**
+   l'admin salva, **Then** l'interfaccia mostra un conflitto e ricarica lo stato corrente,
+   senza sovrascrivere silenziosamente.
+
+---
+
+### User Story 5 - Creare un modello di test dalla struttura scoperta (Priority: P1)
+
+*(Aggiunta 2026-09-18, vedi nota su User Story 4. Copre FR-022/FR-023.)*
+
+Come gestore modelli, voglio navigare la struttura di un'integrazione connessa e
+autorizzata per il mio contesto e creare un modello di test in bozza, cosi' da provare un
+nuovo tipo documento senza aspettare l'editor completo.
+
+**Why this priority**: e' la prova concreta, richiesta esplicitamente per questo
+incremento, che un modello puo' nascere dall'interfaccia e arrivare fino alla generazione
+di un PDF di test (004/005) senza il builder visuale completo.
+
+**Independent Test**: un gestore autorizzato su un contesto vede solo le integrazioni
+connesse di quel contesto, naviga fino a una foglia e crea un modello che risulta in stato
+BOZZA, verificabile anche da Swagger.
+
+**Acceptance Scenarios**:
+
+1. **Given** esistono integrazioni connesse in piu' contesti, **When** il gestore apre la
+   lista, **Then** vede solo quelle del proprio contesto, anche se il suo token porta ruoli
+   in altri contesti (nessuna fuga di permessi fra contesti).
+2. **Given** un'integrazione connessa, **When** il gestore naviga l'albero, **Then** vede la
+   struttura reale (profondita' variabile) restituita dalla sorgente esterna, non un
+   catalogo locale.
+3. **Given** una foglia selezionata, **When** il gestore crea un modello, **Then** ottiene un
+   modello in stato BOZZA con i dati inseriti, senza che si apra alcun editor di campi o
+   sezioni (fuori scope di questo incremento).
+4. **Given** un'integrazione non ancora connessa o un errore di trasporto verso la sorgente,
+   **When** il gestore prova ad accedere alla struttura, **Then** l'interfaccia mostra lo
+   stato reale (non connesso / errore di trasporto), mai una lista vuota che lo mascheri.
 
 ### Edge Cases
 
