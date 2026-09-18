@@ -377,6 +377,15 @@ a User Story 4, l'MVP ADR 0002 e' completo.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
+- [ ] T036 Diagnosi 401 immediatamente dopo login sul server: forzare nuovo
+      accesso con prompt login; distinguere rifiuto backend da refresh
+      fallito e registrare nei log solo la classe di errore JWT, audience
+      non corrispondente o Bearer assente. IN CORSO: 37 test frontend e 16
+      test JWT passati, lint/formato/build passati. Diagnosi server ancora
+      aperta: risposta ACCESSO_NON_AUTENTICATO e header Bearer presente
+      confermati dall'utente. Serve il motivo di rifiuto nei log backend;
+      non esclusa rimozione header nel percorso proxy.
+
 - [ ] T035 Correzione dal collaudo server: refresh fallito non deve inviare
       richieste con token scaduto; lista distingue errore da vuoto e mostra
       record senza URL come Da completare. Login esplicito mantiene il

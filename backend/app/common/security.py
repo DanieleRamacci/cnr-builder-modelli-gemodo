@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import jwt
+import logging
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError, PyJWKClient
@@ -29,6 +30,7 @@ ROLE_GEMODO_MODELLI_GESTORE = "GEMODO_MODELLI_GESTORE"
 ALLOWED_ALGORITHMS = ["RS256"]
 
 bearer_scheme = HTTPBearer(auto_error=False)
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -147,6 +149,7 @@ def decode_principal_from_token(
             options={"verify_aud": False},
         )
     except InvalidTokenError as exc:
+        logger.warning("Authentication rejected: jwt_validation=%s", type(exc).__name__)
         raise AuthenticationError() from exc
     _ensure_audience_if_declared(payload, settings)
     return _principal_from_payload(payload, settings)
@@ -169,6 +172,7 @@ def _ensure_audience_if_declared(payload: dict[str, Any], settings: Settings) ->
     if aud is None:
         return
     if settings.keycloak_audience not in _audience_tuple(aud):
+        logger.warning("Authentication rejected: audience_mismatch")
         raise AuthenticationError()
 
 
@@ -194,6 +198,7 @@ def require_principal(
     if settings.gemodo_use_mock_principal:
         return mock_principal(settings)
     if credentials is None or credentials.scheme.lower() != "bearer":
+        logger.warning("Authentication rejected: bearer_missing_or_wrong_scheme")
         raise AuthenticationError()
     return decode_principal_from_token(credentials.credentials, settings=settings)
 

@@ -44,6 +44,18 @@ admin non deve vedere Configurazione e non deve accedere alla sua route.
 Il discovery deve seguire il contratto ad albero completo 0.4.0;
 gli esempi PER_NODI sono una proposta distinta e non sono accettati da questo MVP.
 
+## Diagnosi autenticazione
+
+Un 401 subito dopo login non prova che il token sia scaduto. Controllare
+la presenza di Authorization nella richiesta senza condividere il token.
+Nei log del backend cercare `Authentication rejected`: il messaggio riporta
+Bearer assente, audience non corrispondente oppure la classe di errore JWT
+(es. InvalidIssuerError, ExpiredSignatureError, ImmatureSignatureError).
+La UI forza un nuovo login con prompt login; nessuna scrittura viene
+ripetuta automaticamente. La causa server resta da diagnosticare se il
+nuovo login produce ancora 401. Il controllo audience resta condizionale:
+token ACE senza aud accettato se le altre verifiche e autorizzazioni passano.
+
 ## Prova manager
 
 Il ruolo globale da solo non assegna un contesto: il backend verifica i

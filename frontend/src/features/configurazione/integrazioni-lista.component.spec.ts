@@ -3,6 +3,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import Keycloak from 'keycloak-js';
 
 import { IntegrazioniListaComponent } from './integrazioni-lista.component';
 import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
@@ -26,9 +27,11 @@ function integrazione(overrides: Partial<IntegrazioneAdmin>): IntegrazioneAdmin 
 describe('IntegrazioniListaComponent', () => {
   let fixture: ComponentFixture<IntegrazioniListaComponent>;
   let service: { lista: ReturnType<typeof vi.fn> };
+  let login: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     service = { lista: vi.fn() };
+    login = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       imports: [IntegrazioniListaComponent],
       providers: [
@@ -36,7 +39,26 @@ describe('IntegrazioniListaComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: IntegrazioniAdminService, useValue: service },
+        { provide: Keycloak, useValue: { login } },
       ],
+    });
+  });
+
+  it('forces a new authentication after server rejection without reporting expiration', () => {
+    service.lista.mockReturnValue(
+      throwError(() => ({
+        status: 401,
+        codice: 'ACCESSO_NON_AUTENTICATO',
+        messaggio: 'Token non valido',
+      })),
+    );
+    fixture = TestBed.createComponent(IntegrazioniListaComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain("server ha rifiutato l'autenticazione");
+    fixture.nativeElement.querySelector('button').click();
+    expect(login).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/configurazione',
+      prompt: 'login',
     });
   });
 

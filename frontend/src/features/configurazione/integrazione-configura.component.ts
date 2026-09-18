@@ -36,6 +36,7 @@ export class IntegrazioneConfiguraComponent {
   protected accedi(): void {
     void this.keycloak?.login({
       redirectUri: window.location.origin + '/configurazione/' + this.id,
+      prompt: 'login',
     });
   }
   private readonly id = this.route.snapshot.paramMap.get('id')!;

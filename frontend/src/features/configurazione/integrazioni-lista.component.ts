@@ -38,7 +38,10 @@ export class IntegrazioniListaComponent {
   }
 
   protected accedi(): void {
-    void this.keycloak?.login({ redirectUri: window.location.origin + '/configurazione' });
+    void this.keycloak?.login({
+      redirectUri: window.location.origin + '/configurazione',
+      prompt: 'login',
+    });
   }
   protected carica(): void {
     this.caricamento.set(true);
@@ -53,8 +56,8 @@ export class IntegrazioniListaComponent {
         this.caricamento.set(false);
         this.sessioneScaduta.set(error.status === 401);
         this.errore.set(
-          error.status === 401
-            ? 'Sessione non valida. Accedi nuovamente: le integrazioni salvate restano disponibili.'
+          error.status === 401 && error.codice !== 'SESSIONE_SCADUTA'
+            ? "Il server ha rifiutato l'autenticazione. Le integrazioni salvate non sono state cancellate."
             : error.messaggio,
         );
       },

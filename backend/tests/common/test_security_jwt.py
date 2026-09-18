@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from dataclasses import replace
 
 import pytest
 from fastapi import Depends, FastAPI
@@ -107,12 +108,25 @@ def test_decode_rejects_invalid_audience():
         decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
 
 
-def test_decode_rejects_expired_token():
+def test_decode_rejects_expired_token(caplog):
     keys = JwtTestKeys()
     token = signed_token(keys, expires_delta=timedelta(minutes=-1))
 
     with pytest.raises(AuthenticationError):
         decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+
+    assert "jwt_validation=ExpiredSignatureError" in caplog.text
+    assert token not in caplog.text
+
+
+def test_invalid_issuer_is_diagnosed_without_logging_token(caplog):
+    keys = JwtTestKeys()
+    token = signed_token(keys)
+    settings = _settings()
+    with pytest.raises(AuthenticationError):
+        decode_principal_from_token(token, settings=replace(settings, keycloak_issuer_url="https://other.example/realms/test"), signing_key=keys.public_pem)
+    assert "jwt_validation=InvalidIssuerError" in caplog.text
+    assert token not in caplog.text
 
 
 def test_decode_rejects_wrong_client():
