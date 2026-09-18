@@ -18,6 +18,16 @@ backend+mock-geban veri, mai mock della logica di dominio).
 
 ## Phase 1: Setup
 
+- [x] T038 Correggere DISCOVERY_NON_CONFIGURATA nella creazione: trasmettere
+      integrazione_id, risolvere tipo per sorgente/codice e mantenere ownership
+      nelle versioni. Verificare conflitto con tipi legacy e contesti non autorizzati.
+      CHIUSO 2026-09-18: contratto/tipi frontend aggiornati, creazione scoped
+      senza modificare tipi legacy e versioni con ownership persistita.
+      295 test backend non-e2e e 38 frontend passati; lint/formato passati.
+      Review indipendente resta pendente: adev FAIL per Claude non autenticato
+      e cache uv non accessibile nel sandbox del gate. Suite equivalente
+      eseguita con permessi di test passata. Deploy Coolify non eseguito.
+
 - [x] T037 Correggere autorizzazione ACE dei client interattivi: derivare
       permessi dai mapping per contesto senza iscrizione nei profili tecnici;
       documentare ADR 0003 e verificare isolamento, ruoli sconosciuti e client tecnici.

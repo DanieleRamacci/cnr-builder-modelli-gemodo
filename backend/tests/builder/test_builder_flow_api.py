@@ -148,6 +148,62 @@ CAMPI_BASE = [
 ]
 
 
+@pytest.mark.integration
+def test_selected_integration_creates_scoped_type_and_versions_despite_legacy_duplicate(
+    builder_client, db_engine, catalogo_esterno, integrazione_connessa,
+):
+    code = "TEST_SCOPED"
+    catalogo_esterno[1]["/discovery"][1][code] = deepcopy(
+        catalogo_esterno[1]["/discovery"][1]["BANDO_CONCORSO"]
+    )
+    legacy_id = uuid.uuid4()
+    with Session(db_engine) as db:
+        db.add(TipoDocumento(id=legacy_id, codice=code, nome=code,
+                             codice_contesto="geban", spec_owner="specs/002-builder-modelli"))
+        db.commit()
+    try:
+        response = builder_client.post("/api/v1/builder/modelli", json={
+            "codice": "scoped-" + uuid.uuid4().hex, "nome": "Modello scoped",
+            "codice_tipo_documento": code, "integrazione_id": str(integrazione_connessa),
+            "percorso_categorizzazione": ["TD", "RICERCATORE"],
+        })
+        assert response.status_code == 201, response.text
+        model = response.json()
+        version = _crea_versione(builder_client, model["id"])
+        assert version["stato"] == "BOZZA"
+        with Session(db_engine) as db:
+            assert db.get(TipoDocumento, legacy_id).integrazione_id is None
+            assert db.scalar(sa.text(
+                "SELECT t.integrazione_id FROM tipo_documento t JOIN modello_documento m "
+                "ON m.tipo_documento_id = t.id WHERE m.id = :id"
+            ), {"id": model["id"]}) == integrazione_connessa
+    finally:
+        with Session(db_engine) as db:
+            db.execute(sa.delete(TipoDocumento).where(TipoDocumento.codice == code))
+            db.commit()
+
+
+@pytest.mark.integration
+def test_selected_integration_requires_context_permission_before_creating_type(builder_client, db_engine):
+    source_id = uuid.uuid4()
+    with Session(db_engine) as db:
+        db.add(Integrazione(id=source_id, codice="DENIED_" + uuid.uuid4().hex[:16],
+                            nome="Non autorizzata", codice_contesto="altro"))
+        db.commit()
+    try:
+        response = builder_client.post("/api/v1/builder/modelli", json={
+            "codice": "denied-scoped", "nome": "Negato", "codice_tipo_documento": "ASSENTE",
+            "integrazione_id": str(source_id), "percorso_categorizzazione": ["FOGLIA"],
+        })
+        assert response.status_code == 403, response.text
+        with Session(db_engine) as db:
+            assert db.scalar(sa.select(TipoDocumento.id).where(TipoDocumento.integrazione_id == source_id)) is None
+    finally:
+        with Session(db_engine) as db:
+            db.execute(sa.delete(Integrazione).where(Integrazione.id == source_id))
+            db.commit()
+
+
 def _crea_modello(client: TestClient, *, codice: str, variante: str = "STANDARD") -> dict:
     response = client.post(
         "/api/v1/builder/modelli",

@@ -200,6 +200,7 @@ export class ModelloCreaComponent {
         nome: this.nome,
         variante: this.variante,
         codice_tipo_documento: this.tipo,
+        integrazione_id: this.id,
         percorso_categorizzazione: this.path(),
       })
       .subscribe({

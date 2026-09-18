@@ -260,6 +260,11 @@ integrazioni e le azioni consentite sono sempre determinate dal backend.
   contesto anche con token multicontesto; URL e funzioni amministrative MUST NOT
   essere esposti al manager privo di autorizzazione amministrativa.
 
+Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
+selezionata nella navigazione. Tipo documentale e discovery sono risolti per
+integrazione/codice; la creazione di versioni usa l'ownership persistita del modello.
+Tipi legacy omonimi senza endpoint non devono interferire con questo flusso.
+
 ### Key Entities
 
 Autorizzazione ACE confermata il 2026-09-18: i client interattivi autorizzati

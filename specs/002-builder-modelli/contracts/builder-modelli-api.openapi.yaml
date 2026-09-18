@@ -192,6 +192,10 @@ components:
         codice: {type: string, minLength: 1, maxLength: 128}
         nome: {type: string, minLength: 1, maxLength: 255}
         codice_tipo_documento: {type: string, minLength: 1}
+        integrazione_id:
+          type: string
+          format: uuid
+          description: Integrazione selezionata; risolve il tipo per sorgente e codice, senza fallback legacy. Omettere solo per chiamate legacy non ambigue.
         percorso_categorizzazione:
           type: array
           nullable: true

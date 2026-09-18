@@ -47,6 +47,7 @@ describe('manager creation flow', () => {
     component.nome = 'Demo';
     component.create();
     const model = http.expectOne('/api/v1/builder/modelli');
+    expect(model.request.body.integrazione_id).toBe('source');
     expect(model.request.body.percorso_categorizzazione).toEqual(['TD', 'RICERCATORE']);
     model.flush({ id: 'model' });
     fixture.detectChanges();

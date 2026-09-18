@@ -20,6 +20,11 @@ restano scope futuro oltre questo incremento.
 
 ## Technical Context
 
+Correzione T038: la creazione invia integrazione_id e mantiene il riferimento
+locale tipo_documento scoped alla sorgente. Il riferimento contiene solo identita'
+e ownership, non replica l'albero discovery. Le versioni rileggono il catalogo
+tramite il tipo persistito, senza risolvere nuovamente per solo codice.
+
 Aggiornamento 2026-09-18, ADR 0003: autorizzazione utente derivata dai mapping
 ACE in contexts per client interattivi autorizzati, indipendentemente dalle
 liste di client tecnici dei profili. La normalizzazione globale e il controllo

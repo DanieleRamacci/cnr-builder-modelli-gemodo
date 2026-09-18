@@ -140,6 +140,11 @@ export interface components {
       codice: string;
       nome: string;
       codice_tipo_documento: string;
+      /**
+       * Format: uuid
+       * @description Integrazione selezionata; risolve il tipo per sorgente e codice, senza fallback legacy. Omettere solo per chiamate legacy non ambigue.
+       */
+      integrazione_id?: string;
       percorso_categorizzazione?: string[] | null;
       codice_categoria?: string | null;
       codice_tipologia?: string | null;

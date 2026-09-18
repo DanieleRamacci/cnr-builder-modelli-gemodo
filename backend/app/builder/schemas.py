@@ -27,6 +27,7 @@ class CreaModelloRequest(BaseModel):
     codice: str = Field(min_length=1, max_length=128)
     nome: str = Field(min_length=1, max_length=255)
     codice_tipo_documento: str = Field(min_length=1)
+    integrazione_id: uuid.UUID | None = None
     percorso_categorizzazione: list[str] | None = Field(default=None, min_length=1, max_length=64)
     codice_categoria: str | None = None
     codice_tipologia: str | None = None

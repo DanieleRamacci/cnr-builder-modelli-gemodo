@@ -14,13 +14,16 @@ import uuid
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
 from app.builder.audit import registra_evento
 from app.builder.schemas import CampoVersioneRequest, CreaModelloRequest
 from app.catalog import repository as catalog_repository
-from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione
-from app.common.errors import BuilderDomainError, ErrorCode
+from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
+from app.configurazione import repository as configurazione_repository
+from app.common.errors import BuilderDomainError, DomainError, ErrorCode
 from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto
 from app.db.session import get_db
 from app.discovery.configuration import discovery_per_tipo
@@ -42,8 +45,8 @@ class BuilderService:
         self.db = db
         self.discovery = discovery
 
-    def _catalogo(self, codice: str, *, aggiornato: bool = False) -> CatalogoDiscovery:
-        tipo = self._resolve_tipo_documento(codice)
+    def _catalogo(self, codice: str, *, aggiornato: bool = False, tipo: TipoDocumento | None = None) -> CatalogoDiscovery:
+        tipo = tipo if tipo is not None else self._resolve_tipo_documento(codice)
         porta = self.discovery if self.discovery is not None else discovery_per_tipo(self.db, tipo)
         return porta.catalogo_discovery(codice, forza_aggiornamento=aggiornato)
 
@@ -53,10 +56,26 @@ class BuilderService:
         return self._catalogo(codice_tipo_documento)
 
     def crea_modello(self, principal: PrincipalGEMODO, request: CreaModelloRequest) -> ModelloDocumento:
-        tipo = self._resolve_tipo_documento(request.codice_tipo_documento)
+        if request.integrazione_id is None:
+            tipo = self._resolve_tipo_documento(request.codice_tipo_documento)
+        else:
+            source = configurazione_repository.integrazione(self.db, request.integrazione_id)
+            if source is None:
+                raise DomainError("RISORSA_NON_TROVATA", "Risorsa non disponibile", status_code=404)
+            verify_scrittura_su_contesto(principal, source.codice_contesto)
+            # Persist only the document type identity, never the external tree.
+            self.db.execute(insert(TipoDocumento).values(
+                id=uuid.uuid4(), codice=request.codice_tipo_documento,
+                nome=request.codice_tipo_documento, codice_contesto=source.codice_contesto,
+                integrazione_id=source.id, stato="ATTIVA", spec_owner="specs/002-builder-modelli",
+            ).on_conflict_do_nothing(constraint="uq_tipo_documento_integrazione_codice"))
+            tipo = self.db.scalar(select(TipoDocumento).where(
+                TipoDocumento.integrazione_id == source.id,
+                TipoDocumento.codice == request.codice_tipo_documento,
+            ))
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
 
-        indice = self._catalogo(request.codice_tipo_documento, aggiornato=True).indice_percorsi()
+        indice = self._catalogo(request.codice_tipo_documento, aggiornato=True, tipo=tipo).indice_percorsi()
 
         def riferimenti(percorso: tuple[str, ...]) -> tuple[str, str | None]:
             nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
@@ -115,7 +134,7 @@ class BuilderService:
             raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
 
-        foglia = self._catalogo(modello.tipo_documento.codice, aggiornato=True).indice_percorsi().get(
+        foglia = self._catalogo(modello.tipo_documento.codice, aggiornato=True, tipo=modello.tipo_documento).indice_percorsi().get(
             tuple(modello.percorso_categorizzazione)
         )
         if foglia is None or foglia.campi is None:
