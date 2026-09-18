@@ -16,15 +16,33 @@ backend+mock-geban veri, mai mock della logica di dominio).
 
 ## Format: `[ID] [P?] [Story] Description`
 
-## Backlog prossimo incremento - Contesti (non implementato)
+## Incremento Contesti e backlog collegato
 
-- [ ] T039 [US1] Pianificare e definire il contratto per Contesti: elenco
+T039/T040 e T044 avviati 2026-09-18 su richiesta dell'utente per rendere
+disponibili elenco e revisione/approvazione/pubblicazione dalla UI.
+T041-T043 restano backlog distinto.
+
+- [x] T044 [US2] Azioni di revisione/approvazione/pubblicazione sulla versione,
+      conferma e gestione conflitti, public_id per prova API PDF; backend
+      valida parent modello/versione e serializza transizioni. Verificare
+      isolamento per contesto e flusso lista -> pubblicazione reale.
+      Implementato 2026-09-18: conferma nativa, azioni per stato e public_id;
+      controllo parent e lock backend. Playwright contro Keycloak/Postgres/
+      backend/discovery reali passa creazione -> BOZZA -> PUBBLICATO.
+
+- [x] T039 [US1] Pianificare e definire il contratto per Contesti: elenco
       modelli comprese bozze per contesto autorizzato, dati della tabella e
       permessi di lettura/creazione; distinguere integrazioni nello stesso contesto.
-- [ ] T040 [US1] Sostituire l'accesso Crea modello con Contesti, tab autorizzate,
+- [x] T040 [US1] Sostituire l'accesso Crea modello con Contesti, tab autorizzate,
       tabella modelli e azione Crea modello che riusa il flusso discovery.
       Conservare contesto/sorgente al ritorno e aggiornare lista dopo creazione;
       prevedere stati vuoto/caricamento/errore e test di isolamento backend/UI.
+      Verifica 2026-09-18: 297 test backend non-e2e, 42 frontend, lint e build
+      produzione passati. Playwright lifecycle reale e screenshot desktop/mobile
+      verificati; lista paginata, contesti backend, ritorno con query contesto.
+      Gate indipendente FAIL: Claude non autenticato e cache uv inaccessibile
+      nel sandbox del gate; la suite equivalente fuori sandbox passa.
+      Feature completa non certificata; T041-T043 e gli altri residui restano aperti.
 - [ ] T041 [US1] Generare codice e nome nel backend dalla categorizzazione
       validata, data e lingua: definire formato, unicita' concorrente e stabilita'.
       Rimuovere input liberi codice/nome/variante; variante derivata da metadati

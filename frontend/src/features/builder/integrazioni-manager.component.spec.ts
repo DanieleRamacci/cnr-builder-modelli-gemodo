@@ -2,47 +2,144 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import Keycloak from 'keycloak-js';
+import { provideDesignAngularKit } from 'design-angular-kit';
 import { IntegrazioniManagerComponent } from './integrazioni-manager.component';
 
-describe('ACE integration selection', () => {
-  it('opens with context roles alone and distinguishes token contexts from available integrations', () => {
+const version = {
+  id: 'version',
+  public_id: 42,
+  modello_id: 'model',
+  numero_versione: 1,
+  stato: 'BOZZA',
+  pubblicato_at: null,
+};
+const model = {
+  id: 'model',
+  public_id: 1,
+  codice: 'MODEL',
+  nome: 'Modello CTER',
+  codice_tipo_documento: 'BANDO',
+  codice_categoria: 'CTER',
+  codice_tipologia: 'TD',
+  percorso_categorizzazione: ['TD', 'CTER'],
+  variante: 'STANDARD',
+  codice_contesto: 'geban',
+  integrazione_id: 'source',
+  created_at: '2026-09-18T12:00:00Z',
+  versioni: [version],
+};
+
+describe('context models and lifecycle', () => {
+  function setup(contexts = ['geban', 'altro']) {
     TestBed.configureTestingModule({
       providers: [
+        provideDesignAngularKit(),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        {
-          provide: Keycloak,
-          useValue: {
-            tokenParsed: {
-              contexts: {
-                geban: { roles: ['ROLE_MANAGER#geban'] },
-                altro: { roles: ['ROLE_USER#altro'] },
-              },
-            },
-          },
-        },
       ],
     });
     const fixture = TestBed.createComponent(IntegrazioniManagerComponent);
     const http = TestBed.inject(HttpTestingController);
+    http.match('./bootstrap-italia/i18n/it.json').forEach((r) => r.flush({}));
+    http.expectOne('/api/v1/builder/contesti').flush(contexts);
     http
       .expectOne('/api/v1/builder/integrazioni')
-      .flush([
-        { id: 'source', codice: 'GEBAN', nome: 'Software connesso', codice_contesto: 'geban' },
-      ]);
+      .flush([{ id: 'source', codice: 'GEBAN', nome: 'Software', codice_contesto: 'geban' }]);
+    return { fixture, http };
+  }
+  it('uses backend-authorized context tabs and reloads the list on selection', () => {
+    const { fixture, http } = setup();
+    const first = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(first.request.params.get('codice_contesto')).toBe('geban');
+    first.flush([model]);
     fixture.detectChanges();
-    const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
-    select.value = 'geban';
-    select.dispatchEvent(new Event('change'));
+    expect(fixture.nativeElement.querySelector('select')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Modello CTER');
+    const tabs = fixture.nativeElement.querySelectorAll('nav button');
+    tabs[1].click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Software connesso');
-    select.value = 'altro';
-    select.dispatchEvent(new Event('change'));
+    expect(fixture.nativeElement.textContent).not.toContain('Modello CTER');
+    const next = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(next.request.params.get('codice_contesto')).toBe('altro');
+    next.flush([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).not.toContain('Software connesso');
-    expect(fixture.nativeElement.textContent).toContain('Nessuna integrazione connessa');
+    expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
+    http.verify();
+  });
+  it('confirms each transition and displays state only after the backend reload', () => {
+    const { fixture, http } = setup(['geban']);
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    const button = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((b) => b.textContent?.includes('Invia in revisione'))!;
+    button.click();
+    fixture.detectChanges();
+    expect(dialog.showModal).toHaveBeenCalled();
+    http.expectNone((r) => r.method === 'POST');
+    Array.from(dialog.querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Conferma'))!
+      .click();
+    const request = http.expectOne(
+      '/api/v1/builder/modelli/model/versioni/version/invia-revisione',
+    );
+    fixture.detectChanges();
+    expect(button.disabled).toBe(true);
+    request.flush({ ...version, stato: 'IN_REVISIONE' });
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush([{ ...model, versioni: [{ ...version, stato: 'IN_REVISIONE' }] }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Approva');
+    http.verify();
+  });
+  it('distinguishes read failures from an empty registry and permits retry', () => {
+    const { fixture, http } = setup(['geban']);
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush({ messaggio: 'Servizio indisponibile' }, { status: 503, statusText: 'Unavailable' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Servizio indisponibile');
+    expect(fixture.nativeElement.textContent).not.toContain('Nessun modello presente');
+    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find((b) => b.textContent?.includes('Riprova'))!
+      .click();
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([]);
+    http.verify();
+  });
+  it('shows an explicit empty authorization state without querying models', () => {
+    const { fixture, http } = setup([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Nessun contesto autorizzato');
+    http.verify();
+  });
+  it('reloads a conflicting transition without retrying the write', () => {
+    const { fixture, http } = setup(['geban']);
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find((b) => b.textContent?.includes('Invia in revisione'))!
+      .click();
+    fixture.detectChanges();
+    Array.from(dialog.querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Conferma'))!
+      .click();
+    http
+      .expectOne('/api/v1/builder/modelli/model/versioni/version/invia-revisione')
+      .flush({ messaggio: 'Stato modificato' }, { status: 409, statusText: 'Conflict' });
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush([{ ...model, versioni: [{ ...version, stato: 'IN_REVISIONE' }] }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Stato modificato');
+    http.expectNone((r) => r.method === 'POST');
     http.verify();
   });
 });

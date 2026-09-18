@@ -24,7 +24,7 @@ from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
 from app.common.errors import BuilderDomainError, DomainError, ErrorCode
-from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto
+from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto, contesti_con_permesso, ROLE_GEMODO_MODELLI_GESTORE
 from app.db.session import get_db
 from app.discovery.configuration import discovery_per_tipo
 from app.discovery.port import PortaDiscovery
@@ -44,6 +44,14 @@ class BuilderService:
     def __init__(self, db: Session, discovery: PortaDiscovery | None = None) -> None:
         self.db = db
         self.discovery = discovery
+
+    def contesti(self, principal: PrincipalGEMODO) -> list[str]:
+        return sorted(contesti_con_permesso(principal, ROLE_GEMODO_MODELLI_GESTORE,
+                                           dict(principal.ruoli_contesto)))
+
+    def lista(self, principal: PrincipalGEMODO, codice_contesto: str, *, offset: int, limit: int):
+        verify_scrittura_su_contesto(principal, codice_contesto)
+        return builder_repository.lista_modelli(self.db, codice_contesto, offset=offset, limit=limit)
 
     def _catalogo(self, codice: str, *, aggiornato: bool = False, tipo: TipoDocumento | None = None) -> CatalogoDiscovery:
         tipo = tipo if tipo is not None else self._resolve_tipo_documento(codice)
@@ -184,12 +192,18 @@ class BuilderService:
         self.db.commit()
         return versione
 
-    def transizione(self, principal: PrincipalGEMODO, versione_id: uuid.UUID, nuovo_stato: str) -> ModelloDocumentoVersione:
+    def transizione(self, principal: PrincipalGEMODO, versione_id: uuid.UUID, nuovo_stato: str, *, modello_id: uuid.UUID | None = None) -> ModelloDocumentoVersione:
         versione = builder_repository.get_versione(self.db, versione_id)
-        if versione is None:
+        if versione is None or (modello_id is not None and versione.modello_documento_id != modello_id):
             raise BuilderDomainError(ErrorCode.MODELLO_VERSIONE_NON_TROVATO, "Versione non trovata", status_code=404)
         modello = builder_repository.get_modello(self.db, versione.modello_documento_id)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
+
+        # Serialize state changes, including replacement publication, per document type.
+        self.db.execute(select(TipoDocumento.id).where(
+            TipoDocumento.id == modello.tipo_documento_id,
+        ).with_for_update())
+        self.db.refresh(versione)
 
         ammessi = TRANSIZIONI_VALIDE.get(versione.stato, set())
         if nuovo_stato not in ammessi:

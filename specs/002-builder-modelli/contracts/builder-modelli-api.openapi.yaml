@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Builder Modelli
-  version: 0.3.0
+  version: 0.4.0
   description: >
     Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
     integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
@@ -19,6 +19,18 @@ servers:
 security:
   - KeycloakBearer: []
 paths:
+  /contesti:
+    get:
+      operationId: listaContestiBuilder
+      summary: Contesti autorizzati alla gestione modelli, anche senza integrazioni connesse
+      responses:
+        '200':
+          description: Contesti con permesso gestore derivato separatamente
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+              example: [geban]
+        '401': {$ref: '#/components/responses/Unauthorized'}
   /tipi-documento/{codiceTipoDocumento}/struttura-disponibile:
     parameters:
       - {$ref: '#/components/parameters/CodiceTipoDocumento'}
@@ -43,6 +55,31 @@ paths:
         '502': {$ref: '#/components/responses/SourceError'}
         '504': {$ref: '#/components/responses/SourceTimeout'}
   /modelli:
+    get:
+      operationId: listaModelliBuilder
+      summary: Modelli e versioni del contesto autorizzato, comprese bozze
+      description: Ordinati per creazione decrescente e id. Non richiede discovery online. Nessuna URL amministrativa esposta.
+      parameters:
+        - name: codice_contesto
+          in: query
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 64}
+        - name: offset
+          in: query
+          schema: {type: integer, minimum: 0, default: 0}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: Pagina modelli, vuota se non ne esistono nel contesto autorizzato
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/ModelloGestione'}}
+              example: []
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
     post:
       operationId: creaModello
       summary: Crea un modello in BOZZA a partire da un percorso o categoria/tipologia risolti in discovery
@@ -180,6 +217,24 @@ components:
       required: true
       schema: {type: string, format: uuid}
   schemas:
+    ModelloGestione:
+      type: object
+      additionalProperties: false
+      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante, codice_contesto, integrazione_id, created_at, versioni]
+      properties:
+        id: {type: string, format: uuid}
+        public_id: {type: integer, nullable: true}
+        codice: {type: string}
+        nome: {type: string}
+        codice_tipo_documento: {type: string}
+        codice_categoria: {type: string}
+        codice_tipologia: {type: string, nullable: true}
+        percorso_categorizzazione: {type: array, items: {type: string}}
+        variante: {type: string}
+        codice_contesto: {type: string}
+        integrazione_id: {type: string, format: uuid, nullable: true}
+        created_at: {type: string, format: date-time}
+        versioni: {type: array, items: {$ref: '#/components/schemas/Versione'}}
     CreaModelloRequest:
       type: object
       additionalProperties: false

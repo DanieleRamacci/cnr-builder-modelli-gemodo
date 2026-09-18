@@ -495,6 +495,35 @@ def test_transizione_non_valida_e_rifiutata(builder_client):
 
 
 @pytest.mark.integration
+def test_context_list_and_model_list_include_drafts_and_publication_states(builder_client):
+    assert "geban" in builder_client.get("/api/v1/builder/contesti").json()
+    model = _crea_modello(builder_client, codice="lista-" + uuid.uuid4().hex)
+    version = _crea_versione(builder_client, model["id"])
+    response = builder_client.get("/api/v1/builder/modelli", params={"codice_contesto": "geban", "limit": 100})
+    assert response.status_code == 200, response.text
+    item = next(m for m in response.json() if m["id"] == model["id"])
+    assert item["codice_contesto"] == "geban"
+    assert item["versioni"][0]["stato"] == "BOZZA"
+    assert "url" not in item
+    published = _pubblica_fino_in_fondo(builder_client, model["id"], version["id"])
+    response = builder_client.get("/api/v1/builder/modelli", params={"codice_contesto": "geban", "limit": 100})
+    item = next(m for m in response.json() if m["id"] == model["id"])
+    assert item["versioni"][0]["stato"] == "PUBBLICATO"
+    assert item["versioni"][0]["public_id"] == published["public_id"]
+    assert builder_client.get("/api/v1/builder/modelli", params={"codice_contesto": "altro"}).status_code == 403
+    assert builder_client.get("/api/v1/builder/modelli", params={"codice_contesto": "geban", "limit": 101}).status_code == 400
+
+
+@pytest.mark.integration
+def test_transition_rejects_version_under_wrong_parent_model(builder_client):
+    first = _crea_modello(builder_client, codice="parent-a-" + uuid.uuid4().hex)
+    second = _crea_modello(builder_client, codice="parent-b-" + uuid.uuid4().hex)
+    version = _crea_versione(builder_client, first["id"])
+    response = builder_client.post(f"/api/v1/builder/modelli/{second['id']}/versioni/{version['id']}/invia-revisione")
+    assert response.status_code == 404, response.text
+
+
+@pytest.mark.integration
 def test_gestore_senza_il_contesto_del_tipo_documento_e_rifiutato(db_engine, monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
     monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geri-angular-public")

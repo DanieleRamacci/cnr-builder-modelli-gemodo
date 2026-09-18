@@ -20,6 +20,18 @@ restano scope futuro oltre questo incremento.
 
 ## Technical Context
 
+Incremento Contesti/ciclo di vita autorizzato 2026-09-18 (T039/T040/T044):
+GET /builder/contesti restituisce i contesti con permesso gestore; GET
+/builder/modelli?codice_contesto=...&offset=...&limit=... restituisce modelli
+con versioni tramite eager loading, ordinamento stabile e limite massimo 100.
+La lettura non dipende dalla disponibilita' della discovery. La creazione
+usa le integrazioni connesse gia' esposte dall'API manager. Nessuna migration.
+Transizioni esistenti con controllo parent modello/versione; lock sul tipo
+documento serializza le transizioni/pubblicazioni dello stesso tipo.
+UI Angular mantiene /builder come accesso Contesti e /builder/:id come
+creazione, query param contesto per selezione/ritorno. Conferma tramite dialog
+accessibile; richieste concorrenti UI disabilitate, errore distinto da lista vuota.
+
 Correzione T038: la creazione invia integrazione_id e mantiene il riferimento
 locale tipo_documento scoped alla sorgente. Il riferimento contiene solo identita'
 e ownership, non replica l'albero discovery. Le versioni rileggono il catalogo

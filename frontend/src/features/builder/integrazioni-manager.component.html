@@ -1,0 +1,147 @@
+<h1>Contesti</h1>
+@if (error()) {
+  <div class="alert alert-danger" role="alert">{{ error() }}</div>
+  <button class="btn btn-outline-primary mb-3" (click)="retry()" [disabled]="saving()">
+    Riprova
+  </button>
+}
+<nav class="nav nav-tabs mb-4" aria-label="Contesti autorizzati">
+  @for (context of contexts(); track context) {
+    <button
+      class="nav-link"
+      [class.active]="selected() === context"
+      [attr.aria-current]="selected() === context ? 'page' : null"
+      [disabled]="saving()"
+      (click)="select(context)"
+    >
+      {{ context }}
+    </button>
+  }
+</nav>
+@if (loading()) {
+  <p role="status">Caricamento...</p>
+}
+@if (!loading() && !contexts().length && !error()) {
+  <p>Nessun contesto autorizzato alla gestione dei modelli.</p>
+}
+@if (selected()) {
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <h2 class="h4 mb-0">Modelli - {{ selected() }}</h2>
+    <div class="d-flex flex-wrap gap-2">
+      @for (source of sources(); track source.id) {
+        <a
+          class="btn btn-primary"
+          [class.disabled]="saving()"
+          [routerLink]="['/builder', source.id]"
+          [queryParams]="{ contesto: selected() }"
+        >
+          <it-icon name="plus" /> Crea modello
+          @if (sources().length > 1) {
+            - {{ source.nome }}
+          }
+        </a>
+      }
+    </div>
+  </div>
+  @if (!loading() && !sources().length && !error()) {
+    <p>Nessuna integrazione connessa disponibile per creare nuovi modelli.</p>
+  }
+  @if (!loading() && !error()) {
+    @if (!models().length) {
+      <p>Nessun modello presente.</p>
+    } @else {
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Modello</th>
+              <th scope="col">Categorizzazione</th>
+              <th scope="col">Creazione</th>
+              <th scope="col">Versioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (model of models(); track model.id) {
+              <tr>
+                <td>
+                  <strong>{{ model.nome }}</strong>
+                  <div class="small">{{ model.codice }}</div>
+                </td>
+                <td>
+                  {{ model.codice_tipo_documento }}
+                  <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
+                  <div class="small">{{ model.variante }}</div>
+                </td>
+                <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  @for (version of model.versioni; track version.id) {
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                      <span>v{{ version.numero_versione }}</span>
+                      <span
+                        class="badge"
+                        [class.bg-success]="version.stato === 'PUBBLICATO'"
+                        [class.bg-secondary]="version.stato !== 'PUBBLICATO'"
+                        >{{ version.stato }}</span
+                      >
+                      <span class="small">ID API: {{ version.public_id ?? '-' }}</span>
+                      @if (action(version); as next) {
+                        <button
+                          class="btn btn-sm btn-outline-primary"
+                          [disabled]="saving()"
+                          (click)="request(model, version, confirmation)"
+                        >
+                          {{ next.label }}
+                        </button>
+                      }
+                    </div>
+                  } @empty {
+                    <span>Nessuna versione</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <div class="d-flex align-items-center gap-3 mt-3">
+      <button
+        class="btn btn-outline-primary"
+        title="Pagina precedente"
+        aria-label="Pagina precedente"
+        [disabled]="offset() === 0 || saving()"
+        (click)="page(-1)"
+      >
+        <it-icon name="chevron-left" />
+      </button>
+      <span>Pagina {{ offset() / pageSize + 1 }}</span>
+      <button
+        class="btn btn-outline-primary"
+        title="Pagina successiva"
+        aria-label="Pagina successiva"
+        [disabled]="models().length < pageSize || saving()"
+        (click)="page(1)"
+      >
+        <it-icon name="chevron-right" />
+      </button>
+    </div>
+  }
+}
+<dialog #confirmation aria-labelledby="confirmation-title" (cancel)="pending.set(null)">
+  @if (pending(); as item) {
+    <h2 id="confirmation-title" class="h4">{{ item.action.label }}?</h2>
+    <p>{{ item.model.nome }} - versione {{ item.version.numero_versione }}</p>
+    @if (item.action.route === 'pubblica') {
+      <p>
+        La versione diventa disponibile nel catalogo. L'eventuale versione corrente della stessa
+        categorizzazione e variante viene archiviata.
+      </p>
+    }
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" (click)="pending.set(null); confirmation.close()">
+        Annulla
+      </button>
+      <button class="btn btn-primary" (click)="confirm(confirmation)">Conferma</button>
+    </div>
+  }
+</dialog>

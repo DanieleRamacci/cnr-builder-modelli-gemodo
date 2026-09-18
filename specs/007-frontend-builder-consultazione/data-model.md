@@ -55,6 +55,15 @@ stato informativo, non come errore bloccante.
 
 ## Area Manager (FR-022/FR-023)
 
+Aggiornamento Contesti 2026-09-18: `ModelloGestioneResponse` estende il modello
+con codice_contesto, integrazione_id, created_at e tutte le versioni (numero,
+stato, UUID, public_id, data pubblicazione). La lista e' paginata per modelli,
+non limitata alle versioni pubblicate, e non dipende dalla discovery online.
+Lo stato UI comprende contesto selezionato nel query param, offset, caricamento,
+errore di lettura distinto da vuoto, conferma pendente e transizione in corso.
+I passi revisione/approvazione/pubblicazione ora avvengono dalla lista, non da
+Swagger. La nota sul precedente MVP sotto resta storica per editor/campi.
+
 ### `IntegrazioneVisibile` (lista, proiezione di `IntegrazioneVisibile` backend)
 
 Campi: `id`, `codice`, `nome`, `codice_contesto`. Gia' filtrata

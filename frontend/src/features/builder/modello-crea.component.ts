@@ -1,14 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/integrazioni';
 type Nodo = components['schemas']['NodoCategorizzazione'];
 @Component({
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `<h1>Crea modello</h1>
+    <a routerLink="/builder" [queryParams]="{ contesto: contesto }" class="d-inline-block mb-3"
+      >Torna ai modelli</a
+    >
     @if (error()) {
       <div class="alert alert-danger" role="alert">{{ error() }}</div>
     }
@@ -109,6 +112,8 @@ type Nodo = components['schemas']['NodoCategorizzazione'];
 export class ModelloCreaComponent {
   private readonly api = inject(ApiClient);
   private readonly id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
+  protected readonly contesto =
+    inject(ActivatedRoute).snapshot.queryParamMap?.get('contesto') ?? '';
   protected readonly types = signal<string[]>([]);
   protected readonly nodes = signal<Nodo[]>([]);
   protected readonly path = signal<string[]>([]);

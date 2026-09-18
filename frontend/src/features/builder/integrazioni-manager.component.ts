@@ -1,78 +1,168 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import Keycloak from 'keycloak-js';
+import { DatePipe } from '@angular/common';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ItIconComponent } from 'design-angular-kit';
+import { forkJoin, Subscription } from 'rxjs';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
-import type { components } from '../../shared/api-types/integrazioni';
-import { hasManagerAccess, tokenContexts } from '../../app/auth/roles';
+import type { components as Registry } from '../../shared/api-types/integrazioni';
+import type { components } from '../../shared/api-types/builder-modelli';
+
+type Model = components['schemas']['ModelloGestione'];
+type Version = components['schemas']['Versione'];
+type Action = { route: string; label: string };
+const ACTIONS: Record<string, Action> = {
+  BOZZA: { route: 'invia-revisione', label: 'Invia in revisione' },
+  IN_REVISIONE: { route: 'approva', label: 'Approva' },
+  APPROVATO: { route: 'pubblica', label: 'Pubblica' },
+};
+
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink],
-  template: `<h1>Crea modello</h1>
-    @if (!manager) {
-      <div class="alert alert-warning" role="alert">Non sei autorizzato a creare modelli.</div>
-    } @else {
-      <label for="contesto" class="form-label">Contesto</label>
-      <select
-        id="contesto"
-        class="form-select mb-4"
-        [ngModel]="selected()"
-        (ngModelChange)="selected.set($event)"
-      >
-        <option value="">Seleziona contesto</option>
-        @for (code of contexts(); track code) {
-          <option [value]="code">{{ code }}</option>
-        }
-      </select>
-      @if (loading()) {
-        <p role="status">Caricamento...</p>
-      }
-      @if (error()) {
-        <div class="alert alert-danger" role="alert">{{ error() }}</div>
-      }
-      @if (!loading() && !error() && selected()) {
-        <h2 class="h4">Integrazioni disponibili</h2>
-        @for (item of integrations(); track item.id) {
-          @if (item.codice_contesto === selected()) {
-            <p>
-              <a [routerLink]="['/builder', item.id]">{{ item.nome }}</a>
-            </p>
-          }
-        }
-        @if (!available()) {
-          <p>Nessuna integrazione connessa e autorizzata in questo contesto.</p>
-        }
-      }
-    }`,
+  imports: [DatePipe, RouterLink, ItIconComponent],
+  templateUrl: './integrazioni-manager.component.html',
+  styles: `
+    :host {
+      display: block;
+    }
+    td {
+      overflow-wrap: anywhere;
+      min-width: 9rem;
+    }
+    dialog {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 24px;
+      width: min(560px, calc(100% - 32px));
+    }
+    dialog::backdrop {
+      background: rgb(0 0 0 / 40%);
+    }
+  `,
 })
 export class IntegrazioniManagerComponent {
-  private readonly keycloak = inject(Keycloak);
-  protected readonly manager = hasManagerAccess(this.keycloak);
-  protected readonly contexts = signal(tokenContexts(this.keycloak));
+  private readonly api = inject(ApiClient);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private listing?: Subscription;
+  protected readonly pageSize = 50;
+  protected readonly contexts = signal<string[]>([]);
   protected readonly selected = signal('');
-  protected readonly integrations = signal<components['schemas']['IntegrazioneVisibile'][]>([]);
+  protected readonly models = signal<Model[]>([]);
+  protected readonly integrations = signal<Registry['schemas']['IntegrazioneVisibile'][]>([]);
   protected readonly loading = signal(false);
+  protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected available(): boolean {
-    return this.integrations().some((item) => item.codice_contesto === this.selected());
-  }
+  protected readonly offset = signal(0);
+  protected readonly pending = signal<{ model: Model; version: Version; action: Action } | null>(
+    null,
+  );
   constructor() {
-    if (!this.manager) return;
+    this.initialize();
+  }
+  protected sources() {
+    return this.integrations().filter((s) => s.codice_contesto === this.selected());
+  }
+  protected action(version: Version): Action | undefined {
+    return ACTIONS[version.stato];
+  }
+  private initialize(): void {
     this.loading.set(true);
-    inject(ApiClient)
-      .get<components['schemas']['IntegrazioneVisibile'][]>('/api/v1/builder/integrazioni')
+    this.error.set(null);
+    forkJoin({
+      contexts: this.api.get<string[]>('/api/v1/builder/contesti'),
+      integrations: this.api.get<Registry['schemas']['IntegrazioneVisibile'][]>(
+        '/api/v1/builder/integrazioni',
+      ),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (items) => {
-          this.integrations.set(items);
-          this.contexts.set(
-            [...new Set([...this.contexts(), ...items.map((item) => item.codice_contesto)])].sort(),
-          );
+        next: ({ contexts, integrations }) => {
+          this.contexts.set(contexts);
+          this.integrations.set(integrations);
+          const requested = this.route.snapshot.queryParamMap.get('contesto');
+          const context = contexts.includes(requested ?? '') ? requested! : contexts[0];
+          if (context) this.select(context);
+          else this.loading.set(false);
+        },
+        error: (e: ApiError) => {
+          this.error.set(e.messaggio);
           this.loading.set(false);
         },
-        error: (error: ApiError) => {
-          this.error.set(error.messaggio);
+      });
+  }
+  protected select(context: string): void {
+    if (this.saving() || !this.contexts().includes(context)) return;
+    this.selected.set(context);
+    this.offset.set(0);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { contesto: context },
+      replaceUrl: true,
+    });
+    this.load();
+  }
+  protected page(delta: number): void {
+    this.offset.update((n) => Math.max(0, n + delta * this.pageSize));
+    this.load();
+  }
+  protected retry(): void {
+    if (this.contexts().length && this.selected()) this.load();
+    else this.initialize();
+  }
+  private load(clearError = true): void {
+    this.listing?.unsubscribe();
+    this.loading.set(true);
+    this.models.set([]);
+    if (clearError) this.error.set(null);
+    this.listing = this.api
+      .get<Model[]>('/api/v1/builder/modelli', {
+        codice_contesto: this.selected(),
+        offset: this.offset(),
+        limit: this.pageSize,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (models) => {
+          this.models.set(models);
           this.loading.set(false);
+        },
+        error: (e: ApiError) => {
+          this.error.set(e.messaggio);
+          this.loading.set(false);
+        },
+      });
+  }
+  protected request(model: Model, version: Version, dialog: HTMLDialogElement): void {
+    const action = this.action(version);
+    if (!action || this.saving()) return;
+    this.pending.set({ model, version, action });
+    dialog.showModal();
+  }
+  protected confirm(dialog: HTMLDialogElement): void {
+    const item = this.pending();
+    if (!item || this.saving()) return;
+    dialog.close();
+    this.pending.set(null);
+    this.saving.set(true);
+    this.error.set(null);
+    this.api
+      .post<Version>(
+        `/api/v1/builder/modelli/${item.model.id}/versioni/${item.version.id}/${item.action.route}`,
+        {},
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.load();
+        },
+        error: (e: ApiError) => {
+          this.saving.set(false);
+          this.error.set(e.messaggio);
+          if (e.status === 409) this.load(false);
         },
       });
   }

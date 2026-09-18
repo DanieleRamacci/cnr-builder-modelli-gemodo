@@ -35,6 +35,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
     # this way (backend/app/builder/api.py has none of them) - this is the
     # concrete regression guard against drifting back to that.
     assert set(contract["paths"]) == {
+        "/contesti",
         "/tipi-documento/{codiceTipoDocumento}/struttura-disponibile",
         "/modelli",
         "/modelli/{modelloId}/versioni",

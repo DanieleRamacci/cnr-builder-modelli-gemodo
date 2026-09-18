@@ -10,6 +10,11 @@ scope futuro.
 
 **Input**: Estratta da `PROPOSTA-servizio-gestione-modelli-bando.md` sezioni §11 e §16.6.
 
+Aggiornamento 2026-09-18: incremento Contesti e transizioni di versione
+implementato e verificato localmente (T039/T040/T044), senza editor completo.
+US1/US2 restano parziali; naming automatico, lingua e livello sono T041-T043.
+Il quality gate indipendente non e' superato.
+
 ## Clarifications
 
 ### Decisione MVP 2026-09-17 - ADR 0002
@@ -280,6 +285,21 @@ puo' vedere e scegliere i contesti presenti nel proprio token, ma le
 integrazioni e le azioni consentite sono sempre determinate dal backend.
 
 ### Functional Requirements
+
+Incremento autorizzato 2026-09-18: Contesti e ciclo di vita versioni (US1/US2).
+Il manager vede tab dei contesti autorizzati dal backend e una lista paginata
+dei modelli, comprese bozze e modelli senza versioni. Ogni modello mostra
+nome, codice, categorizzazione, variante, data e le proprie versioni con stato
+e public_id utilizzabile nelle API documenti. L'azione Crea modello mantiene
+contesto/sorgente; il ritorno alla lista preserva il contesto.
+Le versioni offrono solo il prossimo passo valido: Invia in revisione,
+Approva, Pubblica, con conferma esplicita. Il gestore ACE del contesto puo'
+eseguire tutti e tre i passi secondo SEC-006-002; non si richiedono nuovi
+ruoli ACE. Lo stato si aggiorna solo dopo risposta backend; su conflitto
+si rilegge la lista. Pubblicazione puo' archiviare la versione corrente della
+stessa combinazione secondo 002. I controlli backend verificano contesto e
+appartenenza della versione al modello indicato nel percorso URL.
+Editor completo, livello/lingua e naming automatico restano T041-T043.
 
 - **FR-001**: L'interfaccia MUST permettere lettura dei tipi documento e categorie
   della sorgente autorizzata, non modifica del catalogo esterno. Configurare

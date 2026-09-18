@@ -80,6 +80,35 @@ Per il collaudo sul server seguire [frontend-server-test.md](../../docs/frontend
 
 ## Esito atteso
 
+### Incremento Contesti e pubblicazione (verificato 2026-09-18)
+
+1. Aprire Contesti con un token ACE avente ROLE_MANAGER#geban.
+2. Selezionare la tab geban: la lista include bozze e versioni pubblicate;
+   Crea modello usa le integrazioni connesse del contesto.
+3. Creare un modello dal flusso discovery corrente e tornare ai modelli.
+4. Sulla versione BOZZA, scegliere Invia in revisione e confermare.
+5. Scegliere Approva e confermare, poi Pubblica e confermare.
+6. Verificare stato PUBBLICATO e ID API della versione, utilizzabile come
+   modello_versione_id nelle API documenti. Generazione PDF resta via API.
+
+Questo incremento sostituisce il passo Swagger per le transizioni dello
+Scenario 2; editor e naming automatico restano fuori dall'implementazione corrente.
+Esito: 297 test backend non-e2e, 42 test frontend e Playwright lifecycle reale
+passati; build produzione/lint passati, screenshot desktop/mobile controllati.
+Review indipendente non superata: reviewer Claude non autenticato.
+
+Il test `frontend/e2e/builder-lifecycle.spec.ts` usa soltanto il realm locale
+gemodo-local su localhost:8081, un utente temporaneo e un mapper di attributo
+JSON che emula contexts ACE. Assegna solo GEMODO_ADMIN per predisporre
+l'integrazione: gestione modelli deriva esclusivamente da ROLE_MANAGER#geban.
+Non modifica il realm CNR. Il backend deve usare lo stesso issuer e approvare
+http://127.0.0.1:9100 per discovery. Frontend su 127.0.0.1:4202, proxy al backend.
+
+```bash
+cd frontend
+GEMODO_FRONTEND_BASE_URL=http://127.0.0.1:4202 npx playwright test e2e/builder-lifecycle.spec.ts
+```
+
 Entrambi gli scenari devono completarsi senza mai richiedere un intervento
 diretto sul database o una chiamata Swagger per i passi coperti da questo
 MVP (creazione/verifica integrazione, navigazione, creazione modello) - solo

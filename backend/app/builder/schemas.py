@@ -74,3 +74,10 @@ class VersioneResponse(BaseModel):
     numero_versione: int
     stato: str
     pubblicato_at: datetime | None
+
+
+class ModelloGestioneResponse(ModelloResponse):
+    codice_contesto: str
+    integrazione_id: uuid.UUID | None
+    created_at: datetime
+    versioni: list[VersioneResponse]

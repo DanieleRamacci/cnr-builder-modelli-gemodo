@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
@@ -18,6 +18,7 @@ from app.builder.schemas import (
     CreaVersioneRequest,
     IntegrazioneVisibile,
     ModelloResponse,
+    ModelloGestioneResponse,
     StrutturaDisponibileResponse,
     StrutturaTipoDocumentoResponse,
     VersioneResponse,
@@ -27,6 +28,26 @@ from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione
 from app.common.security import PrincipalGEMODO, require_principal
 
 router = APIRouter(prefix="/api/v1/builder", tags=["builder"])
+
+
+@router.get("/contesti", response_model=list[str])
+def lista_contesti(principal: PrincipalGEMODO = Depends(require_principal),
+                  service: BuilderService = Depends(get_builder_service)):
+    return service.contesti(principal)
+
+
+@router.get("/modelli", response_model=list[ModelloGestioneResponse])
+def lista_modelli(
+    codice_contesto: str = Query(min_length=1, max_length=64),
+    offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100),
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    return [ModelloGestioneResponse(
+        **_modello_response(model).model_dump(), codice_contesto=model.tipo_documento.codice_contesto,
+        integrazione_id=model.tipo_documento.integrazione_id, created_at=model.created_at,
+        versioni=[_versione_response(v) for v in sorted(model.versioni, key=lambda v: v.versione, reverse=True)],
+    ) for model in service.lista(principal, codice_contesto, offset=offset, limit=limit)]
 
 
 def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
@@ -122,7 +143,7 @@ def invia_revisione(
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ) -> VersioneResponse:
-    return _versione_response(service.transizione(principal, versioneId, "IN_REVISIONE"))
+    return _versione_response(service.transizione(principal, versioneId, "IN_REVISIONE", modello_id=modelloId))
 
 
 @router.post("/modelli/{modelloId}/versioni/{versioneId}/approva", response_model=VersioneResponse)
@@ -132,7 +153,7 @@ def approva(
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ) -> VersioneResponse:
-    return _versione_response(service.transizione(principal, versioneId, "APPROVATO"))
+    return _versione_response(service.transizione(principal, versioneId, "APPROVATO", modello_id=modelloId))
 
 
 @router.post("/modelli/{modelloId}/versioni/{versioneId}/pubblica", response_model=VersioneResponse)
@@ -142,4 +163,4 @@ def pubblica(
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ) -> VersioneResponse:
-    return _versione_response(service.transizione(principal, versioneId, "PUBBLICATO"))
+    return _versione_response(service.transizione(principal, versioneId, "PUBBLICATO", modello_id=modelloId))
