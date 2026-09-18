@@ -27,6 +27,16 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "./node_modules/bootstrap-italia/",
+                "output": "/bootstrap-italia/"
+              },
+              {
+                "glob": "**/*",
+                "input": "./node_modules/design-angular-kit/assets/i18n",
+                "output": "/bootstrap-italia/i18n/"
               }
             ],
             "styles": [
@@ -38,8 +48,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -73,7 +83,10 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "runnerConfig": "vitest.config.ts"
+          }
         }
       }
     }

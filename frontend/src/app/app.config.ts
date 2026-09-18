@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideDesignAngularKit } from 'design-angular-kit';
 
 import { provideKeycloakAuth } from './auth/keycloak.providers';
 import { routes } from './app.routes';
@@ -13,6 +14,7 @@ export function buildAppConfig(runtimeConfig: RuntimeConfig): ApplicationConfig 
     providers: [
       provideBrowserGlobalErrorListeners(),
       provideRouter(routes),
+      provideDesignAngularKit(),
       ...provideKeycloakAuth(runtimeConfig),
     ],
   };

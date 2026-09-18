@@ -146,18 +146,53 @@ fase sia completa.
       `redirect_uri=http://localhost:4200/`, `response_type=code`,
       `code_challenge_method=S256` e un `code_challenge` presente - prova
       concreta che l'intero flusso Authorization Code + PKCE e' cablato
-      correttamente end-to-end. **Non verificato**: il completamento di un
-      login reale (nessun utente precaricato nel realm offline, andrebbe
-      creato via API admin) - fuori scope per una verifica automatica senza
-      credenziali reali; il resto del flusso (redirect corretto, parametri
-      OIDC corretti) e' la parte davvero a rischio di errore di
-      configurazione ed e' quella verificata. 3 nuovi unit test Vitest
+      correttamente end-to-end. 3 nuovi unit test Vitest
       (`keycloak-config.spec.ts`) - 9/9 test totali passati.
-- [ ] T010 [P] Implementare la shell applicativa (layout, navigazione,
-      componenti Design Angular Kit condivisi) in `frontend/src/app/shell/`
+      **Aggiornamento T010**: il login completo (non solo il redirect) e'
+      stato poi verificato per davvero - vedi sotto.
+- [x] T010 [P] *(2026-09-18)* Implementata la shell applicativa
+      (`frontend/src/app/shell/`) con `design-angular-kit` reale
+      (`it-header`/`it-navbar`/`it-navbar-item`/`it-footer`, brand "GEMODO",
+      link a `/configurazione` e `/builder`), non un placeholder.
+      Configurato `provideDesignAngularKit()`, l'import SCSS di
+      `bootstrap-italia`, gli asset (icone + i18n) in `angular.json`.
+      **Tre problemi reali trovati e risolti durante l'implementazione**:
+      (1) il budget di bundle di produzione (1MB) era troppo basso per
+      Design Angular Kit + Bootstrap Italia (bundle reale ~2.09MB/439KB
+      gzip) - alzato a un budget realistico (warning 1.5MB, errore 3MB);
+      (2) `bootstrap-italia` e' CommonJS-only e Vitest (non `ng build`, che
+      usa esbuild e non ha problemi) falliva con "Named export non
+      trovato" - risolto con `vitest.config.ts` (`test.server.deps.inline`,
+      non `optimizeDeps.include` da solo, che NON basta per l'ambiente di
+      test); (3) **bug reale di markup**: `it-navbar` richiede il proprio
+      contenuto avvolto in un elemento con l'attributo `navItems` (stesso
+      pattern di `it-header`), non semplicemente `<it-navbar-item>` come
+      figli diretti - senza quel wrapper i link di navigazione compilavano
+      senza errori ma non venivano MAI proiettati nel DOM finale
+      (`<ul class="navbar-nav"></ul>` vuoto), un bug silenzioso che
+      un'ispezione visiva superficiale o un test che verifica solo
+      l'assenza di errori console non avrebbe mai trovato.
+      **Verificato con un login Keycloak reale e completo, non solo il
+      redirect (aggiornamento rispetto a T009)**: creato un utente di test
+      reale con ruolo `GEMODO_ADMIN` via API admin di Keycloak sul realm
+      locale `gemodo-local`, login end-to-end con Playwright (username/
+      password reali compilati nel vero form di Keycloak, submit, redirect
+      di ritorno), poi verificato nel DOM risultante: header/footer
+      presenti, testo del brand corretto, **link di navigazione con testo
+      e `href` corretti** (questo e' il controllo che ha trovato il bug
+      del markup sopra - un controllo piu' superficiale sarebbe passato),
+      zero errori console, screenshot reale che conferma lo stile
+      istituzionale Bootstrap Italia applicato correttamente (non solo CSS
+      di default del browser). 9/9 test Vitest passati, `eslint .` pulito
+      (corretto anche un problema reale trovato qui: `eslint.config.js` non
+      escludeva `dist/`, quindi un lint dopo una build veniva eseguito
+      anche sui `.d.ts` di terze parti copiati come asset).
 
-**Checkpoint**: un utente autenticato via Keycloak vede la shell vuota;
-nessuna chiamata API reale ancora cablata a uno schermo.
+**Checkpoint** (aggiornato): un utente autenticato via Keycloak vede la
+shell reale (header/nav/footer Design Angular Kit, non vuota) - **verificato
+per davvero con un login end-to-end completo**, non solo a compile-time.
+Nessuna chiamata API di dominio ancora cablata a uno schermo (arriva con
+User Story 4).
 
 ---
 

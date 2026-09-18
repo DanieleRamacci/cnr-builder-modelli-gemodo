@@ -1,0 +1,29 @@
+<it-header>
+  <div brand>
+    <a routerLink="/" class="text-decoration-none text-white">
+      <strong>GEMODO</strong>
+    </a>
+  </div>
+  <div navItems>
+    <it-navbar>
+      <div navItems>
+        <it-navbar-item>
+          <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+            >Configurazione</a
+          >
+        </it-navbar-item>
+        <it-navbar-item>
+          <a routerLink="/builder" routerLinkActive="active" class="nav-link">Builder</a>
+        </it-navbar-item>
+      </div>
+    </it-navbar>
+  </div>
+</it-header>
+
+<main class="container my-4">
+  <router-outlet />
+</main>
+
+<it-footer>
+  <div small-links>GEMODO - CNR</div>
+</it-footer>
