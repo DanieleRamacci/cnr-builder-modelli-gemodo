@@ -183,6 +183,11 @@ fase sia completa.
       (`keycloak-config.spec.ts`) - 9/9 test totali passati.
       **Aggiornamento T010**: il login completo (non solo il redirect) e'
       stato poi verificato per davvero - vedi sotto.
+      **Aggiornamento 2026-09-18, Coolify**: il backend rifiutava token appena
+      emessi con `jwt_validation=ImmatureSignatureError` quando l'orologio tra
+      Keycloak/browser/backend aveva uno scarto minimo. Aggiunto
+      `KEYCLOAK_JWT_LEEWAY_SECONDS` (default 60) alla validazione PyJWT e ai
+      compose, con test mirati su `iat`/`nbf` futuri entro/fuori tolleranza.
 - [x] T010 [P] *(2026-09-18)* Implementata la shell applicativa
       (`frontend/src/app/shell/`) con `design-angular-kit` reale
       (`it-header`/`it-navbar`/`it-navbar-item`/`it-footer`, brand "GEMODO",

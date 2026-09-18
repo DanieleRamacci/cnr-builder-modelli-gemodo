@@ -142,6 +142,7 @@ def decode_principal_from_token(
             key=key,
             algorithms=ALLOWED_ALGORITHMS,
             issuer=settings.keycloak_issuer_url,
+            leeway=settings.keycloak_jwt_leeway_seconds,
             # PyJWT rifiuta un token con `aud` presente se non gli passiamo
             # `audience=`, ma ACE non valorizza affatto `aud` - l'unico modo per
             # accettare entrambi i casi e' disabilitare il controllo integrato e

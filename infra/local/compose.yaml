@@ -49,6 +49,7 @@ services:
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-gemodo-backend}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-gemodo-backend}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_JWT_LEEWAY_SECONDS: ${KEYCLOAK_JWT_LEEWAY_SECONDS:-60}
       DOCUMENTALE_MOCK_URL: http://documentale-mock:9000
       # Discovery esterna (010): il builder legge solo integrazioni CONNESSE dal
       # registro admin (POST /api/v1/configurazione/integrazioni), non da un URL

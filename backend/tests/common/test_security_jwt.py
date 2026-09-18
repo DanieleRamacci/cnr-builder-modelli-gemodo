@@ -7,6 +7,7 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
+import app.common.security as security_module
 from app.common.errors import AuthenticationError, AuthorizationError, install_error_handlers
 from app.common.security import (
     ROLE_GEMODO_MODELLI_GESTORE,
@@ -29,6 +30,7 @@ def _settings(*, integration_profiles_path: str | None = None) -> Settings:
         gemodo_allowed_interactive_clients=("gemodo-frontend",),
         keycloak_jwks_url=None,
         keycloak_jwks_cache_ttl_seconds=300,
+        keycloak_jwt_leeway_seconds=60,
         gemodo_use_mock_principal=False,
         gemodo_mock_subject="mock",
         gemodo_mock_client_id="geban-backend",
@@ -89,6 +91,16 @@ sistemi_richiedenti:
     return str(manifest)
 
 
+def _capture_security_warnings(monkeypatch) -> list[str]:
+    warnings: list[str] = []
+
+    def _warning(message: str, *args: object, **_: object) -> None:
+        warnings.append(message % args if args else message)
+
+    monkeypatch.setattr(security_module.logger, "warning", _warning)
+    return warnings
+
+
 def test_decode_valid_token_with_required_claims():
     keys = JwtTestKeys()
     token = signed_token(keys, roles=(ROLE_DOCUMENTI_GENERATORE,))
@@ -108,25 +120,57 @@ def test_decode_rejects_invalid_audience():
         decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
 
 
-def test_decode_rejects_expired_token(caplog):
+def test_decode_rejects_expired_token(monkeypatch):
+    warnings = _capture_security_warnings(monkeypatch)
     keys = JwtTestKeys()
     token = signed_token(keys, expires_delta=timedelta(minutes=-1))
 
     with pytest.raises(AuthenticationError):
         decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
 
-    assert "jwt_validation=ExpiredSignatureError" in caplog.text
-    assert token not in caplog.text
+    assert "Authentication rejected: jwt_validation=ExpiredSignatureError" in warnings
+    assert all(token not in warning for warning in warnings)
 
 
-def test_invalid_issuer_is_diagnosed_without_logging_token(caplog):
+def test_decode_accepts_small_clock_skew_for_issued_at_and_not_before():
+    keys = JwtTestKeys()
+    token = signed_token(
+        keys,
+        issued_at_delta=timedelta(seconds=30),
+        not_before_delta=timedelta(seconds=30),
+    )
+
+    principal = decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+
+    assert principal.subject == "test-subject"
+    assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
+
+
+def test_decode_rejects_token_too_far_in_future(monkeypatch):
+    warnings = _capture_security_warnings(monkeypatch)
+    keys = JwtTestKeys()
+    token = signed_token(
+        keys,
+        issued_at_delta=timedelta(seconds=120),
+        not_before_delta=timedelta(seconds=120),
+    )
+
+    with pytest.raises(AuthenticationError):
+        decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+
+    assert "Authentication rejected: jwt_validation=ImmatureSignatureError" in warnings
+    assert all(token not in warning for warning in warnings)
+
+
+def test_invalid_issuer_is_diagnosed_without_logging_token(monkeypatch):
+    warnings = _capture_security_warnings(monkeypatch)
     keys = JwtTestKeys()
     token = signed_token(keys)
     settings = _settings()
     with pytest.raises(AuthenticationError):
         decode_principal_from_token(token, settings=replace(settings, keycloak_issuer_url="https://other.example/realms/test"), signing_key=keys.public_pem)
-    assert "jwt_validation=InvalidIssuerError" in caplog.text
-    assert token not in caplog.text
+    assert "Authentication rejected: jwt_validation=InvalidIssuerError" in warnings
+    assert all(token not in warning for warning in warnings)
 
 
 def test_decode_rejects_wrong_client():

@@ -40,15 +40,20 @@ def signed_token(
     roles: Iterable[str] | None = ("DOCUMENTI_GENERATORE",),
     contexts: dict[str, Iterable[str]] | None = None,
     expires_delta: timedelta = timedelta(minutes=5),
+    issued_at_delta: timedelta = timedelta(),
+    not_before_delta: timedelta | None = None,
 ) -> str:
     now = datetime.now(timezone.utc)
+    issued_at = now + issued_at_delta
     payload: dict[str, Any] = {
         "iss": issuer,
         "sub": "test-subject",
         "azp": client_id,
-        "iat": int(now.timestamp()),
+        "iat": int(issued_at.timestamp()),
         "exp": int((now + expires_delta).timestamp()),
     }
+    if not_before_delta is not None:
+        payload["nbf"] = int((now + not_before_delta).timestamp())
     if audience is not None:
         payload["aud"] = audience
     if roles is not None:
