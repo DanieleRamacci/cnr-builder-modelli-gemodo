@@ -1,14 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import {
-  ItFooterComponent,
-  ItHeaderComponent,
-  ItNavBarComponent,
-  ItNavBarItemComponent,
-} from 'design-angular-kit';
+import { ItIconComponent } from 'design-angular-kit';
 import Keycloak from 'keycloak-js';
 
-import { hasClientRole } from '../auth/roles';
+import { hasClientRole, hasManagerAccess } from '../auth/roles';
 import { RUNTIME_CONFIG } from '../runtime-config';
 
 /**
@@ -18,19 +13,17 @@ import { RUNTIME_CONFIG } from '../runtime-config';
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    RouterOutlet,
-    ItHeaderComponent,
-    ItNavBarComponent,
-    ItNavBarItemComponent,
-    ItFooterComponent,
-  ],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ItIconComponent],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
 export class ShellComponent {
+  private readonly keycloak = inject(Keycloak);
+  protected readonly userName =
+    this.keycloak.tokenParsed?.['name'] ||
+    this.keycloak.tokenParsed?.['preferred_username'] ||
+    'Utente';
+  protected readonly isManager = hasManagerAccess(this.keycloak);
   // Undefined until the separately-deployed docs (deploy/coolify-test/) have a
   // real URL - see GEMODO_EXTERNAL_DOCS_URL in scripts/genera-runtime-config.sh.
   protected readonly externalDocsUrl = inject(RUNTIME_CONFIG).externalDocsUrl;

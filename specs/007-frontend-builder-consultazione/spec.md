@@ -209,6 +209,15 @@ BOZZA, verificabile anche da Swagger.
 
 ## Requirements *(mandatory)*
 
+### Richiesta di collaudo 2026-09-18
+
+La shell mostra nome e icona utente in alto a destra. Il profilo permette
+di visualizzare esplicitamente il token della propria sessione e fare logout.
+La home mostra Integrazione servizi agli admin e Crea modello ai manager;
+senza permessi mostra un messaggio di mancata autorizzazione. Il manager
+puo' vedere e scegliere i contesti presenti nel proprio token, ma le
+integrazioni e le azioni consentite sono sempre determinate dal backend.
+
 ### Functional Requirements
 
 - **FR-001**: L'interfaccia MUST permettere lettura dei tipi documento e categorie

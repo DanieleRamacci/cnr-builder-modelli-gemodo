@@ -4,6 +4,27 @@ import { adminGuard } from './auth/admin.guard';
 
 export const routes: Routes = [
   {
+    path: 'builder/:id',
+    loadComponent: () =>
+      import('../features/builder/modello-crea.component').then((m) => m.ModelloCreaComponent),
+  },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./home.component').then((m) => m.HomeComponent),
+  },
+  {
+    path: 'profilo',
+    loadComponent: () => import('./profile.component').then((m) => m.ProfileComponent),
+  },
+  {
+    path: 'builder',
+    loadComponent: () =>
+      import('../features/builder/integrazioni-manager.component').then(
+        (m) => m.IntegrazioniManagerComponent,
+      ),
+  },
+  {
     path: 'configurazione',
     canActivate: [adminGuard],
     children: [
@@ -30,4 +51,5 @@ export const routes: Routes = [
       },
     ],
   },
+  { path: '**', redirectTo: '' },
 ];

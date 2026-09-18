@@ -106,7 +106,7 @@ test('admin creates, configures and verifies an integration end-to-end', async (
   // backend's own test (test_create_starts_disconnected_and_rejects_duplicate_code);
   // this e2e run does not own an isolated database, so it only asserts on its own
   // codice, never on global emptiness.
-  await page.click('text=Configurazione');
+  await page.click('text=Integrazione servizi');
   await page.waitForURL('**/configurazione');
   await expect(page.locator('body')).not.toContainText(codice);
 

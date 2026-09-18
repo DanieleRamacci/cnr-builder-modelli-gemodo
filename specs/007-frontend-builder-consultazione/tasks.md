@@ -377,6 +377,20 @@ a User Story 4, l'MVP ADR 0002 e' completo.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
+- [x] T034 Shell/profilo e home richiesti nel collaudo server: nome e icona
+      utente, token su richiesta, logout, accesso admin/manager e messaggio
+      di mancata autorizzazione. Verificati con test home/profilo e build
+      Angular; il collaudo grafico e il login reale sul server restano in T031.
+
+**IN CORSO US5**: selettore di tutti i contesti del token, lista integrazioni
+autorizzata dal backend, tipi live, navigazione ricorsiva e creazione modello
+con versione BOZZA. I task T020-T028 restano aperti fino ai test previsti.
+Verifica di questo incremento: 32 test Vitest passati, lint, Prettier e
+build produzione passati. Il flusso creazione e' verificato a livello HTTP
+unitario, non ancora end-to-end contro lo stack reale. Gate adev FAIL:
+reviewer Claude non autenticato e sei test di discovery bloccati dal
+sandbox sull'apertura dei socket. Server dev disponibile su porta 4201.
+
 - [ ] T029 [P] Aggiornare `README.md` e `docs/project-map.md` con le
       istruzioni reali di avvio del frontend (oggi descrivono solo il
       placeholder)

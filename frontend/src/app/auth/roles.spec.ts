@@ -1,6 +1,6 @@
 import type Keycloak from 'keycloak-js';
 
-import { hasClientRole } from './roles';
+import { hasClientRole, hasManagerAccess, tokenContexts } from './roles';
 
 function withTokenParsed(
   resourceAccess: Record<string, { roles: string[] }> | undefined,
@@ -31,5 +31,27 @@ describe('hasClientRole', () => {
   it("never falls back to another client's roles", () => {
     const kc = withTokenParsed({ 'geban-backend': { roles: ['GEMODO_ADMIN'] } });
     expect(hasClientRole(kc, 'gemodo-backend', 'GEMODO_ADMIN')).toBe(false);
+  });
+});
+
+describe('context enablement', () => {
+  it('lists every token context without granting access from its presence', () => {
+    const kc = {
+      tokenParsed: { contexts: { z: { roles: ['ROLE_USER#z'] }, a: {} } },
+    } as unknown as Keycloak;
+    expect(tokenContexts(kc)).toEqual(['a', 'z']);
+    expect(hasManagerAccess(kc)).toBe(false);
+  });
+  it('recognizes a manager only in the matching context', () => {
+    expect(
+      hasManagerAccess({
+        tokenParsed: { contexts: { a: { roles: ['ROLE_MANAGER#b'] } } },
+      } as unknown as Keycloak),
+    ).toBe(false);
+    expect(
+      hasManagerAccess({
+        tokenParsed: { contexts: { a: { roles: ['ROLE_MANAGER#a'] } } },
+      } as unknown as Keycloak),
+    ).toBe(true);
   });
 });

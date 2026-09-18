@@ -9,3 +9,20 @@ export function hasClientRole(keycloak: Keycloak, clientId: string, role: string
   const roles = keycloak.tokenParsed?.resource_access?.[clientId]?.roles;
   return Array.isArray(roles) && roles.includes(role);
 }
+
+export function tokenContexts(keycloak: Keycloak): string[] {
+  const contexts: unknown = keycloak.tokenParsed?.['contexts'];
+  return contexts && typeof contexts === 'object' && !Array.isArray(contexts)
+    ? Object.keys(contexts).sort()
+    : [];
+}
+
+export function hasManagerAccess(keycloak: Keycloak): boolean {
+  if (hasClientRole(keycloak, 'gemodo-backend', 'GEMODO_MODELLI_GESTORE')) return true;
+  const contexts = keycloak.tokenParsed?.['contexts'] as
+    Record<string, { roles?: unknown }> | undefined;
+  return tokenContexts(keycloak).some((code) => {
+    const roles = contexts?.[code]?.roles;
+    return Array.isArray(roles) && roles.includes(`ROLE_MANAGER#${code}`);
+  });
+}

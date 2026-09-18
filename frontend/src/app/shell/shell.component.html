@@ -1,36 +1,40 @@
-<it-header>
-  <div brand>
+<header class="app-header">
+  <div class="container header-row" brand>
     <a routerLink="/" class="text-decoration-none text-white">
       <strong>GEMODO</strong>
     </a>
+    <a routerLink="/profilo" class="user-link" title="Profilo utente"
+      ><it-icon name="user" color="white" /><span>{{ userName }}</span></a
+    >
   </div>
-  <div navItems>
-    <it-navbar>
-      <div navItems>
-        @if (isAdmin) {
-          <it-navbar-item>
-            <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
-              >Configurazione</a
-            >
-          </it-navbar-item>
-        }
-        <it-navbar-item>
-          <a routerLink="/builder" routerLinkActive="active" class="nav-link">Builder</a>
-        </it-navbar-item>
-      </div>
-    </it-navbar>
-  </div>
-</it-header>
+  <nav class="container app-nav" aria-label="Navigazione principale">
+    <a
+      routerLink="/"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link"
+      >Home</a
+    >
+    @if (isAdmin) {
+      <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+        >Integrazione servizi</a
+      >
+    }
+    @if (isManager) {
+      <a routerLink="/builder" routerLinkActive="active" class="nav-link">Crea modello</a>
+    }
+  </nav>
+</header>
 
-<main class="container my-4">
+<main class="container app-main">
   <router-outlet />
 </main>
 
-<it-footer>
-  <div small-links>
+<footer class="app-footer">
+  <div class="container">
     GEMODO - CNR
     @if (externalDocsUrl) {
       <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
     }
   </div>
-</it-footer>
+</footer>
