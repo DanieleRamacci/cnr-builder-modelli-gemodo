@@ -30,6 +30,28 @@ const model = {
 };
 
 describe('context models and lifecycle', () => {
+  it('deletes only after confirmation and reloads the list', () => {
+    const { fixture, http } = setup(['geban']);
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelectorAll('dialog')[1] as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    fixture.nativeElement.querySelector('button[aria-label="Elimina modello"]').click();
+    fixture.detectChanges();
+    expect(dialog.showModal).toHaveBeenCalled();
+    http.expectNone((r) => r.method === 'DELETE');
+    Array.from(dialog.querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === 'Elimina')!
+      .click();
+    const request = http.expectOne('/api/v1/builder/modelli/model');
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
+    http.verify();
+  });
   function setup(contexts = ['geban', 'altro']) {
     TestBed.configureTestingModule({
       providers: [

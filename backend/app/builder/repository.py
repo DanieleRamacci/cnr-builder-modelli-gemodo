@@ -14,7 +14,7 @@ from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloD
 def lista_modelli(db: Session, codice_contesto: str, *, offset: int, limit: int):
     return list(db.scalars(select(ModelloDocumento)
         .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
-        .where(TipoDocumento.codice_contesto == codice_contesto)
+        .where(TipoDocumento.codice_contesto == codice_contesto, ModelloDocumento.stato != "ELIMINATO")
         .options(joinedload(ModelloDocumento.tipo_documento), selectinload(ModelloDocumento.versioni))
         .order_by(ModelloDocumento.created_at.desc(), ModelloDocumento.id)
         .offset(offset).limit(limit)))
@@ -59,7 +59,7 @@ def get_modello(db: Session, modello_id: uuid.UUID) -> ModelloDocumento | None:
         .options(
             joinedload(ModelloDocumento.tipo_documento),
         )
-        .where(ModelloDocumento.id == modello_id)
+        .where(ModelloDocumento.id == modello_id, ModelloDocumento.stato != "ELIMINATO")
     )
     return db.scalar(stmt)
 

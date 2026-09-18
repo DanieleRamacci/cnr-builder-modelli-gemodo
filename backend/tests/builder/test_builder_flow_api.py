@@ -462,6 +462,10 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
     conflitto = builder_client.post("/api/v1/documenti/genera", json=payload_diverso)
     assert conflitto.status_code == 409, conflitto.text
     assert conflitto.json()["codice"] == "RICHIESTA_IDEMPOTENTE_IN_CONFLITTO"
+    assert builder_client.delete(f"/api/v1/builder/modelli/{modello['id']}").status_code == 204
+    retained = builder_client.get(f"/api/v1/documenti/{riferimento}/download")
+    assert retained.status_code == 200
+    assert retained.content == download.content
 
 
 @pytest.mark.integration
@@ -515,6 +519,46 @@ def test_context_list_and_model_list_include_drafts_and_publication_states(build
 
 
 @pytest.mark.integration
+def test_delete_hides_model_preserves_versions_and_prevents_republication(builder_client, db_engine):
+    model = _crea_modello(builder_client, codice="delete-test")
+    version = _crea_versione(builder_client, model["id"])
+    _pubblica_fino_in_fondo(builder_client, model["id"], version["id"])
+    assert builder_client.delete(f"/api/v1/builder/modelli/{model['id']}").status_code == 204
+    listing = builder_client.get("/api/v1/builder/modelli", params={"codice_contesto": "geban"}).json()
+    assert all(item["id"] != model["id"] for item in listing)
+    assert builder_client.post(f"/api/v1/builder/modelli/{model['id']}/versioni/{version['id']}/pubblica").status_code == 404
+    with Session(db_engine) as db:
+        assert db.scalar(sa.text("SELECT stato FROM modello_versione WHERE id = :id"), {"id": version["id"]}) == "ARCHIVIATO"
+        assert db.scalar(sa.text("SELECT count(*) FROM audit_evento_modello WHERE modello_documento_id = :id AND tipo_evento = 'MODELLO_ELIMINATO'"), {"id": model["id"]}) == 1
+
+
+def test_delete_requires_permission_in_target_context(builder_client, monkeypatch):
+    model = _crea_modello(builder_client, codice="delete-denied")
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT", "altro")
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT_ROLES", "ROLE_MANAGER#altro")
+    assert builder_client.delete(f"/api/v1/builder/modelli/{model['id']}").status_code == 403
+
+
+def test_new_installation_without_demo_opt_in_is_empty(postgres_database_url, monkeypatch):
+    engine = create_engine(postgres_database_url)
+    schema = "demo_clean_" + uuid.uuid4().hex
+    with engine.begin() as db:
+        db.execute(sa.text(f'CREATE SCHEMA "{schema}"'))
+    isolated = create_engine(postgres_database_url, connect_args={"options": f"-csearch_path={schema}"})
+    try:
+        monkeypatch.setenv("DATABASE_URL", postgres_database_url)
+        monkeypatch.setenv("PGOPTIONS", f"-csearch_path={schema}")
+        monkeypatch.delenv("GEMODO_KEEP_DEMO_MODELS", raising=False)
+        command.upgrade(Config("alembic.ini"), "head")
+        with isolated.connect() as db:
+            assert db.scalar(sa.text("SELECT count(*) FROM modello_documento")) == 0
+    finally:
+        isolated.dispose()
+        with engine.begin() as db:
+            db.execute(sa.text(f'DROP SCHEMA "{schema}" CASCADE'))
+        engine.dispose()
+
+
 def test_transition_rejects_version_under_wrong_parent_model(builder_client):
     first = _crea_modello(builder_client, codice="parent-a-" + uuid.uuid4().hex)
     second = _crea_modello(builder_client, codice="parent-b-" + uuid.uuid4().hex)

@@ -67,6 +67,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/modelli/{modelloId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Elimina logicamente un modello conservando versioni, audit e PDF */
+    delete: operations['eliminaModello'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/modelli/{modelloId}/versioni': {
     parameters: {
       query?: never;
@@ -453,15 +470,9 @@ export interface operations {
           'application/json': components['schemas']['ModelloGestione'][];
         };
       };
+      400: components['responses']['InvalidInput'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-      /** @description Parametri di paginazione non validi */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
   };
   creaModello: {
@@ -503,6 +514,29 @@ export interface operations {
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
+    };
+  };
+  eliminaModello: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        modelloId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Modello eliminato */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
   creaVersione: {

@@ -125,6 +125,15 @@ def crea_modello(
     return _modello_response(modello)
 
 
+@router.delete("/modelli/{modelloId}", status_code=204)
+def elimina_modello(
+    modelloId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    service.elimina(principal, modelloId)
+
+
 @router.post("/modelli/{modelloId}/versioni", response_model=VersioneResponse, status_code=201)
 def crea_versione(
     modelloId: uuid.UUID,

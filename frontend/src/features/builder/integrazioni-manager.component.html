@@ -66,6 +66,15 @@
                 <td>
                   <strong>{{ model.nome }}</strong>
                   <div class="small">{{ model.codice }}</div>
+                  <button
+                    class="btn btn-sm btn-outline-danger mt-2"
+                    title="Elimina modello"
+                    aria-label="Elimina modello"
+                    [disabled]="saving()"
+                    (click)="requestDelete(model, deletion)"
+                  >
+                    <it-icon name="delete" />
+                  </button>
                 </td>
                 <td>
                   {{ model.codice_tipo_documento }}
@@ -142,6 +151,22 @@
         Annulla
       </button>
       <button class="btn btn-primary" (click)="confirm(confirmation)">Conferma</button>
+    </div>
+  }
+</dialog>
+<dialog #deletion aria-labelledby="deletion-title" (cancel)="deleting.set(null)">
+  @if (deleting(); as model) {
+    <h2 id="deletion-title" class="h4">Eliminare il modello?</h2>
+    <p>{{ model.nome }} ({{ model.codice }})</p>
+    <p>
+      Il modello non sara piu disponibile per nuove generazioni. I PDF gia prodotti e lo storico
+      saranno conservati.
+    </p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" (click)="deleting.set(null); deletion.close()">
+        Annulla
+      </button>
+      <button class="btn btn-danger" (click)="confirmDelete(deletion)">Elimina</button>
     </div>
   }
 </dialog>

@@ -39,6 +39,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
         "/tipi-documento/{codiceTipoDocumento}/struttura-disponibile",
         "/modelli",
         "/modelli/{modelloId}/versioni",
+        "/modelli/{modelloId}",
         "/modelli/{modelloId}/versioni/{versioneId}/invia-revisione",
         "/modelli/{modelloId}/versioni/{versioneId}/approva",
         "/modelli/{modelloId}/versioni/{versioneId}/pubblica",
@@ -53,7 +54,7 @@ def test_success_and_error_examples_match_their_schemas(contract):
             if method not in {"get", "post", "put", "delete"}:
                 continue
             for response in operation["responses"].values():
-                if "$ref" in response:
+                if "$ref" in response or "content" not in response:
                     continue
                 media = response["content"]["application/json"]
                 schema = media["schema"]

@@ -47,6 +47,7 @@ def list_published_model_versions(
         .where(ModelloDocumentoVersione.stato == STATO_PUBBLICATO)
         .options(joinedload(ModelloDocumentoVersione.modello).joinedload(ModelloDocumento.tipo_documento))
         .join(ModelloDocumento, ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id)
+        .where(ModelloDocumento.stato != "ELIMINATO")
         .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
         .order_by(TipoDocumento.codice, ModelloDocumento.codice_categoria,
                   ModelloDocumento.codice, ModelloDocumentoVersione.versione)

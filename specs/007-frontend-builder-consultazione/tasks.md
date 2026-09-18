@@ -513,6 +513,17 @@ US5 non e' completata dalla sola correzione di accesso.
 
 ## Dependencies & Execution Order
 
+- [x] T045 Impedire presenza demo nelle installazioni nuove (opt-in test),
+      senza bonifica automatica degli ambienti gia' utilizzati.
+- [x] T046 Eliminazione logica modello con API per-contesto, audit,
+      esclusione da nuove operazioni e conferma UI; conservare PDF e versioni.
+      Verifica: 299 test backend passati (12 e2e esclusi), piu test dedicato
+      eliminazione non autorizzata passato; 43 test frontend, lint e build
+      produzione passati. Conferma verificata con test UI, non nuovo collaudo
+      browser end-to-end. Gate indipendente FAIL: report reviewer non valido
+      e regressione interna bloccata; non dichiarare completa la feature.
+
+
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: nessuna dipendenza, primo passo.

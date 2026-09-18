@@ -6,6 +6,11 @@
 
 ## Summary
 
+Incremento pulizia: DELETE modello imposta stato ELIMINATO sotto lock tipo,
+registra audit e archivia versioni pubblicate. Non cancella file/versioni.
+Migrazione 0015 rimuove solo UUID demo noti su DB senza integrazioni,
+generazioni o modelli non-demo; opt-in GEMODO_KEEP_DEMO_MODELS=1 per test.
+
 Questo incremento copre solo l'MVP confermato dalla Clarification "Decisione MVP
 2026-09-17 - ADR 0002" in `spec.md`: un'interfaccia Angular con Design Angular
 Kit per (a) l'admin che registra, configura e verifica un'integrazione (FR-021),

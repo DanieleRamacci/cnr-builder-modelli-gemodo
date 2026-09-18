@@ -56,6 +56,7 @@ export class IntegrazioniManagerComponent {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly offset = signal(0);
+  protected readonly deleting = signal<Model | null>(null);
   protected readonly pending = signal<{ model: Model; version: Version; action: Action } | null>(
     null,
   );
@@ -140,6 +141,33 @@ export class IntegrazioniManagerComponent {
     if (!action || this.saving()) return;
     this.pending.set({ model, version, action });
     dialog.showModal();
+  }
+  protected requestDelete(model: Model, dialog: HTMLDialogElement): void {
+    if (this.saving()) return;
+    this.deleting.set(model);
+    dialog.showModal();
+  }
+  protected confirmDelete(dialog: HTMLDialogElement): void {
+    const model = this.deleting();
+    if (!model || this.saving()) return;
+    dialog.close();
+    this.deleting.set(null);
+    this.saving.set(true);
+    this.error.set(null);
+    this.api
+      .delete<void>(`/api/v1/builder/modelli/${model.id}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.offset.set(0);
+          this.load();
+        },
+        error: (e: ApiError) => {
+          this.saving.set(false);
+          this.error.set(e.messaggio);
+        },
+      });
   }
   protected confirm(dialog: HTMLDialogElement): void {
     const item = this.pending();

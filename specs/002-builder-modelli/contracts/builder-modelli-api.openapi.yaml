@@ -109,6 +109,20 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /modelli/{modelloId}:
+    delete:
+      operationId: eliminaModello
+      summary: Elimina logicamente un modello conservando versioni, audit e PDF
+      parameters:
+        - name: modelloId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 'Modello eliminato, versioni pubblicate archiviate'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /modelli/{modelloId}/versioni:
     parameters:
       - {$ref: '#/components/parameters/ModelloId'}

@@ -28,6 +28,10 @@ export class ApiClient {
   put<T>(path: string, body: unknown): Observable<T> {
     return this.http.put<T>(path, body).pipe(catchError(mapError));
   }
+
+  delete<T>(path: string): Observable<T> {
+    return this.http.delete<T>(path).pipe(catchError(mapError));
+  }
 }
 
 function mapError(error: HttpErrorResponse): Observable<never> {

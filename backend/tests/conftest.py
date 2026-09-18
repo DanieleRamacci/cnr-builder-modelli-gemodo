@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 # mock-geban/ is a sibling of backend/, not part of the backend package; expose it on
@@ -13,3 +14,6 @@ if str(MOCK_GEBAN_DIR) not in sys.path:
     sys.path.insert(0, str(MOCK_GEBAN_DIR))
 
 pytest_plugins = ["tests.support.quality_fixtures"]
+
+# Existing contract fixtures intentionally exercise the historical demo catalog.
+os.environ.setdefault("GEMODO_KEEP_DEMO_MODELS", "1")

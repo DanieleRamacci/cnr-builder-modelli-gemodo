@@ -17,6 +17,14 @@ Il quality gate indipendente non e' superato.
 
 ## Clarifications
 
+### Pulizia modelli richiesta 2026-09-18
+
+Le installazioni nuove devono terminare senza modelli demo, salvo opt-in
+esplicito di test. Non cancellare automaticamente gli ambienti gia' utilizzati.
+Contesti permette di eliminare un modello con conferma: eliminazione logica
+autorizzata per contesto e auditata, esclusa da catalogo e nuove generazioni.
+Versioni e PDF precedenti restano conservati.
+
 ### Decisione MVP 2026-09-17 - ADR 0002
 
 Frontend Angular con Design Angular Kit. Admin: tabella integrazioni

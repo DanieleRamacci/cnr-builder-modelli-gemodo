@@ -142,6 +142,10 @@ class BuilderService:
             raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
 
+        self.db.execute(select(TipoDocumento.id).where(TipoDocumento.id == modello.tipo_documento_id).with_for_update())
+        self.db.refresh(modello)
+        if modello.stato == "ELIMINATO":
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
         foglia = self._catalogo(modello.tipo_documento.codice, aggiornato=True, tipo=modello.tipo_documento).indice_percorsi().get(
             tuple(modello.percorso_categorizzazione)
         )
@@ -197,6 +201,8 @@ class BuilderService:
         if versione is None or (modello_id is not None and versione.modello_documento_id != modello_id):
             raise BuilderDomainError(ErrorCode.MODELLO_VERSIONE_NON_TROVATO, "Versione non trovata", status_code=404)
         modello = builder_repository.get_modello(self.db, versione.modello_documento_id)
+        if modello is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
 
         # Serialize state changes, including replacement publication, per document type.
@@ -204,6 +210,9 @@ class BuilderService:
             TipoDocumento.id == modello.tipo_documento_id,
         ).with_for_update())
         self.db.refresh(versione)
+        self.db.refresh(modello)
+        if modello.stato == "ELIMINATO":
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
 
         ammessi = TRANSIZIONI_VALIDE.get(versione.stato, set())
         if nuovo_stato not in ammessi:
@@ -243,6 +252,25 @@ class BuilderService:
         )
         self.db.commit()
         return versione
+
+    def elimina(self, principal: PrincipalGEMODO, modello_id: uuid.UUID) -> None:
+        modello = builder_repository.get_modello(self.db, modello_id)
+        if modello is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
+        self.db.execute(select(TipoDocumento.id).where(TipoDocumento.id == modello.tipo_documento_id).with_for_update())
+        self.db.refresh(modello)
+        if modello.stato == "ELIMINATO":
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        modello.stato = "ELIMINATO"
+        for versione in modello.versioni:
+            self.db.refresh(versione)
+            if versione.stato == "PUBBLICATO":
+                builder_repository.transizione_stato(self.db, versione, nuovo_stato="ARCHIVIATO")
+        registra_evento(self.db, tipo_evento="MODELLO_ELIMINATO", principal=principal,
+                       modello_documento_id=modello.id, modello_versione_id=None,
+                       payload_minimo={"codice": modello.codice})
+        self.db.commit()
 
     def _resolve_tipo_documento(self, codice_tipo_documento: str):
         tipo = catalog_repository.get_tipo_documento_by_codice(self.db, codice_tipo_documento)
