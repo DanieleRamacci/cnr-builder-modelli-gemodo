@@ -49,6 +49,39 @@ progetto Angular, avviabile da `infra/local/compose.yaml`.
       `backend/Dockerfile`) e `.dockerignore`. Verificato per davvero:
       `docker build` + `docker run` reali, app raggiungibile su `:4200` dal
       host.
+      **Aggiornamento 2026-09-18 (richiesto dall'utente dopo la domanda "cosa
+      posso provare dopo il push")**: trovato un problema reale - il deploy
+      Coolify (`docker-compose.coolify.yml`) buildava il servizio `frontend`
+      dal `Dockerfile` di *root* (la vecchia pagina statica placeholder
+      `deploy/coolify-test/`), completamente scollegato dalla vera app
+      Angular. Un push non avrebbe mostrato nulla di nuovo. Risolto: `frontend/
+      Dockerfile` e' ora multi-stage con due target espliciti (nessun default,
+      entrambi i compose li richiamano esplicitamente) - `dev` (invariato,
+      `ng serve`) e `production` (`ng build --configuration production` +
+      nginx statico su `:80`, con `scripts/docker-entrypoint-nginx.sh` che
+      rigenera `runtime-config.json` dai veri env var del container a
+      startup, stesso pattern di T009). `docker-compose.coolify.yml` aggiornato
+      per puntare `frontend` a `frontend/Dockerfile` target `production`; la
+      vecchia pagina statica spostata in un nuovo servizio `docs` separato
+      (non persa - l'utente ha chiesto esplicitamente di spostarla, non
+      cancellarla, per darle un dominio proprio in Coolify) con un link
+      opzionale mostrato nel footer della shell quando configurato
+      (`GEMODO_EXTERNAL_DOCS_URL` -> `runtime-config.json`
+      `externalDocsUrl`, vedi `shell.component.ts`).
+      **Bug reale trovato e risolto durante la verifica** (non a
+      compile-time - solo avviando il container per davvero): `nginx.conf`
+      con `proxy_pass http://backend:8000` (hostname statico) fa fallire
+      l'avvio di nginx con `host not found in upstream` se `backend` non e'
+      ancora risolvibile via DNS al caricamento della configurazione (crash
+      totale del container, non solo un errore sulle route proxate) -
+      risolto con `resolver 127.0.0.11` (DNS interno Docker) + `proxy_pass`
+      su variabile, che forza la risoluzione al momento della richiesta
+      invece che una sola volta all'avvio.
+      Verificato per davvero, entrambi i target: `docker build`+`docker run`
+      reali per `dev` e per `production` (quest'ultimo anche con un Keycloak
+      locale reale, confermando via Playwright lo stesso redirect corretto
+      gia' visto in T010 - il flusso funziona identico sia in `ng serve` che
+      nella build di produzione statica dietro nginx).
 
 **Checkpoint**: `docker compose up -d frontend` in `infra/local/` avvia una
 vera app Angular (anche vuota) sulla porta 4200. **Verificato** (build/run

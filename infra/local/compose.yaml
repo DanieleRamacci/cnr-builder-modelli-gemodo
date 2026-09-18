@@ -71,6 +71,7 @@ services:
   frontend:
     build:
       context: ../../frontend
+      target: dev
     environment:
       # backend, non localhost: questo URL e' usato dal proxy del dev-server
       # Angular (frontend/proxy.conf.js), eseguito DENTRO il container - non

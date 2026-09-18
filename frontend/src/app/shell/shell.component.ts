@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   ItFooterComponent,
@@ -6,6 +6,8 @@ import {
   ItNavBarComponent,
   ItNavBarItemComponent,
 } from 'design-angular-kit';
+
+import { RUNTIME_CONFIG } from '../runtime-config';
 
 /**
  * Application shell (007 tasks.md T010): layout + navigation only. No feature
@@ -26,4 +28,8 @@ import {
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
-export class ShellComponent {}
+export class ShellComponent {
+  // Undefined until the separately-deployed docs (deploy/coolify-test/) have a
+  // real URL - see GEMODO_EXTERNAL_DOCS_URL in scripts/genera-runtime-config.sh.
+  protected readonly externalDocsUrl = inject(RUNTIME_CONFIG).externalDocsUrl;
+}

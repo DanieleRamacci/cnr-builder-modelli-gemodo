@@ -25,5 +25,10 @@
 </main>
 
 <it-footer>
-  <div small-links>GEMODO - CNR</div>
+  <div small-links>
+    GEMODO - CNR
+    @if (externalDocsUrl) {
+      <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
+    }
+  </div>
 </it-footer>

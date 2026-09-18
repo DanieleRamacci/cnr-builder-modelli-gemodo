@@ -4,7 +4,7 @@ import { provideDesignAngularKit } from 'design-angular-kit';
 
 import { provideKeycloakAuth } from './auth/keycloak.providers';
 import { routes } from './app.routes';
-import type { RuntimeConfig } from './runtime-config';
+import { RUNTIME_CONFIG, type RuntimeConfig } from './runtime-config';
 
 // A factory, not a static constant: Keycloak needs the issuer/client id from
 // runtime-config.json (main.ts fetches it before bootstrap - see runtime-config.ts
@@ -15,6 +15,7 @@ export function buildAppConfig(runtimeConfig: RuntimeConfig): ApplicationConfig 
       provideBrowserGlobalErrorListeners(),
       provideRouter(routes),
       provideDesignAngularKit(),
+      { provide: RUNTIME_CONFIG, useValue: runtimeConfig },
       ...provideKeycloakAuth(runtimeConfig),
     ],
   };

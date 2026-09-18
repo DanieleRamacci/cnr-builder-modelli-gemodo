@@ -11,10 +11,12 @@ cd "$(dirname "$0")/.."
 
 KEYCLOAK_ISSUER_URL="${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}"
 KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-gemodo-frontend}"
+GEMODO_EXTERNAL_DOCS_URL="${GEMODO_EXTERNAL_DOCS_URL:-}"
 
 cat > public/runtime-config.json << EOF
 {
   "keycloakIssuerUrl": "${KEYCLOAK_ISSUER_URL}",
-  "keycloakClientId": "${KEYCLOAK_CLIENT_ID}"
+  "keycloakClientId": "${KEYCLOAK_CLIENT_ID}",
+  "externalDocsUrl": "${GEMODO_EXTERNAL_DOCS_URL}"
 }
 EOF

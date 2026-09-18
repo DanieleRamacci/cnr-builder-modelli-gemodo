@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { provideDesignAngularKit } from 'design-angular-kit';
 
 import { App } from './app';
+import { RUNTIME_CONFIG } from './runtime-config';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -19,6 +20,13 @@ describe('App', () => {
         provideDesignAngularKit(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: RUNTIME_CONFIG,
+          useValue: {
+            keycloakIssuerUrl: 'https://example.test/realms/x',
+            keycloakClientId: 'gemodo-frontend',
+          },
+        },
       ],
     }).compileComponents();
   });

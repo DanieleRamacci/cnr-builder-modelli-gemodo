@@ -1,6 +1,37 @@
 services:
   frontend:
     build:
+      context: frontend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://sso.test.si.cnr.it/auth/realms/cnr}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_FRONTEND_CLIENT_ID:-gemodo-frontend}
+      # URL della pagina "docs" separata sotto, una volta che ha un proprio dominio
+      # configurato su Coolify (vuoto = nessun link mostrato nel footer, vedi
+      # frontend/src/app/shell/shell.component.ts).
+      GEMODO_EXTERNAL_DOCS_URL: ${GEMODO_EXTERNAL_DOCS_URL:-}
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://127.0.0.1/
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Pagina statica "GEMODO DEV" (discovery/documentazione auth ACE per il team
+  # GEBAN esterno) - era servita dal servizio "frontend" prima che diventasse la
+  # vera app Angular; spostata qui come servizio a parte cosi' non si perde.
+  # Assegnare un dominio/percorso separato in Coolify (es. un sottodominio
+  # dedicato), poi impostare GEMODO_EXTERNAL_DOCS_URL sopra a quell'indirizzo.
+  docs:
+    build:
       context: .
       dockerfile: Dockerfile
     expose:
