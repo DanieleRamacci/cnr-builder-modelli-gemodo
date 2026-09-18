@@ -72,15 +72,22 @@ def db_engine(postgres_database_url, monkeypatch):
 
 
 @pytest.fixture()
-def integrazione_connessa(db_engine, catalogo_esterno):
+def integrazione_connessa(db_engine, catalogo_esterno, monkeypatch):
     """Registers a CONNESSO Integrazione/EndpointIntegrazione for BANDO_CONCORSO (T082).
 
     The builder resolves discovery through the registry, never through an env var
     bypass; this fixture sets up the registry state a real admin verify (T081) would
     have produced, without re-running the HTTP round trip (that flow is covered by
-    ``tests/configurazione/test_integrazioni_admin.py``).
+    ``tests/configurazione/test_integrazioni_admin.py``). A real verify would only ever
+    reach CONNESSO for a URL that passed ``valida_destinazione_approvata`` in the first
+    place (T081), and T084 made every live read re-check that same allowlist on each
+    resolution (``discovery_per_tipo``) - so this fixture must allowlist the test
+    server's origin too, or every builder call would now 422 with
+    DESTINAZIONE_NON_APPROVATA regardless of the DB row.
     """
     url, _, _ = catalogo_esterno
+    monkeypatch.setenv("GEMODO_INTEGRAZIONI_ALLOWLIST", url)
+    monkeypatch.setenv("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO", url)
     with Session(db_engine) as db:
         tipo = db.execute(sa.select(TipoDocumento).where(TipoDocumento.codice == "BANDO_CONCORSO")).scalar_one()
         integrazione_precedente = tipo.integrazione_id
@@ -305,6 +312,19 @@ def test_not_connected_integration_does_not_fall_back_to_seed(builder_client, db
     response = builder_client.get("/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile")
     assert response.status_code == 409
     assert response.json()["codice"] == "INTEGRAZIONE_NON_CONNESSA"
+
+
+@pytest.mark.integration
+def test_connected_integration_falling_out_of_the_allowlist_is_denied_on_next_read(builder_client, monkeypatch):
+    """T084: CONNESSO never expires on its own, so a URL approved once must be
+    re-checked on every live read, not just at configure/verify time - otherwise
+    narrowing GEMODO_INTEGRAZIONI_ALLOWLIST after the fact would have no effect on an
+    already-connected integration."""
+    monkeypatch.delenv("GEMODO_INTEGRAZIONI_ALLOWLIST", raising=False)
+    monkeypatch.delenv("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO", raising=False)
+    response = builder_client.get("/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile")
+    assert response.status_code == 422, response.text
+    assert response.json()["codice"] == "DESTINAZIONE_NON_APPROVATA"
 
 
 @pytest.mark.integration

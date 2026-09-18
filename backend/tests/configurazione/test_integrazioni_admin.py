@@ -1,5 +1,9 @@
+import json
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Event, Thread
 
 import sqlalchemy as sa
 import pytest
@@ -14,6 +18,40 @@ from app.main import app
 from tests.discovery.conftest import discovery_server  # noqa: F401 (fixture reuse)
 from tests.discovery.test_pagination import fragment
 from tests.support.postgres import postgres_database_url
+
+
+@pytest.fixture
+def slow_discovery_server():
+    """A discovery server whose /discovery response blocks until the test releases it -
+    real HTTP, not a mock, so a genuine concurrent request can race the in-flight verify
+    (T084), not just a simulated interleaving via direct SQL beforehand."""
+    arrived = Event()
+    respond = Event()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            arrived.set()
+            respond.wait(timeout=5)
+            raw = json.dumps(fragment()).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def log_message(self, format, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}", arrived, respond
+    finally:
+        respond.set()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 @pytest.fixture
@@ -302,6 +340,42 @@ def test_expired_attempt_does_not_block_a_new_verify(admin_client, monkeypatch, 
                            json={"revisione_attesa": 2})
     assert response.status_code == 200, response.text
     assert response.json()["stato"] == "CONNESSO"
+
+
+@pytest.mark.integration
+def test_reconfiguring_url_while_a_verify_is_in_flight_wins_the_race(admin_client, monkeypatch, slow_discovery_server):
+    """T084: verifica() releases its row locks before the (potentially slow) HTTP call
+    so a concurrent configure isn't blocked for the whole timeout - but that means the
+    stale in-flight verify must never overwrite what the concurrent configure produced.
+    A real second request races the real HTTP wait, not a pre-seeded UPDATE."""
+    client, _ = admin_client
+    base_url, arrived, respond = slow_discovery_server
+    _, created = crea(client)
+    allowlist(monkeypatch, base_url)
+    client.put(f"/api/v1/configurazione/integrazioni/{created['id']}", json={
+        "revisione_attesa": 1, "nome": "Software Demo", "url": base_url + "/discovery", "timeout_ms": 5000,
+    })
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        verify_future = pool.submit(
+            client.post, f"/api/v1/configurazione/integrazioni/{created['id']}/verifica",
+            json={"revisione_attesa": 2},
+        )
+        assert arrived.wait(timeout=5), "la richiesta HTTP di verifica non e' mai arrivata al server"
+        rewired = client.put(f"/api/v1/configurazione/integrazioni/{created['id']}", json={
+            "revisione_attesa": 2, "nome": "Software Demo", "url": base_url + "/altro", "timeout_ms": 5000,
+        })
+        assert rewired.status_code == 200, rewired.text
+        respond.set()
+        verify_response = verify_future.result(timeout=5)
+
+    assert verify_response.status_code == 409, verify_response.text
+    assert verify_response.json()["codice"] == "REVISIONE_SUPERATA"
+    final = client.get(f"/api/v1/configurazione/integrazioni/{created['id']}").json()
+    assert final["url"] == base_url + "/altro"
+    assert final["revisione"] == 3
+    assert final["stato"] == "DEFINITO"
+    assert final["ultima_verifica"] is None
 
 
 def test_versioned_admin_documentation_available():

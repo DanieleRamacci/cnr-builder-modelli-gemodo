@@ -702,10 +702,48 @@ Feature attiva invariata; nessun task applicativo di altre spec viene avviato.
       **Ancora aperto**: T084 (matrice avversaria SSRF/rebinding/concorrenza),
       T047/T049-T052/T055-058/T071/T073/T076 (polish/hardening gia' annotati
       sopra).
-- [ ] T084 Testare registro vuoto anche con seed/env/token, due tipi su un URL,
-      una radice invalida, codici uguali in sorgenti diverse, token multicontesto,
-      permessi non appiattiti, concorrenza modifica URL/verifica, isolamento dei
-      metadati admin, SSRF/limiti/errori e regressioni PostgreSQL/HTTP reali.
+- [x] T084 *(2026-09-17/18)* Testare registro vuoto anche con seed/env/token, due
+      tipi su un URL, una radice invalida, codici uguali in sorgenti diverse, token
+      multicontesto, permessi non appiattiti, concorrenza modifica URL/verifica,
+      isolamento dei metadati admin, SSRF/limiti/errori e regressioni
+      PostgreSQL/HTTP reali.
+      La maggior parte della matrice era gia' reale e verificata da T078-T083:
+      registro vuoto/nessun seed (T079, "registro vuoto con tipi legacy"), due tipi
+      su un URL (`test_tipi_documento_and_struttura_reflect_the_live_multi_type_map`),
+      radice invalida (parametrizzazione `test_invalid_structure_is_functional_error`
+      + `test_pagination_rejects_invalid_or_unsafe_pages`), codici ambigui fra
+      sorgenti diverse (`SORGENTE_AMBIGUA`, `test_software_endpoint_migration.py`),
+      redirect/downgrade/HAL ciclico/cross-origin gia' rifiutati e testati
+      (`follow_redirects=False` per-request + verifica origine su ogni `next_href`).
+      Trovati e chiusi in questo incremento i due gap reali rimasti:
+      (1) `discovery_per_tipo` (T082) non ri-validava mai la destinazione contro
+      l'allowlist dopo la connessione iniziale - una volta `CONNESSO`, restava
+      valido per sempre anche se l'allowlist di deployment veniva ristretta in
+      seguito; ora rivalida su ogni risoluzione (`backend/app/discovery/
+      configuration.py`), nuovo test
+      `test_connected_integration_falling_out_of_the_allowlist_is_denied_on_next_read`
+      in `backend/tests/builder/test_builder_flow_api.py` (ha anche richiesto
+      correggere il fixture `integrazione_connessa`, che inseriva la riga
+      `CONNESSO` via SQL diretto senza mai passare dall'allowlist come farebbe una
+      verifica reale); (2) nessun test provava la vera race fra una verifica in
+      volo e una riconfigurazione concorrente con thread reali (solo interleaving
+      simulato via UPDATE SQL pre-seeded) - nuovo
+      `test_reconfiguring_url_while_a_verify_is_in_flight_wins_the_race` in
+      `backend/tests/configurazione/test_integrazioni_admin.py` (server HTTP reale
+      con blocco via `threading.Event`, non sleep) prova che il ricontrollo
+      post-I/O di tentativo_id/revisione impedisce davvero alla verifica stale di
+      sovrascrivere la riconfigurazione concorrente. Aggiunto anche
+      `test_multicontext_token_does_not_leak_permission_across_contexts` in
+      `backend/tests/builder/test_integrazioni_manager.py` (il fixture
+      `manager_client` esistente copriva solo un token a contesto singolo).
+      **Residuo dichiarato, non implementato**: il vero pinning della connessione
+      all'IP risolto (protezione da DNS rebinding fra il check di approvazione e
+      la richiesta HTTP reale) resta fuori scope per questo MVP - richiederebbe un
+      transport HTTP custom (SNI/Host separati dall'IP di connessione) non
+      banale da verificare correttamente; accettato perche' l'URL e' configurato
+      da un `GEMODO_ADMIN` fidato, non input arbitrario di un chiamante esterno.
+      Suite completa su Postgres reale: 291 passati, 1 skip preesistente non
+      collegato a questo task, 0 falliti.
 - [x] T085 Propagare requisiti MVP alle spec owner 001..007 senza cambiare
       feature; registrare dipendenze e stato reale nel documento MVP.
 - [x] T086 Verificare coerenza documentale locale, identificativi e link del

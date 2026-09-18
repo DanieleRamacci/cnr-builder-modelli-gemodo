@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.common.security import require_principal
+from app.common.security import PrincipalGEMODO, require_principal
 from app.configurazione.models import EndpointIntegrazione, Integrazione
 from app.db.session import get_db
 from app.main import app
@@ -100,6 +100,40 @@ def test_manager_sees_only_connected_integrations_authorized_in_their_context(ma
     finally:
         _rimuovi_integrazione(db_engine, autorizzata)
         _rimuovi_integrazione(db_engine, non_autorizzata)
+
+
+@pytest.mark.integration
+def test_multicontext_token_does_not_leak_permission_across_contexts(manager_client, db_engine, discovery_server):
+    """T084: a token can legitimately carry more than one context (e.g. a user active in
+    both 'geban' and a future context). A role held in one context MUST NOT authorize an
+    integration owned by another, even when the token also carries *some* role for that
+    other context (unlike the single-context manager_client fixture, which never claims
+    the second context at all)."""
+    url, responses, _ = discovery_server
+    responses["/discovery"] = (200, fragment())
+    propria = _crea_integrazione(db_engine, codice_contesto="geban", url=url + "/discovery")
+    altrui = _crea_integrazione(db_engine, codice_contesto="altro-contesto-senza-ruoli", url="https://unreachable.example.test/discovery")
+    app.dependency_overrides[require_principal] = lambda: PrincipalGEMODO(
+        "manager-multicontesto", "geri-angular-public", ("gemodo-backend",), (),
+        "https://sso.example.test",
+        ruoli_contesto=(
+            ("geban", ("ROLE_MANAGER#geban",)),
+            ("altro-contesto-senza-ruoli", ("ROLE_SCONOSCIUTO#altro",)),
+        ),
+    )
+    try:
+        lista = manager_client.get("/api/v1/builder/integrazioni")
+        assert lista.status_code == 200, lista.text
+        ids = {item["id"] for item in lista.json()}
+        assert str(propria) in ids
+        assert str(altrui) not in ids
+
+        negato = manager_client.get(f"/api/v1/builder/integrazioni/{altrui}/tipi-documento")
+        assert negato.status_code == 404, negato.text
+        assert negato.json()["codice"] == "RISORSA_NON_TROVATA"
+    finally:
+        _rimuovi_integrazione(db_engine, propria)
+        _rimuovi_integrazione(db_engine, altrui)
 
 
 @pytest.mark.integration
