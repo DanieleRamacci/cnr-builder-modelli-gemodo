@@ -21,23 +21,39 @@ backend+mock-geban veri, mai mock della logica di dominio).
 **Purpose**: sostituire il placeholder `frontend/package.json` con un vero
 progetto Angular, avviabile da `infra/local/compose.yaml`.
 
-- [ ] T001 Sostituire `frontend/package.json` con un vero progetto Angular
-      21.2 (standalone, signals) generato via `ng new`, preservando la
-      struttura placeholder gia' presente (`src/app`, `src/features/builder`,
-      `src/features/generazioni`, `src/shared`) invece di rigenerarla da
-      zero; aggiungere `design-angular-kit-bundle` 21.2.0
-- [ ] T002 [P] Configurare Vitest (gia' default Angular 21) per gli unit
-      test in `frontend/`
-- [ ] T003 [P] Configurare Playwright per gli e2e in `frontend/e2e/`,
-      puntato di default a `http://localhost:4200` + backend reale
-- [ ] T004 [P] Configurare ESLint/Prettier coerenti con i default Angular
-      CLI in `frontend/`
-- [ ] T005 Scrivere `frontend/Dockerfile` (oggi assente) coerente con quanto
-      gia' atteso da `infra/local/compose.yaml` (servizio `frontend`, porta
-      4200, build `context: ../../frontend`)
+- [x] T001 *(2026-09-18)* Sostituire `frontend/package.json` con un vero
+      progetto Angular 21.2 (standalone, signals) generato via `ng new`,
+      preservando la struttura placeholder gia' presente (`src/app`,
+      `src/features/builder`, `src/features/generazioni`, `src/shared`)
+      invece di rigenerarla da zero; aggiunto `design-angular-kit` 21.2.0
+      con i suoi peer `@ngx-translate/core`/`@ngx-translate/http-loader` e
+      `bootstrap-italia` (vedi `research.md` per la correzione sul nome
+      pacchetto reale). Verificato con `ng build` reale (successo).
+- [x] T002 [P] *(2026-09-18)* Vitest (gia' default Angular 21) per gli unit
+      test in `frontend/` - verificato con `ng test --watch=false` reale
+      (2 test passati, `app.spec.ts` aggiornato per la nuova shell minimale).
+- [x] T003 [P] *(2026-09-18)* Playwright per gli e2e in `frontend/e2e/`,
+      puntato di default a `http://localhost:4200`. Verificato per davvero:
+      `ng serve` reale in background + `playwright test` contro il server
+      vero (non solo config statica) - vedi `e2e/smoke.spec.ts` (test
+      placeholder, i veri scenari arrivano con US4/US5).
+- [x] T004 [P] *(2026-09-18)* ESLint/Prettier in `frontend/` - `ng add
+      @angular-eslint/schematics` si e' rivelato rotto su questo workspace
+      (falso positivo di version-mismatch anche con `@21` esplicito, non
+      applicava la configurazione); risolto installando `angular-eslint@21`
+      + `eslint@10` manualmente e scrivendo `eslint.config.js` a mano.
+      Verificato con `eslint .` (0 errori) e `prettier --check` reali dopo
+      un `prettier --write` iniziale.
+- [x] T005 *(2026-09-18)* Scritto `frontend/Dockerfile` (dev, `node:24-slim`
+      + `ng serve --host 0.0.0.0`, coerente con lo stile gia' usato da
+      `backend/Dockerfile`) e `.dockerignore`. Verificato per davvero:
+      `docker build` + `docker run` reali, app raggiungibile su `:4200` dal
+      host.
 
 **Checkpoint**: `docker compose up -d frontend` in `infra/local/` avvia una
-vera app Angular (anche vuota) sulla porta 4200.
+vera app Angular (anche vuota) sulla porta 4200. **Verificato** (build/run
+Docker manuale, non ancora attraverso il compose completo - quello richiede
+anche `backend`/`postgres` su, rimandato al checkpoint di fine Foundational).
 
 ---
 

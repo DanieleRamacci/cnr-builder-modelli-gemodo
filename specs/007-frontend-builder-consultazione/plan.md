@@ -23,9 +23,11 @@ restano scope futuro oltre questo incremento.
 **Language/Version**: TypeScript 5.9 su Angular 21.2 (standalone components,
 signals, nessun `NgModule`).
 
-**Primary Dependencies**: `@angular/*` 21.2.x, `design-angular-kit-bundle`
-21.2.0 (peer-compatibile con Angular 21.2, verificato su
-`italia/design-angular-kit` il 2026-09-18), `keycloak-js` + `keycloak-angular`
+**Primary Dependencies**: `@angular/*` 21.2.x, `design-angular-kit` 21.2.0 (con
+`@ngx-translate/core`/`@ngx-translate/http-loader` `^17.0.0` e
+`bootstrap-italia` `^2.17.4`; peer-compatibile con Angular 21.2, verificato su
+npm e installato per davvero il 2026-09-18 - vedi `research.md` per la
+correzione sul nome pacchetto corretto), `keycloak-js` + `keycloak-angular`
 per OIDC Authorization Code + PKCE contro il client Keycloak gia' provisionato
 `gemodo-frontend` (vedi `infra/local/compose.yaml` e
 `gemodo_allowed_interactive_clients` in `backend/app/core/settings.py`).

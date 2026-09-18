@@ -2,16 +2,24 @@
 
 ## Framework e design system
 
-**Decision**: Angular 21.2 (standalone components, signals) + `design-angular-kit-bundle`
-21.2.0.
+**Decision**: Angular 21.2 (standalone components, signals) + `design-angular-kit`
+21.2.0, con i suoi peer dependency `@ngx-translate/core`/`@ngx-translate/http-loader`
+`^17.0.0` e `bootstrap-italia` `^2.17.4`.
 
 **Rationale**: la Clarification "Decisione MVP 2026-09-17 - ADR 0002" in
 `spec.md` conferma Angular + Design Angular Kit e rimanda al piano tecnico la
-scelta delle versioni compatibili. Verificato il 2026-09-18 su
-`raw.githubusercontent.com/italia/design-angular-kit/main/package.json`:
-`design-angular-kit-bundle` e' alla 21.2.0 con peer dependency `@angular/core`
-`^21.2.1` - le due versioni sono pensate per stare insieme, non serve
-allineare manualmente componenti/kit di major diverse.
+scelta delle versioni compatibili. **Correzione 2026-09-18**: la prima verifica
+via `raw.githubusercontent.com/italia/design-angular-kit/main/package.json`
+aveva letto il `package.json` di root del monorepo (`design-angular-kit-bundle`,
+privato, uso interno di build) e non il pacchetto pubblicato realmente su npm -
+`npm view design-angular-kit-bundle` risponde `404 Unpublished on
+2025-02-11`. Il pacchetto pubblico reale, verificato con `npm search`/
+`npm view` (non solo il repo GitHub), e' **`design-angular-kit`** (senza
+suffisso `-bundle`), 21.2.0, peer `@angular/*` `^21.0.0` - compatibile con
+Angular 21.2. Installato e verificato per davvero in questo incremento:
+`npm install design-angular-kit@21.2.0 @ngx-translate/core@^17.0.0
+@ngx-translate/http-loader@^17.0.0 bootstrap-italia@^2.17.4` in uno scaffold
+Angular 21.2.24 pulito, seguito da `ng build` completato con successo.
 
 **Alternatives considered**: nessuna - lo stack e' gia' deciso a livello di
 spec/ADR, questa ricerca serve solo a fissare le versioni esatte compatibili,
