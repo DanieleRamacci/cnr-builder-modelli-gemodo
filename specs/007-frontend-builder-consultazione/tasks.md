@@ -16,6 +16,34 @@ backend+mock-geban veri, mai mock della logica di dominio).
 
 ## Format: `[ID] [P?] [Story] Description`
 
+## Backlog prossimo incremento - Contesti (non implementato)
+
+- [ ] T039 [US1] Pianificare e definire il contratto per Contesti: elenco
+      modelli comprese bozze per contesto autorizzato, dati della tabella e
+      permessi di lettura/creazione; distinguere integrazioni nello stesso contesto.
+- [ ] T040 [US1] Sostituire l'accesso Crea modello con Contesti, tab autorizzate,
+      tabella modelli e azione Crea modello che riusa il flusso discovery.
+      Conservare contesto/sorgente al ritorno e aggiornare lista dopo creazione;
+      prevedere stati vuoto/caricamento/errore e test di isolamento backend/UI.
+- [ ] T041 [US1] Generare codice e nome nel backend dalla categorizzazione
+      validata, data e lingua: definire formato, unicita' concorrente e stabilita'.
+      Rimuovere input liberi codice/nome/variante; variante derivata da metadati
+      configurati o STANDARD, alternative solo controllate. Non usare varianti
+      univoche per aggirare i vincoli di pubblicazione. Aggiornare contratti/test.
+- [ ] T042 [US1] Definire lingua modello persistita e selezione Italiano/IT,
+      Inglese/EN con menu, validazione campi/disponibilita' backend. Coordinare le
+      modifiche di dominio con 002 senza cambiare di nascosto i vincoli attuali.
+- [ ] T043 [US1] Pianificare livello professionale opzionale: menu dei valori
+      ammessi per profilo e Tutti i livelli; livello scelto incluso nel nome
+      e nello scope persistito, assenza copre tutti i livelli del solo profilo.
+      Verificare struttura discovery e contratto campi comune prima di consentire
+      selezione su nodi intermedi. Generico e specifico sono modelli distinti,
+      con nomi rispettivamente senza/con livello e versioni proprie; nessun
+      fallback automatico. Includere scope livello nel vincolo di pubblicazione
+      per consentire coesistenza senza archiviazione reciproca. Coordinare
+      catalogo/generazione con owner 002/001/004.
+      Non implementato; richiesta confermata 2026-09-18.
+
 ## Phase 1: Setup
 
 - [x] T038 Correggere DISCOVERY_NON_CONFIGURATA nella creazione: trasmettere

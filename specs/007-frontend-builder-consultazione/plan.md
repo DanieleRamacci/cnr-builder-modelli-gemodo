@@ -163,6 +163,22 @@ generazioni/` resta un placeholder vuoto: non viene toccato in questo
 incremento. Nessuna cartella `builder/editor` o simile viene creata - l'MVP
 usa solo le schermate di navigazione/creazione, non un editor.
 
+## Prossimo incremento da pianificare: Contesti
+
+Richiesta di collaudo 2026-09-18 tracciata nelle Clarifications della spec e
+nei task T039-T043. Non modifica il perimetro del minimo US5 gia' implementato.
+Prima del runtime occorrono contratto API di elenco modelli (incluse bozze)
+autorizzato per contesto, generazione backend di identificativi/nomi e policy
+di lingua/varianti, con adeguamento schema se necessario. Il catalogo operativo
+dei soli modelli pubblicati non sostituisce questa lista di gestione.
+Livello chiarito come professionale facoltativo: T043 deve verificare se e'
+attributo o nodo discovery, contratto campi comune e copertura generica/specifica.
+Il semplice menu frontend non risolve selezione intermedia e matching runtime.
+Generico e specifico restano modelli distinti selezionati esplicitamente,
+senza fallback; scope livello partecipa ai vincoli di pubblicazione per
+evitare che pubblicarne uno archivi l'altro. Nome generico senza livello,
+nome specifico con livello; codice e versioni indipendenti.
+
 ## Complexity Tracking
 
 Nessuna violazione della Constitution Check da giustificare.

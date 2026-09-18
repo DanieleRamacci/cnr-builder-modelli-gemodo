@@ -33,6 +33,60 @@ ancora certificata come completa.
 - Q: Le autorizzazioni sono applicate dal frontend? -> A: Il frontend abilita, nasconde o disabilita azioni in base a ruolo e contesto, ma il controllo autoritativo resta sempre nel servizio backend secondo la spec sicurezza.
 - Q: Il design visuale e lo stack frontend fanno parte di questa spec? -> A: No. Questa spec definisce funzioni, flussi e stati utente; stack e dettagli visuali saranno definiti nel piano tecnico.
 
+### Richiesta successiva al collaudo 2026-09-18 - Contesti e creazione guidata
+
+Da pianificare dopo il minimo US5, non ancora implementata. La gestione generale
+dei modelli e' gia' coperta da US1, ma il seguente percorso ne precisa la UX:
+
+- Sostituire l'accesso principale "Crea modello" con "Contesti".
+- Mostrare i contesti autorizzati come tab, non come menu a tendina. La presenza
+  nel token non concede automaticamente gestione: il backend determina i permessi.
+- Selezionando un contesto, mostrare una tabella dei modelli gia' creati, comprese
+  le bozze, e il pulsante "Crea modello". Il pulsante richiede il permesso di
+  gestione e un'integrazione connessa; un contesto senza modelli resta visibile.
+- Riutilizzare il flusso discovery corrente, conservando contesto e integrazione
+  nel ritorno alla lista e dopo la creazione. Se piu' integrazioni appartengono
+  allo stesso contesto, scegliere esplicitamente la sorgente senza confonderle.
+- Codice e nome non sono input liberi: il backend li genera dalla categorizzazione
+  validata. Il nome include descrizioni, data di creazione e lingua; il codice
+  resta stabile e univoco anche per creazioni simultanee dello stesso percorso.
+  Il formato esatto e i limiti di lunghezza devono essere fissati nel contratto.
+- La variante non e' testo libero. Derivarla da metadati strutturati/configurati
+  della categorizzazione quando disponibili, altrimenti usare STANDARD; eventuali
+  alternative ammesse sono selezioni controllate, non nomi inventati dall'utente.
+  Non generare varianti dalla data o dal codice univoco per aggirare il vincolo
+  di unica versione pubblicata corrente. Variante, versione e lingua sono distinte.
+- Prima della conferma, scegliere la lingua da un menu con Italiano/IT e
+  Inglese/EN. Disponibilita', campi necessari e persistenza della lingua richiedono
+  contratto e validazione backend; non basta filtrare le etichette nel frontend.
+
+Chiarimento confermato 2026-09-18: "livello" indica il livello professionale,
+facoltativo e distinto dalla lingua. Il menu deve offrire "Tutti i livelli"
+e i valori ammessi per il profilo scelto, provenienti da discovery/configurazione.
+Se selezionato, il livello restringe la categorizzazione del modello e compare
+nel nome automatico. Se non selezionato, il percorso resta al profilo scelto
+(es. CTER) e il modello copre tutti i livelli di quel profilo, mai altri profili.
+Questa copertura deve essere persistita esplicitamente, non dedotta dal nome.
+
+Da definire prima dell'implementazione: il builder attuale ammette solo nodi
+con campi. La selezione generica richiede un contratto di campi valido per
+tutti i livelli coperti; non scegliere arbitrariamente i campi di un figlio
+ne' unire automaticamente contratti diversi. Verificare se il livello e'
+gia' un attributo del profilo o richiede un ulteriore ramo discovery.
+Generico e specifico sono modelli distinti, con identificativi e versioni
+proprie. Il nome del generico omette la specifica del livello; il nome dello
+specifico la include. Non introdurre precedenza o fallback automatici fra
+i due: la scelta del modello resta esplicita. Entrambi possono coesistere;
+la pubblicazione e l'archiviazione di uno non devono sostituire l'altro.
+Adeguare la chiave del vincolo di pubblicazione includendo lo scope del
+livello professionale, senza usarne il nome o inventare varianti univoche.
+
+Acceptance del prossimo incremento: un manager ACE apre Contesti, seleziona
+una tab, vede solo i modelli autorizzati di quel contesto, crea una bozza senza
+scrivere codice/nome/variante e torna alla tabella con il nuovo record. Contesti
+non autorizzati, lingua non disponibile, lista vuota ed errore di lettura sono
+stati distinti; nessuna autorizzazione e' demandata alle sole tab frontend.
+
 ### Session 2026-09-14 (propagazione da `001`)
 
 - `DEC-001-UFFICIO-PROPRIETARIO` (confermata in `docs/decision-register.yaml`,
