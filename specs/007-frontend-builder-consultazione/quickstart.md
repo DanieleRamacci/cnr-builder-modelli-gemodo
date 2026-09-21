@@ -140,3 +140,25 @@ git diff --check: passato
 
 Resta da ripetere il lifecycle Playwright reale per chiudere T062 e il gate
 indipendente rimane rinviato su indicazione dell'utente.
+## Verifica catalogo multi-sorgente (2026-09-21)
+
+Riprodotto il caso con due record `TipoDocumento` attivi aventi codice
+`BANDO_CONCORSO` e contesto `geban`, uno dei quali privo di modelli. La ricerca
+catalogo aggrega ora tutte le sorgenti attive autorizzate invece di fallire con
+`SORGENTE_AMBIGUA`.
+
+```text
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=COLLABORATORE_TECNICO_ER&codice_tipologia=TD
+HTTP 200
+modelli[0].modello_versione_id = 1
+```
+
+Verifiche eseguite:
+
+```text
+pytest tests/catalog/test_catalogo_modelli_api.py tests/catalog/test_campi_richiesti_api.py
+5 passed
+
+pytest tests/catalog/test_catalog_service_integration.py::test_catalog_service_aggregates_duplicate_active_document_types
+1 passed (PostgreSQL reale)
+```

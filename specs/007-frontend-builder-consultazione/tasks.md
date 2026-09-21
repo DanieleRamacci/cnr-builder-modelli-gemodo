@@ -630,3 +630,12 @@ ritirare il flag di generazione specifico dei bandi.
    consultazione generazioni (User Story 3) - tutti scope futuro, da
    pianificare come incrementi successivi di questa stessa spec quando
    servira'.
+
+## Phase 10: Correzione catalogo multi-sorgente
+
+**Goal**: consentire a GEBAN di vedere i modelli pubblicati anche quando la
+configurazione contiene piu' tipi documento attivi con lo stesso codice.
+
+- [x] T070 [P] Aggiungere test di regressione per due `TipoDocumento` attivi con lo stesso codice e modelli pubblicati autorizzati in `backend/tests/catalog/test_catalog_service_integration.py`
+- [x] T071 Adeguare la risoluzione del catalogo per aggregare le sorgenti attive autorizzate senza `SORGENTE_AMBIGUA` in `backend/app/catalog/repository.py` e `backend/app/catalog/service.py`
+- [x] T072 Eseguire test catalogo e prova HTTP della ricerca GEBAN, registrando l'esito in `specs/007-frontend-builder-consultazione/quickstart.md`

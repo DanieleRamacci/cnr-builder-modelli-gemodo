@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from datetime import date, datetime, time
 from uuid import UUID
 
@@ -32,6 +33,14 @@ def get_tipo_documento_by_codice(db: Session, codice: str) -> TipoDocumento | No
     return types[0] if types else None
 
 
+def list_tipi_documento_attivi_by_codice(db: Session, codice: str) -> list[TipoDocumento]:
+    return list(db.scalars(
+        select(TipoDocumento)
+        .where(TipoDocumento.codice == codice, TipoDocumento.stato == STATO_ATTIVO)
+        .order_by(TipoDocumento.created_at, TipoDocumento.id)
+    ))
+
+
 def _day_start(value: date) -> datetime:
     return datetime.combine(value, time.min)
 
@@ -45,6 +54,7 @@ def list_published_model_versions(
     *,
     codice_tipo_documento: str | None = None,
     tipo_documento_id: UUID | None = None,
+    tipo_documento_ids: Collection[UUID] | None = None,
     codice_categoria: str | None = None,
     codice_tipologia: str | None = None,
     lingua: str | None = None,
@@ -80,6 +90,8 @@ def list_published_model_versions(
         stmt = stmt.where(TipoDocumento.codice == codice_tipo_documento)
     if tipo_documento_id is not None:
         stmt = stmt.where(TipoDocumento.id == tipo_documento_id)
+    if tipo_documento_ids is not None:
+        stmt = stmt.where(TipoDocumento.id.in_(tipo_documento_ids))
     if codice_categoria:
         stmt = stmt.where(ModelloDocumento.codice_categoria == codice_categoria)
     if codice_tipologia:

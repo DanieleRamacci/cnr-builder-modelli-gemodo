@@ -42,14 +42,18 @@ class CatalogService:
         pubblicato_da: date | None = None,
         pubblicato_a: date | None = None,
     ) -> ModelloSearchResponse:
-        tipo = repository.get_tipo_documento_by_codice(self.db, tipo_documento)
-        if tipo is None or tipo.stato != repository.STATO_ATTIVO:
+        tipi = repository.list_tipi_documento_attivi_by_codice(self.db, tipo_documento)
+        if not tipi:
             raise CatalogError(
                 ErrorCode.CONTESTO_NON_VALIDO,
                 "Tipo documento non configurato o non attivo",
                 status_code=400,
             )
-        if not verifica_permesso_contesto(principal, tipo.codice_contesto, ROLE_DOCUMENTI_VIEWER):
+        tipi_autorizzati = [
+            tipo for tipo in tipi
+            if verifica_permesso_contesto(principal, tipo.codice_contesto, ROLE_DOCUMENTI_VIEWER)
+        ]
+        if not tipi_autorizzati:
             # Explicit filter on a forbidden perimeter -> sanitized 403 (FR-037),
             # not the same 400 as a nonexistent/inactive tipo documento.
             raise AuthorizationError()
@@ -57,7 +61,7 @@ class CatalogService:
         versions = repository.list_published_model_versions(
             self.db,
             codice_tipo_documento=tipo_documento,
-            tipo_documento_id=tipo.id,
+            tipo_documento_ids=[tipo.id for tipo in tipi_autorizzati],
             codice_categoria=categoria,
             codice_tipologia=codice_tipologia,
             lingua=lingua.value if lingua else None,

@@ -620,6 +620,10 @@ risposta distingua i due casi.
 - **FR-034**: Ricerca catalogo MUST verificare autorizzazione sul contesto della
   sorgente/tipo richiesto e filtrare prima di conteggio, ordinamento e paginazione.
   Nessun modello di altri contesti puo' comparire in lista o metadati.
+- **FR-034a**: Quando piu' sorgenti attive espongono lo stesso codice tipo documento
+  nel perimetro autorizzato, la ricerca catalogo MUST aggregare le versioni modello
+  pubblicate corrispondenti e MUST NOT fallire con un errore di sorgente ambigua.
+  Le sorgenti fuori dal perimetro del chiamante MUST restare escluse.
 - **FR-035**: Lettura contratto, validazione e generazione (anche simulata/test)
   MUST risolvere versione -> modello -> sorgente/contesto lato server e verificare
   il permesso relativo all'azione in quel contesto. Il solo ID non concede accesso.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import date
 
 import pytest
@@ -8,9 +9,11 @@ from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from app.catalog.models import TipoDocumento
 from app.catalog.schemas import ModalitaCatalogo
 from app.catalog.service import CatalogService
 from app.common.security import PrincipalGEMODO
+from app.configurazione.models import Integrazione
 from tests.support.postgres import postgres_database_url
 
 PRINCIPAL = PrincipalGEMODO(
@@ -51,6 +54,44 @@ def test_catalog_service_reads_seeded_catalog(postgres_database_url, monkeypatch
     assert modelli.modelli[0].stato == "PUBBLICATO"
     assert len(modelli_cp.modelli) == 1
     assert modelli_cp.modelli[0].modello_versione_id == 3
+
+
+@pytest.mark.integration
+def test_catalog_service_aggregates_duplicate_active_document_types(postgres_database_url, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", postgres_database_url)
+    command.upgrade(Config("alembic.ini"), "head")
+
+    engine = create_engine(postgres_database_url, pool_pre_ping=True)
+    try:
+        with Session(engine) as session:
+            integrazione = Integrazione(
+                codice=f"geban-duplicato-{uuid.uuid4()}",
+                nome="GEBAN duplicato",
+                codice_contesto="geban",
+            )
+            session.add(integrazione)
+            session.flush()
+            session.add(TipoDocumento(
+                id=uuid.uuid4(),
+                codice="BANDO_CONCORSO",
+                nome="Definizione amministrativa incompleta",
+                codice_contesto="geban",
+                integrazione_id=integrazione.id,
+                stato="ATTIVA",
+                spec_owner="test",
+            ))
+            session.commit()
+
+            response = CatalogService(session).search_modelli(
+                principal=PRINCIPAL,
+                tipo_documento="BANDO_CONCORSO",
+                categoria="COLLABORATORE_TECNICO_ER",
+                codice_tipologia="TD",
+            )
+    finally:
+        engine.dispose()
+
+    assert [item.modello_versione_id for item in response.modelli] == [1]
 
 
 @pytest.mark.integration
