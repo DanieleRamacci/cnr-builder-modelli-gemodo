@@ -478,6 +478,15 @@ documento, non solo per quella foglia.
   configurazione verificata; nessun successo obsoleto o risposta parzialmente
   conforme abilita la sorgente. Cambiare URL richiede nuova verifica; cambiare
   esempi illustrativi non modifica l'esito della forma comune.
+- **FR-022** (2026-09-21, colma un gap trovato in produzione: due
+  `TipoDocumento` con lo stesso `codice` - una bozza abbandonata dell'admin e
+  quella reale creata dal builder - rendevano `GET /catalogo/modelli`
+  permanentemente `SORGENTE_AMBIGUA` senza alcun modo di risolverlo da
+  interfaccia o Swagger): l'admin MUST poter disattivare un tipo documento
+  **per id interno**, mai per codice (un codice ambiguo non identifica quale
+  riga disattivare). La disattivazione MUST essere rifiutata se esistono
+  modelli collegati. Un tipo disattivato MUST sparire dal cruscotto
+  amministrativo ma restare nello storico (nessuna cancellazione fisica).
 
 ### Key Entities *(include if feature involves data)*
 

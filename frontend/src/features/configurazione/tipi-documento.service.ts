@@ -27,6 +27,10 @@ export class TipiDocumentoService {
     return this.api.get<StrutturaTipoDocumento>(`${BASE}/${codice}/struttura`);
   }
 
+  disattiva(id: string): Observable<void> {
+    return this.api.delete<void>(`${BASE}/id/${id}`);
+  }
+
   aggiornaStruttura(codice: string, struttura: StrutturaTipoDocumento): Observable<TipoDocumentoDashboard> {
     return this.api.put<TipoDocumentoDashboard>(`${BASE}/${codice}/struttura`, struttura);
   }

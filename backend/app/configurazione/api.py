@@ -29,6 +29,11 @@ def dashboard(principal: Admin, service: Service):
     return service.dashboard()
 
 
+@router.delete("/id/{tipo_id}", status_code=204)
+def disattiva(tipo_id: uuid.UUID, principal: Admin, service: Service):
+    service.disattiva_per_id(tipo_id, principal)
+
+
 @router.post("", response_model=TipoDocumentoDashboard, status_code=201)
 def crea(request: TipoDocumentoCreate, principal: Admin, service: Service):
     return service.crea(request, principal)

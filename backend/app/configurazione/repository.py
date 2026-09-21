@@ -1,9 +1,17 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
-from app.catalog.models import TipoDocumento
+from app.catalog.models import ModelloDocumento, TipoDocumento
 from app.common.errors import DomainError
 from app.configurazione.models import DefinizioneStruttura, EndpointIntegrazione, Integrazione, SchemaDiscoveryGenerato
+
+STATO_INATTIVA = "INATTIVA"
+
+
+def conta_modelli(db: Session, tipo_documento_id) -> int:
+    return db.scalar(
+        select(func.count()).select_from(ModelloDocumento).where(ModelloDocumento.tipo_documento_id == tipo_documento_id)
+    )
 
 
 def tipo_documento(db: Session, codice: str, *, lock: bool = False):
@@ -77,4 +85,5 @@ def dashboard(db: Session):
                       .outerjoin(definition, definition.tipo_documento_id == TipoDocumento.id)
                       .outerjoin(schema, schema.tipo_documento_id == TipoDocumento.id)
                       .outerjoin(EndpointIntegrazione, EndpointIntegrazione.integrazione_id == TipoDocumento.integrazione_id)
+                      .where(TipoDocumento.stato != STATO_INATTIVA)
                       .order_by(TipoDocumento.codice)).all()

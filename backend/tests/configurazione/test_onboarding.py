@@ -128,9 +128,64 @@ def test_incomplete_duplicate_and_invalid_references(admin_client):
 
 
 @pytest.mark.integration
+def test_disattivazione_per_id_risolve_il_codice_duplicato(admin_client):
+    client, engine = admin_client
+    code, first = crea(client, STRUTTURA)
+    with engine.begin() as db:
+        # Riproduce lo scenario reale (SORGENTE_AMBIGUA): la riga "attiva" del
+        # builder ha sempre un integrazione_id reale, quindi il duplicato deve
+        # averne uno diverso - due righe con integrazione_id NULL violerebbero
+        # l'indice unico parziale su codice (uq_tipo_documento_legacy_codice).
+        integrazione_id = db.execute(sa.text("""
+            INSERT INTO integrazione (id, codice, nome, codice_contesto)
+            VALUES (gen_random_uuid(), :codice, 'Software duplicato', 'demo')
+            RETURNING id
+        """), {"codice": "SOFTWARE_" + code}).scalar()
+        duplicate_id = db.execute(sa.text("""
+            INSERT INTO tipo_documento (id, codice, nome, stato, spec_owner, codice_contesto, integrazione_id)
+            VALUES (gen_random_uuid(), :code, 'Duplicato incompleto', 'BOZZA', '010', 'demo', :integrazione_id)
+            RETURNING id
+        """), {"code": code, "integrazione_id": integrazione_id}).scalar()
+
+    dashboard = client.get("/api/v1/configurazione/tipi-documento").json()
+    codes = [row["codice"] for row in dashboard]
+    assert codes.count(code) == 2
+
+    delete = client.delete(f"/api/v1/configurazione/tipi-documento/id/{duplicate_id}")
+    assert delete.status_code == 204, delete.text
+
+    dashboard_dopo = client.get("/api/v1/configurazione/tipi-documento").json()
+    matching = [row for row in dashboard_dopo if row["codice"] == code]
+    assert len(matching) == 1
+    assert matching[0]["id"] == first["id"]
+
+    # idempotente: ridisattivare la stessa riga non e' un errore
+    assert client.delete(f"/api/v1/configurazione/tipi-documento/id/{duplicate_id}").status_code == 204
+
+    inesistente = client.delete(f"/api/v1/configurazione/tipi-documento/id/{uuid.uuid4()}")
+    assert inesistente.status_code == 404
+
+
+@pytest.mark.integration
+def test_disattivazione_bloccata_se_esistono_modelli(admin_client):
+    client, engine = admin_client
+    code, created = crea(client, STRUTTURA)
+    with engine.begin() as db:
+        db.execute(sa.text("""
+            INSERT INTO modello_documento
+                (id, tipo_documento_id, codice_categoria, codice_tipologia, percorso_categorizzazione, codice, nome, stato, lingua)
+            VALUES (gen_random_uuid(), :tipo_id, 'RIC', 'TD', '["TD","RIC"]'::jsonb, :mod_code, 'Modello test', 'BOZZA', 'IT')
+        """), {"tipo_id": created["id"], "mod_code": "MOD_" + code})
+
+    blocked = client.delete(f"/api/v1/configurazione/tipi-documento/id/{created['id']}")
+    assert blocked.status_code == 409, blocked.text
+    assert blocked.json()["codice"] == "TIPO_DOCUMENTO_HA_MODELLI"
+
+
+@pytest.mark.integration
 def test_routes_require_admin_and_export_is_scoped(admin_client):
     client, _ = admin_client
-    code, _ = crea(client, STRUTTURA)
+    code, created = crea(client, STRUTTURA)
     other, _ = crea(client, STRUTTURA)
     base = f"/api/v1/configurazione/tipi-documento/{code}"
     assert client.post(base + "/schema-discovery").status_code == 201
@@ -146,6 +201,7 @@ def test_routes_require_admin_and_export_is_scoped(admin_client):
         ("put", base + "/struttura", STRUTTURA),
         ("post", base + "/schema-discovery", None),
         ("get", base + "/schema-discovery/1", None),
+        ("delete", f"/api/v1/configurazione/tipi-documento/id/{created['id']}", None),
     ]:
         assert client.request(method, path, json=body).status_code == 403
 

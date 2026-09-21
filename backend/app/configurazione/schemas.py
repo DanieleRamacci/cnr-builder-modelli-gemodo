@@ -108,6 +108,7 @@ class TipoDocumentoCreate(Input):
 
 
 class TipoDocumentoDashboard(BaseModel):
+    id: uuid.UUID
     codice: str
     nome: str
     codice_contesto: str

@@ -29,9 +29,31 @@ export class TipiDocumentoListaComponent {
   protected readonly tipi = signal<TipoDocumentoDashboard[]>([]);
   protected readonly caricamento = signal(true);
   protected readonly errore = signal<string | null>(null);
+  protected readonly disattivandoId = signal<string | null>(null);
 
   constructor() {
     this.carica();
+  }
+
+  protected disattiva(tipo: TipoDocumentoDashboard): void {
+    if (
+      !window.confirm(
+        `Disattivare "${tipo.nome}" (${tipo.codice})? Resta nello storico ma sparisce da questo elenco e non e' piu' usabile per creare modelli.`,
+      )
+    ) {
+      return;
+    }
+    this.disattivandoId.set(tipo.id);
+    this.service.disattiva(tipo.id).subscribe({
+      next: () => {
+        this.disattivandoId.set(null);
+        this.carica();
+      },
+      error: (error: ApiError) => {
+        this.disattivandoId.set(null);
+        this.errore.set(error.messaggio);
+      },
+    });
   }
 
   protected carica(): void {

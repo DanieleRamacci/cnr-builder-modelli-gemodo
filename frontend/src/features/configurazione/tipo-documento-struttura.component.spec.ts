@@ -29,7 +29,9 @@ describe('TipoDocumentoStrutturaComponent', () => {
         { provide: TipiDocumentoService, useValue: service },
       ],
     });
-    service.crea.mockReturnValue(of({ codice: 'NUOVO', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'INCOMPLETO' }));
+    service.crea.mockReturnValue(
+      of({ id: '00000000-0000-4000-8000-000000000001', codice: 'NUOVO', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'INCOMPLETO' }),
+    );
     const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
     const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
       TipoDocumentoStrutturaComponent,
@@ -74,7 +76,7 @@ describe('TipoDocumentoStrutturaComponent', () => {
       }),
     );
     service.aggiornaStruttura.mockReturnValue(
-      of({ codice: 'ESISTENTE', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'DEFINITO' }),
+      of({ id: '00000000-0000-4000-8000-000000000002', codice: 'ESISTENTE', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'DEFINITO' }),
     );
     const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
       TipoDocumentoStrutturaComponent,

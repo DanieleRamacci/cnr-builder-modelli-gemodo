@@ -116,7 +116,9 @@ in proposta sotto `010`/Impostazioni - ancora aperto anche nel design stesso
 `PortaDiscovery` sopra e segnala le dimensioni ancora prive di policy invece
 di lasciarle inerti (`NodoDiscovery` ha gia' `extra="allow"`, non va in
 errore ma le ignora); la stessa segnalazione compare anche nella verifica
-endpoint di `010` (screen 5b).
+endpoint di `010` (screen 5b). Quando questa schermata verra' implementata,
+vale `FR-026` di `007`: struttura, organizzazione e stile MUST seguire
+esattamente 4a/4b, non un layout alternativo.
 
 ## Entities (Archivio Storico, Non Schema Runtime)
 

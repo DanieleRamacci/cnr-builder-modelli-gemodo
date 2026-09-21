@@ -22,6 +22,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configurazione/tipi-documento/id/{tipoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disattiva un tipo documento (per id, mai per codice)
+         * @description Disattiva (soft-delete) per id interno, mai per codice - un codice duplicato (SORGENTE_AMBIGUA) non identificherebbe la riga giusta. Rifiutata (409) se esistono modelli collegati a questo tipo documento. Idempotente su un tipo gia' disattivato.
+         */
+        delete: operations["disattivaTipoDocumento"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/configurazione/tipi-documento/{codice}/struttura": {
         parameters: {
             query?: never;
@@ -148,6 +168,11 @@ export interface components {
          *     }
          */
         TipoDocumentoDashboard: {
+            /**
+             * Format: uuid
+             * @description Identificativo interno stabile - da usare per disattivare questo tipo documento specifico, perche' il codice da solo puo' essere ambiguo se due righe lo condividono (SORGENTE_AMBIGUA, 001).
+             */
+            id: string;
             codice: string;
             nome: string;
             codice_contesto: string;
@@ -464,6 +489,44 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    disattivaTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disattivato (o gia' disattivato) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Esistono modelli collegati a questo tipo documento */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "TIPO_DOCUMENTO_HA_MODELLI",
+                     *       "messaggio": "Non disattivabile: esistono modelli collegati a questo tipo documento"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getStrutturaTipoDocumento: {

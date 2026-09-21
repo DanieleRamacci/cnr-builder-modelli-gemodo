@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.5.0
+  version: 0.6.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
     documentazione di discovery da consegnare agli integratori. Questo contratto
@@ -82,6 +82,39 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+  /configurazione/tipi-documento/id/{tipoId}:
+    delete:
+      description: >
+        Disattiva (soft-delete) per id interno, mai per codice - un codice
+        duplicato (SORGENTE_AMBIGUA) non identificherebbe la riga giusta.
+        Rifiutata (409) se esistono modelli collegati a questo tipo documento.
+        Idempotente su un tipo gia' disattivato.
+      tags: [ConfigurazioneCataloghi]
+      summary: Disattiva un tipo documento (per id, mai per codice)
+      operationId: disattivaTipoDocumento
+      x-required-role: GEMODO_ADMIN
+      parameters:
+        - name: tipoId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "204":
+          description: Disattivato (o gia' disattivato)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Esistono modelli collegati a questo tipo documento
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+              example:
+                codice: TIPO_DOCUMENTO_HA_MODELLI
+                messaggio: "Non disattivabile: esistono modelli collegati a questo tipo documento"
   /configurazione/tipi-documento/{codice}/struttura:
     get:
       description: >
@@ -405,8 +438,15 @@ components:
           $ref: "#/components/schemas/StrutturaTipoDocumento"
     TipoDocumentoDashboard:
       type: object
-      required: [codice, nome, codice_contesto, stato_integrazione]
+      required: [id, codice, nome, codice_contesto, stato_integrazione]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >
+            Identificativo interno stabile - da usare per disattivare questo
+            tipo documento specifico, perche' il codice da solo puo' essere
+            ambiguo se due righe lo condividono (SORGENTE_AMBIGUA, 001).
         codice:
           type: string
         nome:

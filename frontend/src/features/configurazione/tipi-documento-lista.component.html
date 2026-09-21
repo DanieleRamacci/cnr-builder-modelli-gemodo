@@ -23,7 +23,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (tipo of tipi(); track tipo.codice) {
+        @for (tipo of tipi(); track tipo.id) {
           <tr>
             <td>{{ tipo.codice }}</td>
             <td>{{ tipo.nome }}</td>
@@ -38,10 +38,18 @@
                 {{ badge(tipo.stato_integrazione).label }}
               </span>
             </td>
-            <td>
-              <a [routerLink]="[tipo.codice]" class="btn btn-sm btn-outline-primary"
+            <td class="text-nowrap">
+              <a [routerLink]="[tipo.codice]" class="btn btn-sm btn-outline-primary me-2"
                 >Modifica struttura</a
               >
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="disattivandoId() === tipo.id"
+                (click)="disattiva(tipo)"
+              >
+                {{ disattivandoId() === tipo.id ? '...' : 'Disattiva' }}
+              </button>
             </td>
           </tr>
         }

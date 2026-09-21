@@ -88,7 +88,7 @@ def dashboard_response(tipo, definizione, schema, endpoint) -> TipoDocumentoDash
     if endpoint is not None:
         stato = endpoint.stato
     return TipoDocumentoDashboard(
-        codice=tipo.codice, nome=tipo.nome, codice_contesto=tipo.codice_contesto,
+        id=tipo.id, codice=tipo.codice, nome=tipo.nome, codice_contesto=tipo.codice_contesto,
         stato_integrazione=stato, versione_schema_corrente=corrente.versione if corrente else None,
         versione_definizione=definizione.versione if definizione else None,
         esito_ultimo_test=endpoint.esito_ultimo_test if endpoint else None,
@@ -217,6 +217,23 @@ class ConfigurazioneService:
 
     def dashboard(self):
         return [dashboard_response(*row) for row in repository.dashboard(self.db)]
+
+    def disattiva_per_id(self, tipo_id: uuid.UUID, principal: PrincipalGEMODO) -> None:
+        # Per id, non per codice: due righe possono condividere lo stesso codice
+        # (SORGENTE_AMBIGUA) e il codice da solo non le distingue - vedi 001.
+        tipo = self.db.get(TipoDocumento, tipo_id, with_for_update=True)
+        if tipo is None:
+            raise DomainError("TIPO_DOCUMENTO_NOT_FOUND", "Tipo documento non trovato", status_code=404)
+        if tipo.stato == repository.STATO_INATTIVA:
+            return
+        if repository.conta_modelli(self.db, tipo.id) > 0:
+            raise DomainError(
+                "TIPO_DOCUMENTO_HA_MODELLI", "Non disattivabile: esistono modelli collegati a questo tipo documento",
+                status_code=409,
+            )
+        tipo.stato = repository.STATO_INATTIVA
+        self._audit(tipo.id, principal, "TIPO_DOCUMENTO_DISATTIVATO", {"codice": tipo.codice})
+        self.db.commit()
 
 
 def get_configurazione_service(db: Session = Depends(get_db)):

@@ -498,6 +498,25 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   collegate (oggi solo per lingua) dentro il modello che le referenzia
   (`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`), non restituirle come righe piatte
   indipendenti.
+- **FR-026** (2026-09-21, chiarito su richiesta esplicita dell'utente - prima
+  implicito solo nelle Clarifications, non vincolante): quando una schermata
+  gia' presente in `design_handoff_modellario/` (screens.json) viene
+  pianificata per l'implementazione, indipendentemente dal suo stato attuale
+  ("confermato" o "proposta"), l'interfaccia MUST seguirne struttura,
+  organizzazione dei contenuti, flusso di interazione e stile visivo (design
+  token: colori, tipografia Titillium Web/Roboto Mono, spaziature, raggi -
+  vedi README.md "Design Tokens"), adattati solo ai vincoli tecnici del
+  framework di destinazione (Angular + design-angular-kit al posto del CSS
+  Bootstrap Italia del prototipo). Non e' ammesso un layout alternativo
+  inventato quando esiste gia' una schermata disegnata per quel flusso. Questo
+  vale per tutte le schermate elencate nella tabella sotto, per le schermate
+  10 elencate nel Design Reference di `data-model.md` di quella spec, e per
+  qualunque nuova schermata che venga aggiunta in futuro a
+  `design_handoff_modellario/`. **Non copre** flussi per cui nessuna
+  schermata esiste nel design (es. l'editor struttura tipo documento di `010`
+  US1, gia' implementato prima che questa parte del design esistesse) - in
+  quel caso restano validi solo i design token generali, non una struttura
+  specifica da copiare, finche' non viene disegnata una schermata dedicata.
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
 selezionata nella navigazione. Tipo documentale e discovery sono risolti per

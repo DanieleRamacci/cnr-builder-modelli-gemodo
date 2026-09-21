@@ -110,6 +110,14 @@ viene gia' validata (FR-011).
 | 5a | new-context | `/configurazione/contesti/nuovo` | US1 + US2 | proposta, sostituisce/precisa il flusso testuale esistente |
 | 5b | integration-health | `/configurazione/contesti/:ctxId/integrazione` | US3, visualizza anche FR-015 (rinviato) | proposta |
 
+**Vincolo di implementazione (FR-026 di `007`)**: quando una di queste
+schermate viene pianificata, l'implementazione MUST seguirne struttura,
+organizzazione e stile visivo cosi' come documentati in
+`design_handoff_modellario/`, non un layout alternativo. Questo NON si
+applica retroattivamente all'editor struttura tipo documento (US1)
+implementato il 2026-09-21, prima che 5a esistesse nel design - quel flusso
+resta un editor a form senza una schermata dedicata a cui allinearsi.
+
 ## Entita' riusate, non ridefinite qui
 
 Riallineamento FR-016 del 2026-09-17: le entita' di classificazione elencate
