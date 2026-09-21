@@ -66,6 +66,10 @@ export class TipoDocumentoStrutturaComponent {
     this.profili.controls.map((c) => c.get('codice')?.value as string).filter(Boolean),
   );
 
+  protected readonly testoJson = signal('');
+  protected readonly erroreJson = signal<string | null>(null);
+  protected readonly jsonCopiato = signal(false);
+
   constructor() {
     if (this.modalitaModifica && this.codiceEsistente) {
       this.service.leggiStruttura(this.codiceEsistente).subscribe({
@@ -176,6 +180,35 @@ export class TipoDocumentoStrutturaComponent {
   }
   protected rimuoviCampo(i: number): void {
     this.campi.removeAt(i);
+  }
+
+  protected caricaJson(): void {
+    this.erroreJson.set(null);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(this.testoJson());
+    } catch {
+      this.erroreJson.set('JSON non valido: controlla virgole e parentesi.');
+      return;
+    }
+    if (typeof parsed !== 'object' || parsed === null) {
+      this.erroreJson.set('Il JSON deve essere un oggetto con tipologie/profili/campi.');
+      return;
+    }
+    this.applicaStruttura(parsed as StrutturaTipoDocumento);
+  }
+
+  protected esportaJson(): void {
+    this.testoJson.set(JSON.stringify(this.costruisciStruttura(), null, 2));
+    this.jsonCopiato.set(false);
+  }
+
+  protected copiaJson(): void {
+    this.esportaJson();
+    void navigator.clipboard?.writeText(this.testoJson()).then(() => {
+      this.jsonCopiato.set(true);
+      setTimeout(() => this.jsonCopiato.set(false), 2000);
+    });
   }
 
   private applicaStruttura(struttura: StrutturaTipoDocumento): void {

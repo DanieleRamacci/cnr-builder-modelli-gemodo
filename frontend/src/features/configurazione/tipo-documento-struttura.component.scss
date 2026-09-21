@@ -135,3 +135,23 @@ h1 {
 .td-add:hover {
   background: var(--td-primary-050);
 }
+
+// Riquadro JSON scuro, stesso pattern dell'anteprima JSON di 5a (design handoff).
+.td-json-panel {
+  background: var(--td-surface-50);
+}
+.td-json-textarea {
+  background: #17324d;
+  color: #dbe6f2;
+  border-color: #17324d;
+  white-space: pre;
+}
+.td-json-textarea::placeholder {
+  color: #8fa9c4;
+}
+.td-json-textarea:focus {
+  background: #17324d;
+  color: #dbe6f2;
+  border-color: var(--td-primary);
+  box-shadow: 0 0 0 0.2rem var(--td-primary-050);
+}

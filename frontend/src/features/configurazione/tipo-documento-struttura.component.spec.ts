@@ -97,4 +97,67 @@ describe('TipoDocumentoStrutturaComponent', () => {
       }),
     );
   });
+
+  it('fills the form from a pasted JSON instead of requiring row-by-row entry', () => {
+    TestBed.configureTestingModule({
+      imports: [TipoDocumentoStrutturaComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: route(null) },
+        { provide: TipiDocumentoService, useValue: service },
+      ],
+    });
+    const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
+      TipoDocumentoStrutturaComponent,
+    );
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component['testoJson'].set(
+      JSON.stringify({
+        tipologie: [{ codice: 'CP', descrizione: 'Concorsi Pubblici' }],
+        profili: [{ codice: 'CTER', descrizione: 'Collaboratore Tecnico E.R.', attributi: [] }],
+        combinazioni: [{ codice_tipologia: 'CP', codice_profilo: 'CTER' }],
+        lingue_possibili: ['IT', 'EN'],
+        campi: [
+          { codice: 'titolo', etichetta: 'Titolo', tipo: 'string', lingua: 'IT', obbligatorio: true, ordine: 1 },
+        ],
+      }),
+    );
+
+    (component as unknown as { caricaJson: () => void }).caricaJson();
+
+    expect(component['tipologie'].at(0).value.codice).toBe('CP');
+    expect(component['profili'].at(0).value.codice).toBe('CTER');
+    expect(component['campi'].at(0).value).toMatchObject({ codice: 'titolo', obbligatorio: true });
+    expect(component['linguePossibili'].value).toEqual({ IT: true, EN: true });
+    expect((component as unknown as { erroreJson: () => string | null }).erroreJson()).toBeNull();
+  });
+
+  it('reports invalid JSON instead of silently leaving the form untouched', () => {
+    TestBed.configureTestingModule({
+      imports: [TipoDocumentoStrutturaComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: route(null) },
+        { provide: TipiDocumentoService, useValue: service },
+      ],
+    });
+    const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
+      TipoDocumentoStrutturaComponent,
+    );
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component['testoJson'].set('{ non e json valido');
+    (component as unknown as { caricaJson: () => void }).caricaJson();
+
+    expect((component as unknown as { erroreJson: () => string | null }).erroreJson()).toContain(
+      'JSON non valido',
+    );
+  });
 });

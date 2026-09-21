@@ -15,6 +15,37 @@
     </div>
   }
 
+  <section class="td-section td-json-panel">
+    <legend>Carica o esporta come JSON</legend>
+    <p class="td-hint">
+      Più veloce che compilare riga per riga: incolla qui un JSON con tipologie/profili/campi (anche
+      dall'esempio ricevuto da GEBAN) e premi "Applica JSON" - riempie automaticamente la form sotto,
+      dove poi puoi correggere a mano quali campi sono obbligatori. "Esporta" fa il percorso inverso: prende
+      quello che hai compilato nella form e lo mostra qui come JSON, da copiare o salvare.
+    </p>
+    <textarea
+      class="form-control td-mono td-json-textarea"
+      rows="8"
+      [value]="testoJson()"
+      (input)="testoJson.set($any($event.target).value)"
+      placeholder='{"tipologie": [...], "profili": [...], "combinazioni": [...], "lingue_possibili": ["IT"], "campi": [...]}'
+    ></textarea>
+    @if (erroreJson()) {
+      <div class="alert alert-danger mt-2 mb-0" role="alert">{{ erroreJson() }}</div>
+    }
+    <div class="d-flex gap-2 mt-2">
+      <button type="button" class="btn btn-sm btn-primary" (click)="caricaJson()">
+        Applica JSON alla form
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="esportaJson()">
+        Esporta la form come JSON
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copiaJson()">
+        {{ jsonCopiato() ? 'Copiato!' : 'Copia negli appunti' }}
+      </button>
+    </div>
+  </section>
+
   <form (ngSubmit)="salva()">
     <fieldset [formGroup]="identita" class="td-section">
       <legend>Identita'</legend>
