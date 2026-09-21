@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import Keycloak from 'keycloak-js';
 import { of, throwError } from 'rxjs';
 
 import { IntegrazioneConfiguraComponent } from './integrazione-configura.component';
@@ -54,6 +55,46 @@ describe('IntegrazioneConfiguraComponent', () => {
     fixture = TestBed.createComponent(IntegrazioneConfiguraComponent);
     fixture.detectChanges();
   }
+
+  it('keeps the saved integration path when an explicit login is required (T035)', () => {
+    const login = vi.fn();
+    const saved = integrazione({ url: 'https://esempio.test/discovery', stato: 'CONNESSO' });
+    service = {
+      ottieni: vi.fn().mockReturnValue(
+        throwError(() => ({
+          status: 401,
+          codice: 'ACCESSO_NON_AUTENTICATO',
+          messaggio: 'Token non valido',
+        })),
+      ),
+      configura: vi.fn(),
+      verifica: vi.fn(),
+    };
+    TestBed.configureTestingModule({
+      imports: [IntegrazioneConfiguraComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: IntegrazioniAdminService, useValue: service },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ id: saved.id }) } },
+        },
+        { provide: Keycloak, useValue: { login } },
+      ],
+    });
+    fixture = TestBed.createComponent(IntegrazioneConfiguraComponent);
+    fixture.detectChanges();
+    const accedi = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Accedi'));
+    accedi!.click();
+    expect(login).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/configurazione/' + saved.id,
+      prompt: 'login',
+    });
+  });
 
   it('reloads (never overwrites) on REVISIONE_SUPERATA instead of applying the stale form', () => {
     setup(integrazione({ revisione: 1 }));

@@ -465,7 +465,7 @@ a User Story 4, l'MVP ADR 0002 e' completo.
       con leeway JWT configurabile; log server successivi forniti dall'utente
       confermano GET/PUT/verifica con 200. La nota IN CORSO sopra e' storica.
 
-- [ ] T035 Correzione dal collaudo server: refresh fallito non deve inviare
+- [x] T035 (2026-09-21: tutte e tre le parti implementate e coperte da test - `session.interceptor` blocca l'invio con token scaduto, la lista distingue errore da vuoto e mostra `Da completare` senza URL, il login esplicito conserva `/configurazione/<id>`; aggiunto il test mancante su quest'ultima) Correzione dal collaudo server: refresh fallito non deve inviare
       richieste con token scaduto; lista distingue errore da vuoto e mostra
       record senza URL come Da completare. Login esplicito mantiene il
       percorso dell'integrazione salvata. IN CORSO: 36 test frontend passati
