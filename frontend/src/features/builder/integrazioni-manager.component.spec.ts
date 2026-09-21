@@ -55,21 +55,25 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
     http.verify();
   });
-  function setup(contexts = ['geban', 'altro'], ctxId: string | null = null) {
+  function setup(
+    contexts = ['geban', 'altro'],
+    ctxId: string | null = null,
+    view: string | null = null,
+  ) {
     TestBed.configureTestingModule({
       providers: [
         provideDesignAngularKit(),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        ...(ctxId
+        ...(ctxId || view
           ? [
               {
                 provide: ActivatedRoute,
                 useValue: {
                   snapshot: {
                     paramMap: { get: (name: string) => (name === 'ctxId' ? ctxId : null) },
-                    queryParamMap: { get: () => null },
+                    queryParamMap: { get: (name: string) => (name === 'view' ? view : null) },
                   },
                 },
               },
@@ -115,6 +119,64 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.querySelector('[role=alert]')?.textContent).toContain(
       'non autorizzato',
     );
+    http.verify();
+  });
+  const altro = {
+    ...model,
+    id: 'model2',
+    public_id: 2,
+    codice: 'ALTRO-MODELLO',
+    nome: 'Bando tecnologi',
+    lingua: 'EN',
+    livello_professionale: null,
+    versioni: [{ ...version, id: 'v2', stato: 'PUBBLICATO' }],
+  };
+  it('summarises the loaded models by the state of their latest version', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const metrics = fixture.nativeElement.querySelector('.metriche') as HTMLElement;
+    const values = Array.from(metrics.querySelectorAll('.metrica')).map((cell) => [
+      cell.querySelector('.etichetta')!.textContent!.trim(),
+      cell.querySelector('.valore')!.textContent!.trim(),
+    ]);
+    expect(values).toEqual([
+      ['Modelli', '2'],
+      ['Pubblicati', '1'],
+      ['In revisione', '0'],
+      ['Bozze', '1'],
+    ]);
+    http.verify();
+  });
+  it('filters the loaded models by search text and by state', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
+    search.value = 'tecnologi';
+    search.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Bando tecnologi');
+    expect(root.textContent).not.toContain('Modello CTER');
+    search.value = '';
+    search.dispatchEvent(new Event('input'));
+    const stato = root.querySelector<HTMLSelectElement>('select[aria-label="Filtra per stato"]')!;
+    stato.value = 'BOZZA';
+    stato.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Modello CTER');
+    expect(root.textContent).not.toContain('Bando tecnologi');
+    http.verify();
+  });
+  it('shows the grid variant for ?view=grid with the same workflow actions', () => {
+    const { fixture, http } = setup(['geban'], 'geban', 'grid');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('table')).toBeNull();
+    expect(root.querySelectorAll('article.card-modello').length).toBe(2);
+    expect(root.textContent).toContain('Invia in revisione');
     http.verify();
   });
   it('creates the English derived model only after confirmation', () => {

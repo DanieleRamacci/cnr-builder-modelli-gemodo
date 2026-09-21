@@ -1,7 +1,10 @@
 <nav class="mb-2" aria-label="Percorso">
   <a routerLink="/contesti">Contesti</a> / <strong>{{ selected() }}</strong>
 </nav>
-<h1>Modelli</h1>
+<header class="testata-1b">
+  <h1>Modelli</h1>
+  <span class="badge-contesto">{{ selected() }}</span>
+</header>
 @if (error()) {
   <div class="alert alert-danger" role="alert">{{ error() }}</div>
   <button class="btn btn-outline-primary mb-3" (click)="retry()" [disabled]="saving()">
@@ -14,10 +17,111 @@
 @if (!loading() && !contexts().length && !error()) {
   <p>Nessun contesto autorizzato alla gestione dei modelli.</p>
 }
+<ng-template #azioniModello let-model>
+  @if (canCreateEnglishEdition(model)) {
+    <button
+      class="btn btn-sm btn-outline-primary mt-2 me-2"
+      [disabled]="saving()"
+      (click)="requestDerived(model, derivation)"
+    >
+      <it-icon name="plus" /> Crea versione inglese
+    </button>
+  }
+  <button
+    class="btn btn-sm btn-outline-danger mt-2"
+    title="Elimina modello"
+    aria-label="Elimina modello"
+    [disabled]="saving()"
+    (click)="requestDelete(model, deletion)"
+  >
+    <it-icon name="delete" />
+  </button>
+</ng-template>
+<ng-template #versioniModello let-model>
+  @for (version of model.versioni; track version.id) {
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+      <span>v{{ version.numero_versione }}</span>
+      <span class="badge-stato" [attr.data-stato]="version.stato">{{ version.stato }}</span>
+      <span class="small">ID API: {{ version.public_id ?? '-' }}</span>
+      @if (action(version); as next) {
+        <button
+          class="btn btn-sm btn-outline-primary"
+          [disabled]="saving()"
+          (click)="request(model, version, confirmation)"
+        >
+          {{ next.label }}
+        </button>
+      }
+    </div>
+  } @empty {
+    <span>Nessuna versione</span>
+  }
+</ng-template>
 @if (selected()) {
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-    <h2 class="h4 mb-0">Modelli - {{ selected() }}</h2>
-    <div class="d-flex flex-wrap gap-2">
+  @if (!loading() && !error()) {
+    <div class="metriche" aria-label="Riepilogo dei modelli caricati">
+      @for (metrica of metriche(); track metrica.etichetta) {
+        <div class="metrica">
+          <span class="etichetta">{{ metrica.etichetta }}</span>
+          <span class="valore">{{ metrica.valore }}</span>
+        </div>
+      }
+    </div>
+  }
+  <div class="toolbar-1b">
+    <input
+      type="search"
+      class="form-control ricerca"
+      placeholder="Cerca per nome, codice o categoria"
+      aria-label="Cerca modelli"
+      [value]="testo()"
+      (input)="testo.set($any($event.target).value)"
+    />
+    <select
+      class="form-select"
+      aria-label="Filtra per stato"
+      [value]="statoFiltro()"
+      (change)="statoFiltro.set($any($event.target).value)"
+    >
+      <option value="">Tutti gli stati</option>
+      <option value="PUBBLICATO">Pubblicato</option>
+      <option value="IN_REVISIONE">In revisione</option>
+      <option value="APPROVATO">Approvato</option>
+      <option value="BOZZA">Bozza</option>
+    </select>
+    <select
+      class="form-select"
+      aria-label="Filtra per lingua"
+      [value]="linguaFiltro()"
+      (change)="linguaFiltro.set($any($event.target).value)"
+    >
+      <option value="">Tutte le lingue</option>
+      <option value="IT">Italiano</option>
+      <option value="EN">Inglese</option>
+    </select>
+    <div class="btn-group" role="group" aria-label="Vista">
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="view() === 'table'"
+        [class.btn-outline-primary]="view() !== 'table'"
+        [attr.aria-pressed]="view() === 'table'"
+        (click)="setView('table')"
+      >
+        Tabella
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="view() === 'grid'"
+        [class.btn-outline-primary]="view() !== 'grid'"
+        [attr.aria-pressed]="view() === 'grid'"
+        (click)="setView('grid')"
+      >
+        Griglia
+      </button>
+    </div>
+    <div class="ms-auto d-flex flex-wrap gap-2">
       @for (source of sources(); track source.id) {
         <a
           class="btn btn-primary"
@@ -39,9 +143,35 @@
   @if (!loading() && !error()) {
     @if (!models().length) {
       <p>Nessun modello presente.</p>
+    } @else if (!visibili().length) {
+      <p>Nessun modello corrisponde ai filtri.</p>
+    } @else if (view() === 'grid') {
+      <div class="griglia-modelli">
+        @for (model of visibili(); track model.id) {
+          <article class="card-modello">
+            <div class="anteprima" aria-hidden="true">
+              <span class="badge-stato" [attr.data-stato]="stato(model)">{{ stato(model) }}</span>
+            </div>
+            <h2>{{ model.nome }}</h2>
+            <span class="codice">{{ model.codice }}</span>
+            <div class="tags">
+              <span>{{ model.codice_tipo_documento }}</span>
+              <span>{{ model.lingua === 'IT' ? 'Italiano' : 'Inglese' }}</span>
+              <span>{{ model.livello_professionale ?? 'Tutti i livelli' }}</span>
+            </div>
+            <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
+            <ng-container
+              *ngTemplateOutlet="versioniModello; context: { $implicit: model }"
+            ></ng-container>
+            <ng-container
+              *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
+            ></ng-container>
+          </article>
+        }
+      </div>
     } @else {
       <div class="table-responsive">
-        <table class="table align-middle">
+        <table class="table table-hover align-middle">
           <thead>
             <tr>
               <th scope="col">Modello</th>
@@ -51,29 +181,14 @@
             </tr>
           </thead>
           <tbody>
-            @for (model of models(); track model.id) {
+            @for (model of visibili(); track model.id) {
               <tr>
                 <td>
                   <strong>{{ model.nome }}</strong>
-                  <div class="small">{{ model.codice }}</div>
-                  @if (canCreateEnglishEdition(model)) {
-                    <button
-                      class="btn btn-sm btn-outline-primary mt-2 me-2"
-                      [disabled]="saving()"
-                      (click)="requestDerived(model, derivation)"
-                    >
-                      <it-icon name="plus" /> Crea versione inglese
-                    </button>
-                  }
-                  <button
-                    class="btn btn-sm btn-outline-danger mt-2"
-                    title="Elimina modello"
-                    aria-label="Elimina modello"
-                    [disabled]="saving()"
-                    (click)="requestDelete(model, deletion)"
-                  >
-                    <it-icon name="delete" />
-                  </button>
+                  <div class="small codice">{{ model.codice }}</div>
+                  <ng-container
+                    *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
+                  ></ng-container>
                 </td>
                 <td>
                   {{ model.codice_tipo_documento }}
@@ -85,29 +200,9 @@
                 </td>
                 <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>
-                  @for (version of model.versioni; track version.id) {
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                      <span>v{{ version.numero_versione }}</span>
-                      <span
-                        class="badge"
-                        [class.bg-success]="version.stato === 'PUBBLICATO'"
-                        [class.bg-secondary]="version.stato !== 'PUBBLICATO'"
-                        >{{ version.stato }}</span
-                      >
-                      <span class="small">ID API: {{ version.public_id ?? '-' }}</span>
-                      @if (action(version); as next) {
-                        <button
-                          class="btn btn-sm btn-outline-primary"
-                          [disabled]="saving()"
-                          (click)="request(model, version, confirmation)"
-                        >
-                          {{ next.label }}
-                        </button>
-                      }
-                    </div>
-                  } @empty {
-                    <span>Nessuna versione</span>
-                  }
+                  <ng-container
+                    *ngTemplateOutlet="versioniModello; context: { $implicit: model }"
+                  ></ng-container>
                 </td>
               </tr>
             }

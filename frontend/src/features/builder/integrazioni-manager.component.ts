@@ -1,7 +1,7 @@
-import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ItIconComponent } from 'design-angular-kit';
 import { forkJoin, Subscription } from 'rxjs';
 import { ApiClient } from '../../shared/api-client';
@@ -20,8 +20,9 @@ const ACTIONS: Record<string, Action> = {
 
 @Component({
   standalone: true,
-  imports: [DatePipe, RouterLink, ItIconComponent],
+  imports: [DatePipe, NgTemplateOutlet, RouterLink, ItIconComponent],
   templateUrl: './integrazioni-manager.component.html',
+  styleUrl: './integrazioni-manager.component.scss',
   styles: `
     :host {
       display: block;
@@ -44,9 +45,16 @@ const ACTIONS: Record<string, Action> = {
 export class IntegrazioniManagerComponent {
   private readonly api = inject(ApiClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private listing?: Subscription;
   protected readonly pageSize = 50;
+  protected readonly testo = signal('');
+  protected readonly statoFiltro = signal('');
+  protected readonly linguaFiltro = signal('');
+  protected readonly view = signal<'table' | 'grid'>(
+    this.route.snapshot.queryParamMap.get('view') === 'grid' ? 'grid' : 'table',
+  );
   protected readonly contexts = signal<string[]>([]);
   protected readonly selected = signal('');
   protected readonly models = signal<Model[]>([]);
@@ -62,6 +70,49 @@ export class IntegrazioniManagerComponent {
   );
   constructor() {
     this.initialize();
+  }
+  /** Stato della versione piu recente: e quello che l'utente vede come stato del modello. */
+  protected stato(model: Model): string {
+    const versions = model.versioni ?? [];
+    return (
+      versions.reduce<Version | undefined>(
+        (latest, v) => (!latest || v.numero_versione > latest.numero_versione ? v : latest),
+        undefined,
+      )?.stato ?? 'BOZZA'
+    );
+  }
+  protected readonly visibili = computed(() => {
+    const query = this.testo().trim().toLowerCase();
+    return this.models().filter(
+      (m) =>
+        (!this.statoFiltro() || this.stato(m) === this.statoFiltro()) &&
+        (!this.linguaFiltro() || m.lingua === this.linguaFiltro()) &&
+        (!query ||
+          [m.nome, m.codice, m.codice_tipo_documento, m.percorso_categorizzazione.join(' ')]
+            .join(' ')
+            .toLowerCase()
+            .includes(query)),
+    );
+  });
+  /** Solo conteggi sui modelli della pagina caricata: nessun totale o metrica inventata. */
+  protected readonly metriche = computed(() => {
+    const stati = this.models().map((m) => this.stato(m));
+    const conta = (s: string) => stati.filter((x) => x === s).length;
+    return [
+      { etichetta: 'Modelli', valore: stati.length },
+      { etichetta: 'Pubblicati', valore: conta('PUBBLICATO') },
+      { etichetta: 'In revisione', valore: conta('IN_REVISIONE') },
+      { etichetta: 'Bozze', valore: conta('BOZZA') },
+    ];
+  });
+  protected setView(view: 'table' | 'grid'): void {
+    this.view.set(view);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { view: view === 'grid' ? 'grid' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
   protected sources() {
     return this.integrations().filter((s) => s.codice_contesto === this.selected());
