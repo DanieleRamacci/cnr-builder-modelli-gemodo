@@ -1,0 +1,62 @@
+#!/bin/sh
+set -eu
+
+CONFIRMATION="RESET-GEMODO"
+PROJECT_DIR="${GEMODO_PROJECT_DIR:-/app/backend}"
+
+if [ "${GEMODO_ALLOW_DATABASE_RESET:-false}" != "true" ]; then
+    echo "Reset disabilitato: impostare GEMODO_ALLOW_DATABASE_RESET=true e ridistribuire il backend." >&2
+    exit 2
+fi
+
+if [ "${1:-}" != "$CONFIRMATION" ]; then
+    echo "Conferma mancante. Uso: gemodo-reset-database $CONFIRMATION" >&2
+    exit 2
+fi
+
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo "DATABASE_URL non disponibile nel container backend." >&2
+    exit 2
+fi
+
+if [ ! -f "$PROJECT_DIR/alembic.ini" ]; then
+    echo "Progetto backend non trovato in $PROJECT_DIR." >&2
+    exit 2
+fi
+
+DB_URL=$(printf '%s' "$DATABASE_URL" | sed 's#^postgresql+psycopg://#postgresql://#')
+
+echo "Aggiornamento dello schema alla migration corrente..."
+cd "$PROJECT_DIR"
+uv run alembic upgrade head
+
+echo "Cancellazione irreversibile di tutti i dati GEMODO..."
+psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+DO $$
+DECLARE
+    tabella record;
+BEGIN
+    FOR tabella IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename <> 'alembic_version'
+    LOOP
+        EXECUTE format(
+            'TRUNCATE TABLE public.%I RESTART IDENTITY CASCADE',
+            tabella.tablename
+        );
+    END LOOP;
+END
+$$;
+SQL
+
+echo "Verifica finale:"
+psql "$DB_URL" -v ON_ERROR_STOP=1 -P pager=off -c '
+SELECT
+  (SELECT count(*) FROM integrazione) AS integrazioni,
+  (SELECT count(*) FROM tipo_documento) AS tipi_documento,
+  (SELECT count(*) FROM modello_documento) AS modelli;
+'
+
+echo "Reset completato. Riavviare il servizio backend da Coolify prima delle prove API."

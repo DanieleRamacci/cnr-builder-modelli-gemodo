@@ -62,6 +62,8 @@ services:
       KEYCLOAK_JWKS_CACHE_TTL_SECONDS: ${KEYCLOAK_JWKS_CACHE_TTL_SECONDS:-300}
       KEYCLOAK_JWT_LEEWAY_SECONDS: ${KEYCLOAK_JWT_LEEWAY_SECONDS:-60}
       GEMODO_USE_MOCK_PRINCIPAL: ${GEMODO_USE_MOCK_PRINCIPAL:-false}
+      # Solo ambienti di test: abilita il comando distruttivo gemodo-reset-database.
+      GEMODO_ALLOW_DATABASE_RESET: ${GEMODO_ALLOW_DATABASE_RESET:-false}
       DOCUMENTALE_MOCK_URL: ${DOCUMENTALE_MOCK_URL:-}
       # Discovery esterna (010): il builder legge solo integrazioni CONNESSE dal
       # registro admin, non da un URL d'ambiente. Allowlist di deployment per le

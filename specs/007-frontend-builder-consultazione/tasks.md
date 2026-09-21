@@ -639,3 +639,24 @@ configurazione contiene piu' tipi documento attivi con lo stesso codice.
 - [x] T070 [P] Aggiungere test di regressione per due `TipoDocumento` attivi con lo stesso codice e modelli pubblicati autorizzati in `backend/tests/catalog/test_catalog_service_integration.py`
 - [x] T071 Adeguare la risoluzione del catalogo per aggregare le sorgenti attive autorizzate senza `SORGENTE_AMBIGUA` in `backend/app/catalog/repository.py` e `backend/app/catalog/service.py`
 - [x] T072 Eseguire test catalogo e prova HTTP della ricerca GEBAN, registrando l'esito in `specs/007-frontend-builder-consultazione/quickstart.md`
+
+## Phase 11: Unicita' tipo documento e compatibilita' discovery GEBAN
+
+**Goal**: impedire nuovi duplicati funzionali e rendere conforme la risposta
+discovery reale concordata con GEBAN.
+
+- [ ] T073 [P] Aggiungere test dell'alias discovery `lingue`/`ENG` e del conflitto con la forma canonica in `backend/tests/discovery/`
+- [ ] T074 Normalizzare gli alias GEBAN al confine dell'adapter in `backend/app/discovery/schemas.py`
+- [ ] T075 [P] Aggiungere test che il builder riusi e associ un tipo non assegnato dello stesso contesto/codice e rifiuti proprietari differenti in `backend/tests/builder/test_builder_flow_api.py`
+- [ ] T076 Impedire nuove righe attive duplicate per `(codice_contesto, codice)` nei servizi configurazione e builder in `backend/app/configurazione/service.py` e `backend/app/builder/service.py`
+- [ ] T077 Migliorare il messaggio di disattivazione dei tipi con modelli collegati e verificare la disattivazione per ID del duplicato incompleto
+- [ ] T078 Eseguire test discovery/configurazione/builder e validare la risposta live GEBAN con l'adapter aggiornato
+
+## Phase 12: Reset controllato ambiente di test
+
+**Goal**: rendere ripetibile da terminale del container backend il ripristino
+completo del database di test senza dipendere dalla directory corrente.
+
+- [x] T079 Aggiungere il comando protetto `gemodo-reset-database` all'immagine backend e al compose Coolify
+- [x] T080 Documentare abilitazione, conferma, risultato e riavvio in `docs/frontend-server-test.md`
+- [x] T081 Verificare sintassi dello script e build dell'immagine backend

@@ -15,6 +15,7 @@ COPY README.md /app/README.md
 COPY backend/ /app/backend/
 COPY specs/ /app/specs/
 COPY infra/ /app/infra/
+RUN install -m 0755 /app/backend/scripts/gemodo-reset-database /usr/local/bin/gemodo-reset-database
 
 WORKDIR /app/backend
 

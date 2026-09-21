@@ -534,6 +534,18 @@ documento, non solo per quella foglia.
   `001`). Una riga `BOZZA` resta valida per queste route - e' lo stato
   normale di un tipo documento non ancora completato, a differenza del
   catalogo dove non deve mai comparire.
+- **FR-024**: Nel medesimo `codice_contesto` MUST esistere al massimo un tipo
+  documento non inattivo per lo stesso `codice`. Quando il builder incontra
+  una configurazione amministrativa non ancora associata e il discovery della
+  nuova integrazione espone lo stesso codice nello stesso contesto, MUST
+  associare e riusare la configurazione esistente invece di crearne una seconda.
+  Un conflitto con un'altra integrazione gia' proprietaria MUST essere rifiutato
+  esplicitamente.
+- **FR-025**: L'adapter discovery MUST accettare, come alias di compatibilita'
+  dell'integrazione GEBAN, `lingue` al posto di `lingue_possibili` e il codice
+  `ENG` al posto di `EN`, normalizzandoli nel vocabolario GEMODO. Se alias e
+  nome canonico sono entrambi presenti con valori discordanti, la risposta
+  MUST restare non conforme.
 
 ### Key Entities *(include if feature involves data)*
 

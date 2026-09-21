@@ -64,3 +64,20 @@ Con un manager autorizzato, aprire Crea modello, scegliere il contesto e
 una delle integrazioni connesse visibili, poi tipo documento e percorso
 fino alla foglia. Compilare codice, nome e variante e creare la bozza.
 L'esito BOZZA viene mostrato solo dopo la creazione della versione nel backend.
+# Reset completo del database di test
+
+Il backend include `gemodo-reset-database`, eseguibile da qualunque directory
+del terminale del container. Il comando mantiene lo schema alla migration
+corrente e svuota tutte le tabelle applicative, compresi audit e dati demo.
+
+1. Impostare in Coolify `GEMODO_ALLOW_DATABASE_RESET=true` per il servizio.
+2. Ridistribuire il backend affinche' comando e variabile siano presenti.
+3. Aprire il terminale del container `backend` ed eseguire:
+
+```bash
+gemodo-reset-database RESET-GEMODO
+```
+
+Il comando deve terminare mostrando `0` per integrazioni, tipi documento e
+modelli. Riavviare quindi il backend da Coolify. Al termine della prova,
+reimpostare `GEMODO_ALLOW_DATABASE_RESET=false` e ridistribuire.
