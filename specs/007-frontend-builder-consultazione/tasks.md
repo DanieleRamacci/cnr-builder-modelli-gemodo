@@ -49,15 +49,15 @@ T041-T043 restano backlog distinto.
       Gate indipendente FAIL: Claude non autenticato e cache uv inaccessibile
       nel sandbox del gate; la suite equivalente fuori sandbox passa.
       Feature completa non certificata; T041-T043 e gli altri residui restano aperti.
-- [ ] T041 [US1] (backend gia' fatto in T053; chiude con T063) Generare codice e nome nel backend dalla categorizzazione
+- [x] T041 [US1] (backend gia' fatto in T053; chiude con T063) Generare codice e nome nel backend dalla categorizzazione
       validata, data e lingua: definire formato, unicita' concorrente e stabilita'.
       Rimuovere input liberi codice/nome/variante; variante derivata da metadati
       configurati o STANDARD, alternative solo controllate. Non usare varianti
       univoche per aggirare i vincoli di pubblicazione. Aggiornare contratti/test.
-- [ ] T042 [US1] (fatto in T049-T056; chiude con T063) Definire lingua modello persistita e selezione Italiano/IT,
+- [x] T042 [US1] (fatto in T049-T056; chiude con T063) Definire lingua modello persistita e selezione Italiano/IT,
       Inglese/EN con menu, validazione campi/disponibilita' backend. Coordinare le
       modifiche di dominio con 002 senza cambiare di nascosto i vincoli attuali.
-- [ ] T043 [US1] (fatto in T049-T060; chiude con T063) Pianificare livello professionale opzionale: menu dei valori
+- [x] T043 [US1] (fatto in T049-T060; chiude con T063) Pianificare livello professionale opzionale: menu dei valori
       ammessi per profilo e Tutti i livelli; livello scelto incluso nel nome
       e nello scope persistito, assenza copre tutti i livelli del solo profilo.
       Verificare struttura discovery e contratto campi comune prima di consentire
@@ -363,7 +363,7 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
       VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
       in `frontend/src/features/configurazione/integrazione-
       configura.component.spec.ts`
-- [ ] T014 [US4] Test e2e (Playwright) end-to-end: admin crea
+- [x] T014 (2026-09-21: ESEGUITO su stack reale, 3 e2e verdi - vedi quickstart.md 'Playwright su stack reale eseguito') [US4] Test e2e (Playwright) end-to-end: admin crea
       un'integrazione, la configura verso `mock-geban` reale, la verifica e
       vede lo stato finale corretto (Scenario 1 di `quickstart.md`), in
       `frontend/e2e/admin-integrazione.spec.ts`
@@ -419,7 +419,7 @@ FR-022/FR-023).
       selezione percorso -> risoluzione categoria/tipologia, gestione errore
       `400` su percorso ambiguo, in
       `frontend/src/features/builder/modello-crea.component.spec.ts`
-- [ ] T023 [US5] Test e2e (Playwright) end-to-end: manager vede solo le
+- [x] T023 (2026-09-21: ESEGUITO su stack reale, 3 e2e verdi - vedi quickstart.md 'Playwright su stack reale eseguito') [US5] Test e2e (Playwright) end-to-end: manager vede solo le
       integrazioni del proprio contesto, naviga fino a una foglia e crea un
       modello che risulta `BOZZA` anche da Swagger (Scenario 2 di
       `quickstart.md`), in `frontend/e2e/manager-crea-modello.spec.ts`
@@ -492,7 +492,7 @@ sandbox sull'apertura dei socket. Server dev disponibile su porta 4201.
 - [x] T030 [P] Aggiornare `frontend/README.md` (se assente, crearlo) con
       setup locale, variabili d'ambiente (`GEMODO_API_BASE_URL`,
       `KEYCLOAK_ISSUER_URL`, `KEYCLOAK_CLIENT_ID`) e comandi di test
-- [ ] T031 Eseguire l'intera suite (Vitest + Playwright e2e) contro
+- [x] T031 (2026-09-21: ESEGUITO su stack reale, 3 e2e verdi - vedi quickstart.md 'Playwright su stack reale eseguito') Eseguire l'intera suite (Vitest + Playwright e2e) contro
       `infra/local/compose.yaml` reale (non solo unitaria, coerente con la
       pratica gia' seguita per le altre spec) e registrare l'esito in
       `quickstart.md`
@@ -556,8 +556,8 @@ la precedente dello stesso scope.
 ## Phase 8: Validazione incremento lingua/livello
 
 - [x] T061 [P] Aggiornare stato feature e istruzioni operative in `README.md`, `frontend/README.md`, `docs/project-map.md` e `specs/007-frontend-builder-consultazione/quickstart.md`
-- [ ] T062 Eseguire test contratti, backend non-e2e, frontend unit/lint/build e Playwright lifecycle reale; registrare comandi ed esiti in `specs/007-frontend-builder-consultazione/quickstart.md`
-- [ ] T063 Chiudere gli umbrella task T041-T043 solo dopo il completamento di T047-T062 in `specs/007-frontend-builder-consultazione/tasks.md`
+- [x] T062 (2026-09-21: 317 backend non-e2e, 61 contratti/documentazione, 66 frontend unit, lint e build, 3 Playwright reali; esiti in quickstart.md) Eseguire test contratti, backend non-e2e, frontend unit/lint/build e Playwright lifecycle reale; registrare comandi ed esiti in `specs/007-frontend-builder-consultazione/quickstart.md`
+- [x] T063 (2026-09-21: T047-T062 completi, umbrella T041-T043 chiusi) Chiudere gli umbrella task T041-T043 solo dopo il completamento di T047-T062 in `specs/007-frontend-builder-consultazione/tasks.md`
 
 ## Phase 9: Edizioni collegate e contratto di generazione
 

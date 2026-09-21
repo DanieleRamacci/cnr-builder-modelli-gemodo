@@ -13,6 +13,7 @@ export default defineConfig({
   use: {
     baseURL: process.env['GEMODO_FRONTEND_BASE_URL'] ?? 'http://localhost:4200',
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

@@ -9,6 +9,14 @@ let clientId: string;
 let mapperId: string;
 let previousClient: Record<string, unknown>;
 let previousProfile: { attributes: Record<string, unknown>[] };
+// Il contesto DEVE essere fra quelli mappati in
+// infra/local/integration-profiles.local.yaml (ROLE_MANAGER#geban -> permessi
+// GEMODO, FR-018): un codice arbitrario non concede alcun permesso.
+// Di conseguenza il test non e' ripetibile su un database gia' usato: FR-024
+// ammette un solo tipo documento non inattivo per (codice_contesto, codice) e
+// la seconda esecuzione otterrebbe TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE. Ripulire
+// il database prima di rieseguire (comando `gemodo-reset-database`, T079/T080).
+const contesto = 'geban';
 const username = `lifecycle-${Date.now()}`;
 const password = 'local-lifecycle-test-1';
 
@@ -92,7 +100,9 @@ test.beforeAll(async () => {
       lastName: 'Manager',
       email: `${username}@example.test`,
       attributes: {
-        test_ace_contexts: [JSON.stringify({ geban: { roles: ['ROLE_MANAGER#geban'] } })],
+        test_ace_contexts: [
+          JSON.stringify({ [contesto]: { roles: [`ROLE_MANAGER#${contesto}`] } }),
+        ],
       },
       credentials: [{ type: 'password', value: password, temporary: false }],
     },
@@ -149,7 +159,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await page.getByRole('link', { name: 'Nuova integrazione' }).click();
   await page.locator('#codice').fill(`LIFECYCLE_${Date.now()}`);
   await page.locator('#nome').fill('Discovery lifecycle');
-  await page.locator('#codiceContesto').fill('geban');
+  await page.locator('#codiceContesto').fill(contesto);
   await page.locator('button[type=submit]').click();
   await page.locator('#url').fill('http://127.0.0.1:9100/discovery');
   await page.getByRole('button', { name: 'Salva configurazione' }).click();
@@ -158,7 +168,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   const sourceId = new URL(page.url()).pathname.split('/').pop()!;
   await page.getByRole('link', { name: 'Contesti', exact: true }).click();
   // Schermata 1a: card del contesto autorizzato, poi lista modelli 1b.
-  await page.locator('a[href="/contesti/geban/modelli"]').click();
+  await page.locator(`a[href="/contesti/${contesto}/modelli"]`).click();
   await page.locator(`a[href^="/builder/${sourceId}"]`).click();
   await page.locator('#tipo').selectOption('BANDO_CONCORSO');
   // Schermata 2a: tendine a cascata L2 (tipologia) -> L3 (profilo), poi lingua e Genera modello.

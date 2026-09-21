@@ -264,3 +264,55 @@ documento non inattivo dello stesso `(codice_contesto, codice)`, lo associa se
 non ha integrazione, risponde 409 `TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE` se e' di
 un'altra integrazione. `POST /configurazione/tipi-documento` risponde 409
 `TIPO_DOCUMENTO_ALREADY_EXISTS` per lo stesso duplicato.
+
+## Playwright su stack reale eseguito (2026-09-21) - T014/T023/T031
+
+Prima esecuzione reale dei test e2e di questo incremento. Stack usato (non i
+container di sviluppo gia' attivi sulla macchina, per non interferire):
+
+```text
+postgres  container usa-e-getta su 127.0.0.1:55432 (migrazioni alembic head)
+keycloak  container usa-e-getta su localhost:8081, realm gemodo-local importato
+          da infra/local/keycloak/realm-gemodo.local.json
+backend   uvicorn locale su 127.0.0.1:8003, KEYCLOAK_ISSUER_URL sul realm locale,
+          GEMODO_INTEGRAZIONI_ALLOWLIST=http://127.0.0.1:9100
+discovery infra/local discovery-mock su 127.0.0.1:9100
+frontend  ng serve su 4201 con GEMODO_API_BASE_URL=http://127.0.0.1:8003
+```
+
+Comando:
+
+```bash
+GEMODO_FRONTEND_BASE_URL=http://localhost:4201 \
+E2E_KEYCLOAK_URL=http://localhost:8081/realms/gemodo-local \
+E2E_DISCOVERY_URL=http://127.0.0.1:9100/discovery \
+npx playwright test
+```
+
+Esito:
+
+```text
+3 passed
+  smoke.spec.ts               the shell requires authentication before rendering anything
+  admin-integrazione.spec.ts  admin creates, configures and verifies an integration end-to-end
+  builder-lifecycle.spec.ts   ACE manager creates a draft and publishes from the context list
+backend non-E2E: 317 passed, 12 esclusi
+frontend unit: 66 passed, lint e build passati
+```
+
+Due correzioni necessarie per farli passare:
+
+- `smoke.spec.ts` verificava un `h1` "GEMODO" senza autenticarsi, ma
+  `onLoad: 'login-required'` non lascia alcuna pagina anonima: ora verifica il
+  redirect all'identity provider.
+- `builder-lifecycle.spec.ts` compilava ancora i campi codice/nome del modello,
+  rimossi da T055: ora segue le tendine a cascata della schermata 2a e legge il
+  nome generato dal backend.
+
+**Il test lifecycle richiede un database pulito per il contesto `geban`**: FR-024
+ammette un solo tipo documento non inattivo per `(codice_contesto, codice)`,
+quindi una seconda esecuzione sullo stesso database ottiene
+`TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE`. Il contesto non puo' essere reso univoco
+per esecuzione perche' deve essere fra quelli mappati in
+`infra/local/integration-profiles.local.yaml` (FR-018). Usare
+`gemodo-reset-database` (T079/T080) prima di rieseguire.
