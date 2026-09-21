@@ -157,16 +157,19 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.getByText('Connesso', { exact: true })).toBeVisible();
   const sourceId = new URL(page.url()).pathname.split('/').pop()!;
   await page.getByRole('link', { name: 'Contesti', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'geban', exact: true })).toBeVisible();
+  // Schermata 1a: card del contesto autorizzato, poi lista modelli 1b.
+  await page.locator('a[href="/contesti/geban/modelli"]').click();
   await page.locator(`a[href^="/builder/${sourceId}"]`).click();
   await page.locator('#tipo').selectOption('BANDO_CONCORSO');
-  await page.getByRole('button', { name: 'DEMO - Tempo determinato', exact: true }).click();
-  await page.getByRole('button', { name: 'DEMO - Ricercatore', exact: true }).click();
-  const modelName = `Modello lifecycle ${Date.now()}`;
-  await page.locator('#codice').fill(`QA_${Date.now()}`);
-  await page.locator('#nome').fill(modelName);
-  await page.getByRole('button', { name: 'Crea modello in bozza' }).click();
+  // Schermata 2a: tendine a cascata L2 (tipologia) -> L3 (profilo), poi lingua e Genera modello.
+  await page.locator('#livello-0').selectOption({ label: 'DEMO - Tempo determinato' });
+  await page.locator('#livello-1').selectOption({ label: 'DEMO - Ricercatore' });
+  await page.locator('#lingua').selectOption('IT');
+  await page.getByRole('button', { name: 'Genera modello' }).click();
   await expect(page.getByRole('status')).toContainText('BOZZA');
+  // Codice e nome sono generati dal backend: si leggono dall'esito, non si inseriscono.
+  const esito = (await page.getByRole('status').textContent()) ?? '';
+  const modelName = /Modello (.+) \(/.exec(esito)![1];
   await page.getByRole('link', { name: 'Torna ai modelli' }).click();
   const row = page.getByRole('row').filter({ hasText: modelName });
   for (const action of ['Invia in revisione', 'Approva', 'Pubblica']) {

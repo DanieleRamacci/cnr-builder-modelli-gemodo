@@ -1,0 +1,178 @@
+// Schermata 1a (contexts-list) da design_handoff_modellario/README.md.
+:host {
+  --td-primary: #0066cc;
+  --td-primary-050: #e6f0fa;
+  --td-ink-900: #17324d;
+  --td-ink-600: #33485c;
+  --td-ink-500: #5a6772;
+  --td-border-300: #c5cdd4;
+  --td-border-200: #e3e7eb;
+  --td-surface-50: #f7f9fb;
+
+  display: block;
+}
+
+.breadcrumb-1a {
+  padding: 22px 0 0;
+  font-size: 13px;
+  color: var(--td-ink-500);
+
+  strong {
+    color: #1c2024;
+    font-weight: 600;
+  }
+}
+
+.testata {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--td-border-200);
+
+  h1 {
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--td-ink-900);
+    letter-spacing: -0.3px;
+  }
+
+  p {
+    max-width: 620px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--td-ink-500);
+  }
+}
+
+.filtri {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  background: var(--td-surface-50);
+  border-bottom: 1px solid var(--td-border-200);
+
+  .ricerca {
+    max-width: 340px;
+    height: 38px;
+    border: 1px solid var(--td-border-300);
+    border-radius: 4px;
+  }
+
+  .chip {
+    padding: 6px 13px;
+    border: 1px solid var(--td-border-300);
+    border-radius: 16px;
+    background: #fff;
+    font-size: 13px;
+    color: var(--td-ink-600);
+
+    &.attivo {
+      background: var(--td-primary);
+      border-color: var(--td-primary);
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
+.griglia {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 24px 0 30px;
+
+  @media (max-width: 991px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 575px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-contesto {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 14px;
+  border: 1px solid var(--td-border-200);
+  border-top: 4px solid var(--td-primary);
+  border-radius: 4px;
+  background: #fff;
+
+  .intestazione {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sigla {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    background: var(--td-primary-050);
+    color: var(--td-primary);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 17.5px;
+    font-weight: 700;
+    color: var(--td-ink-900);
+  }
+
+  .codice {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--td-ink-500);
+  }
+
+  .descrizione {
+    min-height: 60px;
+    margin: 12px 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--td-ink-500);
+  }
+
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #eef1f4;
+    font-size: 13px;
+
+    strong {
+      font-size: 15px;
+      color: var(--td-ink-900);
+    }
+
+    a {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--td-primary);
+    }
+  }
+}
+
+.card-nuovo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 210px;
+  border: 2px dashed var(--td-border-300);
+  border-radius: 4px;
+  color: var(--td-primary);
+  font-weight: 600;
+}

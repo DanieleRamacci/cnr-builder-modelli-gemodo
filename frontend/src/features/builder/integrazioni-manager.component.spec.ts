@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideDesignAngularKit } from 'design-angular-kit';
 import { IntegrazioniManagerComponent } from './integrazioni-manager.component';
 
@@ -55,13 +55,26 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
     http.verify();
   });
-  function setup(contexts = ['geban', 'altro']) {
+  function setup(contexts = ['geban', 'altro'], ctxId: string | null = null) {
     TestBed.configureTestingModule({
       providers: [
         provideDesignAngularKit(),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        ...(ctxId
+          ? [
+              {
+                provide: ActivatedRoute,
+                useValue: {
+                  snapshot: {
+                    paramMap: { get: (name: string) => (name === 'ctxId' ? ctxId : null) },
+                    queryParamMap: { get: () => null },
+                  },
+                },
+              },
+            ]
+          : []),
       ],
     });
     const fixture = TestBed.createComponent(IntegrazioniManagerComponent);
@@ -73,26 +86,35 @@ describe('context models and lifecycle', () => {
       .flush([{ id: 'source', codice: 'GEBAN', nome: 'Software', codice_contesto: 'geban' }]);
     return { fixture, http };
   }
-  it('uses backend-authorized context tabs and reloads the list on selection', () => {
+  it('lists the models of the context taken from the /contesti/:ctxId/modelli route', () => {
+    const { fixture, http } = setup(['geban', 'altro'], 'altro');
+    const first = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(first.request.params.get('codice_contesto')).toBe('altro');
+    first.flush([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('nav button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/contesti"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
+    http.verify();
+  });
+  it('shows the model table with language and level for the default context', () => {
     const { fixture, http } = setup();
     const first = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
     expect(first.request.params.get('codice_contesto')).toBe('geban');
     first.flush([model]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('select')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Modello CTER');
     expect(fixture.nativeElement.textContent).toContain('Italiano');
     expect(fixture.nativeElement.textContent).toContain('VI');
     expect(fixture.nativeElement.textContent).toContain('Crea versione inglese');
-    const tabs = fixture.nativeElement.querySelectorAll('nav button');
-    tabs[1].click();
+    http.verify();
+  });
+  it('refuses a context in the URL that the backend did not authorize, without querying models', () => {
+    const { fixture, http } = setup(['geban'], 'estraneo');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).not.toContain('Modello CTER');
-    const next = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
-    expect(next.request.params.get('codice_contesto')).toBe('altro');
-    next.flush([]);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
+    expect(fixture.nativeElement.querySelector('[role=alert]')?.textContent).toContain(
+      'non autorizzato',
+    );
     http.verify();
   });
   it('creates the English derived model only after confirmation', () => {
@@ -117,10 +139,7 @@ describe('context models and lifecycle', () => {
     request.flush({ ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' });
     http
       .expectOne((candidate) => candidate.url === '/api/v1/builder/modelli')
-      .flush([
-        model,
-        { ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' },
-      ]);
+      .flush([model, { ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' }]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent.match(/Crea versione inglese/g)?.length ?? 0).toBe(0);
     http.verify();

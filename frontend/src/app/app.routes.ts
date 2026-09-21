@@ -18,12 +18,19 @@ export const routes: Routes = [
     loadComponent: () => import('./profile.component').then((m) => m.ProfileComponent),
   },
   {
-    path: 'builder',
+    path: 'contesti',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('../features/builder/contesti-lista.component').then((m) => m.ContestiListaComponent),
+  },
+  {
+    path: 'contesti/:ctxId/modelli',
     loadComponent: () =>
       import('../features/builder/integrazioni-manager.component').then(
         (m) => m.IntegrazioniManagerComponent,
       ),
   },
+  { path: 'builder', pathMatch: 'full', redirectTo: 'contesti' },
   {
     path: 'configurazione',
     canActivate: [adminGuard],

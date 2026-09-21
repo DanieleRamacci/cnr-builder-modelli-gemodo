@@ -18,7 +18,7 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
         >
       }
       @if (manager) {
-        <a routerLink="/builder" class="list-group-item list-group-item-action">Contesti</a>
+        <a routerLink="/contesti" class="list-group-item list-group-item-action">Contesti</a>
       }
     </div>`,
 })

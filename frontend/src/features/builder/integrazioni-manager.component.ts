@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ItIconComponent } from 'design-angular-kit';
 import { forkJoin, Subscription } from 'rxjs';
 import { ApiClient } from '../../shared/api-client';
@@ -43,7 +43,6 @@ const ACTIONS: Record<string, Action> = {
 })
 export class IntegrazioniManagerComponent {
   private readonly api = inject(ApiClient);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private listing?: Subscription;
@@ -84,8 +83,18 @@ export class IntegrazioniManagerComponent {
         next: ({ contexts, integrations }) => {
           this.contexts.set(contexts);
           this.integrations.set(integrations);
-          const requested = this.route.snapshot.queryParamMap.get('contesto');
-          const context = contexts.includes(requested ?? '') ? requested! : contexts[0];
+          // Schermata 1b: il contesto arriva dalla rotta /contesti/:ctxId/modelli
+          // (query `contesto` solo per compatibilita'). Un contesto non autorizzato
+          // non ricade mai su un altro in silenzio.
+          const requested =
+            this.route.snapshot.paramMap.get('ctxId') ??
+            this.route.snapshot.queryParamMap.get('contesto');
+          if (requested && !contexts.includes(requested)) {
+            this.error.set('Contesto non autorizzato o inesistente');
+            this.loading.set(false);
+            return;
+          }
+          const context = requested ?? contexts[0];
           if (context) this.select(context);
           else this.loading.set(false);
         },
@@ -99,11 +108,6 @@ export class IntegrazioniManagerComponent {
     if (this.saving() || !this.contexts().includes(context)) return;
     this.selected.set(context);
     this.offset.set(0);
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { contesto: context },
-      replaceUrl: true,
-    });
     this.load();
   }
   protected page(delta: number): void {
@@ -153,8 +157,7 @@ export class IntegrazioniManagerComponent {
       model.lingua === 'IT' &&
       !model.derivato_da_modello_id &&
       !this.models().some(
-        (candidate) =>
-          candidate.derivato_da_modello_id === model.id && candidate.lingua === 'EN',
+        (candidate) => candidate.derivato_da_modello_id === model.id && candidate.lingua === 'EN',
       )
     );
   }

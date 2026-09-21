@@ -70,3 +70,155 @@ describe('manager creation flow', () => {
     http.verify();
   });
 });
+
+describe('2a categorization cascade', () => {
+  const campo = {
+    codice: 'titolo',
+    lingua: 'IT',
+    etichetta: 'Titolo',
+    tipo: 'string',
+    ordine: 1,
+    obbligatorio: true,
+  };
+  const leafA = {
+    codice: 'RICERCATORE',
+    descrizione: 'Ricercatore',
+    tipo_livello: 'profilo',
+    lingue_possibili: ['IT'],
+    campi: [campo],
+  };
+  const leafB = {
+    codice: 'TECNOLOGO',
+    descrizione: 'Tecnologo',
+    tipo_livello: 'profilo',
+    lingue_possibili: ['IT'],
+    campi: [campo],
+  };
+  const nodi = [
+    {
+      codice: 'TD',
+      descrizione: 'Tempo determinato',
+      tipo_livello: 'tipologia',
+      figli: [leafA, leafB],
+    },
+    { codice: 'TI', descrizione: 'Tempo indeterminato', tipo_livello: 'tipologia', figli: [leafB] },
+  ];
+
+  function setup() {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'source' } } } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ModelloCreaComponent);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/builder/integrazioni/source/tipi-documento').flush(['BANDO']);
+    const component = fixture.componentInstance as unknown as {
+      loadTree: (code: string) => void;
+      chooseAt: (indice: number, code: string) => void;
+      create: () => void;
+      lingua: string;
+      path: () => string[];
+    };
+    component.loadTree('BANDO');
+    http
+      .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
+      .flush({ nodi });
+    fixture.detectChanges();
+    return { fixture, http, component };
+  }
+
+  const genera = (root: HTMLElement) =>
+    Array.from(root.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Genera modello'),
+    )!;
+
+  it('shows one level block per reached depth with named levels and disables Genera until a leaf', () => {
+    const { fixture } = setup();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('#livello-0')).not.toBeNull();
+    expect(root.querySelector('#livello-1')).toBeNull();
+    expect(root.textContent).toContain('Tipologia');
+    expect(genera(root).disabled).toBe(true);
+    expect(root.textContent).toContain('BANDO');
+  });
+
+  it('descends level by level and resets deeper choices when a parent changes', () => {
+    const { fixture, component } = setup();
+    const root = fixture.nativeElement as HTMLElement;
+    component.chooseAt(0, 'TD');
+    fixture.detectChanges();
+    expect(root.querySelector('#livello-1')).not.toBeNull();
+    expect(root.textContent).toContain('Profilo');
+    component.chooseAt(1, 'RICERCATORE');
+    fixture.detectChanges();
+    expect(component.path()).toEqual(['TD', 'RICERCATORE']);
+    expect(root.textContent).toContain('3 di 3 livelli selezionati');
+    component.chooseAt(0, 'TI');
+    fixture.detectChanges();
+    expect(component.path()).toEqual(['TI']);
+    expect(root.querySelector('#lingua')).toBeNull();
+    expect(root.textContent).toContain('2 di 3 livelli selezionati');
+    component.chooseAt(0, '');
+    fixture.detectChanges();
+    expect(component.path()).toEqual([]);
+  });
+
+  it('enables Genera only with a leaf and a language, and shows the backend error for an ambiguous path', async () => {
+    const { fixture, http, component } = setup();
+    const root = fixture.nativeElement as HTMLElement;
+    component.chooseAt(0, 'TD');
+    component.chooseAt(1, 'RICERCATORE');
+    const setLingua = async (value: string) => {
+      const select = root.querySelector<HTMLSelectElement>('#lingua')!;
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await setLingua('');
+    expect(genera(root).disabled).toBe(true);
+    await setLingua('IT');
+    expect(genera(root).disabled).toBe(false);
+    component.create();
+    http
+      .expectOne('/api/v1/builder/modelli')
+      .flush(
+        { codice: 'CONTESTO_NON_VALIDO', messaggio: 'Percorso ambiguo' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+    fixture.detectChanges();
+    expect(root.querySelector('[role=alert]')?.textContent).toContain('Percorso ambiguo');
+    expect(root.textContent).not.toContain('creato - BOZZA');
+    http.verify();
+  });
+
+  it('keeps INTEGRAZIONE_NON_CONNESSA and transport failures distinct from an empty tree', () => {
+    const { fixture, http, component } = setup();
+    const root = fixture.nativeElement as HTMLElement;
+    component.loadTree('BANDO');
+    http
+      .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
+      .flush(
+        { codice: 'INTEGRAZIONE_NON_CONNESSA', messaggio: 'Integrazione non connessa' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    fixture.detectChanges();
+    expect(root.querySelector('[role=alert]')?.textContent).toContain('Integrazione non connessa');
+    expect(root.querySelector('#livello-0')).toBeNull();
+    component.loadTree('BANDO');
+    http
+      .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
+      .error(new ProgressEvent('error'));
+    fixture.detectChanges();
+    expect(root.querySelector('[role=alert]')).not.toBeNull();
+    expect(root.querySelector('#livello-0')).toBeNull();
+    http.verify();
+  });
+});

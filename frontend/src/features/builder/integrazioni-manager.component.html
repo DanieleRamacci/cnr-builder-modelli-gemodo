@@ -1,23 +1,13 @@
-<h1>Contesti</h1>
+<nav class="mb-2" aria-label="Percorso">
+  <a routerLink="/contesti">Contesti</a> / <strong>{{ selected() }}</strong>
+</nav>
+<h1>Modelli</h1>
 @if (error()) {
   <div class="alert alert-danger" role="alert">{{ error() }}</div>
   <button class="btn btn-outline-primary mb-3" (click)="retry()" [disabled]="saving()">
     Riprova
   </button>
 }
-<nav class="nav nav-tabs mb-4" aria-label="Contesti autorizzati">
-  @for (context of contexts(); track context) {
-    <button
-      class="nav-link"
-      [class.active]="selected() === context"
-      [attr.aria-current]="selected() === context ? 'page' : null"
-      [disabled]="saving()"
-      (click)="select(context)"
-    >
-      {{ context }}
-    </button>
-  }
-</nav>
 @if (loading()) {
   <p role="status">Caricamento...</p>
 }
