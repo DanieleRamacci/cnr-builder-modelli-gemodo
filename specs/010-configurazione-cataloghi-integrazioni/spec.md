@@ -16,6 +16,44 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-21 (ter): problemi reali trovati testando l'ambiente di test
+
+Testando le API sull'ambiente di test reale (`https://dev-gemodo.concorsi.cnr.it`,
+deploy Coolify del branch `test` - non un ambiente "dev" separato, e' lo stesso
+ambiente di collaudo di sempre) sono emersi due problemi concreti, non solo
+ipotesi da spec:
+
+- **`SORGENTE_AMBIGUA` su `GET /catalogo/modelli`**: due righe `tipo_documento`
+  con `codice = "BANDO_CONCORSO"` nello stesso database - una bozza
+  abbandonata creata dal flusso admin (mai completata, `stato=BOZZA`) e quella
+  reale creata automaticamente dal builder (`stato=ATTIVA`). La query del
+  catalogo contava tutte le righe con quel codice, ambiguita' o no. Fix in
+  `backend/app/catalog/repository.py::get_tipo_documento_by_codice`: conta
+  solo le righe `ATTIVA` prima di dichiarare ambiguita' (`DEC-007-FALLBACK-LIVELLO-CATALOGO`
+  non c'entra - e' un fix indipendente, nessuna nuova decisione necessaria,
+  solo un bug).
+- **Stesso errore, punto diverso**: `GET`/`PUT /configurazione/tipi-documento/{codice}/struttura`
+  (le route usate dall'editor struttura, User Story 1) avevano lo **stesso
+  problema** in una funzione diversa (`configurazione/repository.py::tipo_documento`,
+  usata anche da `aggiorna`/`genera`/`esporta`) - nessun filtro sullo stato.
+  Scoperto solo dopo aver aggiunto la disattivazione (sotto): disattivare il
+  duplicato non bastava a risolvere l'errore su queste route, perche' la
+  funzione non guardava lo stato per niente. Fix: filtrata per escludere le
+  righe `INATTIVA` (non solo `ATTIVA`, perche' qui un tipo documento in
+  `BOZZA` e' uno stato normale e valido da poter modificare mentre lo si
+  definisce - a differenza del catalogo, dove `BOZZA` non deve mai comparire).
+- **Nuova capacita' concreta, FR-022** (vedi Requirements sotto):
+  `DELETE /configurazione/tipi-documento/id/{tipoId}` disattiva un tipo
+  documento **per id**, mai per codice (il codice duplicato e' proprio il
+  problema, non lo puo' risolvere). Bloccata se esistono modelli collegati.
+  Esposta in UI nella pagina "Tipi documento".
+- **Editor struttura appesantito nell'uso reale**: la form completa
+  (tipologie/profili/campi riga per riga) e' risultata scomoda per un
+  inserimento reale. Aggiunta una scorciatoia: caricare/esportare l'intera
+  struttura come JSON (textarea dedicata, riusa lo stesso parsing della
+  precompilazione), poi correggere solo i checkbox obbligatorio/opzionale
+  invece di ricostruire l'albero a mano.
+
 ### Session 2026-09-21 (bis): schermate di design per User Story 5 e rilevamento attributi
 
 `design_handoff_modellario/` e' stato esteso con 4 nuove schermate (4a, 4b,
@@ -478,7 +516,7 @@ documento, non solo per quella foglia.
   configurazione verificata; nessun successo obsoleto o risposta parzialmente
   conforme abilita la sorgente. Cambiare URL richiede nuova verifica; cambiare
   esempi illustrativi non modifica l'esito della forma comune.
-- **FR-022** (2026-09-21, colma un gap trovato in produzione: due
+- **FR-022** (2026-09-21, colma un gap trovato testando l'ambiente di test: due
   `TipoDocumento` con lo stesso `codice` - una bozza abbandonata dell'admin e
   quella reale creata dal builder - rendevano `GET /catalogo/modelli`
   permanentemente `SORGENTE_AMBIGUA` senza alcun modo di risolverlo da
@@ -487,6 +525,15 @@ documento, non solo per quella foglia.
   riga disattivare). La disattivazione MUST essere rifiutata se esistono
   modelli collegati. Un tipo disattivato MUST sparire dal cruscotto
   amministrativo ma restare nello storico (nessuna cancellazione fisica).
+- **FR-023** (2026-09-21, stesso giorno, trovato mentre si verificava FR-022:
+  disattivare il duplicato non bastava a rendere di nuovo utilizzabili le
+  route struttura): la ricerca di un tipo documento per codice usata da
+  `GET`/`PUT .../struttura`, `POST .../schema-discovery` e
+  `GET .../schema-discovery/{versione}` MUST escludere le righe `INATTIVA`
+  dal conteggio di ambiguita' (non solo il catalogo GEBAN, gia' coperto da
+  `001`). Una riga `BOZZA` resta valida per queste route - e' lo stato
+  normale di un tipo documento non ancora completato, a differenza del
+  catalogo dove non deve mai comparire.
 
 ### Key Entities *(include if feature involves data)*
 

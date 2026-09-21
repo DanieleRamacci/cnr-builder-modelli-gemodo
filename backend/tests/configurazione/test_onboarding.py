@@ -151,6 +151,12 @@ def test_disattivazione_per_id_risolve_il_codice_duplicato(admin_client):
     codes = [row["codice"] for row in dashboard]
     assert codes.count(code) == 2
 
+    # con due righe attive, anche leggere/scrivere la struttura per codice
+    # (non solo il catalogo GEBAN) deve rifiutarsi con la stessa ambiguita'
+    base = f"/api/v1/configurazione/tipi-documento/{code}"
+    assert client.get(base + "/struttura").status_code == 409
+    assert client.put(base + "/struttura", json=STRUTTURA).status_code == 409
+
     delete = client.delete(f"/api/v1/configurazione/tipi-documento/id/{duplicate_id}")
     assert delete.status_code == 204, delete.text
 
@@ -158,6 +164,10 @@ def test_disattivazione_per_id_risolve_il_codice_duplicato(admin_client):
     matching = [row for row in dashboard_dopo if row["codice"] == code]
     assert len(matching) == 1
     assert matching[0]["id"] == first["id"]
+
+    # disattivata la riga duplicata, leggere/scrivere per codice torna a funzionare
+    assert client.get(base + "/struttura").status_code == 200
+    assert client.put(base + "/struttura", json=STRUTTURA).status_code == 200
 
     # idempotente: ridisattivare la stessa riga non e' un errore
     assert client.delete(f"/api/v1/configurazione/tipi-documento/id/{duplicate_id}").status_code == 204

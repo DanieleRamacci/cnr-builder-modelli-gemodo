@@ -15,7 +15,11 @@ def conta_modelli(db: Session, tipo_documento_id) -> int:
 
 
 def tipo_documento(db: Session, codice: str, *, lock: bool = False):
-    query = select(TipoDocumento).where(TipoDocumento.codice == codice)
+    # Una riga INATTIVA (disattivata dall'admin, es. un duplicato abbandonato)
+    # non deve mai contare per l'ambiguita': altrimenti "Disattiva" non
+    # risolverebbe nulla per queste route (legge/scrive struttura), a
+    # differenza del catalogo (001) che gia' filtra per stato.
+    query = select(TipoDocumento).where(TipoDocumento.codice == codice, TipoDocumento.stato != STATO_INATTIVA)
     if lock:
         query = query.with_for_update()
     types = list(db.scalars(query.limit(2)))
