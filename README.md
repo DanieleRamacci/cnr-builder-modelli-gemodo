@@ -126,6 +126,8 @@ $speckit-converge      # riallineamento finale
   estrarre specifiche piu' piccole.
 - Lo stack tecnico corrente e' backend Python FastAPI, PostgreSQL/Alembic e frontend
   Angular.
+- Il frontend Angular vive in `frontend/` (vedi `frontend/README.md`); le schermate
+  disegnate in `design_handoff_modellario/` vanno seguite come da FR-026 della spec 007.
 - Non implementare codice prima di avere almeno `spec.md`, `plan.md` e
   `tasks.md` per la feature corrente.
 - Non implementare endpoint pubblici o di integrazione prima di avere OpenAPI versionato,

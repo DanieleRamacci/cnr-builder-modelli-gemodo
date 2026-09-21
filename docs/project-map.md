@@ -62,10 +62,15 @@ Backend builder collegato a discovery HTTP con URL esplicita per tipo
 firme e runner restano aperti. Suite finale non-e2e: 206 passati, 12 esclusi.
 Configurazione e backup: `specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md`.
 
-Il frontend builder non e' ancora implementato. Decisione confermata
-2026-09-17: Angular con [Design Angular Kit](https://github.com/italia/design-angular-kit),
-da pianificare nella spec 007; Swagger/ReDoc e pagina di test sono strumenti
-di documentazione API, non l'interfaccia del builder.
+Il frontend Angular (Design Angular Kit) e' in implementazione nella spec 007:
+area Configurazione per l'admin (integrazioni, verifica endpoint, tipi
+documento) e area Contesti/Builder per il gestore (navigazione discovery,
+creazione modello in BOZZA con lingua/livello, edizione inglese derivata) sono
+presenti; editor completo, revisione/pubblicazione da interfaccia e consultazione
+generazioni restano scope futuro. Le schermate presenti in
+`design_handoff_modellario/` sono vincolanti (FR-026). Istruzioni:
+`frontend/README.md`. Swagger/ReDoc e pagina di test restano strumenti di
+documentazione API, non l'interfaccia del builder.
 
 Ripresa backend amministrativo 010: migration 0010/0011 per esempi,
 revisioni, schemi, endpoint e audit; API di definizione, generazione/export

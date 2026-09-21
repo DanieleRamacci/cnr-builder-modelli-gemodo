@@ -95,6 +95,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelloSearchResponse"
+              example:
+                tipo_documento: BANDO_CONCORSO
+                profilo: COLLABORATORE_TECNICO_ER
+                codice_tipologia: TI
+                modalita: OPERATIVA
+                fallback_applicato: true
+                livello_richiesto: V
+                livello_risolto: null
+                modelli:
+                  - modello_id: 101
+                    modello_versione_id: 201
+                    codice: bando-ti-collaboratore-tecnico-er-tutti-it
+                    descrizione: Collaboratore Tecnico E.R. - Tutti i livelli - Italiano
+                    variante: STANDARD
+                    lingua: IT
+                    livello_professionale: null
+                    versione: 1
+                    stato: PUBBLICATO
+                    data_inizio_validita: null
+                    data_fine_validita: null
+                    pubblicato_at: "2026-09-21T20:35:20Z"
+                    edizioni_derivate:
+                      - modello_id: 102
+                        modello_versione_id: 202
+                        codice: bando-ti-collaboratore-tecnico-er-tutti-en
+                        descrizione: Collaboratore Tecnico E.R. - Tutti i livelli - Inglese
+                        variante: STANDARD
+                        lingua: EN
+                        livello_professionale: null
+                        versione: 1
+                        stato: PUBBLICATO
+                        data_inizio_validita: null
+                        data_fine_validita: null
+                        pubblicato_at: "2026-09-21T20:36:10Z"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -300,6 +334,7 @@ components:
         lingua:
           type: string
           enum: [IT, EN]
+          example: IT
         livello_professionale:
           type: string
           nullable: true
@@ -337,7 +372,7 @@ components:
         codice: {type: string}
         descrizione: {type: string}
         variante: {type: string}
-        lingua: {type: string, enum: [IT, EN]}
+        lingua: {type: string, enum: [IT, EN], example: EN}
         livello_professionale: {type: string, nullable: true}
         versione: {type: integer}
         stato: {type: string, enum: [PUBBLICATO]}

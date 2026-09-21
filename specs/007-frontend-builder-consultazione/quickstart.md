@@ -246,3 +246,21 @@ frontend unit: 52 passed
 frontend lint: passato
 frontend build produzione: passato (warning di budget/CommonJS preesistenti)
 ```
+
+## Riallineamento spunte e unicita' tipo documento (2026-09-21)
+
+Verifiche eseguite:
+
+```text
+backend non-E2E: 317 passed, 12 E2E esclusi (Postgres reale via Testcontainers)
+frontend unit: 52 passed (13 file)
+frontend lint: passato
+discovery live GEBAN (geban-service.test.si.cnr.it): CatalogoDiscovery valida BANDO_CONCORSO, 10 tipologie
+Playwright su stack reale: NON eseguito (T014/T023/T031 restano aperti)
+```
+
+FR-024: creando un modello con `integrazione_id`, il builder riusa il tipo
+documento non inattivo dello stesso `(codice_contesto, codice)`, lo associa se
+non ha integrazione, risponde 409 `TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE` se e' di
+un'altra integrazione. `POST /configurazione/tipi-documento` risponde 409
+`TIPO_DOCUMENTO_ALREADY_EXISTS` per lo stesso duplicato.

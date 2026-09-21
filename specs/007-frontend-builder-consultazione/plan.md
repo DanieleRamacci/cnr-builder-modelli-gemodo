@@ -247,7 +247,7 @@ variante dal client.
 
 `design_handoff_modellario/` (aggiunto 2026-09-21, vedi spec.md Clarifications
 e data-model.md) e' la fonte di verita' visuale/interattiva per US1/US2/US3
-quando verranno pianificate: 7 schermate (1a contexts-list, 1b/1c/1d lista
+quando verranno pianificate: 11 schermate di cui 7 per questa spec (1a contexts-list, 1b/1c/1d lista
 modelli, 2a categorize-wizard, 2b builder-editor, 3a derive-model), design
 tokens Bootstrap Italia (colori, tipografia Titillium Web/Roboto Mono,
 spaziature, radius). Confermato con l'utente: 1a sostituisce le tab contesti

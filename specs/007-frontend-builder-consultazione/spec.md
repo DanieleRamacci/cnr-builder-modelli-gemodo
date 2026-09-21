@@ -24,8 +24,10 @@ completo): `design_handoff_modellario/README.md` + `screens.json` + il
 prototipo HTML `design/Gestione Modelli.dc.html`. E' un prototipo generico per
 PA (contesti di esempio "Appalti e contratti" ecc.), hi-fi su colori/
 tipografia/spaziature/stati, **da adattare** ai contesti reali di GEMODO, non
-da copiare come codice. Sette schermate: 1a contexts-list, 1b/1c/1d varianti
-della lista modelli, 2a categorize-wizard, 2b builder-editor, 3a derive-model.
+da copiare come codice. Undici viste (sette per 007: 1a contexts-list, 1b/1c/1d varianti
+della lista modelli, 2a categorize-wizard, 2b builder-editor, 3a derive-model;
+le altre quattro, 4a/4b configure-dimensions e 5a/5b new-context/integration-health,
+vivono in `010`).
 
 Decisioni confermate con l'utente su due conflitti reali fra design e
 implementazione MVP gia' costruita (T039/T040/T055):
@@ -522,7 +524,7 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   Bootstrap Italia del prototipo). Non e' ammesso un layout alternativo
   inventato quando esiste gia' una schermata disegnata per quel flusso. Questo
   vale per tutte le schermate elencate nella tabella sotto, per le schermate
-  10 elencate nel Design Reference di `data-model.md` di quella spec, e per
+  elencate nel Design Reference di `data-model.md` della spec `010`, e per
   qualunque nuova schermata che venga aggiunta in futuro a
   `design_handoff_modellario/`. **Non copre** flussi per cui nessuna
   schermata esiste nel design (es. l'editor struttura tipo documento di `010`

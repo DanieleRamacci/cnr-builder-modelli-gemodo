@@ -9,6 +9,12 @@ crea un modello di test (User Story 5, FR-022/FR-023). User Story 1/2/3 di
 `spec.md` (editor completo, revisione/pubblicazione da interfaccia,
 consultazione generazioni) restano scope futuro, non toccate da questi task.
 
+**Vincolo grafico (FR-026)**: ogni task che implementa o modifica una schermata
+presente in `design_handoff_modellario/screens.json` MUST seguirne struttura,
+flusso e stile (design token del suo README, Titillium Web/Roboto Mono), adattati
+ad Angular + design-angular-kit. Nessun layout alternativo dove esiste la
+schermata; dove non esiste valgono solo i design token.
+
 **Tests**: inclusi deliberatamente (non opzionali per questo progetto - vedi
 lo stile gia' usato in tutte le spec precedenti, "scrivere i test per primi,
 verificare che falliscano prima dell'implementazione", test reali contro
@@ -43,15 +49,15 @@ T041-T043 restano backlog distinto.
       Gate indipendente FAIL: Claude non autenticato e cache uv inaccessibile
       nel sandbox del gate; la suite equivalente fuori sandbox passa.
       Feature completa non certificata; T041-T043 e gli altri residui restano aperti.
-- [ ] T041 [US1] Generare codice e nome nel backend dalla categorizzazione
+- [ ] T041 [US1] (backend gia' fatto in T053; chiude con T063) Generare codice e nome nel backend dalla categorizzazione
       validata, data e lingua: definire formato, unicita' concorrente e stabilita'.
       Rimuovere input liberi codice/nome/variante; variante derivata da metadati
       configurati o STANDARD, alternative solo controllate. Non usare varianti
       univoche per aggirare i vincoli di pubblicazione. Aggiornare contratti/test.
-- [ ] T042 [US1] Definire lingua modello persistita e selezione Italiano/IT,
+- [ ] T042 [US1] (fatto in T049-T056; chiude con T063) Definire lingua modello persistita e selezione Italiano/IT,
       Inglese/EN con menu, validazione campi/disponibilita' backend. Coordinare le
       modifiche di dominio con 002 senza cambiare di nascosto i vincoli attuali.
-- [ ] T043 [US1] Pianificare livello professionale opzionale: menu dei valori
+- [ ] T043 [US1] (fatto in T049-T060; chiude con T063) Pianificare livello professionale opzionale: menu dei valori
       ammessi per profilo e Tutti i livelli; livello scelto incluso nel nome
       e nello scope persistito, assenza copre tutti i livelli del solo profilo.
       Verificare struttura discovery e contratto campi comune prima di consentire
@@ -60,7 +66,9 @@ T041-T043 restano backlog distinto.
       fallback automatico. Includere scope livello nel vincolo di pubblicazione
       per consentire coesistenza senza archiviazione reciproca. Coordinare
       catalogo/generazione con owner 002/001/004.
-      Non implementato; richiesta confermata 2026-09-18.
+      Aggiornamento 2026-09-21: implementato da T047-T060 (lingua/livello,
+      scope pubblicazione, form). Il punto "nessun fallback automatico" e' superato
+      da FR-024 / DEC-007-FALLBACK-LIVELLO-CATALOGO (T082-T086). Si chiude con T063.
 
 ## Phase 1: Setup
 
@@ -341,15 +349,15 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
 > Scrivere questi test per primi, verificare che falliscano prima
 > dell'implementazione (coerente con lo stile gia' usato per le spec 001/002/010).
 
-- [ ] T011 [P] [US4] Unit test (Vitest) per il componente lista integrazioni:
+- [x] T011 [P] [US4] Unit test (Vitest) per il componente lista integrazioni:
       stato vuoto al primo avvio, badge di stato per `DEFINITO`/`CONNESSO`/
       `ERRORE`, in `frontend/src/features/configurazione/integrazioni-
       lista.component.spec.ts`
-- [ ] T012 [P] [US4] Unit test (Vitest) per il form di creazione: validazione
+- [x] T012 [P] [US4] Unit test (Vitest) per il form di creazione: validazione
       lunghezza campi, gestione `409 INTEGRAZIONE_DUPLICATA` come errore di
       form, in `frontend/src/features/configurazione/integrazione-
       crea.component.spec.ts`
-- [ ] T013 [P] [US4] Unit test (Vitest) per il form di
+- [x] T013 [P] [US4] Unit test (Vitest) per il form di
       configurazione/verifica: gestione `409 REVISIONE_SUPERATA` (ricarica,
       non sovrascrive), `422 DESTINAZIONE_NON_APPROVATA`, `409
       VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
@@ -362,22 +370,22 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
 
 ### Implementation for User Story 4
 
-- [ ] T015 [P] [US4] `IntegrazioniAdminService` (chiamate tipizzate a
+- [x] T015 [P] [US4] `IntegrazioniAdminService` (chiamate tipizzate a
       `/api/v1/configurazione/integrazioni*`, usa T007/T008) in
       `frontend/src/features/configurazione/integrazioni-admin.service.ts`
-- [ ] T016 [US4] Componente lista integrazioni (tabella, stato vuoto, badge
+- [x] T016 [US4] Componente lista integrazioni (tabella, stato vuoto, badge
       di stato) in
       `frontend/src/features/configurazione/integrazioni-lista.component.ts`
       (dipende da T011, T015)
-- [ ] T017 [US4] Componente creazione integrazione (form + validazione) in
+- [x] T017 [US4] Componente creazione integrazione (form + validazione) in
       `frontend/src/features/configurazione/integrazione-crea.component.ts`
       (dipende da T012, T015)
-- [ ] T018 [US4] Componente configurazione/verifica integrazione (form URL/
+- [x] T018 [US4] Componente configurazione/verifica integrazione (form URL/
       timeout, pulsante verifica con stato disabilitato durante la chiamata,
       visualizzazione esito) in
       `frontend/src/features/configurazione/integrazione-
       configura.component.ts` (dipende da T013, T015)
-- [ ] T019 [US4] Instradamento `/configurazione` e voce di navigazione
+- [x] T019 [US4] Instradamento `/configurazione` e voce di navigazione
       visibile solo con ruolo `GEMODO_ADMIN` nel token (abilitazione UI, mai
       autorizzazione - il backend gia' applica `require_admin`), in
       `frontend/src/app/app.routes.ts`
@@ -403,11 +411,11 @@ FR-022/FR-023).
       `test_multicontext_token_does_not_leak_permission_across_contexts`
       lato backend), in
       `frontend/src/features/builder/integrazioni-manager.component.spec.ts`
-- [ ] T021 [P] [US5] Unit test (Vitest) per la navigazione ad albero:
+- [x] T021 [P] [US5] Unit test (Vitest) per la navigazione ad albero:
       profondita' variabile, stati caricamento/vuoto/`409
       INTEGRAZIONE_NON_CONNESSA`/errore di trasporto distinti, in
       `frontend/src/features/builder/struttura-albero.component.spec.ts`
-- [ ] T022 [P] [US5] Unit test (Vitest) per il form creazione modello:
+- [x] T022 [P] [US5] Unit test (Vitest) per il form creazione modello:
       selezione percorso -> risoluzione categoria/tipologia, gestione errore
       `400` su percorso ambiguo, in
       `frontend/src/features/builder/modello-crea.component.spec.ts`
@@ -418,22 +426,22 @@ FR-022/FR-023).
 
 ### Implementation for User Story 5
 
-- [ ] T024 [P] [US5] `BuilderManagerService` (chiamate tipizzate a
+- [x] T024 [P] [US5] (SUPERATO 2026-09-21: nessun service dedicato, i componenti chiamano `ApiClient` tipizzato direttamente; da estrarre solo se serve a T091/T092) `BuilderManagerService` (chiamate tipizzate a
       `/api/v1/builder/integrazioni*` e `/api/v1/builder/modelli*`, usa
       T007/T008) in
       `frontend/src/features/builder/builder-manager.service.ts`
-- [ ] T025 [US5] Componente lista integrazioni manager in
+- [x] T025 [US5] Componente lista integrazioni manager in
       `frontend/src/features/builder/integrazioni-manager.component.ts`
       (dipende da T020, T024)
-- [ ] T026 [US5] Componente navigazione ad albero (profondita' variabile,
+- [x] T026 [US5] (SUPERATO 2026-09-21: la navigazione ad albero vive dentro `modello-crea.component.ts`; il design 2a a tendine a cascata e' stato consegnato da T092) Componente navigazione ad albero (profondita' variabile,
       nessuna assunzione di forma fissa) in
       `frontend/src/features/builder/struttura-albero.component.ts`
       (dipende da T021, T024)
-- [ ] T027 [US5] Componente creazione modello di test (form, nessun editor
+- [x] T027 [US5] Componente creazione modello di test (form, nessun editor
       di campi/sezioni) in
       `frontend/src/features/builder/modello-crea.component.ts` (dipende da
       T022, T024, T026)
-- [ ] T028 [US5] Instradamento `/builder` e voce di navigazione visibile solo
+- [x] T028 [US5] Instradamento `/builder` e voce di navigazione visibile solo
       se il token ha un contesto con permesso gestore (abilitazione UI, mai
       autorizzazione - il backend gia' applica `verify_scrittura_su_contesto`),
       in `frontend/src/app/app.routes.ts`
@@ -478,10 +486,10 @@ unitario, non ancora end-to-end contro lo stack reale. Gate adev FAIL:
 reviewer Claude non autenticato e sei test di discovery bloccati dal
 sandbox sull'apertura dei socket. Server dev disponibile su porta 4201.
 
-- [ ] T029 [P] Aggiornare `README.md` e `docs/project-map.md` con le
+- [x] T029 [P] Aggiornare `README.md` e `docs/project-map.md` con le
       istruzioni reali di avvio del frontend (oggi descrivono solo il
       placeholder)
-- [ ] T030 [P] Aggiornare `frontend/README.md` (se assente, crearlo) con
+- [x] T030 [P] Aggiornare `frontend/README.md` (se assente, crearlo) con
       setup locale, variabili d'ambiente (`GEMODO_API_BASE_URL`,
       `KEYCLOAK_ISSUER_URL`, `KEYCLOAK_CLIENT_ID`) e comandi di test
 - [ ] T031 Eseguire l'intera suite (Vitest + Playwright e2e) contro
@@ -547,7 +555,7 @@ la precedente dello stesso scope.
 
 ## Phase 8: Validazione incremento lingua/livello
 
-- [ ] T061 [P] Aggiornare stato feature e istruzioni operative in `README.md`, `frontend/README.md`, `docs/project-map.md` e `specs/007-frontend-builder-consultazione/quickstart.md`
+- [x] T061 [P] Aggiornare stato feature e istruzioni operative in `README.md`, `frontend/README.md`, `docs/project-map.md` e `specs/007-frontend-builder-consultazione/quickstart.md`
 - [ ] T062 Eseguire test contratti, backend non-e2e, frontend unit/lint/build e Playwright lifecycle reale; registrare comandi ed esiti in `specs/007-frontend-builder-consultazione/quickstart.md`
 - [ ] T063 Chiudere gli umbrella task T041-T043 solo dopo il completamento di T047-T062 in `specs/007-frontend-builder-consultazione/tasks.md`
 
@@ -647,10 +655,10 @@ discovery reale concordata con GEBAN.
 
 - [x] T073 [P] Aggiungere test dell'alias discovery `lingue`/`ENG` e del conflitto con la forma canonica in `backend/tests/discovery/`
 - [x] T074 Normalizzare gli alias GEBAN al confine dell'adapter in `backend/app/discovery/schemas.py`
-- [ ] T075 [P] Aggiungere test che il builder riusi e associ un tipo non assegnato dello stesso contesto/codice e rifiuti proprietari differenti in `backend/tests/builder/test_builder_flow_api.py`
-- [ ] T076 Impedire nuove righe attive duplicate per `(codice_contesto, codice)` nei servizi configurazione e builder in `backend/app/configurazione/service.py` e `backend/app/builder/service.py`
-- [ ] T077 Migliorare il messaggio di disattivazione dei tipi con modelli collegati e verificare la disattivazione per ID del duplicato incompleto
-- [ ] T078 Eseguire test discovery/configurazione/builder e validare la risposta live GEBAN con l'adapter aggiornato
+- [x] T075 [P] Aggiungere test che il builder riusi e associ un tipo non assegnato dello stesso contesto/codice e rifiuti proprietari differenti in `backend/tests/builder/test_builder_flow_api.py`
+- [x] T076 (2026-09-21: `BuilderService._tipo_per_integrazione` riusa/associa/rifiuta con 409 `TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE`; `configurazione` `crea` rifiuta duplicati non inattivi; 317 test backend passati) Impedire nuove righe attive duplicate per `(codice_contesto, codice)` nei servizi configurazione e builder in `backend/app/configurazione/service.py` e `backend/app/builder/service.py`
+- [x] T077 Migliorare il messaggio di disattivazione dei tipi con modelli collegati e verificare la disattivazione per ID del duplicato incompleto
+- [x] T078 Eseguire test discovery/configurazione/builder e validare la risposta live GEBAN con l'adapter aggiornato
 
 ## Phase 12: Reset controllato ambiente di test
 
@@ -680,3 +688,33 @@ catalogo senza lingua annida EN dentro IT.
 - [x] T087 [US1] Implementare endpoint atomico di creazione edizione derivata con copia versione/campi e audit in `backend/app/builder/api.py`, `backend/app/builder/schemas.py`, `backend/app/builder/service.py` e `backend/app/builder/repository.py`
 - [x] T088 [US1] Sostituire la precompilazione del wizard con l'azione dashboard "Crea versione inglese" e stati di conferma/errore in `frontend/src/features/builder/integrazioni-manager.component.ts`, `frontend/src/features/builder/integrazioni-manager.component.html` e relativi test
 - [x] T089 [P] Verificare contratti, migration PostgreSQL, suite backend/frontend interessate e documentare richieste/risposte di prova in `specs/007-frontend-builder-consultazione/quickstart.md`
+- [x] T090 Correggere l'esempio Swagger del catalogo affinche' un'edizione derivata mostri `lingua: EN` in `specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml`
+
+## Riallineamento spunte (2026-09-21)
+
+Verificato su codice reale prima di spuntare: 52 test Vitest passati (13 file),
+`eslint` pulito, 218 test backend passati (96 saltati, 12 e2e esclusi),
+adapter discovery validato sulla risposta live di
+`geban-service.test.si.cnr.it/api/v1/gemodo/discovery`
+(BANDO_CONCORSO, 10 tipologie). Le sole prove NON eseguite sono i test
+Playwright su stack reale.
+
+- Spuntati perche' implementati e coperti da test: T011-T013, T015-T019
+  (componenti, service, route `/configurazione` con `adminGuard`, gestione
+  `REVISIONE_SUPERATA`/`DESTINAZIONE_NON_APPROVATA`/`VERIFICA_IN_CORSO`/
+  `INTEGRAZIONE_DUPLICATA`), T025, T027, T028 (voce `/builder` con `isManager`),
+  T077 (messaggio e test di disattivazione per id), T078.
+- Restano aperti, correttamente: T014/T023/T031 (Playwright su stack reale,
+  sospesi), T021/T022 (test dedicati albero e percorso ambiguo mancanti),
+  T024/T026 (superati, vedi note), T029/T030/T061 (`frontend/README.md`
+  assente, `docs/project-map.md` dice ancora "frontend non implementato"),
+  T035, T062/T063. T075/T076 chiusi dopo il riallineamento (vedi T076).
+
+## Phase 14: Allineamento al design handoff (FR-026)
+
+**Goal**: portare landing contesti e categorizzazione al design
+`design_handoff_modellario/`, senza layout alternativi.
+
+- [x] T091 (2026-09-21: `contesti-lista.component` su `/contesti` con card, ricerca e chip; metriche solo reali = integrazioni per contesto; `/builder` reindirizza; 62 test Vitest, lint e build passati; e2e aggiornato ma NON eseguito su stack reale) Landing contesti `/contesti` a card (schermata 1a: ricerca, filtri a chip, metriche) al posto delle tab in `frontend/src/features/builder/integrazioni-manager.component.*`, con test Vitest e verifica Playwright
+- [x] T092 (2026-09-21: `modello-crea.component` con blocchi-livello dinamici L1..Ln, stepper a 3 passi, riepilogo laterale, Genera modello; 56 test Vitest, lint e build passati; `e2e/builder-lifecycle.spec.ts` aggiornato al nuovo flusso ma NON eseguito su stack reale) Categorizzazione a tendine a cascata (schermata 2a: select L1-L4 dipendenti, azzeramento a cascata, stepper 3 passi) al posto dell'albero cliccabile in `frontend/src/features/builder/modello-crea.component.*`, con test per percorso ambiguo (assorbe T021/T022/T026)
+- [ ] T093 [P] (parziale 2026-09-21: rotta `/contesti/:ctxId/modelli` e tabella gia' attive, tab rimosse; mancano restyle 1b con metriche/filtri/paginazione e toggle griglia 1c) Lista modelli `/contesti/:ctxId/modelli` in tabella (1b) con toggle griglia `?view=grid` (1c), stati vuoto/errore/caricamento
