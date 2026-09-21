@@ -4,607 +4,611 @@
  */
 
 export interface paths {
-  '/configurazione/tipi-documento': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elenco tipi documento configurati e stato integrazione */
+        get: operations["listTipiDocumentoConfigurati"];
+        put?: never;
+        /** Crea un tipo documento configurabile */
+        post: operations["createTipoDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Elenco tipi documento configurati e stato integrazione */
-    get: operations['listTipiDocumentoConfigurati'];
-    put?: never;
-    /** Crea un tipo documento configurabile */
-    post: operations['createTipoDocumento'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/tipi-documento/{codice}/struttura': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento/{codice}/struttura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Definisce o aggiorna la struttura catalogo di un tipo documento
+         * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna modifica
+         */
+        put: operations["updateStrutturaTipoDocumento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /**
-     * Definisce o aggiorna la struttura catalogo di un tipo documento
-     * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna modifica
-     */
-    put: operations['updateStrutturaTipoDocumento'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/tipi-documento/{codice}/schema-discovery': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento/{codice}/schema-discovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Genera una nuova versione dello schema/example di discovery
+         * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna generazione
+         */
+        post: operations["generateSchemaDiscovery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Genera una nuova versione dello schema/example di discovery
-     * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna generazione
-     */
-    post: operations['generateSchemaDiscovery'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/tipi-documento/{codice}/schema-discovery/{versione}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento/{codice}/schema-discovery/{versione}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Esporta una versione dello schema/example di discovery
+         * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessun export
+         */
+        get: operations["getSchemaDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Esporta una versione dello schema/example di discovery
-     * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessun export
-     */
-    get: operations['getSchemaDiscovery'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/tipi-documento/{codice}/endpoint-integrazione': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento/{codice}/endpoint-integrazione": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registra l'endpoint esterno e avvia la verifica strutturale
+         * @deprecated
+         * @description Disegno storico ritirato, non operativo; nuovo contratto integrazioni-api.openapi.yaml
+         */
+        post: operations["registerEndpointIntegrazione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Registra l'endpoint esterno e avvia la verifica strutturale
-     * @deprecated
-     * @description Disegno storico ritirato, non operativo; nuovo contratto integrazioni-api.openapi.yaml
-     */
-    post: operations['registerEndpointIntegrazione'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/tipi-documento/{codice}/endpoint-integrazione/verifica': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/tipi-documento/{codice}/endpoint-integrazione/verifica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ripete il test di connessione sull'endpoint registrato
+         * @deprecated
+         * @description Disegno storico ritirato, non operativo; verifica per software nel nuovo contratto
+         */
+        post: operations["verifyEndpointIntegrazione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Ripete il test di connessione sull'endpoint registrato
-     * @deprecated
-     * @description Disegno storico ritirato, non operativo; verifica per software nel nuovo contratto
-     */
-    post: operations['verifyEndpointIntegrazione'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    TipoDocumentoCreate: {
-      codice: string;
-      nome: string;
-      codice_contesto: string;
-      struttura?: components['schemas']['StrutturaTipoDocumento'];
-    };
-    /**
-     * @example {
-     *       "codice": "DOCUMENTO_DEMO",
-     *       "nome": "Documento demo",
-     *       "codice_contesto": "demo",
-     *       "stato_integrazione": "INCOMPLETO",
-     *       "versione_schema_corrente": null
-     *     }
-     */
-    TipoDocumentoDashboard: {
-      codice: string;
-      nome: string;
-      codice_contesto: string;
-      /** @enum {string} */
-      stato_integrazione: 'DEFINITO' | 'CONNESSO' | 'ERRORE' | 'INCOMPLETO';
-      versione_schema_corrente?: number | null;
-      versione_definizione?: number | null;
-      esito_ultimo_test?: {
-        [key: string]: unknown;
-      } | null;
-      /** Format: date-time */
-      data_ultimo_test?: string | null;
-    };
-    /** @description Definizione d'esempio proprietaria versionata. Liste omesse equivalgono a liste vuote e producono una definizione incompleta. Codici univoci, combinazioni riferite a tipologie/profili esistenti. La generazione richiede almeno un elemento per lista e una combinazione per ogni tipologia/profilo. Le opzioni dei campi dipendenti sono ereditate dal profilo; non aggiungere enum/default propri a quei campi. */
-    StrutturaTipoDocumento: {
-      tipologie?: components['schemas']['TipologiaInput'][];
-      profili?: components['schemas']['ProfiloInput'][];
-      combinazioni?: components['schemas']['CombinazioneInput'][];
-      campi?: components['schemas']['CampoContrattoDatiInput'][];
-    };
-    TipologiaInput: {
-      codice: string;
-      descrizione: string;
-      riferimento_esterno?: string | null;
-    };
-    ProfiloInput: {
-      codice: string;
-      descrizione: string;
-      attributi?: components['schemas']['AttributoProfiloInput'][];
-    };
-    /** @description Valori string univoci; default incluso nelle opzioni; opzioni non vuote per campi obbligatori dipendenti */
-    AttributoProfiloInput: {
-      nome: string;
-      valori_ammessi: string[];
-      valore_default?: string | null;
-    };
-    CombinazioneInput: {
-      codice_tipologia: string;
-      codice_profilo: string;
-    };
-    CampoContrattoDatiInput: {
-      codice: string;
-      etichetta: string;
-      /** @enum {string} */
-      tipo: 'string' | 'number' | 'boolean' | 'date' | 'object' | 'array';
-      /** @enum {string} */
-      lingua: 'IT' | 'EN';
-      obbligatorio: boolean;
-      ordine: number;
-      descrizione?: string | null;
-      validazione?: {
-        [key: string]: unknown;
-      } | null;
-      /** @description Nome di attributo presente in ogni profilo; in questo incremento supportato su campi string */
-      dipende_da_attributo_profilo?: string | null;
-    };
-    /**
-     * @example {
-     *       "codice_tipo_documento": "DOCUMENTO_DEMO",
-     *       "versione": 1,
-     *       "generato_il": "2026-09-17T12:00:00Z",
-     *       "schema": {
-     *         "DOCUMENTO_DEMO": {
-     *           "validita": "2026-09-17T12:00:00Z",
-     *           "nodi": [
-     *             {
-     *               "codice": "DEMO",
-     *               "descrizione": "Categoria dimostrativa",
-     *               "campi": [
-     *                 {
-     *                   "codice": "titolo",
-     *                   "etichetta": "Titolo",
-     *                   "tipo": "string",
-     *                   "lingua": "IT",
-     *                   "obbligatorio": true,
-     *                   "ordine": 1
-     *                 }
-     *               ]
-     *             }
-     *           ]
-     *         }
-     *       }
-     *     }
-     */
-    SchemaDiscoveryGenerato: {
-      codice_tipo_documento: string;
-      versione: number;
-      /** Format: date-time */
-      generato_il: string;
-      /** @description Forma logica comune dell'endpoint di discovery: albero di nodi e foglie con campi documento. I valori sono esempi/documentazione, non sorgente autoritativa dei valori reali dell'integratore. */
-      schema: {
-        [key: string]: unknown;
-      };
-    };
-    EndpointIntegrazioneRequest: {
-      /** Format: uri */
-      url: string;
-      /** @default 5000 */
-      timeout_ms: number;
-    };
-    /**
-     * @example {
-     *       "codice_tipo_documento": "DOCUMENTO_DEMO",
-     *       "stato": "CONNESSO",
-     *       "verificato_il": "2026-09-17T12:00:00Z",
-     *       "versione_schema_usata": 1,
-     *       "esito_ultimo_test": {
-     *         "messaggio": "Forma comune conforme; valori degli esempi non vincolanti"
-     *       }
-     *     }
-     */
-    EndpointIntegrazioneStatus: {
-      codice_tipo_documento: string;
-      /** @enum {string} */
-      stato: 'CONNESSO' | 'ERRORE';
-      /** Format: date-time */
-      verificato_il: string;
-      versione_schema_usata?: number | null;
-      esito_ultimo_test?: {
-        [key: string]: unknown;
-      };
-    };
-    ErrorResponse: {
-      codice: string;
-      messaggio: string;
-      dettagli?:
-        | {
-            [key: string]: unknown;
-          }[]
-        | null;
-    };
-  };
-  responses: {
-    /** @description Token mancante o non valido */
-    Unauthorized: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+    schemas: {
+        TipoDocumentoCreate: {
+            codice: string;
+            nome: string;
+            codice_contesto: string;
+            struttura?: components["schemas"]["StrutturaTipoDocumento"];
+        };
         /**
          * @example {
-         *       "codice": "ACCESSO_NON_AUTENTICATO",
-         *       "messaggio": "Token Bearer mancante o non valido"
+         *       "codice": "DOCUMENTO_DEMO",
+         *       "nome": "Documento demo",
+         *       "codice_contesto": "demo",
+         *       "stato_integrazione": "INCOMPLETO",
+         *       "versione_schema_corrente": null
          *     }
          */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Utente autenticato ma non autorizzato alla configurazione cataloghi */
-    Forbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        TipoDocumentoDashboard: {
+            codice: string;
+            nome: string;
+            codice_contesto: string;
+            /** @enum {string} */
+            stato_integrazione: "DEFINITO" | "CONNESSO" | "ERRORE" | "INCOMPLETO";
+            versione_schema_corrente?: number | null;
+            versione_definizione?: number | null;
+            esito_ultimo_test?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            data_ultimo_test?: string | null;
+        };
+        /** @description Definizione d'esempio proprietaria versionata. Liste omesse equivalgono a liste vuote e producono una definizione incompleta. Codici univoci, combinazioni riferite a tipologie/profili esistenti. La generazione richiede almeno un elemento per lista e una combinazione per ogni tipologia/profilo. Le opzioni dei campi dipendenti sono ereditate dal profilo; non aggiungere enum/default propri a quei campi. */
+        StrutturaTipoDocumento: {
+            tipologie?: components["schemas"]["TipologiaInput"][];
+            profili?: components["schemas"]["ProfiloInput"][];
+            combinazioni?: components["schemas"]["CombinazioneInput"][];
+            /**
+             * @default [
+             *       "IT"
+             *     ]
+             */
+            lingue_possibili: ("IT" | "EN")[];
+            campi?: components["schemas"]["CampoContrattoDatiInput"][];
+        };
+        TipologiaInput: {
+            codice: string;
+            descrizione: string;
+            riferimento_esterno?: string | null;
+        };
+        ProfiloInput: {
+            codice: string;
+            descrizione: string;
+            attributi?: components["schemas"]["AttributoProfiloInput"][];
+        };
+        /** @description Valori string univoci; default incluso nelle opzioni; opzioni non vuote per campi obbligatori dipendenti */
+        AttributoProfiloInput: {
+            nome: string;
+            valori_ammessi: string[];
+            valore_default?: string | null;
+        };
+        CombinazioneInput: {
+            codice_tipologia: string;
+            codice_profilo: string;
+        };
+        CampoContrattoDatiInput: {
+            codice: string;
+            etichetta: string;
+            /** @enum {string} */
+            tipo: "string" | "number" | "boolean" | "date" | "object" | "array";
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+            validazione?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Nome di attributo presente in ogni profilo; in questo incremento supportato su campi string */
+            dipende_da_attributo_profilo?: string | null;
+        };
         /**
          * @example {
-         *       "codice": "ACCESSO_NON_AUTORIZZATO",
-         *       "messaggio": "Operazione non autorizzata"
+         *       "codice_tipo_documento": "DOCUMENTO_DEMO",
+         *       "versione": 1,
+         *       "generato_il": "2026-09-17T12:00:00Z",
+         *       "schema": {
+         *         "DOCUMENTO_DEMO": {
+         *           "validita": "2026-09-17T12:00:00Z",
+         *           "nodi": [
+         *             {
+         *               "codice": "DEMO",
+         *               "descrizione": "Categoria dimostrativa",
+         *               "campi": [
+         *                 {
+         *                   "codice": "titolo",
+         *                   "etichetta": "Titolo",
+         *                   "tipo": "string",
+         *                   "lingua": "IT",
+         *                   "obbligatorio": true,
+         *                   "ordine": 1
+         *                 }
+         *               ]
+         *             }
+         *           ]
+         *         }
+         *       }
          *     }
          */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Risorsa non trovata */
-    NotFound: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        SchemaDiscoveryGenerato: {
+            codice_tipo_documento: string;
+            versione: number;
+            /** Format: date-time */
+            generato_il: string;
+            /** @description Forma logica comune dell'endpoint di discovery: albero di nodi e foglie con campi documento. I valori sono esempi/documentazione, non sorgente autoritativa dei valori reali dell'integratore. */
+            schema: {
+                [key: string]: unknown;
+            };
+        };
+        EndpointIntegrazioneRequest: {
+            /** Format: uri */
+            url: string;
+            /** @default 5000 */
+            timeout_ms: number;
+        };
         /**
          * @example {
-         *       "codice": "TIPO_DOCUMENTO_NOT_FOUND",
-         *       "messaggio": "Tipo documento non trovato"
+         *       "codice_tipo_documento": "DOCUMENTO_DEMO",
+         *       "stato": "CONNESSO",
+         *       "verificato_il": "2026-09-17T12:00:00Z",
+         *       "versione_schema_usata": 1,
+         *       "esito_ultimo_test": {
+         *         "messaggio": "Forma comune conforme; valori degli esempi non vincolanti"
+         *       }
          *     }
          */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
+        EndpointIntegrazioneStatus: {
+            codice_tipo_documento: string;
+            /** @enum {string} */
+            stato: "CONNESSO" | "ERRORE";
+            /** Format: date-time */
+            verificato_il: string;
+            versione_schema_usata?: number | null;
+            esito_ultimo_test?: {
+                [key: string]: unknown;
+            };
+        };
+        ErrorResponse: {
+            codice: string;
+            messaggio: string;
+            dettagli?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
     };
-    /** @description Risorsa gia' esistente o stato non compatibile */
-    Conflict: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "TIPO_DOCUMENTO_ALREADY_EXISTS",
-         *       "messaggio": "Tipo documento gia' configurato"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
+    responses: {
+        /** @description Token mancante o non valido */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTENTICATO",
+                 *       "messaggio": "Token Bearer mancante o non valido"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Utente autenticato ma non autorizzato alla configurazione cataloghi */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTORIZZATO",
+                 *       "messaggio": "Operazione non autorizzata"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Risorsa non trovata */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "TIPO_DOCUMENTO_NOT_FOUND",
+                 *       "messaggio": "Tipo documento non trovato"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Risorsa gia' esistente o stato non compatibile */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "TIPO_DOCUMENTO_ALREADY_EXISTS",
+                 *       "messaggio": "Tipo documento gia' configurato"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Codice tipo presente in piu' integrazioni; nessuna selezione automatica */
+        AmbiguousSource: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "SORGENTE_AMBIGUA",
+                 *       "messaggio": "Indicare l'integrazione del tipo documento"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Payload non valido o definizione incompleta */
+        ValidationError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "DEFINIZIONE_INCOMPLETA",
+                 *       "messaggio": "Almeno una tipologia, un profilo e un campo sono richiesti"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Endpoint esterno raggiunto ma risposta non conforme alla forma comune */
+        DiscoveryNonConforme: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "DISCOVERY_NON_CONFORME",
+                 *       "messaggio": "Nodo foglia senza campi oppure campo documento incompleto"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Endpoint irraggiungibile; test fallito registrato senza dichiarare obsolete le versioni modello */
+        DiscoveryNonDisponibile: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "DISCOVERY_NON_DISPONIBILE",
+                 *       "messaggio": "Servizio discovery non disponibile"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
-    /** @description Codice tipo presente in piu' integrazioni; nessuna selezione automatica */
-    AmbiguousSource: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "SORGENTE_AMBIGUA",
-         *       "messaggio": "Indicare l'integrazione del tipo documento"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
+    parameters: {
+        /** @example BANDO_CONCORSO */
+        CodiceTipoDocumento: string;
     };
-    /** @description Payload non valido o definizione incompleta */
-    ValidationError: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "DEFINIZIONE_INCOMPLETA",
-         *       "messaggio": "Almeno una tipologia, un profilo e un campo sono richiesti"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Endpoint esterno raggiunto ma risposta non conforme alla forma comune */
-    DiscoveryNonConforme: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "DISCOVERY_NON_CONFORME",
-         *       "messaggio": "Nodo foglia senza campi oppure campo documento incompleto"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Endpoint irraggiungibile; test fallito registrato senza dichiarare obsolete le versioni modello */
-    DiscoveryNonDisponibile: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "DISCOVERY_NON_DISPONIBILE",
-         *       "messaggio": "Servizio discovery non disponibile"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-  };
-  parameters: {
-    /** @example BANDO_CONCORSO */
-    CodiceTipoDocumento: string;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listTipiDocumentoConfigurati: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Elenco sintetico per dashboard amministrativa */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listTipiDocumentoConfigurati: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['TipoDocumentoDashboard'][];
+        requestBody?: never;
+        responses: {
+            /** @description Elenco sintetico per dashboard amministrativa */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoDocumentoDashboard"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
     };
-  };
-  createTipoDocumento: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TipoDocumentoCreate'];
-      };
-    };
-    responses: {
-      /** @description Tipo documento creato; INCOMPLETO se manca una definizione completa */
-      201: {
-        headers: {
-          [name: string]: unknown;
+    createTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['TipoDocumentoDashboard'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TipoDocumentoCreate"];
+            };
         };
-      };
-      400: components['responses']['ValidationError'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      409: components['responses']['Conflict'];
-    };
-  };
-  updateStrutturaTipoDocumento: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BANDO_CONCORSO */
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['StrutturaTipoDocumento'];
-      };
-    };
-    responses: {
-      /** @description Struttura aggiornata; se gia' connessa richiede nuova verifica */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Tipo documento creato; INCOMPLETO se manca una definizione completa */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoDocumentoDashboard"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
-        content: {
-          'application/json': components['schemas']['TipoDocumentoDashboard'];
+    };
+    updateStrutturaTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-      };
-      400: components['responses']['ValidationError'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['AmbiguousSource'];
-    };
-  };
-  generateSchemaDiscovery: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BANDO_CONCORSO */
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Schema generato e versionato */
-      201: {
-        headers: {
-          [name: string]: unknown;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrutturaTipoDocumento"];
+            };
         };
-        content: {
-          'application/json': components['schemas']['SchemaDiscoveryGenerato'];
+        responses: {
+            /** @description Struttura aggiornata; se gia' connessa richiede nuova verifica */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoDocumentoDashboard"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AmbiguousSource"];
         };
-      };
-      400: components['responses']['ValidationError'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['AmbiguousSource'];
     };
-  };
-  getSchemaDiscovery: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BANDO_CONCORSO */
-        codice: components['parameters']['CodiceTipoDocumento'];
-        versione: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Schema/example consegnabile a un integratore esterno */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    generateSchemaDiscovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['SchemaDiscoveryGenerato'];
+        requestBody?: never;
+        responses: {
+            /** @description Schema generato e versionato */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaDiscoveryGenerato"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AmbiguousSource"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['AmbiguousSource'];
     };
-  };
-  registerEndpointIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BANDO_CONCORSO */
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['EndpointIntegrazioneRequest'];
-      };
-    };
-    responses: {
-      /** @description Esito del test e nuovo stato dell'integrazione */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getSchemaDiscovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+                versione: number;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['EndpointIntegrazioneStatus'];
+        requestBody?: never;
+        responses: {
+            /** @description Schema/example consegnabile a un integratore esterno */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaDiscoveryGenerato"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AmbiguousSource"];
         };
-      };
-      400: components['responses']['ValidationError'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      502: components['responses']['DiscoveryNonConforme'];
-      503: components['responses']['DiscoveryNonDisponibile'];
     };
-  };
-  verifyEndpointIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BANDO_CONCORSO */
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Esito del nuovo test */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    registerEndpointIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['EndpointIntegrazioneStatus'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndpointIntegrazioneRequest"];
+            };
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      502: components['responses']['DiscoveryNonConforme'];
-      503: components['responses']['DiscoveryNonDisponibile'];
+        responses: {
+            /** @description Esito del test e nuovo stato dell'integrazione */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndpointIntegrazioneStatus"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            502: components["responses"]["DiscoveryNonConforme"];
+            503: components["responses"]["DiscoveryNonDisponibile"];
+        };
     };
-  };
+    verifyEndpointIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Esito del nuovo test */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndpointIntegrazioneStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            502: components["responses"]["DiscoveryNonConforme"];
+            503: components["responses"]["DiscoveryNonDisponibile"];
+        };
+    };
 }

@@ -27,6 +27,8 @@ class FakeCatalogService:
                     codice="demo-bando-concorso-standard-v1",
                     descrizione="Bando concorso standard",
                     variante="STANDARD",
+                    lingua="IT",
+                    livello_professionale="VI",
                     versione=1,
                     stato="PUBBLICATO",
                     pubblicato_at=datetime.fromisoformat("2026-07-31T10:00:00+00:00"),
@@ -43,7 +45,13 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
         with TestClient(app) as client:
             response = client.get(
                 "/api/v1/catalogo/modelli",
-                params={"tipo_documento": "BANDO_CONCORSO", "profilo": "COLLABORATORE_TECNICO_ER", "codice_tipologia": "TD"},
+                params={
+                    "tipo_documento": "BANDO_CONCORSO",
+                    "profilo": "COLLABORATORE_TECNICO_ER",
+                    "codice_tipologia": "TD",
+                    "lingua": "IT",
+                    "livello_professionale": "VI",
+                },
             )
     finally:
         app.dependency_overrides.clear()
@@ -56,7 +64,11 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     assert body["codice_tipologia"] == "TD"
     assert body["modelli"][0]["modello_versione_id"] == 11
     assert body["modelli"][0]["stato"] == "PUBBLICATO"
+    assert body["modelli"][0]["lingua"] == "IT"
+    assert body["modelli"][0]["livello_professionale"] == "VI"
     assert fake_service.calls[0]["modalita"] == ModalitaCatalogo.OPERATIVA
+    assert fake_service.calls[0]["lingua"] == "IT"
+    assert fake_service.calls[0]["livello_professionale"] == "VI"
 
 
 def test_search_modelli_historical_passes_date_filters(monkeypatch):

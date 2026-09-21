@@ -15,7 +15,6 @@ class ValidazioneRequest(BaseModel):
     external_context_id: str
     modello_versione_id: int
     data_riferimento: date | None = None
-    bando_inglese: bool = False
     dati: dict[str, Any]
 
 

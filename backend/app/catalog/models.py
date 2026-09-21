@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -42,7 +42,10 @@ class TipoDocumento(Base):
 
 class ModelloDocumento(Base):
     __tablename__ = "modello_documento"
-    __table_args__ = (UniqueConstraint("tipo_documento_id", "codice", name="uq_modello_documento_tipo_codice"),)
+    __table_args__ = (
+        UniqueConstraint("tipo_documento_id", "codice", name="uq_modello_documento_tipo_codice"),
+        CheckConstraint("lingua IN ('IT', 'EN')", name="ck_modello_documento_lingua"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
@@ -55,6 +58,8 @@ class ModelloDocumento(Base):
     codice: Mapped[str] = mapped_column(String(128), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     variante: Mapped[str] = mapped_column(String(64), nullable=False, default="STANDARD")
+    lingua: Mapped[str] = mapped_column(String(2), nullable=False, default="IT")
+    livello_professionale: Mapped[str | None] = mapped_column(String(64), nullable=True)
     stato: Mapped[str] = mapped_column(String(32), nullable=False, default="BOZZA")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

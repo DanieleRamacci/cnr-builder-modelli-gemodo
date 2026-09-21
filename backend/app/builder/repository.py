@@ -28,6 +28,7 @@ def _prossimo_public_id(db: Session, model) -> int:
 def crea_modello(
     db: Session,
     *,
+    modello_id: uuid.UUID,
     codice: str,
     nome: str,
     tipo_documento_id: uuid.UUID,
@@ -35,9 +36,11 @@ def crea_modello(
     codice_tipologia: str | None,
     percorso_categorizzazione: list[str],
     variante: str,
+    lingua: str,
+    livello_professionale: str | None,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
-        id=uuid.uuid4(),
+        id=modello_id,
         public_id=_prossimo_public_id(db, ModelloDocumento),
         tipo_documento_id=tipo_documento_id,
         codice_categoria=codice_categoria,
@@ -46,6 +49,8 @@ def crea_modello(
         codice=codice,
         nome=nome,
         variante=variante,
+        lingua=lingua,
+        livello_professionale=livello_professionale,
         stato="ATTIVA",
     )
     db.add(modello)
@@ -111,6 +116,8 @@ def get_versione_pubblicata_corrente(
     tipo_documento_id: uuid.UUID,
     percorso_categorizzazione: list[str],
     variante: str,
+    lingua: str,
+    livello_professionale: str | None,
     escludi_versione_id: uuid.UUID,
 ) -> ModelloDocumentoVersione | None:
     stmt = (
@@ -120,6 +127,8 @@ def get_versione_pubblicata_corrente(
             ModelloDocumento.tipo_documento_id == tipo_documento_id,
             ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
             ModelloDocumento.variante == variante,
+            ModelloDocumento.lingua == lingua,
+            ModelloDocumento.livello_professionale == livello_professionale,
             ModelloDocumentoVersione.stato == "PUBBLICATO",
             ModelloDocumentoVersione.id != escludi_versione_id,
         )

@@ -54,7 +54,7 @@ class PayloadValidationService:
 
         for field in fields:
             value_present = field.codice in request.dati and request.dati[field.codice] is not None
-            if _is_required(field, bando_inglese=request.bando_inglese) and not value_present:
+            if field.obbligatorio and not value_present:
                 errors.append(_missing_field_error(field))
                 continue
             if value_present and not _matches_type(request.dati[field.codice], field.tipo_dato):
@@ -73,21 +73,7 @@ def get_payload_validation_service(db: Session = Depends(get_db)) -> PayloadVali
     return PayloadValidationService(db)
 
 
-def _is_required(field: ModelloCampoRichiesto, *, bando_inglese: bool) -> bool:
-    if not field.obbligatorio:
-        return False
-    if field.lingua == "EN":
-        return bando_inglese
-    return True
-
-
 def _missing_field_error(field: ModelloCampoRichiesto) -> ErroreValidazione:
-    if field.lingua == "EN":
-        return ErroreValidazione(
-            campo=field.codice,
-            codice=ErrorCode.CAMPO_INGLESE_MANCANTE,
-            messaggio=f"Campo inglese obbligatorio mancante: {field.codice}",
-        )
     return ErroreValidazione(
         campo=field.codice,
         codice=ErrorCode.CAMPO_OBBLIGATORIO,

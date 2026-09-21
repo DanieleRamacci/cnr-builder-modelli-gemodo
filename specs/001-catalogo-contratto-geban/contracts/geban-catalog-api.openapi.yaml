@@ -1,12 +1,12 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.6.0
+  version: 0.8.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
-    campi con lingua condizionata (bando_inglese) - vedi
-    docs/decision-register.yaml, DEC-001-TIPOLOGIE-SOL e DEC-001-LINGUA-IT-EN.
+    campi con metadato lingua - vedi docs/decision-register.yaml,
+    DEC-001-TIPOLOGIE-SOL e DEC-001-LINGUA-IT-EN.
     Versione 0.3.0: le API operative richiedono JWT Bearer Keycloak con audience
     gemodo-backend e ruoli DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE.
     Versione 0.4.0 (010 FR-016): ritiro API classificazione locale;
@@ -44,6 +44,19 @@ paths:
             Codice della tipologia nella discovery esterna, confrontato con i
             riferimenti salvati nei soli modelli GEMODO. Nessuna allowlist locale;
             se non esistono modelli pubblicati corrispondenti restituisce elenco vuoto.
+          schema:
+            type: string
+        - name: lingua
+          in: query
+          required: false
+          description: Lingua del modello pubblicato.
+          schema:
+            type: string
+            enum: [IT, EN]
+        - name: livello_professionale
+          in: query
+          required: false
+          description: Livello specifico; omesso per includere anche modelli generici.
           schema:
             type: string
         - name: modalita
@@ -259,7 +272,7 @@ components:
             $ref: "#/components/schemas/ModelloCatalogo"
     ModelloCatalogo:
       type: object
-      required: [modello_id, modello_versione_id, codice, descrizione, variante, versione, stato]
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, lingua, livello_professionale, versione, stato]
       properties:
         modello_id:
           type: integer
@@ -273,6 +286,12 @@ components:
           type: string
         variante:
           type: string
+        lingua:
+          type: string
+          enum: [IT, EN]
+        livello_professionale:
+          type: string
+          nullable: true
         versione:
           type: integer
         stato:
@@ -323,10 +342,7 @@ components:
           type: string
           enum: [IT, EN]
           default: IT
-          description: >
-            Quando EN, il campo e' obbligatorio in validazione solo se il payload
-            ha bando_inglese=true; altrimenti resta facoltativo indipendentemente da
-            'obbligatorio' (DEC-001-LINGUA-IT-EN).
+          description: Metadato del campo; l'obbligatorieta' e' quella del contratto della versione modello selezionata.
         obbligatorio:
           type: boolean
         ordine:
@@ -355,13 +371,6 @@ components:
           type: string
           format: date
           nullable: true
-        bando_inglese:
-          type: boolean
-          default: false
-          description: >
-            Quando true, i campi del contratto dati con lingua=EN e
-            obbligatorio=true diventano obbligatori in validazione
-            (DEC-001-LINGUA-IT-EN).
         dati:
           type: object
           additionalProperties: true

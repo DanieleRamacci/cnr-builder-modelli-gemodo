@@ -77,12 +77,11 @@ conseguenza nella stessa sessione.
   associato o placeholder da configurare in `infra/local/postgres/seed-demo-catalog.yaml`.
   Una tipologia non tra queste e' un errore funzionale, non un filtro
   vuoto silenzioso.
-- Q: Il contratto dati deve gestire il flag `Bando Inglese` e i campi in lingua
-  inglese? -> A: Si (`DEC-001-LINGUA-IT-EN`, confermata). Il payload di validazione
-  include un campo booleano di contesto (`bando_inglese`); i campi del contratto dati
-  marcati per la lingua inglese diventano obbligatori solo quando quel flag e' `true`.
-  Il servizio non genera qui il documento in due lingue (compito della `004`): valida
-  solo che i dati necessari siano presenti quando richiesti.
+- Q: Il contratto dati deve gestire il flag `Bando Inglese`? -> A: Decisione
+  superseduta il 2026-09-21 (`DEC-001-LINGUA-IT-EN`). Italiano e inglese sono
+  versioni modello distinte; la richiesta indica una sola `modello_versione_id` e
+  tutti i campi obbligatori del relativo contratto devono essere presenti.
+  `bando_inglese` non fa piu' parte del payload.
 - Q: I campi comuni GEBAN (codice bando, numero posti, sedi, medaglione, PTA, flag
   inPA/Gazzetta, ecc., FR-029 di `009`) richiedono un meccanismo nuovo nel contratto
   dati? -> A: No. Sono dati di seed/configurazione del contratto dati dinamico gia'
@@ -455,10 +454,10 @@ risposta distingua i due casi.
   validazione del payload: la validazione deve fallire e richiedere a GEBAN di ricaricare
   il catalogo.
 - `codice_tipologia` non corrisponde a nessun modello: ricerca vuota, non errore.
-- Il payload ha `bando_inglese: true` ma uno o piu' campi obbligatori in lingua
-  inglese sono assenti o vuoti.
-- Il payload ha `bando_inglese: false` (o assente) e valorizza comunque campi in
-  lingua inglese: restano ammessi come facoltativi, non generano errore da soli.
+- Il payload omette un campo obbligatorio del contratto associato alla versione
+  modello selezionata, indipendentemente dal suo metadato lingua.
+- Il payload include il ritirato `bando_inglese`: la richiesta e' rifiutata come
+  non conforme al contratto API strict.
 
 ## Requirements *(mandatory)*
 
@@ -544,13 +543,13 @@ risposta distingua i due casi.
   esterna locale. Nessuna corrispondenza MUST restituire 200 con `modelli: []`.
   La validazione dei dati si basa sul contratto della versione selezionata;
   il builder verifica percorso/campi contro discovery, non contro un elenco seed.
-- **FR-021**: Il contratto dati di un campo MUST poter dichiarare una lingua (`IT` o
-  `EN`); un campo in lingua `EN` MUST essere obbligatorio solo quando il payload
-  contiene un flag di contesto `bando_inglese` con valore `true`, e facoltativo
-  altrimenti.
-- **FR-022**: La validazione payload MUST verificare la presenza dei campi obbligatori
-  in lingua inglese quando `bando_inglese` e' `true`, e MUST restituire un errore
-  funzionale distinto per ciascun campo inglese mancante.
+- **FR-021** *(riallineato 2026-09-21)*: Il modello MUST dichiarare la propria
+  lingua (`IT` o `EN`). Il metadato lingua di un campo resta descrittivo; la sua
+  obbligatorieta' deriva esclusivamente dal contratto della versione selezionata.
+- **FR-022** *(riallineato 2026-09-21)*: La validazione MUST verificare tutti i
+  campi obbligatori del contratto associato a `modello_versione_id`. Il payload
+  MUST NOT contenere `bando_inglese`; ogni chiamata valida e genera un solo
+  documento per una sola versione modello.
 - **FR-023**: Il servizio MUST continuare a esporre catalogo e contratto dati in base
   allo stato di pubblicazione della versione modello; l'autorizzazione fine per
   sistema richiedente e profilo di integrazione (es. profilo GEBAN versionato) resta

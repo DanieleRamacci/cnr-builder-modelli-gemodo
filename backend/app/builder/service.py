@@ -11,6 +11,9 @@ appiattita su tutti i contesti del token.
 from __future__ import annotations
 
 import uuid
+import re
+import unicodedata
+from datetime import datetime, timezone
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -38,6 +41,30 @@ TRANSIZIONI_VALIDE: dict[str, set[str]] = {
     "SOSPESO": {"ARCHIVIATO"},
     "ARCHIVIATO": set(),
 }
+
+
+def _slug(value: str) -> str:
+    ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-") or "modello"
+
+
+def _identita_modello(
+    *,
+    tipo: str,
+    nodi,
+    lingua: str,
+    livello: str | None,
+    modello_id: uuid.UUID,
+) -> tuple[str, str]:
+    scope = livello or "tutti"
+    suffix = modello_id.hex
+    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), scope, lingua]))
+    codice = f"{prefix[:128 - len(suffix) - 1]}-{suffix}"
+    language_name = "Italiano" if lingua == "IT" else "Inglese"
+    scope_name = f"Livello {livello}" if livello else "Tutti i livelli"
+    name_suffix = f" - {scope_name} - {language_name} - {datetime.now(timezone.utc):%Y-%m-%d}"
+    descriptions = " - ".join(n.descrizione for n in nodi)
+    return codice, f"{descriptions[:255 - len(name_suffix)]}{name_suffix}"
 
 
 class BuilderService:
@@ -113,15 +140,43 @@ class BuilderService:
             percorso = candidati[0]
             categoria, tipologia = riferimenti(percorso)
 
+        foglia = indice[percorso]
+        if request.lingua not in (foglia.lingue_possibili or ()):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Lingua non disponibile per la categorizzazione scelta",
+                status_code=400,
+            )
+        if request.livello_professionale is not None and request.livello_professionale not in (
+            foglia.livelli_possibili or ()
+        ):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Livello professionale non disponibile per la categorizzazione scelta",
+                status_code=400,
+            )
+        nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+        modello_id = uuid.uuid4()
+        codice, nome = _identita_modello(
+            tipo=request.codice_tipo_documento,
+            nodi=nodi,
+            lingua=request.lingua,
+            livello=request.livello_professionale,
+            modello_id=modello_id,
+        )
+
         modello = builder_repository.crea_modello(
             self.db,
-            codice=request.codice,
-            nome=request.nome,
+            modello_id=modello_id,
+            codice=codice,
+            nome=nome,
             tipo_documento_id=tipo.id,
             codice_categoria=categoria,
             codice_tipologia=tipologia,
             percorso_categorizzazione=list(percorso),
-            variante=request.variante,
+            variante="STANDARD",
+            lingua=request.lingua,
+            livello_professionale=request.livello_professionale,
         )
         registra_evento(
             self.db,
@@ -228,6 +283,8 @@ class BuilderService:
                 tipo_documento_id=modello.tipo_documento_id,
                 percorso_categorizzazione=modello.percorso_categorizzazione,
                 variante=modello.variante,
+                lingua=modello.lingua,
+                livello_professionale=modello.livello_professionale,
                 escludi_versione_id=versione.id,
             )
             if precedente is not None:

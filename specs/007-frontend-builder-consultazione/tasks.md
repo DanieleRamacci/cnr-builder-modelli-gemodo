@@ -511,6 +511,60 @@ US5 non e' completata dalla sola correzione di accesso.
 
 ---
 
+## Phase 6: User Story 1 - Categorizzare il modello per lingua e livello (Priority: P1)
+
+**Goal**: creare modelli distinti per percorso discovery, lingua e livello
+professionale senza duplicare in GEMODO le anagrafiche esterne.
+
+**Independent Test**: dalla stessa foglia CTER il gestore crea CTER/tutti/IT,
+CTER/tutti/EN e CTER/VI/IT; i tre modelli hanno codice/nome generati, lo stesso
+contratto campi e identificativi distinti.
+
+- [x] T047 [P] [US1] Aggiornare i contract test per lingua/livello e input senza codice, nome o variante in `backend/tests/builder/test_builder_modelli_contract.py`, `backend/tests/discovery/test_builder_docs.py` e `backend/tests/catalog/test_catalogo_modelli_api.py`
+- [x] T048 [P] [US1] Aggiungere test dello schema discovery per `lingue_possibili`, livelli duplicati/non ammessi e metadati consentiti solo sulle foglie in `backend/tests/discovery/test_discovery.py`
+- [x] T049 [US1] Creare migration `0016` con `modello_documento.lingua`, `modello_documento.livello_professionale`, vincolo lingua IT/EN e backfill compatibile in `backend/alembic/versions/0016_modello_lingua_livello.py`
+- [x] T050 [US1] Estendere modello ORM e schemi builder con lingua/livello, rimuovendo codice/nome/variante dalla richiesta di creazione in `backend/app/catalog/models.py` e `backend/app/builder/schemas.py`
+- [x] T051 [US1] Validare `lingue_possibili` e `livelli_possibili` sulla foglia discovery e aggiornare mock/fixture senza cataloghi locali in `backend/app/discovery/schemas.py`, `infra/local/discovery-mock/discovery.json` e `backend/tests/discovery/`
+- [x] T052 [P] [US1] Aggiungere test backend per naming generato, unicita' concorrente, variante STANDARD, lingua/livello non ammessi e conservazione completa dei campi in `backend/tests/builder/test_builder_flow_api.py`
+- [x] T053 [US1] Generare codice/nome e validare lingua/livello contro la foglia in `backend/app/builder/service.py`, persistendo i nuovi attributi tramite `backend/app/builder/repository.py`
+- [x] T054 [P] [US1] Rigenerare i tipi TypeScript dai contratti aggiornati e aggiungere test del form senza input liberi in `frontend/src/shared/api-types/` e `frontend/src/features/builder/modello-crea.component.spec.ts`
+- [x] T055 [US1] Sostituire codice/nome/variante con selettori lingua/livello alimentati dalla foglia e inviare tutti i campi nella versione in `frontend/src/features/builder/modello-crea.component.ts`
+- [x] T056 [US1] Mostrare lingua e livello nella tabella Contesti e nei relativi test in `frontend/src/features/builder/integrazioni-manager.component.html` e `frontend/src/features/builder/integrazioni-manager.component.spec.ts`
+
+## Phase 7: User Story 2 - Pubblicare scope lingua/livello indipendenti (Priority: P1)
+
+**Goal**: pubblicare modelli generici/specifici e IT/EN senza archiviazione
+reciproca, rendendo la combinazione selezionabile dal catalogo operativo.
+
+**Independent Test**: pubblicare CTER/tutti/IT, CTER/tutti/EN e CTER/VI/IT
+lascia tutte e tre le versioni PUBBLICATO; una nuova CTER/VI/IT archivia solo
+la precedente dello stesso scope.
+
+- [x] T057 [P] [US2] Aggiungere test di coesistenza e sostituzione selettiva per lingua/livello in `backend/tests/builder/test_builder_flow_api.py`
+- [x] T058 [US2] Includere lingua/livello nella ricerca della versione pubblicata corrente in `backend/app/builder/repository.py` e `backend/app/builder/service.py`
+- [x] T059 [P] [US2] Aggiungere test dei filtri e dei campi lingua/livello del catalogo in `backend/tests/catalog/test_catalogo_modelli_api.py`
+- [x] T060 [US2] Esporre e filtrare lingua/livello nel catalogo operativo in `backend/app/catalog/api.py`, `backend/app/catalog/service.py`, `backend/app/catalog/repository.py` e `backend/app/catalog/schemas.py`
+
+## Phase 8: Validazione incremento lingua/livello
+
+- [ ] T061 [P] Aggiornare stato feature e istruzioni operative in `README.md`, `frontend/README.md`, `docs/project-map.md` e `specs/007-frontend-builder-consultazione/quickstart.md`
+- [ ] T062 Eseguire test contratti, backend non-e2e, frontend unit/lint/build e Playwright lifecycle reale; registrare comandi ed esiti in `specs/007-frontend-builder-consultazione/quickstart.md`
+- [ ] T063 Chiudere gli umbrella task T041-T043 solo dopo il completamento di T047-T062 in `specs/007-frontend-builder-consultazione/tasks.md`
+
+## Phase 9: Edizioni collegate e contratto di generazione
+
+**Goal**: collegare implicitamente le edizioni per categorizzazione/livello e
+ritirare il flag di generazione specifico dei bandi.
+
+- [x] T064 [P] Aggiornare decision register, spec 001/004/007 e contratti OpenAPI eliminando la semantica `bando_inglese`
+- [x] T065 [P] Sostituire la validazione condizionata dal flag con l'obbligatorieta' del contratto della versione in `backend/app/validation/` e relativi test
+- [x] T066 [P] Verificare con test catalogo che l'assenza del filtro `lingua` restituisca tutte le edizioni pubblicate corrispondenti e che il filtro selezioni IT o EN
+- [x] T067 [US1] Aggiungere dalla gestione modello l'azione di creazione edizione collegata, precompilando integrazione, tipo, percorso e livello senza persistere `famiglia_modello_id`
+- [x] T068 [P] Aggiornare mock GEBAN, esempi pubblicabili e documentazione eliminando `bando_inglese` e la generazione implicita di due output
+- [x] T069 Eseguire test validazione/generazione/catalogo, contract test e suite frontend interessata; registrare gli esiti nel quickstart
+
+---
+
 ## Dependencies & Execution Order
 
 - [x] T045 Impedire presenza demo nelle installazioni nuove (opt-in test),
@@ -537,6 +591,11 @@ US5 non e' completata dalla sola correzione di accesso.
   fixture, come gia' fa `integrazione_connessa` lato backend). Possono
   procedere in parallelo se piu' persone lavorano sul frontend.
 - **Polish (Phase 5)**: dipende da Phase 3 e Phase 4 complete.
+- **Categorizzazione (Phase 6)**: T047/T048/T052 possono partire in parallelo;
+  migration e contratti precedono servizio e frontend.
+- **Pubblicazione (Phase 7)**: dipende dai nuovi attributi persistiti della
+  Phase 6, ma i test T057/T059 possono essere scritti prima del runtime.
+- **Validazione (Phase 8)**: dipende da Phase 6 e Phase 7 complete.
 
 ### Parallel Opportunities
 
@@ -548,6 +607,8 @@ US5 non e' completata dalla sola correzione di accesso.
   implementazione vs test).
 - T020-T022 possono girare in parallelo.
 - US4 e US5 possono procedere interamente in parallelo dopo Phase 2.
+- T047, T048 e T052 possono procedere in parallelo; T054 puo' partire dopo i
+  contratti; T057 e T059 possono procedere in parallelo dopo T049/T050.
 
 ## Implementation Strategy
 
@@ -559,8 +620,12 @@ US5 non e' completata dalla sola correzione di accesso.
    qualcosa sull'interfaccia**, come richiesto.
 3. Completare User Story 5 (Phase 4) - secondo schermo: un manager crea un
    modello di test navigando la struttura scoperta.
-4. Completare Polish (Phase 5).
-5. **Non incluso in questo incremento**: editor visuale, composizione
+4. Completare categorizzazione lingua/livello (Phase 6), quindi pubblicazione
+   indipendente e catalogo (Phase 7).
+5. Validare l'incremento e chiudere T041-T043 (Phase 8).
+6. Completare gli altri residui Polish (Phase 5) senza confonderli con il gate
+   indipendente, rinviato su indicazione dell'utente.
+7. **Non incluso in questo incremento**: editor visuale, composizione
    sezioni (FR-011), revisione/pubblicazione da interfaccia (User Story 2),
    consultazione generazioni (User Story 3) - tutti scope futuro, da
    pianificare come incrementi successivi di questa stessa spec quando

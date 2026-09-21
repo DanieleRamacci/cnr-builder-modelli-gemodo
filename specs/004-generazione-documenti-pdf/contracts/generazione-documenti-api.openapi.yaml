@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Generazione Documenti (Incremento MVP FR-019/020)
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Sostituisce la risposta simulata storica di 001 (GenerazioneDocumentoResponse,
     ora ritirata in geban-catalog-api.openapi.yaml). Produce un PDF reale, sempre
@@ -51,7 +51,6 @@ components:
         external_context_id: {type: string}
         modello_versione_id: {type: integer, format: int64}
         data_riferimento: {type: string, format: date, nullable: true}
-        bando_inglese: {type: boolean, default: false}
         dati: {type: object, additionalProperties: true}
     EsitoGenerazione:
       type: object

@@ -57,10 +57,22 @@ def documentazione(codice: str, struttura: StrutturaInput, validita: datetime) -
                     if attr.valore_default is not None:
                         item["validazione"]["default"] = attr.valore_default
                 campi.append(item)
-            figli.append({"codice": profilo.codice, "descrizione": profilo.descrizione,
-                          "tipo_livello": "profilo", "campi": campi,
-                          "attributi": {a.nome: {"valori_ammessi": a.valori_ammessi,
-                                               "valore_default": a.valore_default} for a in profilo.attributi}})
+            livello = next((a for a in profilo.attributi if a.nome == "livello"), None)
+            foglia = {
+                "codice": profilo.codice,
+                "descrizione": profilo.descrizione,
+                "tipo_livello": "profilo",
+                "campi": campi,
+                "lingue_possibili": struttura.lingue_possibili,
+                "attributi": {
+                    a.nome: {"valori_ammessi": a.valori_ammessi, "valore_default": a.valore_default}
+                    for a in profilo.attributi
+                },
+            }
+            if livello is not None:
+                foglia["livelli_possibili"] = livello.valori_ammessi
+                foglia["livello_base"] = livello.valore_default
+            figli.append(foglia)
         nodi.append({"codice": tipo.codice, "descrizione": tipo.descrizione,
                      "tipo_livello": "tipologia", "figli": figli})
     body = {"validita": validita.isoformat(), "nodi": nodi}

@@ -1,5 +1,5 @@
 {
-  "_comment": "Esempio pubblicabile di errore funzionale per POST /documenti/valida con bando_inglese=true (specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml, schema ValidazioneResponse). Solo dati demo, nessun dato reale o sensibile.",
+  "_comment": "Esempio pubblicabile di errore funzionale per POST /documenti/valida: tutti i campi obbligatori derivano dal contratto della versione modello selezionata. Solo dati demo, nessun dato reale o sensibile.",
   "valido": false,
   "errori": [
     {
@@ -9,8 +9,8 @@
     },
     {
       "campo": "titolo_en",
-      "codice": "CAMPO_INGLESE_MANCANTE",
-      "messaggio": "Campo inglese obbligatorio mancante"
+      "codice": "CAMPO_OBBLIGATORIO",
+      "messaggio": "Campo obbligatorio mancante nel payload"
     }
   ]
 }

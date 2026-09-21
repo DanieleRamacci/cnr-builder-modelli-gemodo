@@ -7,6 +7,9 @@
       "figli": [{
         "codice": "RICERCATORE",
         "descrizione": "DEMO - Ricercatore",
+        "livelli_possibili": ["IV", "V", "VI"],
+        "livello_base": "VI",
+        "lingue_possibili": ["IT", "EN"],
         "campi": [{
           "codice": "titolo_it",
           "etichetta": "Titolo",

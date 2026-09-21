@@ -4,425 +4,430 @@
  */
 
 export interface paths {
-  '/api/v1/builder/tipi-documento/{codiceTipoDocumento}/struttura-disponibile': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          codiceTipoDocumento: string;
+    "/api/v1/builder/tipi-documento/{codiceTipoDocumento}/struttura-disponibile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Albero reale con profondita variabile, campi solo nelle foglie. */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            /**
-             * @example {
-             *       "codice_tipo_documento": "BANDO_CONCORSO",
-             *       "validita": "2026-09-17T00:00:00Z",
-             *       "nodi": [
-             *         {
-             *           "codice": "TD",
-             *           "descrizione": "Tempo determinato",
-             *           "figli": [
-             *             {
-             *               "codice": "RICERCATORE",
-             *               "descrizione": "Ricercatore",
-             *               "campi": [
-             *                 {
-             *                   "codice": "titolo_it",
-             *                   "etichetta": "Titolo",
-             *                   "tipo": "string",
-             *                   "lingua": "IT",
-             *                   "obbligatorio": true,
-             *                   "ordine": 1
-             *                 }
-             *               ]
-             *             }
-             *           ]
-             *         }
-             *       ]
-             *     }
-             */
-            'application/json': {
-              codice_tipo_documento: string;
-              /** Format: date-time */
-              validita: string;
-              nodi: components['schemas']['NodoCategorizzazione'][];
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    codiceTipoDocumento: string;
+                };
+                cookie?: never;
             };
-          };
+            requestBody?: never;
+            responses: {
+                /** @description Albero reale con profondita variabile, campi solo nelle foglie. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "codice_tipo_documento": "BANDO_CONCORSO",
+                         *       "validita": "2026-09-17T00:00:00Z",
+                         *       "nodi": [
+                         *         {
+                         *           "codice": "TD",
+                         *           "descrizione": "Tempo determinato",
+                         *           "figli": [
+                         *             {
+                         *               "codice": "RICERCATORE",
+                         *               "descrizione": "Ricercatore",
+                         *               "campi": [
+                         *                 {
+                         *                   "codice": "titolo_it",
+                         *                   "etichetta": "Titolo",
+                         *                   "tipo": "string",
+                         *                   "lingua": "IT",
+                         *                   "obbligatorio": true,
+                         *                   "ordine": 1
+                         *                 }
+                         *               ]
+                         *             }
+                         *           ]
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": {
+                            codice_tipo_documento: string;
+                            /** Format: date-time */
+                            validita: string;
+                            nodi: components["schemas"]["NodoCategorizzazione"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["AmbiguousSource"];
+                502: components["responses"]["DiscoveryInvalid"];
+                503: components["responses"]["DiscoveryUnavailable"];
+            };
         };
-        401: components['responses']['Unauthorized'];
-        403: components['responses']['Forbidden'];
-        404: components['responses']['NotFound'];
-        409: components['responses']['AmbiguousSource'];
-        502: components['responses']['DiscoveryInvalid'];
-        503: components['responses']['DiscoveryUnavailable'];
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/builder/modelli': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/builder/modelli": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "BANDO_TD_RICERCATORE",
+                     *       "nome": "Bando TD ricercatore",
+                     *       "codice_tipo_documento": "BANDO_CONCORSO",
+                     *       "percorso_categorizzazione": [
+                     *         "TD",
+                     *         "RICERCATORE"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": {
+                        codice: string;
+                        nome: string;
+                        codice_tipo_documento: string;
+                        percorso_categorizzazione?: string[];
+                        codice_categoria?: string | null;
+                        codice_tipologia?: string | null;
+                        /** @default STANDARD */
+                        variante?: string;
+                    } | unknown | unknown;
+                };
+            };
+            responses: {
+                /** @description Modello salvato con codici e percorso, senza FK al catalogo esterno. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "00000000-0000-0000-0000-000000000001",
+                         *       "public_id": 1,
+                         *       "codice": "BANDO_TD_RICERCATORE",
+                         *       "nome": "Bando TD ricercatore",
+                         *       "codice_tipo_documento": "BANDO_CONCORSO",
+                         *       "codice_categoria": "RICERCATORE",
+                         *       "codice_tipologia": "TD",
+                         *       "percorso_categorizzazione": [
+                         *         "TD",
+                         *         "RICERCATORE"
+                         *       ],
+                         *       "variante": "STANDARD"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["ModelloResponse"];
+                    };
+                };
+                400: components["responses"]["BadSelection"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["AmbiguousSource"];
+                502: components["responses"]["DiscoveryInvalid"];
+                503: components["responses"]["DiscoveryUnavailable"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          /**
-           * @example {
-           *       "codice": "BANDO_TD_RICERCATORE",
-           *       "nome": "Bando TD ricercatore",
-           *       "codice_tipo_documento": "BANDO_CONCORSO",
-           *       "percorso_categorizzazione": [
-           *         "TD",
-           *         "RICERCATORE"
-           *       ]
-           *     }
-           */
-          'application/json':
-            | {
-                codice: string;
-                nome: string;
-                codice_tipo_documento: string;
-                percorso_categorizzazione?: string[];
-                codice_categoria?: string | null;
-                codice_tipologia?: string | null;
-                /** @default STANDARD */
-                variante?: string;
-              }
-            | unknown
-            | unknown;
+    "/api/v1/builder/modelli/{modelloId}/versioni": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Modello salvato con codici e percorso, senza FK al catalogo esterno. */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            /**
-             * @example {
-             *       "id": "00000000-0000-0000-0000-000000000001",
-             *       "public_id": 1,
-             *       "codice": "BANDO_TD_RICERCATORE",
-             *       "nome": "Bando TD ricercatore",
-             *       "codice_tipo_documento": "BANDO_CONCORSO",
-             *       "codice_categoria": "RICERCATORE",
-             *       "codice_tipologia": "TD",
-             *       "percorso_categorizzazione": [
-             *         "TD",
-             *         "RICERCATORE"
-             *       ],
-             *       "variante": "STANDARD"
-             *     }
-             */
-            'application/json': components['schemas']['ModelloResponse'];
-          };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    modelloId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "campi": [
+                     *         {
+                     *           "codice": "titolo_it",
+                     *           "lingua": "IT"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": {
+                        campi: {
+                            codice: string;
+                            /** @default IT */
+                            lingua?: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Contratto dei campi della sola foglia selezionata salvato nella versione. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "00000000-0000-0000-0000-000000000002",
+                         *       "public_id": 1,
+                         *       "modello_id": "00000000-0000-0000-0000-000000000001",
+                         *       "numero_versione": 1,
+                         *       "stato": "BOZZA",
+                         *       "pubblicato_at": null
+                         *     }
+                         */
+                        "application/json": components["schemas"]["VersioneResponse"];
+                    };
+                };
+                400: components["responses"]["BadSelection"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["AmbiguousSource"];
+                502: components["responses"]["DiscoveryInvalid"];
+                503: components["responses"]["DiscoveryUnavailable"];
+            };
         };
-        400: components['responses']['BadSelection'];
-        401: components['responses']['Unauthorized'];
-        403: components['responses']['Forbidden'];
-        404: components['responses']['NotFound'];
-        409: components['responses']['AmbiguousSource'];
-        502: components['responses']['DiscoveryInvalid'];
-        503: components['responses']['DiscoveryUnavailable'];
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/builder/modelli/{modelloId}/versioni': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          modelloId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          /**
-           * @example {
-           *       "campi": [
-           *         {
-           *           "codice": "titolo_it",
-           *           "lingua": "IT"
-           *         }
-           *       ]
-           *     }
-           */
-          'application/json': {
-            campi: {
-              codice: string;
-              /** @default IT */
-              lingua?: string;
-            }[];
-          };
-        };
-      };
-      responses: {
-        /** @description Contratto dei campi della sola foglia selezionata salvato nella versione. */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            /**
-             * @example {
-             *       "id": "00000000-0000-0000-0000-000000000002",
-             *       "public_id": 1,
-             *       "modello_id": "00000000-0000-0000-0000-000000000001",
-             *       "numero_versione": 1,
-             *       "stato": "BOZZA",
-             *       "pubblicato_at": null
-             *     }
-             */
-            'application/json': components['schemas']['VersioneResponse'];
-          };
-        };
-        400: components['responses']['BadSelection'];
-        401: components['responses']['Unauthorized'];
-        403: components['responses']['Forbidden'];
-        404: components['responses']['NotFound'];
-        409: components['responses']['AmbiguousSource'];
-        502: components['responses']['DiscoveryInvalid'];
-        503: components['responses']['DiscoveryUnavailable'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    ErrorResponse: {
-      codice: string;
-      messaggio: string;
-      dettagli?: Record<string, never>[];
+    schemas: {
+        ErrorResponse: {
+            codice: string;
+            messaggio: string;
+            dettagli?: Record<string, never>[];
+        };
+        ModelloResponse: {
+            /** Format: uuid */
+            id: string;
+            public_id: number | null;
+            codice: string;
+            nome: string;
+            codice_tipo_documento: string;
+            codice_categoria: string;
+            codice_tipologia: string | null;
+            percorso_categorizzazione: string[];
+            variante: string;
+        };
+        VersioneResponse: {
+            /** Format: uuid */
+            id: string;
+            public_id: number | null;
+            /** Format: uuid */
+            modello_id: string;
+            numero_versione: number;
+            stato: string;
+            /** Format: date-time */
+            pubblicato_at: string | null;
+        };
+        /** @description Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e `descrizione`; ha POI o `figli` (per scendere di un altro livello, stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai entrambi, mai nessuno dei due. Il numero di livelli non e' fissato dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi profilo), un altro tipo documento potrebbe averne uno solo, tre o piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre livelli) qui sopra. `figli`/`campi` restano le uniche chiavi strutturali fisse (necessarie per un parsing ricorsivo deterministico lato GEMODO, indipendentemente da quanti livelli ci sono); il nome concettuale di ciascun livello (tipologia, profilo, o qualunque cosa abbia senso per il vostro dominio) e' invece libero e va nel campo `tipo_livello` sotto - puramente informativo, non usato per il parsing. */
+        NodoCategorizzazione: {
+            /** @example TD */
+            codice: string;
+            /** @example Tempo Determinato */
+            descrizione: string;
+            /** @description Nome del livello di categorizzazione a cui appartiene questo nodo (es. `"tipologia"`, `"profilo"`, o un nome del vostro dominio). Puramente informativo/leggibile per chi consulta la risposta - GEMODO non lo usa per decidere come camminare l'albero (quello dipende solo da `figli`/`campi`). Opzionale. */
+            tipo_livello?: string | null;
+            /**
+             * @description Attributo profilo-dipendente (generalizza il caso "livello", vedi `Attributo Profilo` in `specs/010-configurazione-cataloghi-integrazioni/spec.md`). Opzionale, ha senso solo su un nodo foglia (con `campi`).
+             * @example [
+             *       "I",
+             *       "II",
+             *       "III"
+             *     ]
+             */
+            livelli_possibili?: string[];
+            /**
+             * @description Valore di default fra `livelli_possibili` per questo nodo, se presente.
+             * @example III
+             */
+            livello_base?: string;
+            /**
+             * @description Lingue dei modelli creabili sulla foglia. Obbligatorio sui nodi con `campi`, assente sui nodi intermedi. Non filtra i campi: ogni modello conserva l'intero contratto della foglia.
+             * @example [
+             *       "IT",
+             *       "EN"
+             *     ]
+             */
+            lingue_possibili?: ("IT" | "EN")[];
+            /** @description Sotto-nodi, se questo non e' un livello foglia. Un array vuoto e' valido (nodo senza sotto-categorizzazione ancora definita) ma MUST essere compilato prima dell'uso in produzione, non lasciato vuoto silenziosamente. */
+            figli?: components["schemas"]["NodoCategorizzazione"][];
+            /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
+            campi?: components["schemas"]["CampoContrattoDati"][];
+        };
+        /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
+        CampoContrattoDati: {
+            /** @example numero_posti */
+            codice: string;
+            /** @example Numero posti */
+            etichetta: string;
+            /**
+             * @description Stesso vocabolario di `ModelloCampoRichiesto.tipo_dato` (`001`/`002`): `string`, `number`, `date`, `boolean`, `array`, `object`. Nessun tipo `enum` dedicato - un campo con opzioni vincolate (fisse o dipendenti dal profilo) resta `string`/ `number` con il vincolo espresso in `validazione`.
+             * @enum {string}
+             */
+            tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+            /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
+            validazione?: Record<string, never> | null;
+        };
     };
-    ModelloResponse: {
-      /** Format: uuid */
-      id: string;
-      public_id: number | null;
-      codice: string;
-      nome: string;
-      codice_tipo_documento: string;
-      codice_categoria: string;
-      codice_tipologia: string | null;
-      percorso_categorizzazione: string[];
-      variante: string;
+    responses: {
+        /** @description Codice tipo ambiguo; nessuna lettura discovery o modifica */
+        AmbiguousSource: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "SORGENTE_AMBIGUA",
+                 *       "messaggio": "Indicare l'integrazione del tipo documento"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Token assente/non valido. */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTENTICATO",
+                 *       "messaggio": "Token Bearer mancante o non valido"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Scrittura non autorizzata sul contesto del tipo documento. */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTORIZZATO",
+                 *       "messaggio": "Operazione non autorizzata"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Percorso necessario/ambiguo/incoerente o campi duplicati. */
+        BadSelection: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "CONTESTO_NON_VALIDO",
+                 *       "messaggio": "Indicare il percorso completo"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Tipo, modello, percorso foglia o campo assente. */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "CONTESTO_NON_VALIDO",
+                 *       "messaggio": "Percorso non disponibile o non foglia"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Risposta esterna non conforme alla forma comune. */
+        DiscoveryInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "DISCOVERY_NON_CONFORME",
+                 *       "messaggio": "La risposta discovery non rispetta il contratto"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description URL non configurata o servizio irraggiungibile, senza fallback locale. */
+        DiscoveryUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
-    VersioneResponse: {
-      /** Format: uuid */
-      id: string;
-      public_id: number | null;
-      /** Format: uuid */
-      modello_id: string;
-      numero_versione: number;
-      stato: string;
-      /** Format: date-time */
-      pubblicato_at: string | null;
-    };
-    /** @description Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e `descrizione`; ha POI o `figli` (per scendere di un altro livello, stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai entrambi, mai nessuno dei due. Il numero di livelli non e' fissato dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi profilo), un altro tipo documento potrebbe averne uno solo, tre o piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre livelli) qui sopra. `figli`/`campi` restano le uniche chiavi strutturali fisse (necessarie per un parsing ricorsivo deterministico lato GEMODO, indipendentemente da quanti livelli ci sono); il nome concettuale di ciascun livello (tipologia, profilo, o qualunque cosa abbia senso per il vostro dominio) e' invece libero e va nel campo `tipo_livello` sotto - puramente informativo, non usato per il parsing. */
-    NodoCategorizzazione: {
-      /** @example TD */
-      codice: string;
-      /** @example Tempo Determinato */
-      descrizione: string;
-      /** @description Nome del livello di categorizzazione a cui appartiene questo nodo (es. `"tipologia"`, `"profilo"`, o un nome del vostro dominio). Puramente informativo/leggibile per chi consulta la risposta - GEMODO non lo usa per decidere come camminare l'albero (quello dipende solo da `figli`/`campi`). Opzionale. */
-      tipo_livello?: string | null;
-      /**
-       * @description Attributo profilo-dipendente (generalizza il caso "livello", vedi `Attributo Profilo` in `specs/010-configurazione-cataloghi-integrazioni/spec.md`). Opzionale, ha senso solo su un nodo foglia (con `campi`).
-       * @example [
-       *       "I",
-       *       "II",
-       *       "III"
-       *     ]
-       */
-      livelli_possibili?: string[];
-      /**
-       * @description Valore di default fra `livelli_possibili` per questo nodo, se presente.
-       * @example III
-       */
-      livello_base?: string;
-      /** @description Sotto-nodi, se questo non e' un livello foglia. Un array vuoto e' valido (nodo senza sotto-categorizzazione ancora definita) ma MUST essere compilato prima dell'uso in produzione, non lasciato vuoto silenziosamente. */
-      figli?: components['schemas']['NodoCategorizzazione'][];
-      /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
-      campi?: components['schemas']['CampoContrattoDati'][];
-    };
-    /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
-    CampoContrattoDati: {
-      /** @example numero_posti */
-      codice: string;
-      /** @example Numero posti */
-      etichetta: string;
-      /**
-       * @description Stesso vocabolario di `ModelloCampoRichiesto.tipo_dato` (`001`/`002`): `string`, `number`, `date`, `boolean`, `array`, `object`. Nessun tipo `enum` dedicato - un campo con opzioni vincolate (fisse o dipendenti dal profilo) resta `string`/ `number` con il vincolo espresso in `validazione`.
-       * @enum {string}
-       */
-      tipo: 'string' | 'number' | 'date' | 'boolean' | 'array' | 'object';
-      /** @enum {string} */
-      lingua: 'IT' | 'EN';
-      obbligatorio: boolean;
-      ordine: number;
-      descrizione?: string | null;
-      /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
-      validazione?: Record<string, never> | null;
-    };
-  };
-  responses: {
-    /** @description Codice tipo ambiguo; nessuna lettura discovery o modifica */
-    AmbiguousSource: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "SORGENTE_AMBIGUA",
-         *       "messaggio": "Indicare l'integrazione del tipo documento"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Token assente/non valido. */
-    Unauthorized: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "ACCESSO_NON_AUTENTICATO",
-         *       "messaggio": "Token Bearer mancante o non valido"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Scrittura non autorizzata sul contesto del tipo documento. */
-    Forbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "ACCESSO_NON_AUTORIZZATO",
-         *       "messaggio": "Operazione non autorizzata"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Percorso necessario/ambiguo/incoerente o campi duplicati. */
-    BadSelection: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "CONTESTO_NON_VALIDO",
-         *       "messaggio": "Indicare il percorso completo"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Tipo, modello, percorso foglia o campo assente. */
-    NotFound: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "CONTESTO_NON_VALIDO",
-         *       "messaggio": "Percorso non disponibile o non foglia"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description Risposta esterna non conforme alla forma comune. */
-    DiscoveryInvalid: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "DISCOVERY_NON_CONFORME",
-         *       "messaggio": "La risposta discovery non rispetta il contratto"
-         *     }
-         */
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-    /** @description URL non configurata o servizio irraggiungibile, senza fallback locale. */
-    DiscoveryUnavailable: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/json': components['schemas']['ErrorResponse'];
-      };
-    };
-  };
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

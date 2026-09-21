@@ -19,6 +19,11 @@ class LinguaCampo(StrEnum):
     EN = "EN"
 
 
+class LinguaModello(StrEnum):
+    IT = "IT"
+    EN = "EN"
+
+
 class TipoCampo(StrEnum):
     STRING = "string"
     NUMBER = "number"
@@ -34,6 +39,8 @@ class ModelloCatalogoSchema(BaseModel):
     codice: str
     descrizione: str
     variante: str = "STANDARD"
+    lingua: LinguaModello
+    livello_professionale: str | None = None
     versione: int
     stato: str = "PUBBLICATO"
     data_inizio_validita: date | None = None
@@ -56,6 +63,8 @@ class ModelloSearchResponse(BaseModel):
                         "codice": "demo-bando-concorso-standard-v1",
                         "descrizione": "demo-bando-concorso-standard-v1",
                         "variante": "STANDARD",
+                        "lingua": "IT",
+                        "livello_professionale": "VI",
                         "versione": 1,
                         "stato": "PUBBLICATO",
                         "data_inizio_validita": None,

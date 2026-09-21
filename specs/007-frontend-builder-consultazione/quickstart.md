@@ -67,9 +67,10 @@ Per il collaudo sul server seguire [frontend-server-test.md](../../docs/frontend
    contexts`).
 3. Naviga l'albero (tipologia → profilo → campi, o qualunque forma
    restituita) fino a una foglia.
-4. Crea un modello di test: codice, nome, variante. **Atteso**: risposta
-   `201` con lo stato `BOZZA`; nessun editor di campi/sezioni si apre (fuori
-   scope, vedi `plan.md`).
+4. Scegli lingua e, se disponibile, un livello professionale oppure "Tutti i
+   livelli". Codice, nome e variante non sono campi editabili. **Atteso**:
+   risposta `201` con codice/nome generati e modello distinto per lingua e
+   livello; la versione `BOZZA` conserva tutti i campi della foglia.
 5. Prosegui da Swagger (`/docs/builder-modelli`, una volta chiuso il gap
    Foundational descritto in `research.md`) per versione/pubblicazione, poi
    `/docs/generazione-documenti` per generare e scaricare un PDF di test -
@@ -92,7 +93,7 @@ Per il collaudo sul server seguire [frontend-server-test.md](../../docs/frontend
    modello_versione_id nelle API documenti. Generazione PDF resta via API.
 
 Questo incremento sostituisce il passo Swagger per le transizioni dello
-Scenario 2; editor e naming automatico restano fuori dall'implementazione corrente.
+Scenario 2; editor completo resta fuori dall'implementazione corrente.
 Esito: 297 test backend non-e2e, 42 test frontend e Playwright lifecycle reale
 passati; build produzione/lint passati, screenshot desktop/mobile controllati.
 Review indipendente non superata: reviewer Claude non autenticato.
@@ -114,3 +115,28 @@ diretto sul database o una chiamata Swagger per i passi coperti da questo
 MVP (creazione/verifica integrazione, navigazione, creazione modello) - solo
 i passi esplicitamente fuori scope (versione/pubblicazione/generazione)
 restano su Swagger fino a un incremento futuro.
+
+## Verifica riallineamento lingua/livello (2026-09-21)
+
+- Il catalogo senza filtro `lingua` restituisce tutte le edizioni pubblicate
+  che condividono categorizzazione e livello; `lingua=IT|EN` restringe il
+  risultato.
+- Non esiste `famiglia_modello_id`: "Crea edizione collegata" precompila
+  integrazione, tipo, percorso e livello e crea un nuovo modello autonomo.
+- `POST /documenti/valida` e `POST /documenti/genera` non accettano piu'
+  `bando_inglese`; una chiamata usa una sola `modello_versione_id` e produce
+  un solo documento.
+
+Verifiche eseguite:
+
+```text
+backend non-E2E: 306 passed, 12 deselected
+backend E2E mock: 12 passed, 306 deselected
+frontend unit: 43 passed
+frontend lint: passato
+frontend build produzione: passato
+git diff --check: passato
+```
+
+Resta da ripetere il lifecycle Playwright reale per chiudere T062 e il gate
+indipendente rimane rinviato su indicazione dell'utente.

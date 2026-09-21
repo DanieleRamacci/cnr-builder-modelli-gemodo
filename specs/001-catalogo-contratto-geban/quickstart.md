@@ -239,7 +239,7 @@ Risultato atteso:
 - nessuna allowlist locale e nessun errore TIPOLOGIA_SOL_NON_VALIDA nella ricerca;
 - il seed storico non e' sorgente delle tipologie disponibili nel builder.
 
-## Scenario 9 - Campo inglese mancante con `bando_inglese: true` (FR-021, FR-022)
+## Scenario 9 - Campo obbligatorio della versione mancante (FR-021, FR-022)
 
 Richiesta:
 
@@ -253,7 +253,6 @@ Content-Type: application/json
   "sistema_richiedente": "GEBAN",
   "external_context_id": "BANDO-12345",
   "modello_versione_id": 1,
-  "bando_inglese": true,
   "dati": {
     "codice_bando": "BANDO-12345",
     "titolo_it": "Bando demo",
@@ -263,17 +262,16 @@ Content-Type: application/json
 }
 ```
 
-Il modello demo dichiara almeno un campo con `lingua: EN` e `obbligatorio: true` (es.
-`titolo_en`), assente dal payload sopra.
+La versione modello selezionata dichiara `titolo_en` obbligatorio, ma il campo
+e' assente dal payload sopra.
 
 Risultato atteso:
 
 - `valido` = `false`;
-- un errore per ciascun campo inglese obbligatorio mancante, con codice
-  `CAMPO_INGLESE_MANCANTE`;
-- ripetendo la stessa richiesta con `bando_inglese: false` (o assente) e senza i
-  campi inglesi, la validazione MUST considerare quei campi facoltativi e non
-  generare `CAMPO_INGLESE_MANCANTE`.
+- un errore per ciascun campo obbligatorio mancante, con codice
+  `CAMPO_OBBLIGATORIO`;
+- la lingua deriva da `modello_versione_id`; il payload `bando_inglese` e'
+  rifiutato come campo extra.
 
 ## Verifica Test
 

@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.18.2/dist/css/bootstrap-italia.min.css" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9;font-family:"Titillium Web",system-ui,sans-serif}
+a{color:#0066cc}a:hover{color:#00478f}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px "Roboto Mono",monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 "Titillium Web",sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px "Roboto Mono",monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 "Titillium Web",sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#0066cc;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 "Titillium Web",sans-serif;color:rgba(0,0,0,.5)}
+.dv-card *{box-sizing:border-box}
+em.ph{font-style:normal;font-family:"Roboto Mono",monospace;font-size:11.5px;color:#0059b3;background:#e9f2fb;border-bottom:1.5px dashed #0066cc;padding:0 2px;white-space:nowrap}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Modello derivato</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="3a" data-screen-label="derive-model">
+<div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Crea modello derivato — attributi ereditati + categorizzazione aggiuntiva</div>
+<div class="dv-card" style="width:1180px">
+<div style="padding:34px;background:#eceff2;background-image:linear-gradient(rgba(23,50,77,.35),rgba(23,50,77,.35))">
+<div style="max-width:1000px;margin:0 auto;background:#fff;border-radius:6px;box-shadow:0 12px 40px rgba(23,50,77,.3);overflow:hidden">
+
+<div style="display:flex;align-items:flex-start;gap:16px;padding:20px 26px 18px;border-bottom:1px solid #e3e7eb">
+<div>
+<h2 style="margin:0;font-size:24px;font-weight:700;color:#17324d">Crea modello derivato</h2>
+<p style="margin:5px 0 0;max-width:640px;font-size:14.5px;line-height:1.5;color:#5a6772">Il nuovo modello eredita struttura, testi e segnaposto dal modello di origine. Scegli gli attributi aggiuntivi che lo distinguono: la categorizzazione di partenza resta invariata.</p>
+</div>
+<a href="#2b" style="margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;flex:none;border-radius:4px;color:#33485c;text-decoration:none;font-size:20px;line-height:1">×</a>
+</div>
+
+<div style="display:grid;grid-template-columns:320px 1fr">
+
+<div style="border-right:1px solid #e3e7eb;background:#f7f9fb;padding:20px 22px 24px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Modello di origine</div>
+<div style="margin-top:10px;display:flex;gap:11px;align-items:flex-start">
+<div style="display:flex;align-items:center;justify-content:center;width:30px;height:36px;flex:none;border:1px solid #c5cdd4;border-radius:3px;background:#fff;font:600 9px 'Roboto Mono',monospace;color:#5a6772">DOCX</div>
+<div>
+<div style="font-size:15.5px;font-weight:700;color:#17324d;line-height:1.3">Determina a contrarre</div>
+<div style="margin-top:2px;font:500 11.5px 'Roboto Mono',monospace;color:#5a6772">MOD-APP-001 · v3.2</div>
+</div>
+</div>
+
+<div style="margin-top:18px;padding-top:16px;border-top:1px solid #e3e7eb">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Categorizzazione ereditata</div>
+<div style="display:flex;flex-direction:column;gap:7px;margin-top:11px">
+<sc-for list="{{ inheritedPath }}" as="p" hint-placeholder-count="4">
+<div style="display:flex;gap:9px;align-items:baseline">
+<span style="font:600 11px 'Roboto Mono',monospace;color:#8a93a0;min-width:22px">L{{ p.n }}</span>
+<div><div style="font-size:14px;font-weight:600;color:#33485c">{{ p.value }}</div><div style="font-size:11.5px;color:#5a6772">{{ p.label }}</div></div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#8a5a00;background:#fdf1d8;border-radius:11px;padding:2px 9px;font-weight:600">
+<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"></rect><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" stroke="currentColor" stroke-width="2" fill="none"></path></svg>
+non modificabile nel derivato
+</div>
+</div>
+
+<div style="margin-top:18px;padding-top:16px;border-top:1px solid #e3e7eb">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Attributi ereditati</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:11px">
+<sc-for list="{{ inheritedAttrs }}" as="a" hint-placeholder-count="5">
+<div style="display:flex;gap:9px;align-items:baseline;font-size:13.5px;color:#33485c">
+<svg viewBox="0 0 24 24" width="13" height="13" style="color:#1b7a34;flex:none;margin-top:3px" aria-hidden="true"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+<div><strong style="color:#17324d">{{ a.n }}</strong> {{ a.what }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="padding:20px 26px 24px">
+<div style="display:flex;align-items:baseline;gap:10px">
+<h3 style="margin:0;font-size:17px;font-weight:700;color:#17324d">Attributi di derivazione</h3>
+<span style="font-size:12.5px;color:#5a6772">servizio: /categorize/derive</span>
+</div>
+<p style="margin:5px 0 0;font-size:13.5px;line-height:1.5;color:#5a6772">Ogni valore diverso dall'origine genera una variante. Lascia "eredita" per mantenere il valore del modello padre.</p>
+
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px">
+<sc-for list="{{ derivFields }}" as="d" hint-placeholder-count="4">
+<div style="border:1px solid {{ d.edge }};border-radius:4px;padding:13px 15px;background:{{ d.bg }}">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font:600 10.5px 'Roboto Mono',monospace;padding:2px 6px;border-radius:3px;background:#fff;border:1px solid #dbe2e8;color:#5a6772">D{{ d.n }}</span>
+<label style="font-size:14px;font-weight:700;color:#17324d">{{ d.label }}</label>
+<sc-if value="{{ d.changed }}" hint-placeholder-val="{{ false }}">
+<span style="margin-left:auto;padding:1px 8px;border-radius:10px;background:#e6f0fa;color:#0059b3;font-size:11px;font-weight:700">modificato</span>
+</sc-if>
+</div>
+<select class="form-select" value="{{ d.value }}" onChange="{{ d.onChange }}" style="margin-top:8px;width:100%;height:40px;padding:0 11px;font-size:14.5px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;color:#17324d">
+<option value="">eredita — {{ d.current }}</option>
+<sc-for list="{{ d.options }}" as="o" hint-placeholder-count="3">
+<option value="{{ o }}">{{ o }}</option>
+</sc-for>
+</select>
+</div>
+</sc-for>
+</div>
+
+<div style="margin-top:18px;padding:14px 16px;border:1px solid #e3e7eb;border-radius:4px;background:#fbfcfd">
+<div style="display:flex;align-items:baseline;gap:10px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Modello risultante</div>
+<span style="margin-left:auto;font:500 13px 'Roboto Mono',monospace;color:#17324d">{{ derivedCode }}</span>
+</div>
+<div style="margin-top:8px;font-size:14.5px;font-weight:700;color:#17324d">{{ derivedName }}</div>
+<div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ derivedChips }}" as="c" hint-placeholder-count="2">
+<span style="padding:2px 9px;border-radius:11px;background:{{ c.bg }};color:{{ c.ink }};font-size:12px;font-weight:600">{{ c.label }}</span>
+</sc-for>
+</div>
+<label style="display:flex;align-items:flex-start;gap:9px;margin:14px 0 0;font-size:13.5px;line-height:1.5;color:#33485c">
+<input type="checkbox" checked="{{ true }}" style="margin-top:3px;width:16px;height:16px;flex:none">
+<span>Mantieni il collegamento con il modello di origine: le modifiche alle sezioni bloccate del padre si propagano al derivato.</span>
+</label>
+</div>
+
+<div style="display:flex;align-items:center;gap:12px;margin-top:18px">
+<button class="btn btn-primary" onClick="{{ onCreateDerived }}" disabled="{{ derivDisabled }}" style="height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:9px;white-space:nowrap">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M5 12h14m-5-6 6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+Crea e apri nel builder
+</button>
+<a href="#2b" class="btn btn-outline-primary" style="height:44px;padding:0 18px;display:inline-flex;align-items:center;text-decoration:none">Annulla</a>
+<span style="font-size:13px;color:#5a6772">{{ derivHint }}</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “in <a class="dv-oid" href="#3a">3a</a> aggiungi la traduzione automatica dei testi ereditati” · “mostra i derivati annidati sotto il padre nella tabella <a class="dv-oid" href="#1b">1b</a>”</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Categorizzazione e builder del modello</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a" data-screen-label="categorize-wizard">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Categorizzazione — tendine a cascata dal servizio, max 4 livelli</div>
+<div class="dv-card" style="width:1180px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Modelli</span>
+</nav>
+<span style="display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font:700 12.5px 'Titillium Web',sans-serif">MR</span>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772"><a href="#1a" style="text-decoration:none">Contesti</a> <span style="opacity:.5;padding:0 6px">/</span> <a href="#1b" style="text-decoration:none">Appalti e contratti</a> <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Nuovo modello</span></div>
+
+<div style="display:flex;align-items:center;padding:18px 28px 0">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0066cc;color:#fff;font-weight:700;font-size:13.5px">1</span>
+<span style="font-size:14.5px;font-weight:700;color:#17324d">Categorizzazione</span>
+</div>
+<span style="flex:1;height:2px;background:#e3e7eb;margin:0 14px;max-width:120px"></span>
+<div style="display:flex;align-items:center;gap:10px;opacity:.55">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid #c5cdd4;color:#5a6772;font-weight:700;font-size:13.5px">2</span>
+<span style="font-size:14.5px;color:#33485c">Generazione struttura</span>
+</div>
+<span style="flex:1;height:2px;background:#e3e7eb;margin:0 14px;max-width:120px"></span>
+<div style="display:flex;align-items:center;gap:10px;opacity:.55">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid #c5cdd4;color:#5a6772;font-weight:700;font-size:13.5px">3</span>
+<span style="font-size:14.5px;color:#33485c">Editor documento</span>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:26px;padding:20px 28px 28px">
+<div>
+<h1 style="margin:0;font-size:30px;font-weight:700;color:#17324d;letter-spacing:-.3px">Classifica il modello</h1>
+<p style="margin:7px 0 0;max-width:600px;font-size:15px;line-height:1.5;color:#5a6772">Le scelte arrivano dal servizio di categorizzazione. Ogni selezione restringe il livello successivo: si scende fino a un massimo di quattro livelli, poi la struttura del modello viene generata.</p>
+
+<div style="display:flex;flex-direction:column;gap:16px;margin-top:22px">
+<sc-for list="{{ levels }}" as="lv" hint-placeholder-count="4">
+<div style="border:1px solid {{ lv.edge }};border-radius:4px;padding:14px 16px;background:{{ lv.bg }}">
+<div style="display:flex;align-items:center;gap:9px">
+<span style="font:600 11px 'Roboto Mono',monospace;padding:2px 7px;border-radius:3px;background:#fff;border:1px solid #dbe2e8;color:#5a6772">L{{ lv.n }}</span>
+<label style="font-size:14.5px;font-weight:700;color:#17324d">{{ lv.label }}</label>
+<span style="margin-left:auto;font-size:12.5px;color:#5a6772">{{ lv.hint }}</span>
+</div>
+<select class="form-select" value="{{ lv.value }}" onChange="{{ lv.onChange }}" disabled="{{ lv.disabled }}" style="margin-top:9px;width:100%;height:42px;padding:0 12px;font-size:15px;background-color:{{ lv.fieldBg }};border:1px solid #c5cdd4;border-radius:4px;color:#17324d">
+<option value="">{{ lv.placeholder }}</option>
+<sc-for list="{{ lv.options }}" as="o" hint-placeholder-count="3">
+<option value="{{ o }}">{{ o }}</option>
+</sc-for>
+</select>
+<sc-if value="{{ lv.hasNote }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:8px;font-size:13px;color:#5a6772">{{ lv.note }}</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:center;gap:12px;margin-top:22px">
+<button class="btn btn-primary" onClick="{{ onGenerate }}" disabled="{{ generateDisabled }}" style="height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:9px;white-space:nowrap">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M5 12h14m-5-6 6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+Genera modello
+</button>
+<a href="#1b" class="btn btn-outline-primary" style="height:44px;padding:0 18px;display:inline-flex;align-items:center;text-decoration:none">Annulla</a>
+<span style="font-size:13px;color:#5a6772">{{ chosenCount }} di 4 livelli selezionati</span>
+</div>
+</div>
+
+<aside style="border:1px solid #e3e7eb;border-radius:4px;background:#f7f9fb;padding:18px 18px 20px;align-self:start">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Categorizzazione corrente</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+<sc-for list="{{ chosenPath }}" as="p" hint-placeholder-count="2">
+<div style="display:flex;gap:9px;align-items:baseline">
+<span style="font:600 11px 'Roboto Mono',monospace;color:#0066cc;min-width:22px">L{{ p.n }}</span>
+<div><div style="font-size:14.5px;font-weight:600;color:#17324d">{{ p.value }}</div><div style="font-size:12px;color:#5a6772">{{ p.label }}</div></div>
+</div>
+</sc-for>
+<sc-if value="{{ pathEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:14px;color:#5a6772;line-height:1.5">Nessuna scelta effettuata. Inizia dal livello L1.</div>
+</sc-if>
+</div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid #e3e7eb">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Codice assegnato</div>
+<div style="margin-top:7px;font:500 14px 'Roboto Mono',monospace;color:#17324d">{{ assignedCode }}</div>
+</div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid #e3e7eb">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Struttura proposta</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+<sc-for list="{{ proposedSections }}" as="s" hint-placeholder-count="5">
+<div style="display:flex;gap:8px;align-items:center;font-size:13.5px;color:#33485c">
+<span style="width:6px;height:6px;border-radius:50%;background:#0066cc;flex:none"></span>{{ s }}
+</div>
+</sc-for>
+</div>
+<div style="margin-top:10px;font-size:12.5px;color:#5a6772;line-height:1.5">Sezioni e segnaposto derivano dalla categoria scelta e restano modificabili nell'editor.</div>
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2b" data-screen-label="builder-editor">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Builder — documento editabile con libreria segnaposto e sezioni a destra</div>
+<div class="dv-card" style="width:1320px">
+
+<div style="display:flex;align-items:center;gap:18px;padding:12px 24px;background:#17324d;color:#fff">
+<a href="#1b" style="display:inline-flex;align-items:center;gap:7px;color:rgba(255,255,255,.88);text-decoration:none;font-size:14px">
+<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+Modelli
+</a>
+<div style="width:1px;height:26px;background:rgba(255,255,255,.22)"></div>
+<div>
+<div style="font-size:15.5px;font-weight:700">Determina a contrarre</div>
+<div style="font:500 11.5px 'Roboto Mono',monospace;color:rgba(255,255,255,.7);white-space:nowrap">MOD-APP-001 · v3.3 bozza · {{ saveState }}</div>
+</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+<a href="#3a" class="btn btn-sm" style="height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.5);color:#fff;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;text-decoration:none">
+<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M8 7V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2" stroke="currentColor" stroke-width="2" fill="none"></path><rect x="4" y="8" width="12" height="12" rx="1" stroke="currentColor" stroke-width="2" fill="none"></rect></svg>
+Crea modello derivato
+</a>
+<button class="btn btn-sm" style="height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.5);color:#fff;white-space:nowrap">Anteprima</button>
+<button class="btn btn-sm" style="height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.5);color:#fff;white-space:nowrap">Esporta .docx</button>
+<button class="btn btn-sm" style="height:36px;padding:0 16px;background:#fff;color:#17324d;font-weight:700;white-space:nowrap">Pubblica</button>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:6px;padding:8px 24px;background:#f7f9fb;border-bottom:1px solid #e3e7eb;font-size:14px;color:#33485c">
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;border-radius:4px;font-weight:700">B</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;border-radius:4px;font-style:italic">I</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;border-radius:4px;text-decoration:underline">U</span>
+<span style="width:1px;height:22px;background:#dbe2e8;margin:0 4px"></span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;font-size:13px">H1</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;font-size:13px">H2</span>
+<span style="width:1px;height:22px;background:#dbe2e8;margin:0 4px"></span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;font-size:13px">1.</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;font-size:13px">•</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;border-radius:4px;font-size:13px">Tab</span>
+<span style="margin-left:auto;font-size:12.5px;color:#5a6772">Trascina un segnaposto nel testo, oppure clicca per inserirlo nel punto del cursore</span>
+</div>
+
+<div style="display:grid;grid-template-columns:232px 1fr 320px;min-height:720px">
+
+<div style="border-right:1px solid #e3e7eb;background:#fbfcfd;padding:16px 0">
+<div style="padding:0 16px 10px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Sezioni del modello</div>
+<sc-for list="{{ outline }}" as="s" hint-placeholder-count="6">
+<div onClick="{{ s.onClick }}" style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-left:3px solid {{ s.edge }};background:{{ s.bg }};cursor:pointer">
+<svg viewBox="0 0 24 24" width="13" height="13" style="color:#9aa5af;flex:none" aria-hidden="true"><path d="M8 7h8M8 12h8M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font-size:13.5px;font-weight:600;color:#17324d;line-height:1.3">{{ s.title }}</div>
+<div style="font-size:11.5px;color:#5a6772">{{ s.meta }}</div>
+</div>
+<sc-if value="{{ s.locked }}" hint-placeholder-val="{{ false }}">
+<svg viewBox="0 0 24 24" width="13" height="13" style="color:#8a5a00;flex:none" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"></rect><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" stroke="currentColor" stroke-width="2" fill="none"></path></svg>
+</sc-if>
+</div>
+</sc-for>
+<div style="padding:12px 16px 0">
+<button class="btn btn-outline-primary btn-sm" onClick="{{ onAddSection }}" style="width:100%;height:36px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px">
+<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Aggiungi sezione
+</button>
+</div>
+</div>
+
+<div style="background:#e8edf2;padding:26px 0 34px;overflow:hidden">
+<div style="width:620px;margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(23,50,77,.14);padding:52px 58px 60px;min-height:640px">
+<div style="display:flex;align-items:flex-start;gap:14px;padding-bottom:16px;border-bottom:1.5px solid #17324d">
+<div style="width:38px;height:44px;border:1px solid #c5cdd4;flex:none"></div>
+<div style="font-size:12.5px;line-height:1.4;color:#17324d">
+<div style="font-weight:700">Comune di <span style="background:#e9f2fb;border-bottom:1.5px dashed #0066cc;padding:0 2px;font-family:'Roboto Mono',monospace;font-size:11.5px">{{ tokEnte }}</span></div>
+<div style="color:#5a6772">Area appalti e contratti</div>
+</div>
+<div style="margin-left:auto;text-align:right;font:500 11.5px 'Roboto Mono',monospace;color:#5a6772">Det. n. <span style="background:#e9f2fb;border-bottom:1.5px dashed #0066cc;padding:0 2px">{{ tokNumero }}</span><br>del <span style="background:#e9f2fb;border-bottom:1.5px dashed #0066cc;padding:0 2px">{{ tokData }}</span></div>
+</div>
+
+<sc-for list="{{ blocks }}" as="b" hint-placeholder-count="4">
+<div onClick="{{ b.onFocus }}" style="position:relative;margin-top:24px;padding:10px 12px;border:1px solid {{ b.edge }};border-radius:3px;background:{{ b.bg }}">
+<div style="position:absolute;top:-10px;left:10px;display:flex;align-items:center;gap:6px;padding:1px 8px;border-radius:10px;background:{{ b.tagBg }};color:{{ b.tagInk }};font:600 10.5px 'Titillium Web',sans-serif">{{ b.tag }}</div>
+<h3 style="margin:2px 0 8px;font-size:14.5px;font-weight:700;color:#17324d;text-transform:uppercase;letter-spacing:.4px;outline:none">{{ b.title }}</h3>
+<div contentEditable="{{ b.editable }}" suppressContentEditableWarning="{{ true }}" dangerouslySetInnerHTML="{{ b.html }}" style="font-size:13.5px;line-height:1.75;color:#1c2024;outline:none;text-align:justify;min-height:22px"></div>
+</div>
+</sc-for>
+
+<div style="margin-top:28px;display:flex;justify-content:flex-end">
+<div style="text-align:center;font-size:12.5px;color:#17324d">
+<div style="font-weight:700">Il Responsabile del procedimento</div>
+<div style="margin-top:4px;background:#e9f2fb;border-bottom:1.5px dashed #0066cc;padding:0 3px;font:500 11.5px 'Roboto Mono',monospace">{{ tokRup }}</div>
+</div>
+</div>
+
+<div onClick="{{ onAddSection }}" style="margin-top:26px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:2px dashed #c5cdd4;border-radius:3px;color:#0066cc;font-size:13.5px;font-weight:600;cursor:pointer">
+<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Inserisci una nuova sezione di testo
+</div>
+</div>
+</div>
+
+<div style="border-left:1px solid #e3e7eb;background:#fbfcfd;display:flex;flex-direction:column">
+<div style="display:flex;border-bottom:1px solid #e3e7eb;font-size:13.5px">
+<sc-for list="{{ panelTabs }}" as="t" hint-placeholder-count="3">
+<span onClick="{{ t.onClick }}" style="flex:1;text-align:center;padding:12px 4px;font-weight:{{ t.weight }};color:{{ t.ink }};border-bottom:3px solid {{ t.edge }};cursor:pointer">{{ t.label }}</span>
+</sc-for>
+</div>
+
+<sc-if value="{{ showPlaceholders }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px 18px 20px;overflow:hidden">
+<div style="position:relative">
+<svg viewBox="0 0 24 24" width="16" height="16" style="position:absolute;left:10px;top:11px;color:#5a6772" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+<input class="form-control" type="text" placeholder="Cerca segnaposto" style="padding-left:34px;height:36px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:13.5px">
+</div>
+<div style="margin-top:8px;font-size:12.5px;color:#5a6772;line-height:1.5">Trascina nel documento o clicca per inserire. I segnaposto fissi non possono essere rinominati.</div>
+
+<sc-for list="{{ phGroups }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:16px">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">{{ g.name }}</span>
+<span style="font-size:11.5px;color:#5a6772">{{ g.source }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:9px">
+<sc-for list="{{ g.items }}" as="p" hint-placeholder-count="4">
+<div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onClick="{{ p.onInsert }}" style="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid #d9e4ef;border-radius:4px;background:#fff;cursor:grab">
+<svg viewBox="0 0 24 24" width="12" height="12" style="color:#9aa5af;flex:none" aria-hidden="true"><circle cx="9" cy="6" r="1.4" fill="currentColor"></circle><circle cx="15" cy="6" r="1.4" fill="currentColor"></circle><circle cx="9" cy="12" r="1.4" fill="currentColor"></circle><circle cx="15" cy="12" r="1.4" fill="currentColor"></circle><circle cx="9" cy="18" r="1.4" fill="currentColor"></circle><circle cx="15" cy="18" r="1.4" fill="currentColor"></circle></svg>
+<div style="flex:1;min-width:0">
+<div style="font:500 11.5px 'Roboto Mono',monospace;color:#0059b3">{{ p.token }}</div>
+<div style="font-size:12px;color:#5a6772">{{ p.desc }}</div>
+</div>
+<span style="font-size:11px;color:#5a6772;white-space:nowrap">{{ p.kind }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ showSnippets }}" hint-placeholder-val="{{ false }}">
+<div style="padding:16px 18px 20px">
+<div style="font-size:12.5px;color:#5a6772;line-height:1.5">Blocchi di testo predefiniti per la categoria scelta. Clicca per inserirli come nuova sezione.</div>
+<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+<sc-for list="{{ snippets }}" as="s" hint-placeholder-count="4">
+<div onClick="{{ s.onInsert }}" style="padding:11px 12px;border:1px solid #d9e4ef;border-radius:4px;background:#fff;cursor:pointer">
+<div style="font-size:13.5px;font-weight:700;color:#17324d">{{ s.title }}</div>
+<div style="margin-top:4px;font-size:12.5px;line-height:1.5;color:#5a6772">{{ s.preview }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showProps }}" hint-placeholder-val="{{ false }}">
+<div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px">
+<div>
+<label style="font-size:12.5px;font-weight:700;color:#5a6772;text-transform:uppercase;letter-spacing:.6px">Titolo sezione</label>
+<input class="form-control" type="text" value="{{ activeTitle }}" style="margin-top:6px;height:38px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px">
+</div>
+<div>
+<label style="font-size:12.5px;font-weight:700;color:#5a6772;text-transform:uppercase;letter-spacing:.6px">Obbligatorietà</label>
+<select class="form-select" style="margin-top:6px;width:100%;height:38px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px"><option>Obbligatoria</option><option>Opzionale</option><option>Condizionata</option></select>
+</div>
+<div>
+<label style="font-size:12.5px;font-weight:700;color:#5a6772;text-transform:uppercase;letter-spacing:.6px">Ripetibile</label>
+<div style="margin-top:6px;font-size:13.5px;color:#33485c">No — una sola occorrenza per documento</div>
+</div>
+<div style="padding-top:12px;border-top:1px solid #e3e7eb;font-size:12.5px;color:#5a6772;line-height:1.5">Le sezioni bloccate hanno testo fissato dalla categoria: chi genera il documento non può modificarle.</div>
+</div>
+</sc-if>
+
+<div style="margin-top:auto;padding:14px 18px;border-top:1px solid #e3e7eb;background:#f2f5f8;font-size:12.5px;color:#5a6772;line-height:1.5">
+Categoria: <strong style="color:#17324d">Atti amministrativi › Determine › A contrarre</strong>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “in <a class="dv-oid" href="#2a">2a</a> aggiungi la ricerca libera di categoria” · “in <a class="dv-oid" href="#2b">2b</a> mostra lo stato di errore di un segnaposto non valido”</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Elenco contesti ed elenco modelli</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a" data-screen-label="contexts-list">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Elenco contesti / applicazioni — griglia di schede</div>
+<div class="dv-card" style="width:1180px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:.2px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px;font-weight:700">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Modelli</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Generazioni</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Impostazioni</span>
+</nav>
+<div style="margin-left:auto;display:flex;align-items:center;gap:14px;font-size:13.5px">
+<span style="color:rgba(255,255,255,.9)">m.rossi@comune.esempio.it</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font-size:12.5px;font-weight:700">MR</span>
+</div>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772">Home <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Contesti</span></div>
+
+<div style="display:flex;align-items:flex-end;gap:24px;padding:14px 28px 20px;border-bottom:1px solid #e3e7eb">
+<div>
+<h1 style="margin:0;font-size:34px;font-weight:700;color:#17324d;letter-spacing:-.3px">Contesti applicativi</h1>
+<p style="margin:6px 0 0;max-width:620px;font-size:15px;line-height:1.5;color:#5a6772">Ogni contesto raccoglie i modelli di documento di un'area organizzativa. Apri un contesto per gestire i modelli associati.</p>
+</div>
+<button class="btn btn-primary" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;white-space:nowrap">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Nuovo contesto
+</button>
+</div>
+
+<div style="display:flex;align-items:center;gap:12px;padding:16px 28px;background:#f7f9fb;border-bottom:1px solid #e3e7eb">
+<div style="position:relative;flex:1;max-width:340px">
+<svg viewBox="0 0 24 24" width="17" height="17" style="position:absolute;left:11px;top:10px;color:#5a6772" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+<input class="form-control" type="text" placeholder="Cerca contesto" style="padding-left:36px;height:38px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px">
+</div>
+<div style="display:flex;gap:8px;font-size:13px">
+<span style="padding:6px 13px;border-radius:16px;background:#0066cc;color:#fff;font-weight:600">Tutti (8)</span>
+<span style="padding:6px 13px;border-radius:16px;background:#fff;border:1px solid #c5cdd4;color:#33485c">Attivi</span>
+<span style="padding:6px 13px;border-radius:16px;background:#fff;border:1px solid #c5cdd4;color:#33485c">Archiviati</span>
+</div>
+<span style="margin-left:auto;font-size:13px;color:#5a6772">Ordina per: <strong style="color:#0066cc">ultima modifica</strong></span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:24px 28px 30px;background:#fff">
+<sc-for list="{{ contexts }}" as="c" hint-placeholder-count="6">
+<div style="display:flex;flex-direction:column;border:1px solid #e3e7eb;border-top:4px solid #0066cc;border-radius:4px;padding:18px 18px 14px;background:#fff">
+<div style="display:flex;align-items:flex-start;gap:12px">
+<div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;border-radius:4px;background:#e6f0fa;color:#0066cc;font-weight:700;font-size:14px">{{ c.abbr }}</div>
+<div>
+<h3 style="margin:0;font-size:17.5px;font-weight:700;color:#17324d;line-height:1.25">{{ c.name }}</h3>
+<div style="margin-top:3px;font:500 11.5px 'Roboto Mono',monospace;color:#5a6772">{{ c.code }}</div>
+</div>
+</div>
+<p style="margin:12px 0 14px;font-size:14px;line-height:1.45;color:#5a6772;min-height:60px">{{ c.desc }}</p>
+<div style="display:flex;gap:18px;padding-top:12px;border-top:1px solid #eef1f4;font-size:13px;color:#5a6772">
+<span><strong style="color:#17324d;font-size:15px">{{ c.count }}</strong> modelli</span>
+<span>agg. {{ c.updated }}</span>
+</div>
+<a href="#1b" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;text-decoration:none">Apri contesto
+<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+</a>
+</div>
+</sc-for>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:210px;border:2px dashed #c5cdd4;border-radius:4px;color:#0066cc;background:#fbfcfd">
+<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path></svg>
+<span style="font-size:14.5px;font-weight:600">Nuovo contesto</span>
+<span style="font-size:12.5px;color:#5a6772">Definisci area, fonti dati e permessi</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b" data-screen-label="templates-table">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Elenco modelli — tabella PA standard, densa e filtrabile</div>
+<div class="dv-card" style="width:1180px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Modelli</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Generazioni</span>
+</nav>
+<span style="display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font-size:12.5px;font-weight:700">MR</span>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772"><a href="#1a" style="text-decoration:none">Contesti</a> <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Appalti e contratti</span></div>
+
+<div style="display:flex;align-items:flex-start;gap:24px;padding:12px 28px 18px">
+<div>
+<div style="display:flex;align-items:center;gap:10px">
+<h1 style="margin:0;font-size:32px;font-weight:700;color:#17324d;letter-spacing:-.3px">Appalti e contratti</h1>
+<span style="padding:3px 9px;border-radius:3px;background:#e6f0fa;color:#0066cc;font:600 11px 'Roboto Mono',monospace">CTX-APP</span>
+</div>
+<p style="margin:6px 0 0;max-width:660px;font-size:15px;line-height:1.5;color:#5a6772">14 modelli generati. Sorgente dati: anagrafica fornitori, registro determine.</p>
+</div>
+<div style="margin-left:auto;display:flex;gap:10px">
+<button class="btn btn-outline-primary btn-sm" style="height:40px;padding:0 16px;white-space:nowrap">Importa .docx</button>
+<a href="#2a" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;height:40px;white-space:nowrap;text-decoration:none">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Nuovo modello
+</a>
+</div>
+</div>
+
+<sc-if value="{{ showMetrics }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:0 28px 20px;background:#e3e7eb;border:1px solid #e3e7eb;border-radius:4px;overflow:hidden">
+<div style="padding:14px 18px;background:#f7f9fb"><div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:600">Modelli attivi</div><div style="font-size:26px;font-weight:700;color:#17324d">11</div></div>
+<div style="padding:14px 18px;background:#f7f9fb"><div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:600">In revisione</div><div style="font-size:26px;font-weight:700;color:#17324d">2</div></div>
+<div style="padding:14px 18px;background:#f7f9fb"><div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:600">Bozze</div><div style="font-size:26px;font-weight:700;color:#17324d">1</div></div>
+<div style="padding:14px 18px;background:#f7f9fb"><div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:600">Documenti generati (30 gg)</div><div style="font-size:26px;font-weight:700;color:#17324d">438</div></div>
+</div>
+</sc-if>
+
+<div style="display:flex;align-items:center;gap:12px;padding:14px 28px;background:#f7f9fb;border-top:1px solid #e3e7eb;border-bottom:1px solid #e3e7eb">
+<div style="position:relative;flex:1;max-width:300px">
+<svg viewBox="0 0 24 24" width="17" height="17" style="position:absolute;left:11px;top:10px;color:#5a6772" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+<input class="form-control" type="text" placeholder="Cerca modello o codice" style="padding-left:36px;height:38px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px">
+</div>
+<select class="form-select" style="width:150px;height:38px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px"><option>Stato: tutti</option></select>
+<select class="form-select" style="width:150px;height:38px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px"><option>Tipo: tutti</option></select>
+<span style="margin-left:auto;font-size:13px;color:#5a6772">14 risultati</span>
+</div>
+
+<table class="table table-hover" style="margin:0;font-size:14.5px">
+<thead>
+<tr style="background:#fff">
+<th style="padding:12px 16px 12px 28px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d">Modello</th>
+<th style="padding:12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d">Tipo</th>
+<th style="padding:12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d">Ver.</th>
+<th style="padding:12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d">Stato</th>
+<th style="padding:12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d">Ultima modifica</th>
+<th style="padding:12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d;text-align:right">Utilizzi</th>
+<th style="padding:12px 28px 12px 16px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;border-bottom:2px solid #17324d;text-align:right">Azioni</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ models }}" as="m" hint-placeholder-count="7">
+<tr>
+<td style="padding:14px 16px 14px 28px;border-bottom:1px solid #eef1f4;vertical-align:middle">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="display:flex;align-items:center;justify-content:center;width:30px;height:36px;flex:none;border:1px solid #c5cdd4;border-radius:3px;background:#fbfcfd;font:600 9px 'Roboto Mono',monospace;color:#5a6772">{{ m.ext }}</div>
+<div>
+<a href="#2b" style="font-weight:700;color:#17324d;text-decoration:none">{{ m.name }}</a>
+<div style="font:500 11.5px 'Roboto Mono',monospace;color:#5a6772;margin-top:2px">{{ m.code }}</div>
+</div>
+</div>
+</td>
+<td style="padding:14px 16px;border-bottom:1px solid #eef1f4;color:#33485c;vertical-align:middle">{{ m.type }}</td>
+<td style="padding:14px 16px;border-bottom:1px solid #eef1f4;font:500 13.5px 'Roboto Mono',monospace;color:#33485c;vertical-align:middle">{{ m.version }}</td>
+<td style="padding:14px 16px;border-bottom:1px solid #eef1f4;vertical-align:middle">
+<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;font-size:12.5px;font-weight:600;background:{{ m.tint }};color:{{ m.ink }}">
+<span style="width:7px;height:7px;border-radius:50%;background:{{ m.ink }}"></span>{{ m.status }}
+</span>
+</td>
+<td style="padding:14px 16px;border-bottom:1px solid #eef1f4;color:#33485c;vertical-align:middle">{{ m.updated }}<div style="font-size:12.5px;color:#5a6772">{{ m.author }}</div></td>
+<td style="padding:14px 16px;border-bottom:1px solid #eef1f4;text-align:right;color:#33485c;vertical-align:middle">{{ m.uses }}</td>
+<td style="padding:14px 28px 14px 16px;border-bottom:1px solid #eef1f4;text-align:right;vertical-align:middle">
+<div style="display:inline-flex;align-items:center;gap:8px">
+<a href="#2b" style="font-weight:600;text-decoration:none;font-size:14px">Modifica</a>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #c5cdd4;border-radius:4px;color:#33485c">
+<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"></circle><circle cx="12" cy="12" r="1.8" fill="currentColor"></circle><circle cx="19" cy="12" r="1.8" fill="currentColor"></circle></svg>
+</span>
+</div>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px 22px;border-top:1px solid #e3e7eb">
+<span style="font-size:13.5px;color:#5a6772">Righe 1–7 di 14</span>
+<div style="display:flex;gap:4px;font-size:14px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;background:#0066cc;color:#fff;font-weight:700">1</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;color:#0066cc">2</span>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;color:#0066cc">›</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c" data-screen-label="templates-grid">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Elenco modelli — griglia con anteprima del layout</div>
+<div class="dv-card" style="width:1180px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid #e3e7eb">
+<div>
+<div style="font-size:13px;color:#5a6772"><a href="#1a" style="text-decoration:none">Contesti</a> <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Appalti e contratti</span></div>
+<h1 style="margin:6px 0 0;font-size:30px;font-weight:700;color:#17324d">Modelli del contesto</h1>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<div style="display:flex;border:1px solid #c5cdd4;border-radius:4px;overflow:hidden;font-size:13.5px">
+<a href="#1b" style="padding:8px 14px;color:#0066cc;text-decoration:none">Tabella</a>
+<span style="padding:8px 14px;background:#0066cc;color:#fff;font-weight:600">Griglia</span>
+</div>
+<a href="#2a" class="btn btn-primary" style="height:40px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;text-decoration:none">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Nuovo modello
+</a>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:24px 28px 30px;background:#f7f9fb">
+<sc-for list="{{ cards }}" as="m" hint-placeholder-count="8">
+<div style="display:flex;flex-direction:column;background:#fff;border:1px solid #e3e7eb;border-radius:4px;overflow:hidden">
+<div style="position:relative;height:150px;padding:14px 16px;background:repeating-linear-gradient(135deg,#f2f5f8 0 6px,#e8edf2 6px 12px);border-bottom:1px solid #e3e7eb">
+<div style="height:100%;background:#fff;border:1px solid #dbe2e8;padding:10px 11px">
+<div style="height:7px;width:52%;background:#17324d;opacity:.8"></div>
+<div style="height:4px;width:34%;background:#c5cdd4;margin-top:6px"></div>
+<div style="height:3px;width:100%;background:#e3e7eb;margin-top:12px"></div>
+<div style="height:3px;width:94%;background:#e3e7eb;margin-top:5px"></div>
+<div style="height:3px;width:88%;background:#e3e7eb;margin-top:5px"></div>
+<div style="height:3px;width:60%;background:#0066cc;opacity:.35;margin-top:5px"></div>
+<div style="height:3px;width:97%;background:#e3e7eb;margin-top:5px"></div>
+<div style="height:3px;width:72%;background:#e3e7eb;margin-top:5px"></div>
+</div>
+<span style="position:absolute;top:10px;right:12px;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:700;background:{{ m.tint }};color:{{ m.ink }}">{{ m.status }}</span>
+</div>
+<div style="padding:14px 16px 6px;flex:1">
+<h3 style="margin:0;font-size:16px;font-weight:700;color:#17324d;line-height:1.3">{{ m.name }}</h3>
+<div style="margin-top:4px;font:500 11.5px 'Roboto Mono',monospace;color:#5a6772">{{ m.code }} · v{{ m.version }}</div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
+<sc-for list="{{ m.tags }}" as="t" hint-placeholder-count="2">
+<span style="padding:2px 8px;border:1px solid #dbe2e8;border-radius:11px;font-size:11.5px;color:#33485c;background:#fbfcfd">{{ t }}</span>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 12px;border-top:1px solid #eef1f4;font-size:12.5px;color:#5a6772">
+<span>{{ m.updated }}</span>
+<a href="#2b" style="font-weight:700;font-size:13.5px;text-decoration:none">Modifica</a>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1d" data-screen-label="templates-split">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Elenco modelli — lista + pannello di anteprima e versioni</div>
+<div class="dv-card" style="width:1240px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 26px;border-bottom:1px solid #e3e7eb">
+<div>
+<div style="font-size:13px;color:#5a6772"><a href="#1a" style="text-decoration:none">Contesti</a> <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Appalti e contratti</span></div>
+<h1 style="margin:5px 0 0;font-size:28px;font-weight:700;color:#17324d">14 modelli</h1>
+</div>
+<a href="#2a" class="btn btn-primary" style="height:40px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;text-decoration:none">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"></path></svg>
+Nuovo modello
+</a>
+</div>
+
+<div style="display:grid;grid-template-columns:440px 1fr;min-height:560px">
+<div style="border-right:1px solid #e3e7eb;background:#fbfcfd">
+<div style="position:relative;padding:14px 20px;border-bottom:1px solid #e3e7eb">
+<svg viewBox="0 0 24 24" width="17" height="17" style="position:absolute;left:31px;top:24px;color:#5a6772" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+<input class="form-control" type="text" placeholder="Filtra modelli" style="padding-left:36px;height:38px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px">
+</div>
+<sc-for list="{{ models }}" as="m" hint-placeholder-count="7">
+<div style="display:flex;gap:12px;padding:13px 20px;border-bottom:1px solid #eef1f4;background:{{ m.rowBg }};border-left:3px solid {{ m.rowEdge }}">
+<div style="display:flex;align-items:center;justify-content:center;width:28px;height:34px;flex:none;border:1px solid #c5cdd4;border-radius:3px;background:#fff;font:600 8.5px 'Roboto Mono',monospace;color:#5a6772">{{ m.ext }}</div>
+<div style="flex:1;min-width:0">
+<div style="font-size:14.5px;font-weight:700;color:#17324d">{{ m.name }}</div>
+<div style="margin-top:2px;font-size:12.5px;color:#5a6772">{{ m.code }} · v{{ m.version }} · {{ m.updated }}</div>
+</div>
+<span style="align-self:flex-start;padding:2px 8px;border-radius:11px;font-size:11.5px;font-weight:700;background:{{ m.tint }};color:{{ m.ink }};white-space:nowrap">{{ m.status }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="padding:22px 26px 26px">
+<div style="display:flex;align-items:flex-start;gap:16px">
+<div>
+<h2 style="margin:0;font-size:23px;font-weight:700;color:#17324d">Determina a contrarre</h2>
+<div style="margin-top:4px;font:500 12px 'Roboto Mono',monospace;color:#5a6772">MOD-APP-001 · v3.2 · aggiornato il 12/09/2026 da M. Rossi</div>
+</div>
+<div style="margin-left:auto;display:flex;gap:8px">
+<button class="btn btn-outline-primary btn-sm" style="height:38px;padding:0 14px;white-space:nowrap">Duplica</button>
+<button class="btn btn-outline-primary btn-sm" style="height:38px;padding:0 14px;white-space:nowrap">Genera documento</button>
+<a href="#2b" class="btn btn-primary btn-sm" style="height:38px;padding:0 16px;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none">Modifica modello</a>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;margin-top:20px">
+<div style="border:1px solid #e3e7eb;border-radius:4px;background:repeating-linear-gradient(135deg,#f2f5f8 0 6px,#e8edf2 6px 12px);padding:20px">
+<div style="background:#fff;border:1px solid #dbe2e8;padding:26px 30px;min-height:360px">
+<div style="height:9px;width:40%;background:#17324d;opacity:.85"></div>
+<div style="height:5px;width:26%;background:#c5cdd4;margin-top:8px"></div>
+<div style="height:4px;width:100%;background:#eef1f4;margin-top:22px"></div>
+<div style="height:4px;width:96%;background:#eef1f4;margin-top:7px"></div>
+<div style="height:4px;width:55%;background:#0066cc;opacity:.3;margin-top:7px"></div>
+<div style="height:4px;width:99%;background:#eef1f4;margin-top:7px"></div>
+<div style="height:4px;width:80%;background:#eef1f4;margin-top:7px"></div>
+<div style="height:4px;width:44%;background:#0066cc;opacity:.3;margin-top:7px"></div>
+<div style="height:4px;width:92%;background:#eef1f4;margin-top:7px"></div>
+<div style="height:4px;width:70%;background:#eef1f4;margin-top:7px"></div>
+<div style="margin-top:22px;font:500 11px 'Roboto Mono',monospace;color:#5a6772;text-align:center">anteprima del modello · i blocchi azzurri sono segnaposto dati</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="border:1px solid #e3e7eb;border-radius:4px;padding:14px 16px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Segnaposto usati</div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ placeholders }}" as="p" hint-placeholder-count="6">
+<span style="padding:3px 9px;border:1px solid #cfe0f2;border-radius:3px;background:#f2f7fc;font:500 11.5px 'Roboto Mono',monospace;color:#0059b3">{{ p }}</span>
+</sc-for>
+</div>
+</div>
+<div style="border:1px solid #e3e7eb;border-radius:4px;padding:14px 16px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Storico versioni</div>
+<div style="display:flex;flex-direction:column;gap:11px;margin-top:12px">
+<sc-for list="{{ versions }}" as="v" hint-placeholder-count="3">
+<div style="display:flex;gap:10px;font-size:13.5px">
+<span style="font:600 12px 'Roboto Mono',monospace;color:#0066cc;min-width:32px">{{ v.n }}</span>
+<div><div style="color:#17324d">{{ v.what }}</div><div style="font-size:12px;color:#5a6772">{{ v.when }} · {{ v.who }}</div></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “tieni <a class="dv-oid" href="#1b">1b</a> ma con azioni in massa e selezione multipla” · “unisci <a class="dv-oid" href="#1c">1c</a> e <a class="dv-oid" href="#1d">1d</a>”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1420},&quot;orgName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Modellario&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showMetrics&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const CAT = {
+  levels: [
+    { label: "Dominio documentale", hint: "servizio: /categorize/domain", placeholder: "Seleziona un dominio" },
+    { label: "Famiglia di atto", hint: "suggerito dal dominio", placeholder: "Seleziona una famiglia" },
+    { label: "Tipologia", hint: "suggerito dalla famiglia", placeholder: "Seleziona una tipologia" },
+    { label: "Variante procedurale", hint: "opzionale", placeholder: "Seleziona una variante" },
+  ],
+  tree: {
+    "Atti amministrativi": {
+      "Determine": { "A contrarre": ["Affidamento diretto", "Procedura negoziata", "Adesione a convenzione"], "Di liquidazione": ["Fattura singola", "Stati di avanzamento"], "Di aggiudicazione": ["Con efficacia differita", "Immediatamente efficace"] },
+      "Delibere": { "Di giunta": ["Con parere contabile", "Senza parere contabile"], "Di consiglio": ["Ordinaria", "Urgente"] },
+    },
+    "Contratti": {
+      "Servizi": { "Appalto di servizi": ["Sopra soglia", "Sotto soglia"], "Concessione": ["Con canone", "A rischio operativo"] },
+      "Forniture": { "Acquisto beni": ["Con collaudo", "Senza collaudo"] },
+    },
+    "Comunicazioni": {
+      "Verso operatori economici": { "Lettera di invito": ["Procedura negoziata", "Indagine di mercato"], "Comunicazione esito": ["Aggiudicazione", "Esclusione"] },
+      "Verso cittadini": { "Preavviso di diniego": ["Con termine a difesa"], "Richiesta integrazioni": ["Documentale"] },
+    },
+  },
+  sections: {
+    "Determine": ["Intestazione dell'ente", "Premesse normative", "Visti e pareri", "Motivazione", "Dispositivo", "Copertura finanziaria", "Sottoscrizione"],
+    "Delibere": ["Intestazione dell'ente", "Premesse", "Pareri obbligatori", "Dispositivo", "Sottoscrizione"],
+    "Servizi": ["Parti contraenti", "Oggetto e durata", "Corrispettivo", "Obblighi dell'appaltatore", "Penali e recesso", "Firme"],
+    "Forniture": ["Parti contraenti", "Oggetto della fornitura", "Consegna e collaudo", "Corrispettivo", "Firme"],
+    "Verso operatori economici": ["Intestazione", "Oggetto della comunicazione", "Termini e modalità", "Riferimenti del procedimento", "Sottoscrizione"],
+    "Verso cittadini": ["Intestazione", "Fatti e istruttoria", "Motivi ostativi", "Termine a difesa", "Sottoscrizione"],
+  },
+};
+
+const BLOCKS = [
+  { tag: "Sezione bloccata dalla categoria", locked: true, title: "Premesse normative",
+    html: 'RICHIAMATO il D.Lgs. 36/2023 recante il Codice dei contratti pubblici;<br>VISTO il bilancio di previsione dell\'ente approvato con deliberazione n. <em class="ph">{{delibera.numero}}</em> del <em class="ph">{{delibera.data}}</em>;' },
+  { tag: "Sezione modificabile", locked: false, title: "Motivazione",
+    html: 'CONSIDERATO che si rende necessario affidare il servizio di <em class="ph">{{oggetto.descrizione}}</em> per un importo stimato di <em class="ph">{{importo.netto}}</em> oltre IVA;<br>RITENUTO di procedere mediante affidamento all\'operatore economico <em class="ph">{{fornitore.ragione_sociale}}</em>, P.IVA <em class="ph">{{fornitore.piva}}</em>, in quanto in possesso dei requisiti richiesti;' },
+  { tag: "Sezione modificabile", locked: false, title: "Dispositivo",
+    html: 'DETERMINA<br>1. di affidare il servizio indicato in premessa a <em class="ph">{{fornitore.ragione_sociale}}</em>;<br>2. di impegnare la somma di <em class="ph">{{importo.lordo}}</em> sul capitolo <em class="ph">{{capitolo.codice}}</em>;<br>3. di dare atto che il CIG attribuito alla procedura è <em class="ph">{{cig}}</em>.' },
+  { tag: "Sezione condizionata", locked: false, title: "Copertura finanziaria",
+    html: 'Si attesta la copertura finanziaria della spesa ai sensi dell\'art. 183 del D.Lgs. 267/2000, con imputazione all\'esercizio <em class="ph">{{esercizio.anno}}</em>.' },
+];
+
+const PH_GROUPS = [
+  { name: "Ente", source: "anagrafica interna", items: [
+    { token: "{{ente.denominazione}}", desc: "Denominazione dell'ente", kind: "testo" },
+    { token: "{{ente.codice_fiscale}}", desc: "Codice fiscale", kind: "testo" },
+    { token: "{{rup.nome}}", desc: "Responsabile del procedimento", kind: "testo" },
+  ]},
+  { name: "Procedimento", source: "registro determine", items: [
+    { token: "{{determina.numero}}", desc: "Numero di registro", kind: "numero" },
+    { token: "{{determina.data}}", desc: "Data di adozione", kind: "data" },
+    { token: "{{cig}}", desc: "Codice identificativo gara", kind: "testo" },
+    { token: "{{capitolo.codice}}", desc: "Capitolo di bilancio", kind: "testo" },
+  ]},
+  { name: "Controparte", source: "anagrafica fornitori", items: [
+    { token: "{{fornitore.ragione_sociale}}", desc: "Ragione sociale", kind: "testo" },
+    { token: "{{fornitore.piva}}", desc: "Partita IVA", kind: "testo" },
+    { token: "{{importo.netto}}", desc: "Importo al netto di IVA", kind: "valuta" },
+    { token: "{{importo.lordo}}", desc: "Importo lordo", kind: "valuta" },
+  ]},
+];
+
+const SNIPPETS = [
+  { title: "Visti e pareri", preview: "VISTO il parere di regolarità tecnica espresso dal responsabile del servizio…" },
+  { title: "Clausola tracciabilità flussi", preview: "L'appaltatore assume tutti gli obblighi di tracciabilità dei flussi finanziari…" },
+  { title: "Termini di impugnazione", preview: "Avverso il presente atto è ammesso ricorso al TAR entro trenta giorni…" },
+  { title: "Trattamento dati personali", preview: "I dati personali sono trattati ai sensi del Regolamento UE 2016/679…" },
+];
+
+const DERIV = [
+  { key: "lingua", label: "Lingua del documento", current: "Italiano", options: ["Inglese", "Tedesco", "Francese", "Sloveno"] },
+  { key: "ambito", label: "Ambito territoriale", current: "Nazionale", options: ["Provincia autonoma di Bolzano", "Regione Valle d'Aosta", "Regione Friuli-Venezia Giulia"] },
+  { key: "canale", label: "Canale di trasmissione", current: "Protocollo cartaceo", options: ["PEC", "Portale appalti", "Piattaforma certificata ANAC"] },
+  { key: "soglia", label: "Soglia di importo", current: "Sotto soglia", options: ["Sopra soglia UE", "Affidamento diretto < 140.000 €"] },
+];
+
+class Component extends DCLogic {
+  state = { cat: ["", "", "", ""], tab: "ph", active: 1, sections: BLOCKS.length, deriv: {} };
+
+  pickDeriv(key) {
+    return e => this.setState(s => ({ deriv: { ...s.deriv, [key]: e.target.value } }));
+  }
+
+  pick(i) {
+    return e => {
+      const cat = this.state.cat.slice();
+      cat[i] = e.target.value;
+      for (let j = i + 1; j < 4; j++) cat[j] = "";
+      this.setState({ cat });
+    };
+  }
+
+  optionsFor(i) {
+    const c = this.state.cat;
+    const t = CAT.tree;
+    if (i === 0) return Object.keys(t);
+    if (i === 1) return c[0] ? Object.keys(t[c[0]]) : [];
+    if (i === 2) return c[0] && c[1] ? Object.keys(t[c[0]][c[1]]) : [];
+    return c[0] && c[1] && c[2] ? t[c[0]][c[1]][c[2]] : [];
+  }
+
+  insertToken(token) {
+    return e => {
+      e.preventDefault();
+      const sel = window.getSelection();
+      const range = this.savedRange;
+      const node = document.createElement("em");
+      node.className = "ph";
+      node.textContent = token;
+      if (range && document.body.contains(range.startContainer)) {
+        range.deleteContents();
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else if (this.lastEditable) {
+        this.lastEditable.appendChild(node);
+      }
+    };
+  }
+
+  componentDidMount() {
+    this.onSel = () => {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      let n = sel.anchorNode;
+      while (n && n !== document.body) {
+        if (n.nodeType === 1 && n.getAttribute && n.getAttribute("contenteditable") === "true") {
+          this.lastEditable = n;
+          this.savedRange = sel.getRangeAt(0).cloneRange();
+          return;
+        }
+        n = n.parentNode;
+      }
+    };
+    document.addEventListener("selectionchange", this.onSel);
+  }
+
+  componentWillUnmount() { document.removeEventListener("selectionchange", this.onSel); }
+
+  renderVals() {
+    const S = {
+      pub: { status: "Pubblicato", tint: "#e0f2e4", ink: "#1b7a34" },
+      rev: { status: "In revisione", tint: "#fdf1d8", ink: "#8a5a00" },
+      draft: { status: "Bozza", tint: "#eceff2", ink: "#5a6772" },
+    };
+    const models = [
+      { name: "Determina a contrarre", code: "MOD-APP-001", type: "Atto amministrativo", version: "3.2", ext: "DOCX", updated: "12/09/2026", author: "M. Rossi", uses: "184", ...S.pub, sel: true },
+      { name: "Contratto di appalto servizi", code: "MOD-APP-004", type: "Contratto", version: "2.0", ext: "DOCX", updated: "09/09/2026", author: "G. Bianchi", uses: "96", ...S.pub },
+      { name: "Verbale di gara", code: "MOD-APP-007", type: "Verbale", version: "1.4", ext: "PDF", updated: "04/09/2026", author: "L. Ferrari", uses: "72", ...S.rev },
+      { name: "Lettera di invito – procedura negoziata", code: "MOD-APP-009", type: "Comunicazione", version: "1.1", ext: "DOCX", updated: "28/08/2026", author: "M. Rossi", uses: "41", ...S.pub },
+      { name: "Richiesta di offerta (RDO)", code: "MOD-APP-011", type: "Modulo", version: "2.3", ext: "DOCX", updated: "21/08/2026", author: "S. Conti", uses: "63", ...S.pub },
+      { name: "Certificato di regolare esecuzione", code: "MOD-APP-013", type: "Attestazione", version: "0.9", ext: "DOCX", updated: "14/08/2026", author: "L. Ferrari", uses: "8", ...S.draft },
+      { name: "Comunicazione di aggiudicazione", code: "MOD-APP-014", type: "Comunicazione", version: "1.0", ext: "PDF", updated: "02/08/2026", author: "G. Bianchi", uses: "35", ...S.rev },
+    ].map(m => ({ ...m, rowBg: m.sel ? "#eaf3fc" : "#fbfcfd", rowEdge: m.sel ? "#0066cc" : "transparent" }));
+
+    const c = this.state.cat;
+    const chosenCount = c.filter(Boolean).length;
+    const levels = CAT.levels.map((lv, i) => {
+      const opts = this.optionsFor(i);
+      const disabled = i > 0 && !c[i - 1];
+      return {
+        ...lv, n: i + 1, value: c[i], options: opts, disabled,
+        onChange: this.pick(i),
+        edge: c[i] ? "#b8d4ee" : "#e3e7eb",
+        bg: disabled ? "#f5f6f8" : "#fff",
+        fieldBg: disabled ? "#f0f2f4" : "#fff",
+        hasNote: !disabled && !c[i] && opts.length > 0,
+        note: opts.length + " opzioni restituite dal servizio",
+      };
+    });
+    const chosenPath = c.map((v, i) => ({ n: i + 1, value: v, label: CAT.levels[i].label })).filter(p => p.value);
+    const famKey = c[1] || c[0];
+    const proposed = CAT.sections[famKey] || CAT.sections[c[1]] || ["Intestazione", "Corpo del documento", "Sottoscrizione"];
+    const code = chosenCount ? "MOD-" + c.filter(Boolean).map(v => v.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, "")).join("-") + "-NEW" : "assegnato alla generazione";
+
+    const derivParts = DERIV.map(d => this.state.deriv[d.key]).filter(Boolean);
+    const derivCount = derivParts.length;
+
+    const tabs = [{ k: "ph", label: "Segnaposto" }, { k: "sn", label: "Blocchi" }, { k: "pr", label: "Proprietà" }];
+    const nSections = this.state.sections;
+
+    return {
+      orgName: this.props.orgName ?? "Modellario",
+      showMetrics: this.props.showMetrics ?? true,
+      models,
+      cards: models.concat([{ name: "Nomina del RUP", code: "MOD-APP-016", type: "Atto amministrativo", version: "1.2", ext: "DOCX", updated: "26/07/2026", author: "S. Conti", uses: "28", ...S.pub }])
+        .map((m, i) => ({ ...m, tags: [m.type, i % 2 ? "firma digitale" : "protocollo"] })),
+      contexts: [
+        { name: "Appalti e contratti", abbr: "AC", code: "CTX-APP", count: "14", updated: "12/09/2026", desc: "Determine, contratti, verbali di gara e comunicazioni ai fornitori." },
+        { name: "Edilizia privata", abbr: "EP", code: "CTX-EDI", count: "22", updated: "10/09/2026", desc: "Permessi di costruire, SCIA, dinieghi e richieste di integrazione." },
+        { name: "Tributi", abbr: "TR", code: "CTX-TRI", count: "9", updated: "08/09/2026", desc: "Avvisi di accertamento, rateizzazioni, sgravi e rimborsi." },
+        { name: "Servizi demografici", abbr: "SD", code: "CTX-DEM", count: "31", updated: "05/09/2026", desc: "Certificati anagrafici, stato civile, cambi di residenza." },
+        { name: "Personale e concorsi", abbr: "PC", code: "CTX-PER", count: "17", updated: "01/09/2026", desc: "Bandi, verbali di commissione, contratti di assunzione." },
+      ],
+      placeholders: ["{{ente.denominazione}}", "{{determina.numero}}", "{{determina.data}}", "{{fornitore.ragione_sociale}}", "{{importo.netto}}", "{{cig}}", "{{rup.nome}}"],
+      versions: [
+        { n: "v3.2", what: "Aggiornati riferimenti al Codice dei contratti", when: "12/09/2026", who: "M. Rossi" },
+        { n: "v3.1", what: "Aggiunto blocco CIG e CUP", when: "22/07/2026", who: "S. Conti" },
+        { n: "v3.0", what: "Revisione completa dell'impaginazione", when: "14/05/2026", who: "M. Rossi" },
+      ],
+
+      levels, chosenPath, chosenCount,
+      pathEmpty: chosenCount === 0,
+      assignedCode: code,
+      proposedSections: proposed,
+      generateDisabled: chosenCount < 3,
+      onGenerate: () => { location.hash = "#2b"; },
+
+      inheritedPath: [
+        { n: 1, value: "Atti amministrativi", label: "Dominio documentale" },
+        { n: 2, value: "Determine", label: "Famiglia di atto" },
+        { n: 3, value: "A contrarre", label: "Tipologia" },
+        { n: 4, value: "Affidamento diretto", label: "Variante procedurale" },
+      ],
+      inheritedAttrs: [
+        { n: "4", what: "sezioni di testo, nello stesso ordine" },
+        { n: "11", what: "segnaposto già mappati sulle fonti dati" },
+        { n: "1", what: "sezione bloccata (Premesse normative)" },
+        { n: "2", what: "blocchi predefiniti collegati alla categoria" },
+        { n: "1", what: "impaginazione e intestazione dell'ente" },
+      ],
+      derivFields: DERIV.map((d, i) => {
+        const v = this.state.deriv[d.key] || "";
+        return {
+          ...d, n: i + 1, value: v, onChange: this.pickDeriv(d.key),
+          changed: !!v, edge: v ? "#b8d4ee" : "#e3e7eb", bg: v ? "#f7fbff" : "#fff",
+        };
+      }),
+      derivedCode: derivCount ? "MOD-APP-001-" + (this.state.deriv.lingua || "IT").slice(0, 2).toUpperCase() + "-D1" : "assegnato alla creazione",
+      derivedName: "Determina a contrarre" + (derivParts.length ? " — " + derivParts.join(" · ") : ""),
+      derivedChips: DERIV.map(d => {
+        const v = this.state.deriv[d.key];
+        return v
+          ? { label: d.label + ": " + v, bg: "#e6f0fa", ink: "#0059b3" }
+          : { label: d.label + ": ereditato", bg: "#eceff2", ink: "#5a6772" };
+      }),
+      derivDisabled: derivCount === 0,
+      derivHint: derivCount === 0 ? "Modifica almeno un attributo per creare una variante" : derivCount + (derivCount === 1 ? " attributo modificato" : " attributi modificati"),
+      onCreateDerived: () => { location.hash = "#2b"; },
+
+      saveState: "salvato alle 11:24",
+      tokEnte: "{{ente.denominazione}}",
+      tokNumero: "{{determina.numero}}",
+      tokData: "{{determina.data}}",
+      tokRup: "{{rup.nome}}",
+      blocks: BLOCKS.slice(0, nSections).map((b, i) => ({
+        tag: b.tag, title: b.title, editable: !b.locked,
+        html: { __html: b.html },
+        onFocus: () => this.setState({ active: i, tab: "pr" }),
+        edge: this.state.active === i ? "#0066cc" : "transparent",
+        bg: b.locked ? "#fbfaf6" : "#fff",
+        tagBg: b.locked ? "#fdf1d8" : "#e6f0fa",
+        tagInk: b.locked ? "#8a5a00" : "#0059b3",
+      })),
+      outline: BLOCKS.slice(0, nSections).map((b, i) => ({
+        title: b.title, locked: b.locked,
+        meta: b.locked ? "bloccata · 2 segnaposto" : "modificabile · " + (i + 2) + " segnaposto",
+        onClick: () => this.setState({ active: i, tab: "pr" }),
+        edge: this.state.active === i ? "#0066cc" : "transparent",
+        bg: this.state.active === i ? "#eaf3fc" : "transparent",
+      })),
+      onAddSection: () => this.setState(s => ({ sections: Math.min(s.sections + 1, BLOCKS.length), active: Math.min(s.sections, BLOCKS.length - 1) })),
+      panelTabs: tabs.map(t => ({
+        label: t.label,
+        onClick: () => this.setState({ tab: t.k }),
+        weight: this.state.tab === t.k ? 700 : 400,
+        ink: this.state.tab === t.k ? "#0059b3" : "#33485c",
+        edge: this.state.tab === t.k ? "#0066cc" : "transparent",
+      })),
+      showPlaceholders: this.state.tab === "ph",
+      showSnippets: this.state.tab === "sn",
+      showProps: this.state.tab === "pr",
+      activeTitle: (BLOCKS[this.state.active] || BLOCKS[0]).title,
+      phGroups: PH_GROUPS.map(g => ({
+        name: g.name, source: g.source,
+        items: g.items.map(p => ({
+          ...p,
+          onInsert: this.insertToken(p.token),
+          onDragStart: e => e.dataTransfer.setData("text/plain", p.token),
+        })),
+      })),
+      snippets: SNIPPETS.map(s => ({ ...s, onInsert: () => this.setState(st => ({ sections: Math.min(st.sections + 1, BLOCKS.length) })) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

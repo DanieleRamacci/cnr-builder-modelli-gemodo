@@ -30,12 +30,11 @@ def validation_client(postgres_database_url, monkeypatch):
         engine.dispose()
 
 
-def _request_payload(dati: dict[str, object], *, bando_inglese: bool = False, modello_versione_id: int = 1):
+def _request_payload(dati: dict[str, object], *, modello_versione_id: int = 1):
     return {
         "sistema_richiedente": "GEBAN",
         "external_context_id": "test-context-001",
         "modello_versione_id": modello_versione_id,
-        "bando_inglese": bando_inglese,
         "dati": dati,
     }
 
@@ -46,6 +45,7 @@ def _valid_dati() -> dict[str, object]:
         "titolo_it": "Bando demo",
         "sede_prescelta_it": "Roma",
         "numero_posti": 2,
+        "titolo_en": "Demo call",
     }
 
 
@@ -111,25 +111,29 @@ def test_validazione_payload_rejects_non_published_version(validation_client):
 
 
 @pytest.mark.integration
-def test_validazione_payload_requires_english_field_when_bando_inglese_true(validation_client):
+def test_validazione_payload_requires_every_required_model_field(validation_client):
+    dati = _valid_dati()
+    del dati["titolo_en"]
     response = validation_client.post(
         "/api/v1/documenti/valida",
-        json=_request_payload(_valid_dati(), bando_inglese=True),
+        json=_request_payload(dati),
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["valido"] is False
     assert body["errori"][0]["campo"] == "titolo_en"
-    assert body["errori"][0]["codice"] == "CAMPO_INGLESE_MANCANTE"
+    assert body["errori"][0]["codice"] == "CAMPO_OBBLIGATORIO"
 
 
 @pytest.mark.integration
-def test_validazione_payload_accepts_missing_english_field_when_bando_inglese_false(validation_client):
+def test_validazione_payload_rejects_retired_language_flag(validation_client):
+    payload = _request_payload(_valid_dati())
+    payload["bando_inglese"] = False
     response = validation_client.post(
         "/api/v1/documenti/valida",
-        json=_request_payload(_valid_dati(), bando_inglese=False),
+        json=payload,
     )
 
-    assert response.status_code == 200
-    assert response.json() == {"valido": True, "errori": []}
+    assert response.status_code == 400
+    assert response.json()["codice"] == "CONTESTO_NON_VALIDO"

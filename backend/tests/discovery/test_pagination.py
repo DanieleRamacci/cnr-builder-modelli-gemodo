@@ -10,6 +10,7 @@ from app.discovery.errors import DiscoveryError
 def fragment(code="TD", validita="2026-09-17T00:00:00Z"):
     return {"BANDO_CONCORSO": {"validita": validita, "nodi": [{
         "codice": code, "descrizione": code,
+        "lingue_possibili": ["IT", "EN"],
         "campi": [{"codice": "titolo_it", "etichetta": "Titolo", "tipo": "string",
                    "lingua": "IT", "ordine": 1, "obbligatorio": True}],
     }]}}

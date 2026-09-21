@@ -66,6 +66,20 @@
                 <td>
                   <strong>{{ model.nome }}</strong>
                   <div class="small">{{ model.codice }}</div>
+                  <a
+                    class="btn btn-sm btn-outline-primary mt-2 me-2"
+                    [class.disabled]="saving()"
+                    [routerLink]="['/builder', model.integrazione_id]"
+                    [queryParams]="{
+                      contesto: selected(),
+                      tipo: model.codice_tipo_documento,
+                      percorso: model.percorso_categorizzazione.join('|'),
+                      lingua: model.lingua === 'IT' ? 'EN' : 'IT',
+                      livello: model.livello_professionale
+                    }"
+                  >
+                    <it-icon name="plus" /> Crea edizione collegata
+                  </a>
                   <button
                     class="btn btn-sm btn-outline-danger mt-2"
                     title="Elimina modello"
@@ -79,7 +93,10 @@
                 <td>
                   {{ model.codice_tipo_documento }}
                   <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
-                  <div class="small">{{ model.variante }}</div>
+                  <div class="small">
+                    {{ model.lingua === 'IT' ? 'Italiano' : 'Inglese' }} ·
+                    {{ model.livello_professionale ?? 'Tutti i livelli' }}
+                  </div>
                 </td>
                 <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>
@@ -143,7 +160,7 @@
     @if (item.action.route === 'pubblica') {
       <p>
         La versione diventa disponibile nel catalogo. L'eventuale versione corrente della stessa
-        categorizzazione e variante viene archiviata.
+        categorizzazione, livello e lingua viene archiviata.
       </p>
     }
     <div class="d-flex justify-content-end gap-2">

@@ -37,6 +37,8 @@ def list_published_model_versions(
     tipo_documento_id: UUID | None = None,
     codice_categoria: str | None = None,
     codice_tipologia: str | None = None,
+    lingua: str | None = None,
+    livello_professionale: str | None = None,
     historical: bool = False,
     data_riferimento: date | None = None,
     pubblicato_da: date | None = None,
@@ -72,6 +74,10 @@ def list_published_model_versions(
         stmt = stmt.where(ModelloDocumento.codice_categoria == codice_categoria)
     if codice_tipologia:
         stmt = stmt.where(ModelloDocumento.codice_tipologia == codice_tipologia)
+    if lingua:
+        stmt = stmt.where(ModelloDocumento.lingua == lingua)
+    if livello_professionale:
+        stmt = stmt.where(ModelloDocumento.livello_professionale == livello_professionale)
     return list(db.scalars(stmt))
 
 

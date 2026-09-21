@@ -1,0 +1,140 @@
+{
+  "product": "Modellario — generatore di modelli documentali (PA italiana)",
+  "designFile": "design/Gestione Modelli.dc.html",
+  "designSystem": {
+    "name": "Bootstrap Italia / Design Angular Kit",
+    "cssSource": "https://cdn.jsdelivr.net/npm/bootstrap-italia@2.18.2/dist/css/bootstrap-italia.min.css",
+    "angularKit": "https://github.com/italia/design-angular-kit",
+    "note": "Il prototipo usa il CSS di Bootstrap Italia. In un'app Angular usare i componenti di design-angular-kit (it-header, it-table, it-select, it-tab-container, it-breadcrumb...)."
+  },
+  "fidelity": "hi-fi",
+  "navigation": [
+    "contexts-list -> templates-table | templates-grid | templates-split",
+    "templates-* -> categorize-wizard (Nuovo modello)",
+    "templates-* -> builder-editor (Modifica)",
+    "categorize-wizard -> builder-editor (Genera modello)",
+    "builder-editor -> derive-model (Crea modello derivato)",
+    "derive-model -> builder-editor (Crea e apri nel builder, sul nuovo modello)"
+  ],
+  "screens": [
+    {
+      "id": "1a",
+      "file": "screens/contexts-list.md",
+      "label": "contexts-list",
+      "route": "/contesti",
+      "name": "Elenco contesti / applicazioni",
+      "status": "proposta unica",
+      "purpose": "Landing: l'utente scegle il contesto applicativo di cui gestire i modelli.",
+      "keyElements": [
+        "header blu",
+        "breadcrumb",
+        "search + filtri a chip",
+        "griglia 3 colonne di card contesto",
+        "card tratteggiata Nuovo contesto"
+      ]
+    },
+    {
+      "id": "1b",
+      "file": "screens/templates-table.md",
+      "label": "templates-table",
+      "route": "/contesti/:ctxId/modelli",
+      "name": "Elenco modelli — tabella",
+      "status": "variante A (consigliata come default)",
+      "purpose": "Lista dei modelli del contesto: cercare, filtrare, aprire in modifica, creare.",
+      "keyElements": [
+        "4 metriche",
+        "search + 2 select",
+        "tabella 7 colonne",
+        "badge di stato",
+        "paginazione"
+      ]
+    },
+    {
+      "id": "1c",
+      "file": "screens/templates-grid.md",
+      "label": "templates-grid",
+      "route": "/contesti/:ctxId/modelli?view=grid",
+      "name": "Elenco modelli — griglia",
+      "status": "variante B (stessa rotta, toggle vista)",
+      "purpose": "Stessa lista con anteprima visiva del layout del documento.",
+      "keyElements": [
+        "toggle Tabella/Griglia",
+        "griglia 4 colonne",
+        "thumbnail wireframe",
+        "badge stato",
+        "tag"
+      ]
+    },
+    {
+      "id": "1d",
+      "file": "screens/templates-split.md",
+      "label": "templates-split",
+      "route": "/contesti/:ctxId/modelli/:modelId",
+      "name": "Elenco modelli — master/detail",
+      "status": "variante C",
+      "purpose": "Lista a sinistra e dettaglio del modello selezionato a destra (anteprima, segnaposto usati, storico versioni).",
+      "keyElements": [
+        "lista filtrabile 440px",
+        "anteprima documento",
+        "chip segnaposto",
+        "timeline versioni"
+      ]
+    },
+    {
+      "id": "2a",
+      "file": "screens/categorize-wizard.md",
+      "label": "categorize-wizard",
+      "route": "/contesti/:ctxId/modelli/nuovo",
+      "name": "Categorizzazione del modello",
+      "status": "proposta unica",
+      "purpose": "Fase intermedia prima del builder: 4 tendine a cascata alimentate dal servizio di categorizzazione; da 3 livelli in poi si può generare la struttura del modello.",
+      "keyElements": [
+        "stepper 3 passi",
+        "4 select dipendenti",
+        "riepilogo percorso",
+        "codice assegnato",
+        "struttura sezioni proposta",
+        "CTA Genera modello"
+      ]
+    },
+    {
+      "id": "2b",
+      "file": "screens/builder-editor.md",
+      "label": "builder-editor",
+      "route": "/modelli/:modelId/builder",
+      "name": "Builder del modello",
+      "status": "proposta unica",
+      "purpose": "Editor tipo docx: sezioni di testo modificabili + inserimento di segnaposto dal pannello destro (click al cursore o drag&drop).",
+      "keyElements": [
+        "topbar scura",
+        "toolbar formattazione",
+        "outline sezioni 232px",
+        "foglio 620px contenteditable",
+        "pannello 320px a 3 tab: Segnaposto / Blocchi / Proprietà"
+      ]
+    },
+    {
+      "id": "3a",
+      "file": "screens/derive-model.md",
+      "label": "derive-model",
+      "route": "/modelli/:modelId/deriva",
+      "name": "Crea modello derivato",
+      "status": "proposta unica",
+      "purpose": "Dialogo sopra il builder: crea una variante che eredita struttura, testi e segnaposto del modello padre e cambia solo gli attributi aggiuntivi (lingua, ambito, canale, soglia). La categorizzazione L1-L4 e ereditata e non modificabile.",
+      "keyElements": [
+        "dialogo 1000px su scrim",
+        "colonna sinistra: origine + categorizzazione ereditata in sola lettura + attributi ereditati",
+        "griglia 2x2 di select D1-D4 con opzione 'eredita'",
+        "pill 'modificato'",
+        "riepilogo modello risultante con codice, nome e chip",
+        "checkbox collegamento al padre",
+        "CTA disabilitata finche nessun attributo diverge"
+      ],
+      "openQuestions": [
+        "derivazione a piu livelli e sua rappresentazione in 1b",
+        "traduzione automatica dei testi al cambio lingua",
+        "se rendere modificabili i livelli L1-L4"
+      ]
+    }
+  ]
+}

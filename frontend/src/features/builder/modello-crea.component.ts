@@ -68,36 +68,33 @@ type Nodo = components['schemas']['NodoCategorizzazione'];
           }
         </ul>
         <form #form="ngForm" (ngSubmit)="create()">
-          <label for="codice" class="form-label">Codice modello</label
-          ><input
-            id="codice"
-            name="codice"
-            class="form-control mb-3"
-            [(ngModel)]="codice"
+          <label for="lingua" class="form-label">Lingua</label>
+          <select
+            id="lingua"
+            name="lingua"
+            class="form-select mb-3"
+            [(ngModel)]="lingua"
             required
-            maxlength="128"
             [disabled]="saving() || !!modelId"
-          />
-          <label for="nome" class="form-label">Nome</label
-          ><input
-            id="nome"
-            name="nome"
-            class="form-control mb-3"
-            [(ngModel)]="nome"
-            required
-            maxlength="255"
+          >
+            <option value="">Seleziona lingua</option>
+            @for (language of selected.lingue_possibili ?? []; track language) {
+              <option [value]="language">{{ language === 'IT' ? 'Italiano' : 'Inglese' }}</option>
+            }
+          </select>
+          <label for="livello" class="form-label">Livello professionale</label>
+          <select
+            id="livello"
+            name="livello"
+            class="form-select mb-3"
+            [(ngModel)]="livelloProfessionale"
             [disabled]="saving() || !!modelId"
-          />
-          <label for="variante" class="form-label">Variante</label
-          ><input
-            id="variante"
-            name="variante"
-            class="form-control mb-3"
-            [(ngModel)]="variante"
-            required
-            maxlength="64"
-            [disabled]="saving() || !!modelId"
-          />
+          >
+            <option value="">Tutti i livelli</option>
+            @for (level of selected.livelli_possibili ?? []; track level) {
+              <option [value]="level">{{ level }}</option>
+            }
+          </select>
           <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
             Crea modello in bozza
           </button>
@@ -105,15 +102,20 @@ type Nodo = components['schemas']['NodoCategorizzazione'];
       }
     } @else {
       <div class="alert alert-success" role="status">
-        Modello {{ codice }} creato - {{ success() }}
+        Modello {{ createdModel?.nome }} ({{ createdModel?.codice }}) creato - {{ success() }}
       </div>
     } `,
 })
 export class ModelloCreaComponent {
   private readonly api = inject(ApiClient);
-  private readonly id = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
+  private readonly route = inject(ActivatedRoute);
+  private readonly id = this.route.snapshot.paramMap.get('id')!;
+  private readonly presetTipo = this.route.snapshot.queryParamMap?.get('tipo') ?? '';
+  private readonly presetPath = this.route.snapshot.queryParamMap?.get('percorso')?.split('|') ?? [];
+  private readonly presetLingua = this.route.snapshot.queryParamMap?.get('lingua') ?? '';
+  private readonly presetLivello = this.route.snapshot.queryParamMap?.get('livello') ?? '';
   protected readonly contesto =
-    inject(ActivatedRoute).snapshot.queryParamMap?.get('contesto') ?? '';
+    this.route.snapshot.queryParamMap?.get('contesto') ?? '';
   protected readonly types = signal<string[]>([]);
   protected readonly nodes = signal<Nodo[]>([]);
   protected readonly path = signal<string[]>([]);
@@ -123,17 +125,18 @@ export class ModelloCreaComponent {
   protected readonly saving = signal(false);
   protected readonly success = signal<string | null>(null);
   protected tipo = '';
-  protected codice = '';
-  protected nome = '';
-  protected variante = 'STANDARD';
+  protected lingua = '';
+  protected livelloProfessionale = '';
   private root: Nodo[] = [];
   protected modelId: string | null = null;
+  protected createdModel: { codice: string; nome: string } | null = null;
   constructor() {
     this.loading.set(true);
     this.api.get<string[]>(`/api/v1/builder/integrazioni/${this.id}/tipi-documento`).subscribe({
       next: (types) => {
         this.types.set(types);
         this.loading.set(false);
+        if (this.presetTipo && types.includes(this.presetTipo)) this.loadTree(this.presetTipo);
       },
       error: (error: ApiError) => this.failed(error),
     });
@@ -156,6 +159,7 @@ export class ModelloCreaComponent {
           this.root = tree.nodi;
           this.nodes.set(this.root);
           this.loading.set(false);
+          if (tipo === this.presetTipo && this.presetPath.length) this.applyPresetPath();
         },
         error: (error: ApiError) => this.failed(error),
       });
@@ -164,7 +168,24 @@ export class ModelloCreaComponent {
     this.path.update((path) => [...path, node.codice]);
     this.nodes.set(node.figli ?? []);
     this.leaf.set(node.campi ? node : null);
+    if (node.campi) {
+      const languages = node.lingue_possibili ?? [];
+      this.lingua = languages.includes(this.presetLingua as 'IT' | 'EN')
+        ? this.presetLingua
+        : (languages[0] ?? '');
+      const levels = node.livelli_possibili ?? [];
+      this.livelloProfessionale = levels.includes(this.presetLivello)
+        ? this.presetLivello
+        : '';
+    }
     this.modelId = null;
+  }
+  private applyPresetPath(): void {
+    for (const code of this.presetPath) {
+      const node = this.nodes().find((candidate) => candidate.codice === code);
+      if (!node) return;
+      this.choose(node);
+    }
   }
   protected back(): void {
     const path = this.path().slice(0, -1);
@@ -188,9 +209,7 @@ export class ModelloCreaComponent {
     if (
       this.saving() ||
       !this.leaf() ||
-      !this.codice.trim() ||
-      !this.nome.trim() ||
-      !this.variante.trim()
+      !this.lingua
     )
       return;
     this.saving.set(true);
@@ -200,17 +219,17 @@ export class ModelloCreaComponent {
       return;
     }
     this.api
-      .post<{ id: string }>('/api/v1/builder/modelli', {
-        codice: this.codice,
-        nome: this.nome,
-        variante: this.variante,
+      .post<{ id: string; codice: string; nome: string }>('/api/v1/builder/modelli', {
         codice_tipo_documento: this.tipo,
         integrazione_id: this.id,
         percorso_categorizzazione: this.path(),
+        lingua: this.lingua,
+        livello_professionale: this.livelloProfessionale || null,
       })
       .subscribe({
         next: (model) => {
           this.modelId = model.id;
+          this.createdModel = model;
           this.createVersion(model.id);
         },
         error: (error: ApiError) => this.failed(error),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.discovery.schemas import CatalogoDiscovery
@@ -24,14 +25,13 @@ class IntegrazioneVisibile(BaseModel):
 class CreaModelloRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    codice: str = Field(min_length=1, max_length=128)
-    nome: str = Field(min_length=1, max_length=255)
     codice_tipo_documento: str = Field(min_length=1)
     integrazione_id: uuid.UUID | None = None
     percorso_categorizzazione: list[str] | None = Field(default=None, min_length=1, max_length=64)
     codice_categoria: str | None = None
     codice_tipologia: str | None = None
-    variante: str = Field(default="STANDARD", min_length=1, max_length=64)
+    lingua: Literal["IT", "EN"]
+    livello_professionale: str | None = Field(default=None, min_length=1, max_length=64)
 
     @model_validator(mode="after")
     def verifica_selezione(self) -> CreaModelloRequest:
@@ -52,6 +52,8 @@ class ModelloResponse(BaseModel):
     codice_tipologia: str | None
     percorso_categorizzazione: list[str]
     variante: str
+    lingua: Literal["IT", "EN"]
+    livello_professionale: str | None
 
 
 class CampoVersioneRequest(BaseModel):

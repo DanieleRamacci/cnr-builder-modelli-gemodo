@@ -186,7 +186,7 @@ def test_tipi_documento_and_struttura_reflect_the_live_multi_type_map(manager_cl
     url, responses, requests = discovery_server
     body = fragment()
     body["VERBALE"] = {"validita": "2026-09-17T00:00:00Z", "nodi": [
-        {"codice": "SEDUTA", "descrizione": "Seduta", "campi": [
+        {"codice": "SEDUTA", "descrizione": "Seduta", "lingue_possibili": ["IT", "EN"], "campi": [
             {"codice": "data_seduta", "etichetta": "Data", "tipo": "date", "lingua": "IT", "ordine": 1, "obbligatorio": True},
         ]},
     ]}

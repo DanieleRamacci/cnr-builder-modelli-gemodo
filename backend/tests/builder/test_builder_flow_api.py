@@ -16,8 +16,10 @@ a write on a tipo documento owned by a different context.
 from __future__ import annotations
 
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 import sqlalchemy as sa
@@ -28,7 +30,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.catalog.models import TipoDocumento
+from app.builder.service import _identita_modello
+from app.catalog.models import ModelloDocumentoVersione, TipoDocumento
 from app.configurazione.models import EndpointIntegrazione, Integrazione
 from app.db.session import get_db
 from app.main import app
@@ -54,7 +57,9 @@ def catalogo_esterno(discovery_server):
     responses["/discovery"] = (200, {"BANDO_CONCORSO": {
         "validita": "2026-09-17T00:00:00Z", "nodi": [
             {"codice": "TD", "descrizione": "Tempo determinato", "tipo_livello": "tipologia", "figli": [
-                {"codice": "RICERCATORE", "descrizione": "Ricercatore", "tipo_livello": "profilo", "campi": campi}
+                {"codice": "RICERCATORE", "descrizione": "Ricercatore", "tipo_livello": "profilo",
+                 "livelli_possibili": ["IV", "V", "VI"], "livello_base": "VI",
+                 "lingue_possibili": ["IT", "EN"], "campi": campi}
             ]}
         ]}})
     return url, responses, requests
@@ -163,9 +168,8 @@ def test_selected_integration_creates_scoped_type_and_versions_despite_legacy_du
         db.commit()
     try:
         response = builder_client.post("/api/v1/builder/modelli", json={
-            "codice": "scoped-" + uuid.uuid4().hex, "nome": "Modello scoped",
             "codice_tipo_documento": code, "integrazione_id": str(integrazione_connessa),
-            "percorso_categorizzazione": ["TD", "RICERCATORE"],
+            "percorso_categorizzazione": ["TD", "RICERCATORE"], "lingua": "IT",
         })
         assert response.status_code == 201, response.text
         model = response.json()
@@ -192,8 +196,8 @@ def test_selected_integration_requires_context_permission_before_creating_type(b
         db.commit()
     try:
         response = builder_client.post("/api/v1/builder/modelli", json={
-            "codice": "denied-scoped", "nome": "Negato", "codice_tipo_documento": "ASSENTE",
-            "integrazione_id": str(source_id), "percorso_categorizzazione": ["FOGLIA"],
+            "codice_tipo_documento": "ASSENTE", "integrazione_id": str(source_id),
+            "percorso_categorizzazione": ["FOGLIA"], "lingua": "IT",
         })
         assert response.status_code == 403, response.text
         with Session(db_engine) as db:
@@ -204,16 +208,17 @@ def test_selected_integration_requires_context_permission_before_creating_type(b
             db.commit()
 
 
-def _crea_modello(client: TestClient, *, codice: str, variante: str = "STANDARD") -> dict:
+def _crea_modello(
+    client: TestClient, *, codice: str, lingua: str = "IT", livello_professionale: str | None = None,
+) -> dict:
     response = client.post(
         "/api/v1/builder/modelli",
         json={
-            "codice": codice,
-            "nome": f"Modello {codice}",
             "codice_tipo_documento": "BANDO_CONCORSO",
             "codice_categoria": "RICERCATORE",
             "codice_tipologia": "TD",
-            "variante": variante,
+            "lingua": lingua,
+            "livello_professionale": livello_professionale,
         },
     )
     assert response.status_code == 201, response.text
@@ -256,8 +261,8 @@ def test_struttura_disponibile_riflette_solo_la_discovery_http(builder_client, c
 
 
 def _richiesta_percorso(codice, percorso):
-    return {"codice": codice, "nome": codice, "codice_tipo_documento": "BANDO_CONCORSO",
-            "percorso_categorizzazione": percorso}
+    return {"codice_tipo_documento": "BANDO_CONCORSO",
+            "percorso_categorizzazione": percorso, "lingua": "IT"}
 
 
 @pytest.mark.integration
@@ -269,7 +274,8 @@ def test_new_three_level_external_branch_needs_no_local_catalog(builder_client, 
     responses["/discovery"][1]["BANDO_CONCORSO"]["nodi"].append({
         "codice": "AREA_NUOVA", "descrizione": "Area nuova", "figli": [{
             "codice": "GRUPPO_NUOVO", "descrizione": "Gruppo nuovo", "figli": [{
-                "codice": "FOGLIA_NUOVA", "descrizione": "Foglia nuova", "campi": [nuovo_campo]
+                "codice": "FOGLIA_NUOVA", "descrizione": "Foglia nuova",
+                "lingue_possibili": ["IT", "EN"], "campi": [nuovo_campo]
             }]
         }]
     })
@@ -408,8 +414,94 @@ def test_crea_modello_e_versione_con_campo_non_ammesso_viene_rifiutato(builder_c
 
 
 @pytest.mark.integration
+def test_creation_generates_identity_and_validates_language_and_level(builder_client):
+    generic_it = _crea_modello(builder_client, codice="generic-it", lingua="IT")
+    generic_en = _crea_modello(builder_client, codice="generic-en", lingua="EN")
+    level_it = _crea_modello(
+        builder_client, codice="level-it", lingua="IT", livello_professionale="VI"
+    )
+
+    assert generic_it["variante"] == "STANDARD"
+    assert generic_it["lingua"] == "IT"
+    assert generic_it["livello_professionale"] is None
+    assert generic_en["lingua"] == "EN"
+    assert level_it["livello_professionale"] == "VI"
+    assert len({generic_it["codice"], generic_en["codice"], level_it["codice"]}) == 3
+    assert generic_it["codice"].endswith(generic_it["id"].replace("-", ""))
+    assert "Tutti i livelli" in generic_it["nome"] and "Italiano" in generic_it["nome"]
+    assert "Livello VI" in level_it["nome"]
+
+    invalid_level = _richiesta_percorso("ignored", ["TD", "RICERCATORE"])
+    invalid_level["livello_professionale"] = "VII"
+    assert builder_client.post("/api/v1/builder/modelli", json=invalid_level).status_code == 400
+    invalid_language = {**invalid_level, "livello_professionale": None, "lingua": "FR"}
+    assert builder_client.post("/api/v1/builder/modelli", json=invalid_language).status_code == 400
+
+
+def test_generated_identity_is_unique_for_concurrent_creations():
+    nodes = [SimpleNamespace(codice="TD", descrizione="Tempo determinato"),
+             SimpleNamespace(codice="CTER", descrizione="CTER")]
+
+    def generate(_: int) -> tuple[str, str]:
+        return _identita_modello(
+            tipo="BANDO_CONCORSO", nodi=nodes, lingua="IT", livello="VI", modello_id=uuid.uuid4(),
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        identities = list(executor.map(generate, range(64)))
+
+    codes = [code for code, _ in identities]
+    assert len(codes) == len(set(codes)) == 64
+    assert all(len(code) <= 128 for code in codes)
+
+
+@pytest.mark.integration
+def test_publication_scope_keeps_language_and_level_independent(builder_client, db_engine):
+    models = [
+        _crea_modello(builder_client, codice="generic-it", lingua="IT"),
+        _crea_modello(builder_client, codice="generic-en", lingua="EN"),
+        _crea_modello(builder_client, codice="level-it", lingua="IT", livello_professionale="VI"),
+        _crea_modello(builder_client, codice="level-en", lingua="EN", livello_professionale="VI"),
+    ]
+    versions = []
+    for model in models:
+        version = _crea_versione(builder_client, model["id"])
+        _pubblica_fino_in_fondo(builder_client, model["id"], version["id"])
+        versions.append(version)
+
+    replacement = _crea_modello(
+        builder_client, codice="level-it-2", lingua="IT", livello_professionale="VI"
+    )
+    replacement_version = _crea_versione(builder_client, replacement["id"])
+    _pubblica_fino_in_fondo(builder_client, replacement["id"], replacement_version["id"])
+
+    with Session(db_engine) as db:
+        states = {
+            str(row.id): row.stato
+            for row in db.scalars(sa.select(ModelloDocumentoVersione))
+        }
+    assert states[versions[0]["id"]] == "PUBBLICATO"
+    assert states[versions[1]["id"]] == "PUBBLICATO"
+    assert states[versions[2]["id"]] == "ARCHIVIATO"
+    assert states[versions[3]["id"]] == "PUBBLICATO"
+    assert states[replacement_version["id"]] == "PUBBLICATO"
+
+    base_url = "/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=RICERCATORE"
+    all_editions = builder_client.get(base_url)
+    assert all_editions.status_code == 200, all_editions.text
+    assert {(item["lingua"], item["livello_professionale"]) for item in all_editions.json()["modelli"]} == {
+        ("IT", None), ("EN", None), ("IT", "VI"), ("EN", "VI"),
+    }
+
+    level_editions = builder_client.get(base_url + "&livello_professionale=VI")
+    assert {item["lingua"] for item in level_editions.json()["modelli"]} == {"IT", "EN"}
+    english_only = builder_client.get(base_url + "&livello_professionale=VI&lingua=EN")
+    assert [item["lingua"] for item in english_only.json()["modelli"]] == ["EN"]
+
+
+@pytest.mark.integration
 def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder_client):
-    modello = _crea_modello(builder_client, codice="pytest-modello-e2e", variante="PYTEST")
+    modello = _crea_modello(builder_client, codice="pytest-modello-e2e")
     versione = _crea_versione(builder_client, modello["id"])
     assert versione["stato"] == "BOZZA"
 
@@ -470,7 +562,7 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
 
 @pytest.mark.integration
 def test_pubblicazione_archivia_automaticamente_la_versione_corrente_precedente(builder_client, db_engine):
-    modello = _crea_modello(builder_client, codice="pytest-modello-auto-archivio", variante="PYTEST-ARCHIVIO")
+    modello = _crea_modello(builder_client, codice="pytest-modello-auto-archivio")
 
     versione_1 = _crea_versione(builder_client, modello["id"])
     _pubblica_fino_in_fondo(builder_client, modello["id"], versione_1["id"])
@@ -589,12 +681,9 @@ def test_gestore_senza_il_contesto_del_tipo_documento_e_rifiutato(db_engine, mon
             response = client.post(
                 "/api/v1/builder/modelli",
                 json={
-                    "codice": "pytest-modello-non-autorizzato",
-                    "nome": "Non autorizzato",
                     "codice_tipo_documento": "BANDO_CONCORSO",
-                    "codice_categoria": "RICERCATORE",
-                    "codice_tipologia": "TD",
-                    "variante": "STANDARD",
+                    "percorso_categorizzazione": ["TD", "RICERCATORE"],
+                    "lingua": "IT",
                 },
             )
     finally:

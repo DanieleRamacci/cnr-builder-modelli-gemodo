@@ -16,12 +16,10 @@ scenario_outcomes:
     output_attesi:
       - tipo_output: BOZZA
         lingua: IT
-      - tipo_output: BOZZA
-        lingua: EN
     note: >
-      Il payload demo ha bando_inglese=true (FR-022): la generazione deve restituire
-      due output/modelli, italiano e inglese, dalla stessa tipologia modello, non un
-      estratto sintetico.
+      Ogni chiamata indica una sola versione modello e produce un solo output.
+      Per l'edizione inglese GEBAN seleziona dal catalogo la relativa
+      modello_versione_id ed esegue una seconda chiamata.
 
   - scenario_id: E2E-002
     payload_demo: bando-concorso-invalid.json
@@ -29,7 +27,6 @@ scenario_outcomes:
     output_attesi: []
     errori_attesi:
       - CAMPO_OBBLIGATORIO
-      - CAMPO_INGLESE_MANCANTE
 
   - scenario_id: E2E-003
     payload_demo: bando-concorso-valid.json

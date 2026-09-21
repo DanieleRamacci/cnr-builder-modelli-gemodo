@@ -46,6 +46,16 @@ restano non pianificati.
   autenticato ma fuori perimetro deve ricevere un errore funzionale distinto, non
   generare il documento.
 
+### Session 2026-09-21 - Edizioni linguistiche separate
+
+- Una richiesta di generazione indica una sola `modello_versione_id` e produce
+  un solo documento.
+- Italiano e inglese sono versioni modello distinte individuate dal catalogo;
+  GEBAN effettua due chiamate quando desidera entrambi gli output.
+- `bando_inglese` e' ritirato: lingua e contratto campi derivano interamente
+  dalla versione modello selezionata. Non sono ammesse inferenze dai suffissi
+  dei campi e non viene introdotto `famiglia_modello_id`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generare una bozza documento (Priority: P1)
@@ -157,6 +167,11 @@ errore di rendering non producono PDF ufficiale e restituiscono motivazione funz
   contenuto e metadati MUST identificarlo come test non ufficiale.
 - **FR-020**: Il test MUST richiedere una versione pubblicata e i permessi di
   generazione applicabili; payload invalido MUST NOT produrre PDF.
+- **FR-021**: Ogni richiesta MUST indicare una sola versione modello e MUST
+  produrre al massimo un documento. Per produrre piu' edizioni linguistiche il
+  chiamante effettua una richiesta per ciascuna versione restituita dal catalogo.
+- **FR-022**: La richiesta MUST NOT contenere `bando_inglese`; lingua e campi
+  obbligatori derivano esclusivamente dalla versione modello selezionata.
 
 ### Key Entities
 

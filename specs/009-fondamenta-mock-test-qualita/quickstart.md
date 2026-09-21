@@ -100,7 +100,8 @@ Expected:
   (`catalogo_modelli`, `campi_richiesti`, `valida_payload`, `genera_documento`,
   `stato_generazione`), mai scorciatoie interne;
 - il payload demo valido (`bando-concorso-valid.json`) viene validato senza errori;
-- la generazione produce due output, italiano e inglese (`bando_inglese: true`, FR-022),
+- nota storica superseduta il 2026-09-21: la generazione corrente produce un
+  output per `modello_versione_id`; italiano e inglese richiedono due chiamate,
   coerenti con `mock-geban/scenarios/expected-outcomes.yaml`;
 - lo stato risulta `COMPLETATA` e consultabile.
 

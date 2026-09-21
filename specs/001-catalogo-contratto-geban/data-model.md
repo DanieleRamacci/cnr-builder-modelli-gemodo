@@ -313,7 +313,7 @@ Fields:
 - `etichetta`
 - `descrizione`
 - `tipo_dato`: `string`, `number`, `date`, `boolean`, `array`, `object`.
-- `lingua`: `IT` o `EN`, default `IT` (FR-021, `DEC-001-LINGUA-IT-EN`).
+- `lingua`: `IT` o `EN`, default `IT`; metadato descrittivo del campo.
 - `obbligatorio`
 - `ordine`
 - `formato`: opzionale.
@@ -328,9 +328,8 @@ Validation:
 - chiave logica: `modello_versione_id + codice`.
 - `ordine` univoco per versione modello.
 - campi extra nel payload sono errore.
-- un campo con `lingua = EN` e `obbligatorio = true` e' richiesto in validazione solo
-  quando il payload contiene `bando_inglese = true`; altrimenti resta facoltativo
-  (FR-021, FR-022). Campi con `lingua = IT` seguono `obbligatorio` senza condizioni.
+- ogni campo con `obbligatorio = true` nel contratto della versione selezionata
+  e' richiesto, senza condizioni basate sulla lingua.
 
 ### ValidazionePayload
 
@@ -342,8 +341,7 @@ Fields:
 - `valido`: boolean.
 - `errori`: lista di `ErroreValidazione`.
 - `modello_versione_id`
-- `bando_inglese`: boolean opzionale nel payload, default `false`; quando `true`
-  attiva l'obbligatorieta' dei campi con `lingua = EN` (FR-021, FR-022).
+- la lingua non e' un flag del payload: deriva dalla versione modello selezionata.
 
 ### PrincipalGEMODO
 
@@ -395,8 +393,8 @@ Common error codes:
   modello_versione_id richiesti non sono nel perimetro ammesso dal profilo del
   chiamante risolto — distinto da un elenco vuoto (nel perimetro, nessun modello
   pubblicato ancora).
-- `CAMPO_INGLESE_MANCANTE` (FR-022): campo con `lingua = EN` obbligatorio assente
-  quando `bando_inglese = true`.
+- `CAMPO_INGLESE_MANCANTE`: codice legacy non piu' emesso; i campi obbligatori
+  mancanti usano `CAMPO_OBBLIGATORIO` indipendentemente dal metadato lingua.
 - `ACCESSO_NON_AUTENTICATO`: JWT mancante, scaduto o non valido per firma, issuer o
   audience.
 - `ACCESSO_NON_AUTORIZZATO`: JWT valido ma client o ruolo non abilitato per la route.

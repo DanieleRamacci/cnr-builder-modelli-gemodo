@@ -1,5 +1,5 @@
 {
-  "_comment": "Payload demo non valido per E2E-002: numero_posti e campi inglesi mancanti con bando_inglese=true. La ricerca v0.4 non valida contro una allowlist di tipologie locale (010 FR-016). atteso_errori e' metadato del test, non parte del payload inviato.",
+  "_comment": "Payload demo non valido per E2E-002: numero_posti e altri campi obbligatori del contratto selezionato sono mancanti. La ricerca non valida contro una allowlist di tipologie locale (010 FR-016). atteso_errori e' metadato del test, non parte del payload inviato.",
   "demo_marker": "DEMO",
   "sistema_richiedente": "GEBAN",
   "client_id": "geban-backend",
@@ -13,7 +13,6 @@
     "codice": "XX_NON_VALIDA",
     "codice_sol": null
   },
-  "bando_inglese": true,
   "dati": {
     "codice_bando": "BANDO-DEMO-2026-002",
     "bando_multiplo": false,
@@ -41,18 +40,18 @@
     },
     {
       "campo": "dati.titolo_en",
-      "codice": "CAMPO_INGLESE_MANCANTE",
-      "motivo": "bando_inglese=true ma titolo_en non presente"
+      "codice": "CAMPO_OBBLIGATORIO",
+      "motivo": "titolo_en obbligatorio nel contratto della versione ma non presente"
     },
     {
       "campo": "dati.descrizione_ridotta_en",
-      "codice": "CAMPO_INGLESE_MANCANTE",
-      "motivo": "bando_inglese=true ma descrizione_ridotta_en non presente"
+      "codice": "CAMPO_OBBLIGATORIO",
+      "motivo": "descrizione_ridotta_en obbligatorio nel contratto della versione ma non presente"
     },
     {
       "campo": "dati.sede_prescelta_en",
-      "codice": "CAMPO_INGLESE_MANCANTE",
-      "motivo": "bando_inglese=true ma sede_prescelta_en non presente"
+      "codice": "CAMPO_OBBLIGATORIO",
+      "motivo": "sede_prescelta_en obbligatorio nel contratto della versione ma non presente"
     }
   ]
 }

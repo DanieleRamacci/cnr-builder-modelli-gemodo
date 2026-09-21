@@ -74,7 +74,7 @@ reale (non solo scritti a mano):
   successo per `GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti`, con
   `lingua` IT/EN e schema strict `additionalProperties=false`.
 - [`validation-error.json`](examples/validation-error.json): risposta di errore
-  funzionale per `POST /documenti/valida` con `bando_inglese=true`
+  funzionale per `POST /documenti/valida` con un campo obbligatorio mancante
   (schema `ValidazioneResponse`), coerente coi codici in `errors.md`.
 
 Entrambi sono stati validati con `jsonschema` contro i componenti dello schema

@@ -601,12 +601,15 @@ decisions:
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
-      modello inglese integrale tradotto; GEBAN invia `Bando Inglese` Si/No e, se Si, i
-      campi inglesi compilati a video; GEMODO usa la stessa tipologia modello e
-      restituisce due output/modelli, italiano e inglese (FR-022, prototipato negli
-      scenari mock E2E-001, mock-geban/scenarios/expected-outcomes.yaml).
+      aggiornato 2026-09-21: italiano e inglese sono modelli distinti, pubblicati e
+      versionati separatamente, accomunati implicitamente da stesso tipo documento,
+      percorso di categorizzazione e livello professionale. Il catalogo senza filtro
+      lingua restituisce tutte le edizioni corrispondenti; GEBAN genera un documento
+      per chiamata indicando il relativo modello_versione_id. `bando_inglese` e'
+      ritirato: la versione modello selezionata determina lingua e contratto campi.
+      Non viene introdotto un famiglia_modello_id.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-07-28
+    data_ultima_revisione: 2026-09-21
 
   - id: DEC-001-CAMPI-COMUNI-GEBAN
     titolo: Campi comuni GEBAN per generazione

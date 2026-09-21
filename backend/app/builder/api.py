@@ -61,6 +61,8 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         codice_tipologia=modello.codice_tipologia,
         percorso_categorizzazione=modello.percorso_categorizzazione,
         variante=modello.variante,
+        lingua=modello.lingua,
+        livello_professionale=modello.livello_professionale,
     )
 
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Questo file descrive la modalita ad albero completo. La proposta alternativa
     a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
@@ -201,6 +201,7 @@ components:
                   tipo_livello: profilo
                   livelli_possibili: ["IV", "V", "VI"]
                   livello_base: "VI"
+                  lingue_possibili: [IT, EN]
                   campi:
                     - codice: codice_bando
                       etichetta: Codice bando
@@ -377,6 +378,18 @@ components:
           type: string
           description: Valore di default fra `livelli_possibili` per questo nodo, se presente.
           example: "III"
+        lingue_possibili:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: >
+            Lingue dei modelli creabili sulla foglia. Obbligatorio sui nodi
+            con `campi`, assente sui nodi intermedi. Non filtra i campi: ogni
+            modello conserva l'intero contratto della foglia.
+          items:
+            type: string
+            enum: [IT, EN]
+          example: [IT, EN]
         figli:
           type: array
           description: >

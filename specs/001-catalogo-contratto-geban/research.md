@@ -101,19 +101,20 @@ disponibile".
 - Validazione lato GEBAN soltanto: scartato, il servizio modelli resta responsabile
   del proprio contratto dati indipendentemente dal chiamante.
 
-## Decision: campo con lingua e obbligatorieta' condizionata da `bando_inglese`
+## Decision: lingua determinata dalla versione modello
 
-**Rationale**: `009` ha confermato (`DEC-001-LINGUA-IT-EN`) che, quando GEBAN invia
-`Bando Inglese = Si`, servono anche i campi inglesi corrispondenti. Il modo piu'
-semplice per restare dentro al contratto dati dinamico gia' esistente (senza introdurre
-un secondo meccanismo di validazione) e' aggiungere `lingua` (`IT`/`EN`, default `IT`)
-a `ModelloCampoRichiesto` e rendere l'obbligatorieta' dei campi `EN` condizionata al
-flag booleano `bando_inglese` nel payload.
+**Rationale**: decisione aggiornata il 2026-09-21. Ogni edizione linguistica e'
+un modello distinto con propria versione pubblicata. La `modello_versione_id`
+determina lingua e contratto; la validazione applica direttamente
+`obbligatorio` a tutti i campi selezionati per quella versione. Il flag
+`bando_inglese` sarebbe ridondante, specifico di GEBAN e ambiguo per futuri
+contesti, quindi viene ritirato.
 
 **Alternatives considered**:
 
-- Due contratti dati separati (uno IT, uno EN): scartato, raddoppia la manutenzione dei
-  modelli e complica la generazione a doppio output della `004`.
+- Un solo modello bilingue pilotato da `bando_inglese`: scartato, accoppia
+  validazione e generazione a un flag specifico dei bandi.
+- Inferire la lingua dai nomi dei campi `_it`/`_en`: scartato, non generalizzabile.
 - Validare la lingua interamente lato GEBAN prima dell'invio: scartato, sposterebbe la
   responsabilita' del contratto dati fuori dal servizio modelli.
 

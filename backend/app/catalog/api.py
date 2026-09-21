@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.catalog.schemas import (
     CampiRichiestiResponse,
+    LinguaModello,
     ModalitaCatalogo,
     ModelloSearchResponse,
 )
@@ -22,6 +23,8 @@ def search_modelli(
     tipo_documento: str,
     profilo: str | None = None,
     codice_tipologia: str | None = None,
+    lingua: LinguaModello | None = None,
+    livello_professionale: str | None = None,
     modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA,
     data_riferimento: date | None = None,
     pubblicato_da: date | None = None,
@@ -35,6 +38,8 @@ def search_modelli(
         tipo_documento=tipo_documento,
         categoria=profilo or categoria,
         codice_tipologia=codice_tipologia,
+        lingua=lingua,
+        livello_professionale=livello_professionale,
         modalita=modalita,
         data_riferimento=data_riferimento,
         pubblicato_da=pubblicato_da,

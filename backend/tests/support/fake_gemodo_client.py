@@ -115,8 +115,6 @@ class FakeGemodoClient:
             raise GemodoErroreFunzionale("GENERAZIONE_FALLITA", "generazione non completata")
 
         output = [{"tipo_output": "BOZZA", "lingua": "IT"}]
-        if payload.get("bando_inglese"):
-            output.append({"tipo_output": "BOZZA", "lingua": "EN"})
         registrazione = GenerazioneRegistrata(dati=payload.get("dati", {}), stato="COMPLETATA", output=output)
         self._generazioni[chiave] = registrazione
         return {"stato": registrazione.stato, "output": registrazione.output, "riutilizzato": False}

@@ -80,15 +80,35 @@ Stato di caricamento MUST distinguere: caricamento in corso, lista vuota
 di trasporto verso la sorgente esterna) - **mai** presentare un errore di
 trasporto come "lista vuota".
 
-### Form creazione modello di test (`CreaModelloRequest` → `ModelloResponse`)
+### Form creazione modello (`CreaModelloRequest` -> `ModelloResponse`)
 
-Campi: `codice`, `nome`, `codice_tipo_documento` (derivato dall'integrazione/
-tipo scelto in navigazione, non digitato a mano), selezione di un percorso
-foglia (`percorso_categorizzazione`) oppure `codice_categoria`/
-`codice_tipologia` diretti se il percorso e' ambiguo (stesso vincolo gia'
-implementato lato backend - la UI riflette l'errore `400` se la selezione non
-risolve a una foglia univoca, non lo previene con euristiche proprie).
-`variante` default `STANDARD`, editabile.
+Input client: `codice_tipo_documento`, `integrazione_id`, percorso foglia
+`percorso_categorizzazione`, `lingua` e `livello_professionale | null`.
+`lingua` deve appartenere a `lingue_possibili`; il livello, quando presente,
+deve appartenere a `livelli_possibili`. `null` significa tutti i livelli della
+foglia. Il client non invia `codice`, `nome` o `variante`.
+
+Output/persistenza `ModelloDocumento`: oltre alla categorizzazione conserva
+`lingua` obbligatoria e `livello_professionale` nullable. Codice e nome sono
+generati dal backend; variante sempre `STANDARD`. Non esistono tabelle locali
+per profili, livelli o lingue.
+
+Identita' funzionale e sostituzione della versione pubblicata corrente:
+`tipo_documento_id + percorso_categorizzazione + livello_professionale +
+lingua + variante`. Modelli generici/specifici e IT/EN possono coesistere e
+non si archiviano reciprocamente.
+
+Raggruppamento UI/catalogo delle edizioni: `integrazione_id +
+tipo_documento_id + percorso_categorizzazione + livello_professionale`.
+La lingua e' esclusa soltanto dalla chiave di raggruppamento; resta inclusa
+nello scope di pubblicazione. Non esiste una colonna `famiglia_modello_id`.
+
+La richiesta di generazione seleziona una sola `modello_versione_id`; non
+contiene `bando_inglese`. Il contratto della versione determina tutti i campi
+ammessi e obbligatori.
+
+La versione iniziale conserva tutti i campi della foglia, senza filtrarli per
+lingua o livello.
 
 **Nessun editor di campi/sezioni in questo MVP**: dopo la creazione del
 modello (stato `BOZZA`), la UI mostra l'esito (`ModelloResponse`) e un link

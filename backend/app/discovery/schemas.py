@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
 
 # specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml (info.version)
-VERSIONE_CONTRATTO_DISCOVERY = "0.4.0"
+VERSIONE_CONTRATTO_DISCOVERY = "0.5.0"
 
 
 class CampoDiscovery(BaseModel):
@@ -43,6 +43,7 @@ class NodoDiscovery(BaseModel):
     campi: tuple[CampoDiscovery, ...] | None = None
     livelli_possibili: tuple[StrictStr, ...] | None = None
     livello_base: StrictStr | None = None
+    lingue_possibili: tuple[Literal["IT", "EN"], ...] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -62,6 +63,17 @@ class NodoDiscovery(BaseModel):
         if (self.figli is None) == (self.campi is None):
             raise ValueError("Il nodo deve contenere figli oppure campi")
         _codici_univoci(self.figli if self.figli is not None else self.campi, "nodo")
+        if self.figli is not None and any(
+            value is not None
+            for value in (self.livelli_possibili, self.livello_base, self.lingue_possibili)
+        ):
+            raise ValueError("Livelli e lingue sono ammessi solo sui nodi foglia")
+        if self.campi is not None and not self.lingue_possibili:
+            raise ValueError("La foglia deve dichiarare almeno una lingua possibile")
+        if self.livelli_possibili is not None and len(set(self.livelli_possibili)) != len(self.livelli_possibili):
+            raise ValueError("Livelli possibili duplicati")
+        if self.lingue_possibili is not None and len(set(self.lingue_possibili)) != len(self.lingue_possibili):
+            raise ValueError("Lingue possibili duplicate")
         if self.livello_base is not None and (
             self.livelli_possibili is None or self.livello_base not in self.livelli_possibili
         ):

@@ -58,13 +58,15 @@ class StrutturaInput(Input):
     tipologie: list[TipologiaInput] = Field(default_factory=list, max_length=256)
     profili: list[ProfiloInput] = Field(default_factory=list, max_length=256)
     combinazioni: list[CombinazioneInput] = Field(default_factory=list, max_length=4096)
+    lingue_possibili: list[Literal["IT", "EN"]] = Field(default_factory=lambda: ["IT"], min_length=1)
     campi: list[CampoInput] = Field(default_factory=list, max_length=4096)
 
     @model_validator(mode="after")
     def validate_references(self):
         groups = [[t.codice for t in self.tipologie], [p.codice for p in self.profili],
                   [c.codice for c in self.campi],
-                  [(c.codice_tipologia, c.codice_profilo) for c in self.combinazioni]]
+                  [(c.codice_tipologia, c.codice_profilo) for c in self.combinazioni],
+                  self.lingue_possibili]
         groups.extend([[a.nome for a in p.attributi] for p in self.profili])
         if any(len(g) != len(set(g)) for g in groups):
             raise ValueError("Codici/combinazioni duplicati nella definizione")

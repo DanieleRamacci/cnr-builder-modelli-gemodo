@@ -23,6 +23,8 @@ const model = {
   codice_tipologia: 'TD',
   percorso_categorizzazione: ['TD', 'CTER'],
   variante: 'STANDARD',
+  lingua: 'IT',
+  livello_professionale: 'VI',
   codice_contesto: 'geban',
   integrazione_id: 'source',
   created_at: '2026-09-18T12:00:00Z',
@@ -78,6 +80,12 @@ describe('context models and lifecycle', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Modello CTER');
+    expect(fixture.nativeElement.textContent).toContain('Italiano');
+    expect(fixture.nativeElement.textContent).toContain('VI');
+    const linked = Array.from(
+      fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>,
+    ).find((a) => a.textContent?.includes('Crea edizione collegata'))!;
+    expect(linked.getAttribute('href')).toContain('lingua=EN');
     const tabs = fixture.nativeElement.querySelectorAll('nav button');
     tabs[1].click();
     fixture.detectChanges();

@@ -107,3 +107,52 @@ pianificati.
 
 **Alternatives considered**: NgRx (scartato per lo scope attuale, non
 escluso per incrementi futuri piu' grandi).
+
+## Categorizzazione di lingua e livello
+
+**Decision**: `livelli_possibili` e `lingue_possibili` sono metadati della
+foglia discovery. GEMODO persiste sul modello soltanto il livello scelto
+(`null` = tutti) e la lingua scelta; non introduce tabelle anagrafiche locali.
+Tutti i modelli della foglia usano lo stesso contratto campi.
+
+**Rationale**: mantiene la discovery come sorgente di verita' e permette
+modelli distinti come CTER/tutti/IT, CTER/tutti/EN e CTER/VI/IT senza copiare
+cataloghi esterni o dedurre la selezione dal nome.
+
+**Alternatives considered**: lingua come ramo dell'albero (scartata: altera
+la struttura categoriale); tabelle GEMODO per profili/livelli/lingue
+(scartate: duplicano ownership esterna); filtro dei campi per lingua
+(scartato: i modelli linguistici condividono l'intero contratto della foglia).
+
+## Collegamento edizioni e generazione
+
+**Decision**: nessun `famiglia_modello_id`. Due modelli sono presentati come
+edizioni collegate quando condividono integrazione, tipo documento, percorso e
+livello e differiscono per lingua. Il catalogo restituisce una lista piatta;
+omettendo il filtro lingua include tutte le edizioni corrispondenti. Ogni
+richiesta di generazione indica una sola `modello_versione_id`.
+
+**Rationale**: la categorizzazione gia' fornisce la chiave di raggruppamento e
+un identificativo aggiuntivo sarebbe duplicato. Una generazione per versione
+mantiene validazione, idempotenza, esito e riferimento documentale non ambigui.
+
+**Alternatives considered**: famiglia persistita (scartata finche' non saranno
+ammessi piu' gruppi indipendenti con la stessa categorizzazione); una chiamata
+che inferisce due output da `bando_inglese` o dai suffissi dei campi (scartata:
+specifica di GEBAN e non generalizzabile); lista batch di generazioni (rinviata,
+non necessaria per mantenere il contratto corrente).
+
+## Identita' e naming del modello
+
+**Decision**: il client invia tipo, integrazione, percorso, lingua e livello.
+Il backend genera codice e nome dopo aver validato la foglia. Il codice usa
+l'UUID completo del modello come suffisso per unicita' concorrente; il nome contiene descrizioni,
+livello quando specifico, lingua e data UTC. La variante resta `STANDARD`.
+
+**Rationale**: elimina input liberi e collisioni tra creazioni simultanee,
+lasciando identificativi stabili dopo la creazione e nomi leggibili.
+
+**Alternatives considered**: UUID abbreviato (scartato: amplia inutilmente il
+rischio di collisione); sequenza per percorso (scartata: richiede stato
+aggiuntivo e lock dedicati); variante usata come discriminante univoco
+(scartata: confonde variante funzionale con identita' tecnica).

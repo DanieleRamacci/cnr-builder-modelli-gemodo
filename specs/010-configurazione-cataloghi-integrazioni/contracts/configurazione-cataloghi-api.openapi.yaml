@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.3.0
+  version: 0.4.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
     documentazione di discovery da consegnare agli integratori. Questo contratto
@@ -113,6 +113,7 @@ paths:
                   combinazioni:
                     - codice_tipologia: TD
                       codice_profilo: COLLABORATORE_TECNICO_ER
+                  lingue_possibili: [IT, EN]
                   campi:
                     - codice: codice_bando
                       etichetta: Codice bando
@@ -432,6 +433,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CombinazioneInput"
+        lingue_possibili:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          default: [IT]
+          items:
+            type: string
+            enum: [IT, EN]
         campi:
           type: array
           items:

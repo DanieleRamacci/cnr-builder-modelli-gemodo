@@ -20,6 +20,7 @@ STRUTTURA = {
         {"nome": "livello", "valori_ammessi": ["I", "II"], "valore_default": "II"},
     ]}],
     "combinazioni": [{"codice_tipologia": "TD", "codice_profilo": "RIC"}],
+    "lingue_possibili": ["IT", "EN"],
     "campi": [{"codice": "livello", "etichetta": "Livello", "tipo": "string",
                "lingua": "IT", "obbligatorio": True, "ordine": 1,
                "dipende_da_attributo_profilo": "livello"}],

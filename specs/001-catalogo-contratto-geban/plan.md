@@ -16,8 +16,8 @@ migrations Alembic, validazione payload guidata da metadati/schema del modello t
 Pydantic e contratti OpenAPI versionati.
 
 **Aggiornamento 2026-07-29**: il piano recepisce le decisioni propagate da `009` (vedi
-`spec.md`, sessione "Session 2026-07-29"): validazione tipologia GEBAN/SOL, campi con
-lingua condizionata da `bando_inglese`, e la dipendenza dallo scheletro backend e dai
+`spec.md`, sessione "Session 2026-07-29"): validazione tipologia GEBAN/SOL, metadato
+lingua sui campi e dipendenza dallo scheletro backend e dai
 manifest di qualita' gia' creati dalla `009` (`backend/pyproject.toml`,
 `backend/app/main.py`, `backend/alembic/`, `infra/local/postgres/seed-demo-catalog.yaml`).
 Questa feature **estende** quello scheletro, non lo ricrea.
@@ -75,8 +75,8 @@ contratto dati e validazione payload (resta intero int64, `DEC-001-IDENTIFICATIV
 in persistenza la baseline `009` mantiene UUID interni e la `001` espone un `public_id`
 intero stabile);
 campi non previsti nel payload sono errore bloccante; `codice_tipologia` deve corrispondere
-a una tipologia GEBAN/SOL configurata (FR-020); campi con `lingua: EN` sono obbligatori
-solo se `bando_inglese: true` (FR-021, FR-022); le route operative richiedono JWT
+a una tipologia GEBAN/SOL configurata (FR-020); tutti i campi obbligatori del contratto
+della versione selezionata sono richiesti (FR-021, FR-022); le route operative richiedono JWT
 Keycloak valido con audience `gemodo-backend`, client `geban-backend` per il canale GEBAN
 e ruolo coerente (`DOCUMENTI_VIEWER` per consultazione, `DOCUMENTI_GENERATORE` per
 validazione).
@@ -204,8 +204,8 @@ Decisioni chiave:
 - Al massimo una versione pubblicata corrente per tipo/categoria/tipologia/variante.
 - Tipologia GEBAN/SOL validata contro un elenco configurato, non stringa libera
   (`DEC-001-TIPOLOGIE-SOL`).
-- Campo con `lingua` e obbligatorieta' condizionata da `bando_inglese`, senza un
-  secondo meccanismo di validazione (`DEC-001-LINGUA-IT-EN`).
+- Lingua determinata dalla versione modello; il payload non contiene un flag
+  specifico del contesto (`DEC-001-LINGUA-IT-EN`, revisione 2026-09-21).
 - Campi comuni GEBAN, bando multiplo e ribando restano dati del contratto dinamico
   esistente, non nuove entita' di dominio.
 - JWT Keycloak Bearer e' validato gia' nella `001` per le route operative; il principal

@@ -53,7 +53,7 @@ def expected_outcomes(repo_root):
 
 def test_valid_payload_has_no_expected_errors(payload_valido):
     assert payload_valido.get("atteso_errori", []) == []
-    assert payload_valido["bando_inglese"] is True
+    assert "bando_inglese" not in payload_valido
 
 
 def test_e2e_001_step_order_is_catalog_fields_validation_generation_status(scenario_e2e_001):
@@ -93,7 +93,7 @@ def test_e2e_001_runs_end_to_end_against_an_authorized_fake_client(scenario_e2e_
     assert esito_stato["stato"] == "COMPLETATA"
 
 
-def test_e2e_001_english_flag_produces_two_outputs_it_and_en(scenario_e2e_001, payload_valido, expected_outcomes):
+def test_e2e_001_produces_one_output_for_selected_model(scenario_e2e_001, payload_valido, expected_outcomes):
     client = FakeGemodoClient(sistema=sistema_geban_attivo(), profilo_codice=GEBAN_PROFILE_CODE)
 
     risultato = esegui_scenario(scenario_e2e_001, payload=payload_valido, client=client)
@@ -102,7 +102,7 @@ def test_e2e_001_english_flag_produces_two_outputs_it_and_en(scenario_e2e_001, p
         p.esito for p in risultato.passi if p.passo.operazione is OperazionePubblica.GENERA_DOCUMENTO
     )
     lingue_prodotte = {o["lingua"] for o in esito_generazione["output"]}
-    assert lingue_prodotte == {"IT", "EN"}
+    assert lingue_prodotte == {"IT"}
 
     attese = next(o for o in expected_outcomes["scenario_outcomes"] if o["scenario_id"] == "E2E-001")
     lingue_attese = {o["lingua"] for o in attese["output_attesi"]}

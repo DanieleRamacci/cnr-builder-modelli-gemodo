@@ -25,6 +25,7 @@ def payload():
                 "figli": [{
                     "codice": "RICERCATORE", "descrizione": "Ricercatore",
                     "livelli_possibili": ["I", "II", "III"], "livelloBase": "III",
+                    "lingue_possibili": ["IT", "EN"],
                     "campi": [{
                         "codice": "titolo_it", "etichetta": "Titolo", "tipo": "string",
                         "lingua": "IT", "obbligatorio": True, "ordine": 1,
@@ -47,6 +48,7 @@ def test_recursive_paths_and_alias_at_three_levels(payload):
     catalogo = adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
     nodo = catalogo.indice_percorsi()[("TD", "AREA", "RICERCATORE")]
     assert nodo.livello_base == "III"
+    assert nodo.lingue_possibili == ("IT", "EN")
     assert "livelloBase" not in nodo.model_dump()
     assert nodo.campi[0].validazione == {"minLength": 1}
 
@@ -63,6 +65,7 @@ def test_codes_may_repeat_in_different_branches(payload):
     "both", "neither", "duplicate_roots", "duplicate_children", "duplicate_fields",
     "default_conflict", "unknown_default", "string_bool", "string_order",
     "missing_field", "invalid_type", "invalid_date", "epoch_date",
+    "missing_languages", "duplicate_languages", "duplicate_levels", "metadata_on_branch",
 ])
 def test_invalid_structure_is_functional_error(payload, change):
     root = payload["BANDO_CONCORSO"]["nodi"][0]
@@ -94,6 +97,14 @@ def test_invalid_structure_is_functional_error(payload, change):
         payload["BANDO_CONCORSO"]["validita"] = "2026-09-17T00:00:00"
     elif change == "epoch_date":
         payload["BANDO_CONCORSO"]["validita"] = 1789600000
+    elif change == "missing_languages":
+        leaf.pop("lingue_possibili")
+    elif change == "duplicate_languages":
+        leaf["lingue_possibili"] = ["IT", "IT"]
+    elif change == "duplicate_levels":
+        leaf["livelli_possibili"] = ["I", "I"]
+    elif change == "metadata_on_branch":
+        root["lingue_possibili"] = ["IT"]
     with pytest.raises(DiscoveryError) as exc:
         adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
     assert exc.value.codice == "DISCOVERY_NON_CONFORME"

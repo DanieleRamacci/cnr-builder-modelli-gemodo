@@ -17,6 +17,29 @@ Il quality gate indipendente non e' superato.
 
 ## Clarifications
 
+### Session 2026-09-21
+
+- Q: Come interagisce la lingua del modello con i campi discovery? -> A: La
+  lingua identifica il modello, mentre la versione conserva tutti i campi della
+  foglia; possono esistere due modelli distinti, IT ed EN, con gli stessi campi.
+- Q: I livelli professionali della stessa foglia usano contratti campi diversi?
+  -> A: No. Tutti i livelli dell'ultima foglia usano gli stessi campi; il livello
+  restringe lo scope e puo' distinguere modelli con contenuti diversi.
+- Q: Come vengono determinate lingua e livello disponibili? -> A: Sono
+  dimensioni controllate della categorizzazione ricevuta dalla discovery sulla
+  foglia; GEMODO persiste sul modello la combinazione scelta, senza mantenere
+  anagrafiche interne di profili, livelli o lingue.
+- Q: La variante richiede una selezione distinta da lingua e livello? -> A: No.
+  In questo incremento resta internamente STANDARD e non compare nel form.
+- Q: Serve un `famiglia_modello_id` per collegare italiano e inglese? -> A: No.
+  Sono modelli separati ma risultano collegati implicitamente quando condividono
+  integrazione, tipo documento, percorso di categorizzazione e livello; la lingua
+  distingue le edizioni.
+- Q: Come richiede GEBAN entrambe le edizioni? -> A: La ricerca catalogo senza
+  filtro lingua restituisce tutte le versioni pubblicate corrispondenti. GEBAN
+  effettua una chiamata di generazione per ciascuna `modello_versione_id`, con i
+  dati previsti dal relativo contratto. `bando_inglese` e' ritirato.
+
 ### Pulizia modelli richiesta 2026-09-18
 
 Le installazioni nuove devono terminare senza modelli demo, salvo opt-in
@@ -64,14 +87,25 @@ dei modelli e' gia' coperta da US1, ma il seguente percorso ne precisa la UX:
   validata. Il nome include descrizioni, data di creazione e lingua; il codice
   resta stabile e univoco anche per creazioni simultanee dello stesso percorso.
   Il formato esatto e i limiti di lunghezza devono essere fissati nel contratto.
-- La variante non e' testo libero. Derivarla da metadati strutturati/configurati
-  della categorizzazione quando disponibili, altrimenti usare STANDARD; eventuali
-  alternative ammesse sono selezioni controllate, non nomi inventati dall'utente.
+- La variante non e' testo libero: in questo incremento e' sempre STANDARD,
+  assegnata dal backend e non mostrata nel form. Variante, livello e lingua
+  restano concetti distinti.
   Non generare varianti dalla data o dal codice univoco per aggirare il vincolo
   di unica versione pubblicata corrente. Variante, versione e lingua sono distinte.
 - Prima della conferma, scegliere la lingua da un menu con Italiano/IT e
   Inglese/EN. Disponibilita', campi necessari e persistenza della lingua richiedono
   contratto e validazione backend; non basta filtrare le etichette nel frontend.
+La lingua e' una dimensione controllata della categorizzazione esposta dalla
+foglia discovery e una proprieta' persistita del modello. Distingue modelli IT
+ed EN anche quando condividono percorso e contratto campi. La versione conserva
+l'intero insieme dei campi della foglia, senza filtrarli per lingua.
+
+Dalla scheda di un modello il gestore puo' avviare la creazione di un'edizione
+collegata in un'altra lingua. Il form riusa integrazione, tipo, percorso e livello,
+permette di scegliere soltanto una lingua ancora disponibile e crea un nuovo
+modello con identificativi e versioni propri. Il collegamento non richiede una
+nuova entita': deriva dagli attributi condivisi. La copia non modifica il modello
+origine e non pubblica automaticamente la nuova edizione.
 
 Chiarimento confermato 2026-09-18: "livello" indica il livello professionale,
 facoltativo e distinto dalla lingua. Il menu deve offrire "Tutti i livelli"
@@ -80,19 +114,25 @@ Se selezionato, il livello restringe la categorizzazione del modello e compare
 nel nome automatico. Se non selezionato, il percorso resta al profilo scelto
 (es. CTER) e il modello copre tutti i livelli di quel profilo, mai altri profili.
 Questa copertura deve essere persistita esplicitamente, non dedotta dal nome.
+Tutti i livelli dichiarati sull'ultima foglia condividono lo stesso contratto
+campi della foglia. Livello generico e livelli specifici possono tuttavia avere
+modelli e contenuti differenti; il livello non modifica o filtra i campi.
 
-Da definire prima dell'implementazione: il builder attuale ammette solo nodi
-con campi. La selezione generica richiede un contratto di campi valido per
-tutti i livelli coperti; non scegliere arbitrariamente i campi di un figlio
-ne' unire automaticamente contratti diversi. Verificare se il livello e'
-gia' un attributo del profilo o richiede un ulteriore ramo discovery.
+Il builder ammette modelli solo sull'ultima foglia con campi. La foglia discovery
+espone `livelli_possibili` e `lingue_possibili`; GEMODO non mantiene tabelle
+anagrafiche interne equivalenti. Il modello persiste percorso, livello scelto
+(`null` significa "Tutti i livelli") e lingua scelta. Se la discovery rappresenta
+i livelli come rami separati, deve esporre anche una foglia aggregata esplicita
+per consentire il modello generico "Tutti i livelli".
 Generico e specifico sono modelli distinti, con identificativi e versioni
 proprie. Il nome del generico omette la specifica del livello; il nome dello
 specifico la include. Non introdurre precedenza o fallback automatici fra
 i due: la scelta del modello resta esplicita. Entrambi possono coesistere;
 la pubblicazione e l'archiviazione di uno non devono sostituire l'altro.
 Adeguare la chiave del vincolo di pubblicazione includendo lo scope del
-livello professionale, senza usarne il nome o inventare varianti univoche.
+livello professionale e la lingua, senza usarne il nome o inventare varianti
+univoche. Tipo documento, percorso di categorizzazione, livello e lingua sono
+sufficienti a individuare lo scope funzionale del modello.
 
 Acceptance del prossimo incremento: un manager ACE apre Contesti, seleziona
 una tab, vede solo i modelli autorizzati di quel contesto, crea una bozza senza

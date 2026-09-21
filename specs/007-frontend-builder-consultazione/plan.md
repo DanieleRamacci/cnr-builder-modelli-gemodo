@@ -6,6 +6,20 @@
 
 ## Summary
 
+Incremento categorizzazione modello T041-T043: la foglia discovery espone
+`livelli_possibili` e `lingue_possibili`; GEMODO non replica queste anagrafiche,
+ma persiste sul modello il percorso selezionato, il livello professionale
+facoltativo e la lingua obbligatoria. Codice e nome sono generati dal backend,
+la variante resta `STANDARD`, e lingua/livello partecipano allo scope della
+versione pubblicata corrente.
+
+Riallineamento 2026-09-21: non viene introdotto `famiglia_modello_id`.
+Edizioni linguistiche collegate condividono integrazione, tipo, percorso e
+livello, ma hanno modello/versioni indipendenti. Il catalogo senza filtro lingua
+le restituisce insieme. La generazione resta singola per `modello_versione_id` e
+il flag `bando_inglese` viene ritirato; l'obbligatorieta' deriva dal contratto
+della versione selezionata.
+
 Incremento pulizia: DELETE modello imposta stato ELIMINATO sotto lock tipo,
 registra audit e archivia versioni pubblicate. Non cancella file/versioni.
 Migrazione 0015 rimuove solo UUID demo noti su DB senza integrazioni,
@@ -36,6 +50,30 @@ documento serializza le transizioni/pubblicazioni dello stesso tipo.
 UI Angular mantiene /builder come accesso Contesti e /builder/:id come
 creazione, query param contesto per selezione/ritorno. Conferma tramite dialog
 accessibile; richieste concorrenti UI disabilitate, errore distinto da lista vuota.
+
+Incremento T041-T043: migration `0016` aggiunge a `modello_documento`
+`lingua` (`IT`/`EN`, obbligatoria, default di compatibilita' `IT`) e
+`livello_professionale` (nullable, `null` = tutti i livelli della foglia).
+Non vengono create tabelle per profili, livelli o lingue. Il backend valida la
+selezione contro i metadati della foglia discovery e conserva tutti i campi
+della foglia nella versione, senza filtrarli per lingua o livello.
+
+Il codice e' generato una volta dal backend nel formato leggibile
+`<tipo>-<percorso>-<livello|tutti>-<lingua>-<uuid32>`, normalizzato e troncato
+a 128 caratteri preservando l'UUID completo del modello. Il nome usa le descrizioni
+del percorso, il livello quando specifico, Italiano/Inglese e la data UTC
+`YYYY-MM-DD`, preservando il suffisso descrittivo entro 255 caratteri. La
+variante e' assegnata a `STANDARD` e non e' un input del client.
+
+La pubblicazione serializzata continua a usare il lock sul tipo documento, ma
+la ricerca della versione corrente include percorso, variante, lingua e livello
+(con confronto esplicito di `null`). Il catalogo operativo espone lingua e
+livello e accetta filtri omonimi, cosi' la categorizzazione ricevuta e la
+combinazione scelta individuano il modello senza cataloghi interni duplicati.
+La ricerca senza `lingua` non applica un default implicito e restituisce tutte
+le lingue pubblicate per gli altri filtri. La UI puo' creare un'edizione
+linguistica collegata precompilando gli attributi condivisi; non persiste un ID
+di famiglia.
 
 Correzione T038: la creazione invia integrazione_id e mantiene il riferimento
 locale tipo_documento scoped alla sorgente. Il riferimento contiene solo identita'
@@ -73,8 +111,9 @@ dopo i riallineamenti T081-T083. Chiuderlo (verificare e pubblicare) e'
 Foundational per questo incremento, prima di generare un client tipizzato da
 un contratto potenzialmente disallineato.
 
-**Storage**: N/A lato frontend (nessuno stato server-side proprietario; la
-sorgente di verita' resta sempre il backend).
+**Storage**: nessuno stato proprietario nel frontend. Il backend persiste solo
+la selezione del modello (`percorso_categorizzazione`, `lingua`,
+`livello_professionale`); la discovery resta sorgente delle anagrafiche.
 
 **Testing**: Vitest (default Angular 21 per gli unit test dei componenti/
 servizi) + Playwright per test e2e reali contro il backend reale (Postgres +
@@ -116,6 +155,8 @@ oltre menzionare che l'enforcement resta sempre lato backend.
   (vedi sopra, gap `builder-modelli-api.openapi.yaml` non pubblicato) da
   chiudere prima della generazione del client tipizzato. Tutti gli altri
   contratti necessari a questo MVP sono gia' pubblicati e verificati.
+  Per T041-T043 vanno aggiornati prima del runtime il contratto discovery,
+  builder e catalogo con lingue/livelli e relativi esempi.
 - **III. Configurable Document Models**: N/A per questo incremento (nessuna
   logica di documento hard-codata nel frontend; la struttura viene letta
   dalla discovery live).
@@ -180,21 +221,16 @@ generazioni/` resta un placeholder vuoto: non viene toccato in questo
 incremento. Nessuna cartella `builder/editor` o simile viene creata - l'MVP
 usa solo le schermate di navigazione/creazione, non un editor.
 
-## Prossimo incremento da pianificare: Contesti
+## Incremento pianificato: categorizzazione lingua e livello
 
-Richiesta di collaudo 2026-09-18 tracciata nelle Clarifications della spec e
-nei task T039-T043. Non modifica il perimetro del minimo US5 gia' implementato.
-Prima del runtime occorrono contratto API di elenco modelli (incluse bozze)
-autorizzato per contesto, generazione backend di identificativi/nomi e policy
-di lingua/varianti, con adeguamento schema se necessario. Il catalogo operativo
-dei soli modelli pubblicati non sostituisce questa lista di gestione.
-Livello chiarito come professionale facoltativo: T043 deve verificare se e'
-attributo o nodo discovery, contratto campi comune e copertura generica/specifica.
-Il semplice menu frontend non risolve selezione intermedia e matching runtime.
-Generico e specifico restano modelli distinti selezionati esplicitamente,
-senza fallback; scope livello partecipa ai vincoli di pubblicazione per
-evitare che pubblicarne uno archivi l'altro. Nome generico senza livello,
-nome specifico con livello; codice e versioni indipendenti.
+La foglia discovery e' l'unica sorgente di profilo, livelli e lingue ammesse.
+`livelli_possibili` resta facoltativo: quando assente il modello e' generico;
+quando presente la UI offre "Tutti i livelli" e i valori dichiarati.
+`lingue_possibili` e' obbligatorio e contiene uno o entrambi i valori `IT`/`EN`.
+Generico/specifico e IT/EN sono modelli distinti, senza precedenza o fallback.
+Tutti conservano lo stesso contratto campi della foglia; contenuto e versioni
+restano indipendenti. Il contratto builder non accetta piu' codice, nome o
+variante dal client.
 
 ## Complexity Tracking
 
