@@ -500,6 +500,110 @@ def test_publication_scope_keeps_language_and_level_independent(builder_client, 
 
 
 @pytest.mark.integration
+def test_derived_english_edition_is_cloned_nested_and_level_fallback_is_explicit(
+    builder_client, db_engine,
+):
+    generic_it = _crea_modello(builder_client, codice="generic-parent", lingua="IT")
+    source_version = _crea_versione(builder_client, generic_it["id"])
+
+    derived_response = builder_client.post(
+        f"/api/v1/builder/modelli/{generic_it['id']}/edizioni-derivate",
+        json={"lingua": "EN"},
+    )
+    assert derived_response.status_code == 201, derived_response.text
+    generic_en = derived_response.json()
+    assert generic_en["lingua"] == "EN"
+    assert generic_en["livello_professionale"] is None
+    assert generic_en["derivato_da_modello_id"] == generic_it["id"]
+    assert generic_en["versioni"][0]["stato"] == "BOZZA"
+
+    with Session(db_engine) as db:
+        copied_fields = db.execute(sa.text(
+            "SELECT codice, lingua, obbligatorio, ordine FROM campo_modello "
+            "WHERE modello_versione_id = :id ORDER BY ordine"
+        ), {"id": generic_en["versioni"][0]["id"]}).all()
+        source_fields = db.execute(sa.text(
+            "SELECT codice, lingua, obbligatorio, ordine FROM campo_modello "
+            "WHERE modello_versione_id = :id ORDER BY ordine"
+        ), {"id": source_version["id"]}).all()
+        audit_count = db.scalar(sa.text(
+            "SELECT count(*) FROM audit_evento_modello "
+            "WHERE modello_documento_id = :id AND tipo_evento = 'MODELLO_DERIVATO_CREATO'"
+        ), {"id": generic_en["id"]})
+    assert copied_fields == source_fields
+    assert audit_count == 1
+
+    same_language = builder_client.post(
+        f"/api/v1/builder/modelli/{generic_it['id']}/edizioni-derivate",
+        json={"lingua": "IT"},
+    )
+    assert same_language.status_code == 400
+
+    _pubblica_fino_in_fondo(builder_client, generic_it["id"], source_version["id"])
+    _pubblica_fino_in_fondo(
+        builder_client, generic_en["id"], generic_en["versioni"][0]["id"]
+    )
+
+    specific_it = _crea_modello(
+        builder_client, codice="specific-vi", lingua="IT", livello_professionale="VI"
+    )
+    specific_version = _crea_versione(builder_client, specific_it["id"])
+    _pubblica_fino_in_fondo(builder_client, specific_it["id"], specific_version["id"])
+
+    base_url = "/api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=RICERCATORE"
+    exact = builder_client.get(base_url + "&livello_professionale=VI")
+    assert exact.status_code == 200, exact.text
+    assert exact.json()["fallback_applicato"] is False
+    assert exact.json()["livello_risolto"] == "VI"
+    assert specific_it["public_id"] in [item["modello_id"] for item in exact.json()["modelli"]]
+    assert all(item["livello_professionale"] == "VI" for item in exact.json()["modelli"])
+
+    fallback = builder_client.get(base_url + "&livello_professionale=V")
+    assert fallback.status_code == 200, fallback.text
+    assert fallback.json()["fallback_applicato"] is True
+    assert fallback.json()["livello_richiesto"] == "V"
+    assert fallback.json()["livello_risolto"] is None
+    parent = next(
+        item for item in fallback.json()["modelli"]
+        if item["modello_id"] == generic_it["public_id"]
+    )
+    assert parent["lingua"] == "IT"
+    assert parent["livello_professionale"] is None
+    assert [edition["lingua"] for edition in parent["edizioni_derivate"]] == ["EN"]
+
+    english_fallback = builder_client.get(base_url + "&livello_professionale=V&lingua=EN")
+    assert english_fallback.status_code == 200, english_fallback.text
+    english = next(
+        item for item in english_fallback.json()["modelli"]
+        if item["modello_id"] == generic_en["public_id"]
+    )
+    assert english["lingua"] == "EN"
+    assert english["edizioni_derivate"] == []
+
+    duplicate = builder_client.post(
+        f"/api/v1/builder/modelli/{generic_it['id']}/edizioni-derivate",
+        json={"lingua": "EN"},
+    )
+    assert duplicate.status_code == 409
+
+
+@pytest.mark.integration
+def test_derived_edition_requires_permission_on_source_context(builder_client, monkeypatch):
+    source = _crea_modello(builder_client, codice="derived-denied", lingua="IT")
+    _crea_versione(builder_client, source["id"])
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT", "altro")
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT_ROLES", "ROLE_MANAGER#altro")
+
+    response = builder_client.post(
+        f"/api/v1/builder/modelli/{source['id']}/edizioni-derivate",
+        json={"lingua": "EN"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["codice"] == "ACCESSO_NON_AUTORIZZATO"
+
+
+@pytest.mark.integration
 def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder_client):
     modello = _crea_modello(builder_client, codice="pytest-modello-e2e")
     versione = _crea_versione(builder_client, modello["id"])

@@ -66,20 +66,15 @@
                 <td>
                   <strong>{{ model.nome }}</strong>
                   <div class="small">{{ model.codice }}</div>
-                  <a
-                    class="btn btn-sm btn-outline-primary mt-2 me-2"
-                    [class.disabled]="saving()"
-                    [routerLink]="['/builder', model.integrazione_id]"
-                    [queryParams]="{
-                      contesto: selected(),
-                      tipo: model.codice_tipo_documento,
-                      percorso: model.percorso_categorizzazione.join('|'),
-                      lingua: model.lingua === 'IT' ? 'EN' : 'IT',
-                      livello: model.livello_professionale
-                    }"
-                  >
-                    <it-icon name="plus" /> Crea edizione collegata
-                  </a>
+                  @if (canCreateEnglishEdition(model)) {
+                    <button
+                      class="btn btn-sm btn-outline-primary mt-2 me-2"
+                      [disabled]="saving()"
+                      (click)="requestDerived(model, derivation)"
+                    >
+                      <it-icon name="plus" /> Crea versione inglese
+                    </button>
+                  }
                   <button
                     class="btn btn-sm btn-outline-danger mt-2"
                     title="Elimina modello"
@@ -168,6 +163,22 @@
         Annulla
       </button>
       <button class="btn btn-primary" (click)="confirm(confirmation)">Conferma</button>
+    </div>
+  }
+</dialog>
+<dialog #derivation aria-labelledby="derivation-title" (cancel)="deriving.set(null)">
+  @if (deriving(); as model) {
+    <h2 id="derivation-title" class="h4">Creare la versione inglese?</h2>
+    <p>{{ model.nome }}</p>
+    <p>
+      Viene creato un modello collegato con una nuova versione in bozza. Struttura e campi sono
+      copiati dalla versione piu recente; il modello italiano non viene modificato.
+    </p>
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" (click)="deriving.set(null); derivation.close()">
+        Annulla
+      </button>
+      <button class="btn btn-primary" (click)="confirmDerived(derivation)">Crea</button>
     </div>
   }
 </dialog>

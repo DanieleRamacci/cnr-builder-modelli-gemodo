@@ -132,9 +132,11 @@ Vedi `010`'s Clarifications sessione "bis" e la User Story 5 li' aggiunta.
 - Q: La variante richiede una selezione distinta da lingua e livello? -> A: No.
   In questo incremento resta internamente STANDARD e non compare nel form.
 - Q: Serve un `famiglia_modello_id` per collegare italiano e inglese? -> A: No.
-  Sono modelli separati ma risultano collegati implicitamente quando condividono
-  integrazione, tipo documento, percorso di categorizzazione e livello; la lingua
-  distingue le edizioni.
+  Sono modelli separati e il derivato registra soltanto il riferimento diretto al
+  modello di origine (`derivato_da_modello_id`). Integrazione, tipo documento,
+  percorso di categorizzazione e livello restano invariati; la lingua distingue
+  le edizioni. Modelli creati separatamente con gli stessi attributi non vengono
+  collegati automaticamente.
 - Q: Come richiede GEBAN entrambe le edizioni? -> A: La ricerca catalogo senza
   filtro lingua restituisce tutte le versioni pubblicate corrispondenti. GEBAN
   effettua una chiamata di generazione per ciascuna `modello_versione_id`, con i
@@ -204,8 +206,10 @@ Dalla scheda di un modello il gestore puo' avviare la creazione di un'edizione
 collegata in un'altra lingua. Il form riusa integrazione, tipo, percorso e livello,
 permette di scegliere soltanto una lingua ancora disponibile e crea un nuovo
 modello con identificativi e versioni propri. Il collegamento non richiede una
-nuova entita': deriva dagli attributi condivisi. La copia non modifica il modello
-origine e non pubblica automaticamente la nuova edizione.
+famiglia: il derivato registra il riferimento diretto al modello origine e copia
+in una nuova versione BOZZA struttura e campi della versione piu' recente del
+padre. La copia non modifica il modello origine e non pubblica automaticamente
+la nuova edizione.
 
 Chiarimento confermato 2026-09-18: "livello" indica il livello professionale,
 facoltativo e distinto dalla lingua. Il menu deve offrire "Tutti i livelli"
@@ -226,8 +230,8 @@ i livelli come rami separati, deve esporre anche una foglia aggregata esplicita
 per consentire il modello generico "Tutti i livelli".
 Generico e specifico sono modelli distinti, con identificativi e versioni
 proprie. Il nome del generico omette la specifica del livello; il nome dello
-specifico la include. Non introdurre precedenza o fallback automatici fra
-i due: la scelta del modello resta esplicita. Entrambi possono coesistere;
+specifico la include. Il catalogo applica la precedenza esatta e il solo fallback
+di livello definito in FR-024. Entrambi possono coesistere;
 la pubblicazione e l'archiviazione di uno non devono sostituire l'altro.
 Adeguare la chiave del vincolo di pubblicazione includendo lo scope del
 livello professionale e la lingua, senza usarne il nome o inventare varianti
@@ -468,7 +472,7 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
 - **FR-007**: GEBAN MUST NOT usare questo frontend per compilare dati di processo.
 - **FR-008**: L'interfaccia MUST mostrare o abilitare azioni coerenti con ruolo, stato della risorsa e contesto operativo, fermo restando che l'autorizzazione definitiva e' applicata dal servizio backend.
 - **FR-009**: L'interfaccia MUST gestire i workflow di versione modello `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO` e `SOSPESO` coerentemente con le spec builder e sicurezza.
-- **FR-010**: L'interfaccia MUST impedire modifica diretta di contenuti, campi e sezioni di versioni pubblicate e deve rendere chiara la creazione o modifica di bozze derivate. Nell'incremento futuro con editor completo, la creazione di un modello derivato (schermata 3a) MUST ereditare categorizzazione, sezioni, testi e segnaposto del padre senza modificarlo, lasciando modificabili solo gli attributi di derivazione effettivamente disponibili; fino ad allora resta valido il sottoinsieme gia' implementato in "Crea edizione collegata" (T067).
+- **FR-010**: L'interfaccia MUST impedire modifica diretta di contenuti, campi e sezioni di versioni pubblicate e deve rendere chiara la creazione o modifica di bozze derivate. Nell'incremento corrente, "Crea versione inglese" MUST creare un modello indipendente collegato direttamente al padre e una versione BOZZA che copia struttura e campi della versione piu' recente del padre; la lingua e' l'unico attributo modificato. Nell'incremento futuro con editor completo, la stessa operazione MUST copiare anche sezioni, testi e segnaposto disponibili, senza modificare il padre.
 - **FR-011**: L'interfaccia MUST supportare la composizione di sezioni con contenuto strutturato controllato e placeholder selezionabili tra quelli disponibili per la versione modello.
 - **FR-012**: L'interfaccia MUST mostrare blocchi di pubblicazione relativi a campi richiesti, placeholder, schema dati, sezioni e validazioni di modello.
 - **FR-013**: L'interfaccia MUST rendere evidente quando una generazione e' bozza o ufficiale.
@@ -497,7 +501,15 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
 - **FR-025**: La risposta di `GET /catalogo/modelli` MUST annidare le edizioni
   collegate (oggi solo per lingua) dentro il modello che le referenzia
   (`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`), non restituirle come righe piatte
-  indipendenti.
+  indipendenti. La risposta MUST indicare se il risultato deriva dal fallback e
+  distinguere il livello richiesto dal livello effettivamente risolto.
+- **FR-027**: `POST /builder/modelli/{modelloId}/edizioni-derivate` MUST
+  accettare la lingua destinazione, verificare autorizzazione, disponibilita'
+  discovery e assenza di un derivato equivalente, creare un modello con
+  identificativi propri e `derivato_da_modello_id` valorizzato, quindi clonare
+  struttura e campi della versione piu' recente del padre in una nuova versione
+  BOZZA. L'operazione MUST essere atomica e auditata e MUST NOT pubblicare il
+  derivato ne' modificare il padre.
 - **FR-026** (2026-09-21, chiarito su richiesta esplicita dell'utente - prima
   implicito solo nelle Clarifications, non vincolante): quando una schermata
   gia' presente in `design_handoff_modellario/` (screens.json) viene

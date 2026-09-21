@@ -46,6 +46,7 @@ class ModelloCatalogoSchema(BaseModel):
     data_inizio_validita: date | None = None
     data_fine_validita: date | None = None
     pubblicato_at: datetime | None = None
+    edizioni_derivate: list[ModelloCatalogoSchema] = Field(default_factory=list)
 
 
 class ModelloSearchResponse(BaseModel):
@@ -56,6 +57,9 @@ class ModelloSearchResponse(BaseModel):
                 "profilo": "COLLABORATORE_TECNICO_ER",
                 "codice_tipologia": "TD",
                 "modalita": "OPERATIVA",
+                "fallback_applicato": False,
+                "livello_richiesto": "VI",
+                "livello_risolto": "VI",
                 "modelli": [
                     {
                         "modello_id": 1,
@@ -80,6 +84,9 @@ class ModelloSearchResponse(BaseModel):
     profilo: str | None = None
     codice_tipologia: str | None = None
     modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA
+    fallback_applicato: bool = False
+    livello_richiesto: str | None = None
+    livello_risolto: str | None = None
     modelli: list[ModelloCatalogoSchema]
 
 

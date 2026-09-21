@@ -48,6 +48,13 @@ class NodoDiscovery(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def normalizza_default(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "lingue" in value:
+            value = dict(value)
+            alias = tuple("EN" if lingua == "ENG" else lingua for lingua in value.pop("lingue"))
+            canoniche = value.get("lingue_possibili")
+            if canoniche is not None and tuple(canoniche) != alias:
+                raise ValueError("Lingue possibili discordanti")
+            value["lingue_possibili"] = alias
         if isinstance(value, dict) and "figli" in value and "campi" in value:
             raise ValueError("Figli e campi non possono essere entrambi presenti")
         if isinstance(value, dict) and "livelloBase" in value:

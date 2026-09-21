@@ -121,8 +121,8 @@ restano su Swagger fino a un incremento futuro.
 - Il catalogo senza filtro `lingua` restituisce tutte le edizioni pubblicate
   che condividono categorizzazione e livello; `lingua=IT|EN` restringe il
   risultato.
-- Non esiste `famiglia_modello_id`: "Crea edizione collegata" precompila
-  integrazione, tipo, percorso e livello e crea un nuovo modello autonomo.
+- Non esiste `famiglia_modello_id`: "Crea versione inglese" crea un modello
+  autonomo con riferimento diretto al padre e clona l'ultima versione in BOZZA.
 - `POST /documenti/valida` e `POST /documenti/genera` non accettano piu'
   `bando_inglese`; una chiamata usa una sola `modello_versione_id` e produce
   un solo documento.
@@ -161,4 +161,88 @@ pytest tests/catalog/test_catalogo_modelli_api.py tests/catalog/test_campi_richi
 
 pytest tests/catalog/test_catalog_service_integration.py::test_catalog_service_aggregates_duplicate_active_document_types
 1 passed (PostgreSQL reale)
+```
+
+## Fallback livello ed edizione inglese derivata (2026-09-21)
+
+Scenario verificato su PostgreSQL temporaneo reale:
+
+1. creato e pubblicato `BANDO_CONCORSO / TD / RICERCATORE / tutti / IT`;
+2. creata dalla dashboard/API l'edizione derivata EN, con struttura e campi
+   clonati in versione BOZZA, poi pubblicata separatamente;
+3. creato e pubblicato `BANDO_CONCORSO / TD / RICERCATORE / VI / IT`;
+4. verificato match esatto per VI e fallback al generico per V.
+
+Creazione edizione inglese:
+
+```http
+POST /api/v1/builder/modelli/{modelloIdItaliano}/edizioni-derivate
+Content-Type: application/json
+
+{"lingua":"EN"}
+```
+
+La risposta `201` contiene un modello e una versione propri:
+
+```json
+{
+  "id": "<uuid-modello-inglese>",
+  "public_id": 24,
+  "lingua": "EN",
+  "livello_professionale": null,
+  "derivato_da_modello_id": "<uuid-modello-italiano>",
+  "versioni": [{"public_id": 24, "numero_versione": 1, "stato": "BOZZA"}]
+}
+```
+
+Richiesta esatta, quando esiste CTER livello VI:
+
+```http
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=RICERCATORE&codice_tipologia=TD&livello_professionale=VI
+```
+
+```json
+{
+  "fallback_applicato": false,
+  "livello_richiesto": "VI",
+  "livello_risolto": "VI",
+  "modelli": [{"lingua": "IT", "livello_professionale": "VI", "edizioni_derivate": []}]
+}
+```
+
+Richiesta livello V senza modello specifico:
+
+```http
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&profilo=RICERCATORE&codice_tipologia=TD&livello_professionale=V
+```
+
+```json
+{
+  "fallback_applicato": true,
+  "livello_richiesto": "V",
+  "livello_risolto": null,
+  "modelli": [
+    {
+      "lingua": "IT",
+      "livello_professionale": null,
+      "edizioni_derivate": [
+        {"lingua": "EN", "livello_professionale": null, "modello_versione_id": 24}
+      ]
+    }
+  ]
+}
+```
+
+Ogni `modello_versione_id` resta generabile con una chiamata distinta a
+`POST /api/v1/documenti/genera`. Il filtro `lingua=EN` restituisce l'edizione
+EN al primo livello, senza il padre IT, e non applica fallback di lingua.
+
+Verifiche eseguite:
+
+```text
+backend non-E2E: 314 passed, 12 E2E esclusi
+contratti e documentazione API: 47 passed
+frontend unit: 52 passed
+frontend lint: passato
+frontend build produzione: passato (warning di budget/CommonJS preesistenti)
 ```

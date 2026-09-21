@@ -58,8 +58,7 @@ class CatalogService:
             # not the same 400 as a nonexistent/inactive tipo documento.
             raise AuthorizationError()
 
-        versions = repository.list_published_model_versions(
-            self.db,
+        query = dict(
             codice_tipo_documento=tipo_documento,
             tipo_documento_ids=[tipo.id for tipo in tipi_autorizzati],
             codice_categoria=categoria,
@@ -71,12 +70,24 @@ class CatalogService:
             pubblicato_da=pubblicato_da,
             pubblicato_a=pubblicato_a,
         )
+        versions = repository.list_published_model_versions(self.db, **query)
+        fallback_applicato = False
+        if livello_professionale is not None and not versions:
+            query["livello_professionale"] = None
+            query["solo_livello_generico"] = True
+            versions = repository.list_published_model_versions(self.db, **query)
+            fallback_applicato = bool(versions)
         return ModelloSearchResponse(
             tipo_documento=tipo_documento,
             profilo=categoria,
             codice_tipologia=codice_tipologia,
             modalita=modalita,
-            modelli=[_modello_catalogo_schema(version) for version in versions],
+            fallback_applicato=fallback_applicato,
+            livello_richiesto=livello_professionale,
+            livello_risolto=(
+                None if fallback_applicato or not versions else livello_professionale
+            ),
+            modelli=_raggruppa_edizioni(versions),
         )
 
     def get_campi_richiesti(self, modello_versione_id: int, principal: PrincipalGEMODO) -> CampiRichiestiResponse:
@@ -139,6 +150,19 @@ def _modello_catalogo_schema(version: ModelloDocumentoVersione) -> ModelloCatalo
         data_fine_validita=_date_only(version.data_fine_validita),
         pubblicato_at=version.pubblicato_at or version.pubblicato_il,
     )
+
+
+def _raggruppa_edizioni(versions: list[ModelloDocumentoVersione]) -> list[ModelloCatalogoSchema]:
+    schemi = {version.modello.id: _modello_catalogo_schema(version) for version in versions}
+    radici: list[ModelloCatalogoSchema] = []
+    for version in versions:
+        schema = schemi[version.modello.id]
+        origine_id = version.modello.derivato_da_modello_id
+        if origine_id is not None and origine_id in schemi:
+            schemi[origine_id].edizioni_derivate.append(schema)
+        else:
+            radici.append(schema)
+    return radici
 
 
 def _campo_richiesto_schema(field) -> CampoRichiestoSchema:

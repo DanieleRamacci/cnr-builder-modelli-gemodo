@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, Query
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
     CreaModelloRequest,
+    CreaEdizioneDerivataRequest,
     CreaVersioneRequest,
     IntegrazioneVisibile,
     ModelloResponse,
@@ -43,11 +44,9 @@ def lista_modelli(
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ):
-    return [ModelloGestioneResponse(
-        **_modello_response(model).model_dump(), codice_contesto=model.tipo_documento.codice_contesto,
-        integrazione_id=model.tipo_documento.integrazione_id, created_at=model.created_at,
-        versioni=[_versione_response(v) for v in sorted(model.versioni, key=lambda v: v.versione, reverse=True)],
-    ) for model in service.lista(principal, codice_contesto, offset=offset, limit=limit)]
+    return [_modello_gestione_response(model) for model in service.lista(
+        principal, codice_contesto, offset=offset, limit=limit
+    )]
 
 
 def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
@@ -63,6 +62,19 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         variante=modello.variante,
         lingua=modello.lingua,
         livello_professionale=modello.livello_professionale,
+        derivato_da_modello_id=str(modello.derivato_da_modello_id) if modello.derivato_da_modello_id else None,
+    )
+
+
+def _modello_gestione_response(modello: ModelloDocumento) -> ModelloGestioneResponse:
+    return ModelloGestioneResponse(
+        **_modello_response(modello).model_dump(),
+        codice_contesto=modello.tipo_documento.codice_contesto,
+        integrazione_id=modello.tipo_documento.integrazione_id,
+        created_at=modello.created_at,
+        versioni=[_versione_response(v) for v in sorted(
+            modello.versioni, key=lambda v: v.versione, reverse=True
+        )],
     )
 
 
@@ -134,6 +146,22 @@ def elimina_modello(
     service: BuilderService = Depends(get_builder_service),
 ):
     service.elimina(principal, modelloId)
+
+
+@router.post(
+    "/modelli/{modelloId}/edizioni-derivate",
+    response_model=ModelloGestioneResponse,
+    status_code=201,
+)
+def crea_edizione_derivata(
+    modelloId: uuid.UUID,
+    request: CreaEdizioneDerivataRequest,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> ModelloGestioneResponse:
+    return _modello_gestione_response(
+        service.crea_edizione_derivata(principal, modelloId, request)
+    )
 
 
 @router.post("/modelli/{modelloId}/versioni", response_model=VersioneResponse, status_code=201)

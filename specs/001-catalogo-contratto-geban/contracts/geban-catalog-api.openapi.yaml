@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.8.0
+  version: 0.9.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -56,7 +56,10 @@ paths:
         - name: livello_professionale
           in: query
           required: false
-          description: Livello specifico; omesso per includere anche modelli generici.
+          description: >
+            Livello specifico. Se il match esatto non produce risultati, il
+            servizio cerca esclusivamente modelli con livello null della stessa
+            combinazione; lingua e percorso non ricevono fallback.
           schema:
             type: string
         - name: modalita
@@ -253,7 +256,7 @@ components:
   schemas:
     ModelloSearchResponse:
       type: object
-      required: [tipo_documento, modelli]
+      required: [tipo_documento, fallback_applicato, livello_richiesto, livello_risolto, modelli]
       properties:
         tipo_documento:
           type: string
@@ -266,13 +269,21 @@ components:
         modalita:
           type: string
           enum: [OPERATIVA, STORICO]
+        fallback_applicato:
+          type: boolean
+        livello_richiesto:
+          type: string
+          nullable: true
+        livello_risolto:
+          type: string
+          nullable: true
         modelli:
           type: array
           items:
             $ref: "#/components/schemas/ModelloCatalogo"
     ModelloCatalogo:
       type: object
-      required: [modello_id, modello_versione_id, codice, descrizione, variante, lingua, livello_professionale, versione, stato]
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, lingua, livello_professionale, versione, stato, edizioni_derivate]
       properties:
         modello_id:
           type: integer
@@ -309,6 +320,30 @@ components:
           type: string
           format: date-time
           nullable: true
+        edizioni_derivate:
+          type: array
+          description: >
+            Edizioni pubblicate create esplicitamente da questo modello. Se il
+            filtro lingua seleziona solo il derivato, il derivato resta al primo
+            livello per rispettare il filtro.
+          items:
+            $ref: "#/components/schemas/EdizioneDerivataCatalogo"
+    EdizioneDerivataCatalogo:
+      type: object
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, lingua, livello_professionale, versione, stato]
+      properties:
+        modello_id: {type: integer, format: int64}
+        modello_versione_id: {type: integer, format: int64}
+        codice: {type: string}
+        descrizione: {type: string}
+        variante: {type: string}
+        lingua: {type: string, enum: [IT, EN]}
+        livello_professionale: {type: string, nullable: true}
+        versione: {type: integer}
+        stato: {type: string, enum: [PUBBLICATO]}
+        data_inizio_validita: {type: string, format: date, nullable: true}
+        data_fine_validita: {type: string, format: date, nullable: true}
+        pubblicato_at: {type: string, format: date-time, nullable: true}
     CampiRichiestiResponse:
       type: object
       required: [modello_versione_id, campi, schema]

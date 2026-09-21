@@ -25,6 +25,7 @@ const model = {
   variante: 'STANDARD',
   lingua: 'IT',
   livello_professionale: 'VI',
+  derivato_da_modello_id: null,
   codice_contesto: 'geban',
   integrazione_id: 'source',
   created_at: '2026-09-18T12:00:00Z',
@@ -36,7 +37,7 @@ describe('context models and lifecycle', () => {
     const { fixture, http } = setup(['geban']);
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
     fixture.detectChanges();
-    const dialog = fixture.nativeElement.querySelectorAll('dialog')[1] as HTMLDialogElement;
+    const dialog = fixture.nativeElement.querySelectorAll('dialog')[2] as HTMLDialogElement;
     dialog.showModal = vi.fn();
     dialog.close = vi.fn();
     fixture.nativeElement.querySelector('button[aria-label="Elimina modello"]').click();
@@ -82,10 +83,7 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('Modello CTER');
     expect(fixture.nativeElement.textContent).toContain('Italiano');
     expect(fixture.nativeElement.textContent).toContain('VI');
-    const linked = Array.from(
-      fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>,
-    ).find((a) => a.textContent?.includes('Crea edizione collegata'))!;
-    expect(linked.getAttribute('href')).toContain('lingua=EN');
+    expect(fixture.nativeElement.textContent).toContain('Crea versione inglese');
     const tabs = fixture.nativeElement.querySelectorAll('nav button');
     tabs[1].click();
     fixture.detectChanges();
@@ -95,6 +93,36 @@ describe('context models and lifecycle', () => {
     next.flush([]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
+    http.verify();
+  });
+  it('creates the English derived model only after confirmation', () => {
+    const { fixture, http } = setup(['geban']);
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelectorAll('dialog')[1] as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find((button) => button.textContent?.includes('Crea versione inglese'))!
+      .click();
+    fixture.detectChanges();
+    expect(dialog.showModal).toHaveBeenCalled();
+    http.expectNone((request) => request.method === 'POST');
+    Array.from(dialog.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'Crea')!
+      .click();
+    const request = http.expectOne('/api/v1/builder/modelli/model/edizioni-derivate');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ lingua: 'EN' });
+    request.flush({ ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' });
+    http
+      .expectOne((candidate) => candidate.url === '/api/v1/builder/modelli')
+      .flush([
+        model,
+        { ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' },
+      ]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent.match(/Crea versione inglese/g)?.length ?? 0).toBe(0);
     http.verify();
   });
   it('confirms each transition and displays state only after the backend reload', () => {

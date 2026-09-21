@@ -54,6 +54,13 @@ class ModelloResponse(BaseModel):
     variante: str
     lingua: Literal["IT", "EN"]
     livello_professionale: str | None
+    derivato_da_modello_id: str | None = None
+
+
+class CreaEdizioneDerivataRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    lingua: Literal["IT", "EN"]
 
 
 class CampoVersioneRequest(BaseModel):

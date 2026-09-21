@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Builder Modelli
-  version: 0.5.0
+  version: 0.6.0
   description: >
     Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
     integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
@@ -123,6 +123,35 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /modelli/{modelloId}/edizioni-derivate:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+    post:
+      operationId: creaEdizioneDerivata
+      summary: Crea un modello collegato in un'altra lingua clonando l'ultima versione
+      description: >
+        Mantiene tipo, percorso, variante e livello del padre. Crea atomicamente
+        un modello indipendente e la sua versione 1 BOZZA copiando formato,
+        struttura e campi richiesti dall'ultima versione del padre. Non pubblica
+        il derivato e non modifica il padre.
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del modello padre)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreaEdizioneDerivataRequest'}
+            example: {lingua: EN}
+      responses:
+        '201':
+          description: Modello derivato e versione 1 BOZZA creati
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ModelloGestione'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /modelli/{modelloId}/versioni:
     parameters:
       - {$ref: '#/components/parameters/ModelloId'}
@@ -247,6 +276,7 @@ components:
         variante: {type: string}
         lingua: {type: string, enum: [IT, EN]}
         livello_professionale: {type: string, nullable: true}
+        derivato_da_modello_id: {type: string, format: uuid, nullable: true}
         codice_contesto: {type: string}
         integrazione_id: {type: string, format: uuid, nullable: true}
         created_at: {type: string, format: date-time}
@@ -278,6 +308,12 @@ components:
           type: string
           nullable: true
           description: Valore dichiarato in livelli_possibili; null significa tutti i livelli della foglia.
+    CreaEdizioneDerivataRequest:
+      type: object
+      additionalProperties: false
+      required: [lingua]
+      properties:
+        lingua: {type: string, enum: [IT, EN]}
     Modello:
       type: object
       additionalProperties: false
@@ -294,6 +330,7 @@ components:
         variante: {type: string}
         lingua: {type: string, enum: [IT, EN]}
         livello_professionale: {type: string, nullable: true}
+        derivato_da_modello_id: {type: string, format: uuid, nullable: true}
     CreaVersioneRequest:
       type: object
       additionalProperties: false

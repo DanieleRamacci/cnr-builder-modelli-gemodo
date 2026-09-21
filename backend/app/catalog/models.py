@@ -60,12 +60,21 @@ class ModelloDocumento(Base):
     variante: Mapped[str] = mapped_column(String(64), nullable=False, default="STANDARD")
     lingua: Mapped[str] = mapped_column(String(2), nullable=False, default="IT")
     livello_professionale: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    derivato_da_modello_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("modello_documento.id", ondelete="SET NULL"), nullable=True
+    )
     stato: Mapped[str] = mapped_column(String(32), nullable=False, default="BOZZA")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     tipo_documento: Mapped[TipoDocumento] = relationship(back_populates="modelli")
     versioni: Mapped[list[ModelloDocumentoVersione]] = relationship(back_populates="modello")
+    modello_origine: Mapped[ModelloDocumento | None] = relationship(
+        remote_side=[id], foreign_keys=[derivato_da_modello_id], back_populates="edizioni_derivate"
+    )
+    edizioni_derivate: Mapped[list[ModelloDocumento]] = relationship(
+        foreign_keys=[derivato_da_modello_id], back_populates="modello_origine"
+    )
 
 
 class ModelloDocumentoVersione(Base):

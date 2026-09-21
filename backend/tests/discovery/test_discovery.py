@@ -53,6 +53,27 @@ def test_recursive_paths_and_alias_at_three_levels(payload):
     assert nodo.campi[0].validazione == {"minLength": 1}
 
 
+def test_geban_languages_alias_is_normalized(payload):
+    leaf = payload["BANDO_CONCORSO"]["nodi"][0]["figli"][0]
+    leaf["lingue"] = ["IT", "ENG"]
+    leaf.pop("lingue_possibili")
+
+    nodo = adapter_for(payload).catalogo_discovery("BANDO_CONCORSO").nodi[0].figli[0]
+
+    assert nodo.lingue_possibili == ("IT", "EN")
+    assert "lingue" not in nodo.model_dump()
+
+
+def test_geban_languages_alias_must_match_canonical_value(payload):
+    leaf = payload["BANDO_CONCORSO"]["nodi"][0]["figli"][0]
+    leaf["lingue"] = ["IT"]
+
+    with pytest.raises(DiscoveryError) as exc:
+        adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
+
+    assert exc.value.codice == "DISCOVERY_NON_CONFORME"
+
+
 def test_codes_may_repeat_in_different_branches(payload):
     copy = deepcopy(payload["BANDO_CONCORSO"]["nodi"][0])
     copy["codice"] = "CP"

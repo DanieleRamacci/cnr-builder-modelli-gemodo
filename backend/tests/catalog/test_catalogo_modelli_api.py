@@ -20,6 +20,9 @@ class FakeCatalogService:
             profilo=kwargs.get("categoria"),
             codice_tipologia=kwargs.get("codice_tipologia"),
             modalita=kwargs.get("modalita", ModalitaCatalogo.OPERATIVA),
+            fallback_applicato=False,
+            livello_richiesto=kwargs.get("livello_professionale"),
+            livello_risolto=kwargs.get("livello_professionale"),
             modelli=[
                 ModelloCatalogoSchema(
                     modello_id=10,
@@ -62,6 +65,9 @@ def test_search_modelli_operative_returns_published_versions(monkeypatch):
     assert body["tipo_documento"] == "BANDO_CONCORSO"
     assert body["profilo"] == "COLLABORATORE_TECNICO_ER"
     assert body["codice_tipologia"] == "TD"
+    assert body["fallback_applicato"] is False
+    assert body["livello_richiesto"] == "VI"
+    assert body["livello_risolto"] == "VI"
     assert body["modelli"][0]["modello_versione_id"] == 11
     assert body["modelli"][0]["stato"] == "PUBBLICATO"
     assert body["modelli"][0]["lingua"] == "IT"

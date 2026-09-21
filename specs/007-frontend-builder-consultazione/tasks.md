@@ -645,8 +645,8 @@ configurazione contiene piu' tipi documento attivi con lo stesso codice.
 **Goal**: impedire nuovi duplicati funzionali e rendere conforme la risposta
 discovery reale concordata con GEBAN.
 
-- [ ] T073 [P] Aggiungere test dell'alias discovery `lingue`/`ENG` e del conflitto con la forma canonica in `backend/tests/discovery/`
-- [ ] T074 Normalizzare gli alias GEBAN al confine dell'adapter in `backend/app/discovery/schemas.py`
+- [x] T073 [P] Aggiungere test dell'alias discovery `lingue`/`ENG` e del conflitto con la forma canonica in `backend/tests/discovery/`
+- [x] T074 Normalizzare gli alias GEBAN al confine dell'adapter in `backend/app/discovery/schemas.py`
 - [ ] T075 [P] Aggiungere test che il builder riusi e associ un tipo non assegnato dello stesso contesto/codice e rifiuti proprietari differenti in `backend/tests/builder/test_builder_flow_api.py`
 - [ ] T076 Impedire nuove righe attive duplicate per `(codice_contesto, codice)` nei servizi configurazione e builder in `backend/app/configurazione/service.py` e `backend/app/builder/service.py`
 - [ ] T077 Migliorare il messaggio di disattivazione dei tipi con modelli collegati e verificare la disattivazione per ID del duplicato incompleto
@@ -660,3 +660,23 @@ completo del database di test senza dipendere dalla directory corrente.
 - [x] T079 Aggiungere il comando protetto `gemodo-reset-database` all'immagine backend e al compose Coolify
 - [x] T080 Documentare abilitazione, conferma, risultato e riavvio in `docs/frontend-server-test.md`
 - [x] T081 Verificare sintassi dello script e build dell'immagine backend
+
+## Phase 13: Fallback catalogo ed edizioni linguistiche derivate
+
+**Goal**: esporre a GEBAN una ricerca deterministica con fallback sul solo
+livello e consentire al gestore di creare una versione inglese realmente
+collegata e clonata dal modello italiano.
+
+**Independent Test**: pubblicare CTER/tutti/IT con derivato CTER/tutti/EN e
+CTER/VI/IT; la ricerca VI restituisce il modello specifico, la ricerca di un
+livello senza modello restituisce il generico con fallback dichiarato, e il
+catalogo senza lingua annida EN dentro IT.
+
+- [x] T082 [P] [US1] Aggiornare i contratti OpenAPI catalogo e builder con fallback, risposta annidata ed endpoint di derivazione in `specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml` e `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
+- [x] T083 [P] [US1] Aggiungere test catalogo per match esatto, fallback esclusivamente `IS NULL`, filtro lingua e annidamento delle edizioni in `backend/tests/catalog/test_catalogo_modelli_api.py` e `backend/tests/builder/test_builder_flow_api.py`
+- [x] T084 [P] [US1] Aggiungere test builder per clonazione atomica, associazione al padre, lingua duplicata e audit in `backend/tests/builder/test_builder_flow_api.py`
+- [x] T085 [US1] Aggiungere migration e mapping ORM per `modello_documento.derivato_da_modello_id` in `backend/alembic/versions/0017_modello_derivato.py` e `backend/app/catalog/models.py`
+- [x] T086 [US1] Implementare ricerca a due passi e serializzazione annidata con metadati fallback in `backend/app/catalog/repository.py`, `backend/app/catalog/service.py` e `backend/app/catalog/schemas.py`
+- [x] T087 [US1] Implementare endpoint atomico di creazione edizione derivata con copia versione/campi e audit in `backend/app/builder/api.py`, `backend/app/builder/schemas.py`, `backend/app/builder/service.py` e `backend/app/builder/repository.py`
+- [x] T088 [US1] Sostituire la precompilazione del wizard con l'azione dashboard "Crea versione inglese" e stati di conferma/errore in `frontend/src/features/builder/integrazioni-manager.component.ts`, `frontend/src/features/builder/integrazioni-manager.component.html` e relativi test
+- [x] T089 [P] Verificare contratti, migration PostgreSQL, suite backend/frontend interessate e documentare richieste/risposte di prova in `specs/007-frontend-builder-consultazione/quickstart.md`

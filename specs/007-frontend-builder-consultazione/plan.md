@@ -14,11 +14,12 @@ la variante resta `STANDARD`, e lingua/livello partecipano allo scope della
 versione pubblicata corrente.
 
 Riallineamento 2026-09-21: non viene introdotto `famiglia_modello_id`.
-Edizioni linguistiche collegate condividono integrazione, tipo, percorso e
-livello, ma hanno modello/versioni indipendenti. Il catalogo senza filtro lingua
-le restituisce insieme. La generazione resta singola per `modello_versione_id` e
-il flag `bando_inglese` viene ritirato; l'obbligatorieta' deriva dal contratto
-della versione selezionata.
+Un'edizione derivata conserva invece un riferimento diretto e nullable al modello
+origine. Le edizioni condividono integrazione, tipo, percorso e livello, ma hanno
+modello/versioni e cicli di pubblicazione indipendenti. Il catalogo senza filtro
+lingua annida i derivati pubblicati nel padre pubblicato. La generazione resta
+singola per `modello_versione_id` e il flag `bando_inglese` viene ritirato;
+l'obbligatorieta' deriva dal contratto della versione selezionata.
 
 Incremento pulizia: DELETE modello imposta stato ELIMINATO sotto lock tipo,
 registra audit e archivia versioni pubblicate. Non cancella file/versioni.
@@ -70,10 +71,20 @@ la ricerca della versione corrente include percorso, variante, lingua e livello
 (con confronto esplicito di `null`). Il catalogo operativo espone lingua e
 livello e accetta filtri omonimi, cosi' la categorizzazione ricevuta e la
 combinazione scelta individuano il modello senza cataloghi interni duplicati.
-La ricerca senza `lingua` non applica un default implicito e restituisce tutte
-le lingue pubblicate per gli altri filtri. La UI puo' creare un'edizione
-linguistica collegata precompilando gli attributi condivisi; non persiste un ID
-di famiglia.
+La ricerca senza `lingua` non applica un default implicito: restituisce i modelli
+principali e annida le edizioni linguistiche pubblicate create esplicitamente da
+essi. Con un livello richiesto, il servizio esegue prima il match esatto; soltanto
+se non trova risultati ripete la ricerca con `livello_professionale IS NULL`,
+senza allargare lingua o percorso. La risposta espone `fallback_applicato`,
+`livello_richiesto` e `livello_risolto`.
+
+La derivazione usa `modello_documento.derivato_da_modello_id`, foreign key
+nullable verso `modello_documento.id`; non introduce famiglie. L'endpoint builder
+crea atomicamente il modello derivato e la versione 1 BOZZA copiando formato,
+struttura documentale e campi richiesti dalla versione piu' recente del padre.
+L'operazione mantiene invariati tipo, percorso, variante e livello, cambia solo
+la lingua, verifica la discovery corrente ed emette audit. La dashboard invoca
+questo endpoint direttamente dalla riga del modello invece di riaprire il wizard.
 
 Correzione T038: la creazione invia integrazione_id e mantiene il riferimento
 locale tipo_documento scoped alla sorgente. Il riferimento contiene solo identita'

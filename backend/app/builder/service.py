@@ -22,7 +22,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
 from app.builder.audit import registra_evento
-from app.builder.schemas import CampoVersioneRequest, CreaModelloRequest
+from app.builder.schemas import CampoVersioneRequest, CreaEdizioneDerivataRequest, CreaModelloRequest
 from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
@@ -188,6 +188,100 @@ class BuilderService:
         )
         self.db.commit()
         return modello
+
+    def crea_edizione_derivata(
+        self,
+        principal: PrincipalGEMODO,
+        modello_id: uuid.UUID,
+        request: CreaEdizioneDerivataRequest,
+    ) -> ModelloDocumento:
+        origine = builder_repository.get_modello(self.db, modello_id)
+        if origine is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        verify_scrittura_su_contesto(principal, origine.tipo_documento.codice_contesto)
+        self.db.execute(select(TipoDocumento.id).where(
+            TipoDocumento.id == origine.tipo_documento_id,
+        ).with_for_update())
+        self.db.refresh(origine)
+        if request.lingua == origine.lingua:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "La lingua derivata deve essere diversa da quella del modello origine",
+                status_code=400,
+            )
+        if builder_repository.get_edizione_derivata(self.db, origine.id, request.lingua) is not None:
+            raise BuilderDomainError(
+                "EDIZIONE_DERIVATA_DUPLICATA",
+                "Esiste gia' un'edizione derivata nella lingua richiesta",
+                status_code=409,
+            )
+
+        indice = self._catalogo(
+            origine.tipo_documento.codice, aggiornato=True, tipo=origine.tipo_documento,
+        ).indice_percorsi()
+        percorso = tuple(origine.percorso_categorizzazione)
+        foglia = indice.get(percorso)
+        if foglia is None or foglia.campi is None:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Il ramo del modello non e' piu' disponibile",
+                status_code=404,
+            )
+        if request.lingua not in (foglia.lingue_possibili or ()):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Lingua non disponibile per la categorizzazione scelta",
+                status_code=400,
+            )
+        sorgente = builder_repository.get_ultima_versione_con_campi(self.db, origine.id)
+        if sorgente is None:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_TROVATO,
+                "Il modello origine non ha versioni da clonare",
+                status_code=409,
+            )
+
+        nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+        derivato_id = uuid.uuid4()
+        codice, nome = _identita_modello(
+            tipo=origine.tipo_documento.codice,
+            nodi=nodi,
+            lingua=request.lingua,
+            livello=origine.livello_professionale,
+            modello_id=derivato_id,
+        )
+        derivato = builder_repository.crea_modello(
+            self.db,
+            modello_id=derivato_id,
+            codice=codice,
+            nome=nome,
+            tipo_documento_id=origine.tipo_documento_id,
+            codice_categoria=origine.codice_categoria,
+            codice_tipologia=origine.codice_tipologia,
+            percorso_categorizzazione=list(origine.percorso_categorizzazione),
+            variante=origine.variante,
+            lingua=request.lingua,
+            livello_professionale=origine.livello_professionale,
+            derivato_da_modello_id=origine.id,
+        )
+        versione = builder_repository.crea_versione(
+            self.db,
+            modello_documento_id=derivato.id,
+            campi=builder_repository.clona_campi(sorgente),
+            formato_documentale=sorgente.formato_documentale,
+            struttura_documentale=sorgente.struttura_documentale,
+        )
+        registra_evento(
+            self.db,
+            tipo_evento="MODELLO_DERIVATO_CREATO",
+            principal=principal,
+            modello_documento_id=derivato.id,
+            modello_versione_id=versione.id,
+            payload_minimo={"modello_origine_id": str(origine.id), "lingua": request.lingua},
+        )
+        self.db.commit()
+        self.db.refresh(derivato)
+        return derivato
 
     def crea_versione(
         self, principal: PrincipalGEMODO, modello_id: uuid.UUID, campi_richiesti: list[CampoVersioneRequest]

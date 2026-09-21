@@ -84,6 +84,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/{modelloId}/edizioni-derivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crea un modello collegato in un'altra lingua clonando l'ultima versione
+         * @description Mantiene tipo, percorso, variante e livello del padre. Crea atomicamente un modello indipendente e la sua versione 1 BOZZA copiando formato, struttura e campi richiesti dall'ultima versione del padre. Non pubblica il derivato e non modifica il padre.
+         */
+        post: operations["creaEdizioneDerivata"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}/versioni": {
         parameters: {
             query?: never;
@@ -187,6 +209,8 @@ export interface components {
             /** @enum {string} */
             lingua: "IT" | "EN";
             livello_professionale: string | null;
+            /** Format: uuid */
+            derivato_da_modello_id?: string | null;
             codice_contesto: string;
             /** Format: uuid */
             integrazione_id: string | null;
@@ -210,6 +234,10 @@ export interface components {
             /** @description Valore dichiarato in livelli_possibili; null significa tutti i livelli della foglia. */
             livello_professionale?: string | null;
         };
+        CreaEdizioneDerivataRequest: {
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+        };
         Modello: {
             /** Format: uuid */
             id: string;
@@ -224,6 +252,8 @@ export interface components {
             /** @enum {string} */
             lingua: "IT" | "EN";
             livello_professionale: string | null;
+            /** Format: uuid */
+            derivato_da_modello_id?: string | null;
         };
         CreaVersioneRequest: {
             campi: components["schemas"]["CampoVersione"][];
@@ -551,6 +581,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    creaEdizioneDerivata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "lingua": "EN"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreaEdizioneDerivataRequest"];
+            };
+        };
+        responses: {
+            /** @description Modello derivato e versione 1 BOZZA creati */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelloGestione"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     creaVersione: {

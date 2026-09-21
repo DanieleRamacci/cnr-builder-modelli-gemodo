@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from copy import deepcopy
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
@@ -38,6 +39,7 @@ def crea_modello(
     variante: str,
     lingua: str,
     livello_professionale: str | None,
+    derivato_da_modello_id: uuid.UUID | None = None,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
         id=modello_id,
@@ -51,6 +53,7 @@ def crea_modello(
         variante=variante,
         lingua=lingua,
         livello_professionale=livello_professionale,
+        derivato_da_modello_id=derivato_da_modello_id,
         stato="ATTIVA",
     )
     db.add(modello)
@@ -74,6 +77,8 @@ def crea_versione(
     *,
     modello_documento_id: uuid.UUID,
     campi: list[ModelloCampoRichiesto],
+    formato_documentale: str = "GEMODO_DOCUMENT_V1",
+    struttura_documentale: dict | None = None,
 ) -> ModelloDocumentoVersione:
     numero_versione = (
         db.scalar(
@@ -89,8 +94,8 @@ def crea_versione(
         modello_documento_id=modello_documento_id,
         versione=numero_versione,
         stato="BOZZA",
-        formato_documentale="GEMODO_DOCUMENT_V1",
-        struttura_documentale={},
+        formato_documentale=formato_documentale,
+        struttura_documentale=deepcopy(struttura_documentale) if struttura_documentale is not None else {},
     )
     db.add(versione)
     db.flush()
@@ -99,6 +104,46 @@ def crea_versione(
         db.add(campo)
     db.flush()
     return versione
+
+
+def get_ultima_versione_con_campi(
+    db: Session, modello_id: uuid.UUID,
+) -> ModelloDocumentoVersione | None:
+    stmt = (
+        select(ModelloDocumentoVersione)
+        .where(ModelloDocumentoVersione.modello_documento_id == modello_id)
+        .options(selectinload(ModelloDocumentoVersione.campi))
+        .order_by(ModelloDocumentoVersione.versione.desc())
+        .limit(1)
+    )
+    return db.scalar(stmt)
+
+
+def get_edizione_derivata(
+    db: Session, modello_origine_id: uuid.UUID, lingua: str,
+) -> ModelloDocumento | None:
+    return db.scalar(select(ModelloDocumento).where(
+        ModelloDocumento.derivato_da_modello_id == modello_origine_id,
+        ModelloDocumento.lingua == lingua,
+        ModelloDocumento.stato != "ELIMINATO",
+    ))
+
+
+def clona_campi(versione: ModelloDocumentoVersione) -> list[ModelloCampoRichiesto]:
+    return [ModelloCampoRichiesto(
+        id=uuid.uuid4(),
+        codice=campo.codice,
+        etichetta=campo.etichetta,
+        descrizione=campo.descrizione,
+        tipo_dato=campo.tipo_dato,
+        obbligatorio=campo.obbligatorio,
+        lingua=campo.lingua,
+        ordine=campo.ordine,
+        formato=campo.formato,
+        valore_default=campo.valore_default,
+        opzioni=deepcopy(campo.opzioni),
+        validazione=deepcopy(campo.validazione),
+    ) for campo in versione.campi]
 
 
 def get_versione(db: Session, versione_id: uuid.UUID) -> ModelloDocumentoVersione | None:
