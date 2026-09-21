@@ -153,18 +153,24 @@ CAMPI_BASE = [
 ]
 
 
-@pytest.mark.integration
-def test_selected_integration_creates_scoped_type_and_versions_despite_legacy_duplicate(
-    builder_client, db_engine, catalogo_esterno, integrazione_connessa,
-):
-    code = "TEST_SCOPED"
+def _duplica_discovery(catalogo_esterno, code: str) -> None:
     catalogo_esterno[1]["/discovery"][1][code] = deepcopy(
         catalogo_esterno[1]["/discovery"][1]["BANDO_CONCORSO"]
     )
+
+
+@pytest.mark.integration
+def test_builder_associates_and_reuses_unassigned_type_of_same_context_and_code(
+    builder_client, db_engine, catalogo_esterno, integrazione_connessa,
+):
+    """FR-024: una configurazione amministrativa non ancora associata viene riusata, non duplicata."""
+    code = "TEST_SCOPED"
+    _duplica_discovery(catalogo_esterno, code)
     legacy_id = uuid.uuid4()
     with Session(db_engine) as db:
+        contesto = db.get(Integrazione, integrazione_connessa).codice_contesto
         db.add(TipoDocumento(id=legacy_id, codice=code, nome=code,
-                             codice_contesto="geban", spec_owner="specs/002-builder-modelli"))
+                             codice_contesto=contesto, spec_owner="specs/002-builder-modelli"))
         db.commit()
     try:
         response = builder_client.post("/api/v1/builder/modelli", json={
@@ -173,14 +179,76 @@ def test_selected_integration_creates_scoped_type_and_versions_despite_legacy_du
         })
         assert response.status_code == 201, response.text
         model = response.json()
-        version = _crea_versione(builder_client, model["id"])
-        assert version["stato"] == "BOZZA"
+        assert _crea_versione(builder_client, model["id"])["stato"] == "BOZZA"
         with Session(db_engine) as db:
-            assert db.get(TipoDocumento, legacy_id).integrazione_id is None
+            assert db.get(TipoDocumento, legacy_id).integrazione_id == integrazione_connessa
+            assert db.scalar(sa.select(sa.func.count()).select_from(TipoDocumento).where(
+                TipoDocumento.codice == code, TipoDocumento.codice_contesto == contesto,
+            )) == 1
             assert db.scalar(sa.text(
-                "SELECT t.integrazione_id FROM tipo_documento t JOIN modello_documento m "
-                "ON m.tipo_documento_id = t.id WHERE m.id = :id"
-            ), {"id": model["id"]}) == integrazione_connessa
+                "SELECT tipo_documento_id FROM modello_documento WHERE id = :id"
+            ), {"id": model["id"]}) == legacy_id
+    finally:
+        with Session(db_engine) as db:
+            db.execute(sa.delete(TipoDocumento).where(TipoDocumento.codice == code))
+            db.commit()
+
+
+@pytest.mark.integration
+def test_builder_rejects_type_owned_by_a_different_integration(
+    builder_client, db_engine, catalogo_esterno, integrazione_connessa,
+):
+    """FR-024: conflitto con un'altra integrazione proprietaria rifiutato in modo esplicito."""
+    code = "TEST_ALTRO_OWNER"
+    _duplica_discovery(catalogo_esterno, code)
+    other_id, tipo_id = uuid.uuid4(), uuid.uuid4()
+    with Session(db_engine) as db:
+        contesto = db.get(Integrazione, integrazione_connessa).codice_contesto
+        db.add(Integrazione(id=other_id, codice="ALTRO_" + uuid.uuid4().hex[:16],
+                            nome="Altra integrazione", codice_contesto=contesto))
+        db.flush()
+        db.add(TipoDocumento(id=tipo_id, codice=code, nome=code, codice_contesto=contesto,
+                             integrazione_id=other_id, stato="ATTIVA",
+                             spec_owner="specs/002-builder-modelli"))
+        db.commit()
+    try:
+        response = builder_client.post("/api/v1/builder/modelli", json={
+            "codice_tipo_documento": code, "integrazione_id": str(integrazione_connessa),
+            "percorso_categorizzazione": ["TD", "RICERCATORE"], "lingua": "IT",
+        })
+        assert response.status_code == 409, response.text
+        assert response.json()["codice"] == "TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE"
+        with Session(db_engine) as db:
+            assert db.get(TipoDocumento, tipo_id).integrazione_id == other_id
+            assert db.scalar(sa.select(sa.func.count()).select_from(TipoDocumento).where(
+                TipoDocumento.codice == code)) == 1
+    finally:
+        with Session(db_engine) as db:
+            db.execute(sa.delete(TipoDocumento).where(TipoDocumento.codice == code))
+            db.execute(sa.delete(Integrazione).where(Integrazione.id == other_id))
+            db.commit()
+
+
+@pytest.mark.integration
+def test_builder_ignores_inactive_type_of_same_context_and_code(
+    builder_client, db_engine, catalogo_esterno, integrazione_connessa,
+):
+    code = "TEST_INATTIVO"
+    _duplica_discovery(catalogo_esterno, code)
+    old_id = uuid.uuid4()
+    with Session(db_engine) as db:
+        contesto = db.get(Integrazione, integrazione_connessa).codice_contesto
+        db.add(TipoDocumento(id=old_id, codice=code, nome=code, codice_contesto=contesto,
+                             stato="INATTIVA", spec_owner="specs/002-builder-modelli"))
+        db.commit()
+    try:
+        response = builder_client.post("/api/v1/builder/modelli", json={
+            "codice_tipo_documento": code, "integrazione_id": str(integrazione_connessa),
+            "percorso_categorizzazione": ["TD", "RICERCATORE"], "lingua": "IT",
+        })
+        assert response.status_code == 201, response.text
+        with Session(db_engine) as db:
+            assert db.get(TipoDocumento, old_id).integrazione_id is None
     finally:
         with Session(db_engine) as db:
             db.execute(sa.delete(TipoDocumento).where(TipoDocumento.codice == code))

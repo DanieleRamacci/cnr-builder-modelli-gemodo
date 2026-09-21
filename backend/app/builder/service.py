@@ -90,6 +90,40 @@ class BuilderService:
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
         return self._catalogo(codice_tipo_documento)
 
+    def _tipo_per_integrazione(self, source, codice: str) -> TipoDocumento:
+        """FR-024: al piu' un tipo non inattivo per (codice_contesto, codice).
+
+        Riusa quello dell'integrazione, associa una configurazione amministrativa
+        non ancora assegnata, rifiuta quella di un'altra integrazione.
+        """
+        esistenti = list(self.db.scalars(select(TipoDocumento).where(
+            TipoDocumento.codice_contesto == source.codice_contesto,
+            TipoDocumento.codice == codice,
+            TipoDocumento.stato != "INATTIVA",
+        ).with_for_update()))
+        proprio = next((t for t in esistenti if t.integrazione_id == source.id), None)
+        if proprio is not None:
+            return proprio
+        libero = next((t for t in esistenti if t.integrazione_id is None), None)
+        if libero is not None:
+            libero.integrazione_id = source.id
+            self.db.flush()
+            return libero
+        if esistenti:
+            raise DomainError(
+                "TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE",
+                "Tipo documento gia' associato a un'altra integrazione dello stesso contesto",
+                status_code=409,
+            )
+        # Persist only the document type identity, never the external tree.
+        self.db.execute(insert(TipoDocumento).values(
+            id=uuid.uuid4(), codice=codice, nome=codice, codice_contesto=source.codice_contesto,
+            integrazione_id=source.id, stato="ATTIVA", spec_owner="specs/002-builder-modelli",
+        ).on_conflict_do_nothing(constraint="uq_tipo_documento_integrazione_codice"))
+        return self.db.scalar(select(TipoDocumento).where(
+            TipoDocumento.integrazione_id == source.id, TipoDocumento.codice == codice,
+        ))
+
     def crea_modello(self, principal: PrincipalGEMODO, request: CreaModelloRequest) -> ModelloDocumento:
         if request.integrazione_id is None:
             tipo = self._resolve_tipo_documento(request.codice_tipo_documento)
@@ -98,16 +132,7 @@ class BuilderService:
             if source is None:
                 raise DomainError("RISORSA_NON_TROVATA", "Risorsa non disponibile", status_code=404)
             verify_scrittura_su_contesto(principal, source.codice_contesto)
-            # Persist only the document type identity, never the external tree.
-            self.db.execute(insert(TipoDocumento).values(
-                id=uuid.uuid4(), codice=request.codice_tipo_documento,
-                nome=request.codice_tipo_documento, codice_contesto=source.codice_contesto,
-                integrazione_id=source.id, stato="ATTIVA", spec_owner="specs/002-builder-modelli",
-            ).on_conflict_do_nothing(constraint="uq_tipo_documento_integrazione_codice"))
-            tipo = self.db.scalar(select(TipoDocumento).where(
-                TipoDocumento.integrazione_id == source.id,
-                TipoDocumento.codice == request.codice_tipo_documento,
-            ))
+            tipo = self._tipo_per_integrazione(source, request.codice_tipo_documento)
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
 
         indice = self._catalogo(request.codice_tipo_documento, aggiornato=True, tipo=tipo).indice_percorsi()

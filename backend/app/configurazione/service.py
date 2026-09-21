@@ -168,6 +168,15 @@ class ConfigurazioneService:
         return response
 
     def crea(self, request: TipoDocumentoCreate, principal):
+        # FR-024: l'indice unico parziale copre solo i tipi senza integrazione;
+        # un tipo non inattivo di un'integrazione nello stesso contesto/codice
+        # va rifiutato qui.
+        if self.db.scalar(select(TipoDocumento.id).where(
+            TipoDocumento.codice_contesto == request.codice_contesto,
+            TipoDocumento.codice == request.codice,
+            TipoDocumento.stato != repository.STATO_INATTIVA,
+        ).limit(1)) is not None:
+            raise DomainError("TIPO_DOCUMENTO_ALREADY_EXISTS", "Tipo documento gia' configurato", status_code=409)
         tipo = TipoDocumento(codice=request.codice, nome=request.nome,
                              codice_contesto=request.codice_contesto, stato="BOZZA", spec_owner="010")
         self.db.add(tipo)

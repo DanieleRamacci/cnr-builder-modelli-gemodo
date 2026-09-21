@@ -128,6 +128,29 @@ def test_incomplete_duplicate_and_invalid_references(admin_client):
 
 
 @pytest.mark.integration
+def test_admin_cannot_create_active_duplicate_of_integration_owned_type(admin_client):
+    """FR-024: l'indice parziale copre solo i tipi senza integrazione; il servizio copre il resto."""
+    client, engine = admin_client
+    code = "DUP_" + uuid.uuid4().hex[:16]
+    with engine.begin() as db:
+        integrazione_id = db.execute(sa.text("""
+            INSERT INTO integrazione (id, codice, nome, codice_contesto)
+            VALUES (gen_random_uuid(), :codice, 'Software proprietario', 'demo') RETURNING id
+        """), {"codice": "SOFTWARE_" + code}).scalar()
+        db.execute(sa.text("""
+            INSERT INTO tipo_documento (id, codice, nome, stato, spec_owner, codice_contesto, integrazione_id)
+            VALUES (gen_random_uuid(), :code, 'Del software', 'ATTIVA', 'test', 'demo', :integrazione_id)
+        """), {"code": code, "integrazione_id": integrazione_id})
+    response = client.post("/api/v1/configurazione/tipi-documento", json={
+        "codice": code, "nome": "Duplicato admin", "codice_contesto": "demo",
+    })
+    assert response.status_code == 409, response.text
+    assert response.json()["codice"] == "TIPO_DOCUMENTO_ALREADY_EXISTS"
+    with engine.connect() as db:
+        assert db.execute(sa.text("SELECT count(*) FROM tipo_documento WHERE codice = :c"), {"c": code}).scalar() == 1
+
+
+@pytest.mark.integration
 def test_disattivazione_per_id_risolve_il_codice_duplicato(admin_client):
     client, engine = admin_client
     code, first = crea(client, STRUTTURA)

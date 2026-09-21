@@ -387,13 +387,14 @@ components:
             versione: {value: {codice: MODELLO_VERSIONE_NON_TROVATO, messaggio: Versione non trovata}}
             ramo: {value: {codice: CONTESTO_NON_VALIDO, messaggio: Il ramo del modello non e' piu' disponibile}}
     Conflict:
-      description: Integrazione non connessa o transizione di stato non valida
+      description: Integrazione non connessa, tipo documento gia' di un'altra integrazione o transizione di stato non valida
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Errore'}
           examples:
             nonConnessa: {value: {codice: INTEGRAZIONE_NON_CONNESSA, messaggio: Integrazione non connessa}}
             transizione: {value: {codice: TRANSIZIONE_STATO_NON_VALIDA, messaggio: Transizione di stato non valida}}
+            altraIntegrazione: {value: {codice: TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE, messaggio: Tipo documento gia' associato a un'altra integrazione dello stesso contesto}}
     InvalidInput:
       description: Selezione percorso/categoria incoerente o campi non ammessi/duplicati
       content:
