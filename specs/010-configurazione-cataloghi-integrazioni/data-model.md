@@ -91,6 +91,25 @@ TipoDocumento 1--N ModelloDocumento -> versioni/contratti propri
 Integrazione 1--N Audit integrazione
 ```
 
+**Rilevamento attributi non riconosciuti (2026-09-21, design handoff 5b)**: la
+verifica endpoint (User Story 3/FR-008) confronta gli attributi extra
+(`NodoDiscovery` ha gia' `extra="allow"`, li accetta ma li ignora a runtime)
+contro le `PolicyDimensione` registrate (entita' di `002`, riusata qui) e
+segnala quelli privi di policy come controllo distinto dell'esito di verifica
+("Attributi non riconosciuti: N"), con link diretto alla schermata di
+configurazione della policy (User Story 5). Non e' un meccanismo separato
+dall'adapter discovery generico - vive nello stesso punto dove la risposta
+viene gia' validata (FR-011).
+
+## Design Reference — schermate (design_handoff_modellario, 2026-09-21)
+
+| id | schermata | rotta | User Story | stato |
+| --- | --- | --- | --- | --- |
+| 4a | configure-dimensions | `/configurazione/tipi-documento/:codice/dimensioni` | US5 (nuova) | proposta, posizionamento 010 vs 007 ancora aperto nel design stesso |
+| 4b | configure-dimensions (stati) | idem | US5 | stati caricamento/errore, non schermata a se' |
+| 5a | new-context | `/configurazione/contesti/nuovo` | US1 + US2 | proposta, sostituisce/precisa il flusso testuale esistente |
+| 5b | integration-health | `/configurazione/contesti/:ctxId/integrazione` | US3, visualizza anche FR-015 (rinviato) | proposta |
+
 ## Entita' riusate, non ridefinite qui
 
 Riallineamento FR-016 del 2026-09-17: le entita' di classificazione elencate

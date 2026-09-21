@@ -14,6 +14,16 @@ prima dell'implementazione di questo incremento.
 
 ## Clarifications
 
+### Fallback livello e associazione edizioni collegate - 2026-09-21
+
+`DEC-007-FALLBACK-LIVELLO-CATALOGO` (owner `007`): `GET /catalogo/modelli` con
+`livello_professionale` privo di modello dedicato MUST tornare il modello
+generico (`livello_professionale IS NULL`) della stessa combinazione
+tipo/percorso/lingua, non lista vuota. Solo su livello - `lingua` e
+`percorso_categorizzazione` restano a match esatto. `DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`
+(owner `002`): la risposta annida le edizioni collegate (oggi solo per lingua)
+dentro il modello che le referenzia. Dettaglio in `data-model.md`.
+
 ### Sicurezza API Per Contesto - 2026-09-17
 
 Il controllo generale DOCUMENTI_VIEWER/DOCUMENTI_GENERATORE non basta.

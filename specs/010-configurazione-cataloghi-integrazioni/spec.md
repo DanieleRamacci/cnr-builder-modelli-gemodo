@@ -16,6 +16,64 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-21 (bis): schermate di design per User Story 5 e rilevamento attributi
+
+`design_handoff_modellario/` e' stato esteso con 4 nuove schermate (4a, 4b,
+5a, 5b - vedi `screens.json`/`README.md`), che chiudono in parte le domande
+aperte della sessione precedente:
+
+- **Posizionamento risolto (in proposta di design, non ancora decisione
+  operativa)**: 4a (configura policy dimensione) vive sotto un'area admin
+  "Impostazioni" (`/configurazione/tipi-documento/:codice/dimensioni`),
+  raggiunta da 5b (`Impostazioni > Contesti > <contesto> > Dimensioni`) - piu'
+  vicina a questa spec che a `007`. Il design stesso lascia pero' la domanda
+  esplicitamente aperta (`screens.json`, `openQuestions` di 4a: "se questa UI
+  vive in una sezione Impostazioni a se o dentro il builder") - trattarla come
+  proposta forte, non come decisione chiusa, finche' non confermata.
+- **5a (new-context)** concretizza User Story 2: un unico flusso a 3 passi
+  (dati contesto, struttura di esempio, verifica) genera il JSON di esempio
+  con azioni Carica/Copia/Scarica ed elenca i file da consegnare (esempio
+  JSON, contratto OpenAPI, regole). Conferma esplicita nel design: **nessun
+  campo "codice tipo documento"** in questa schermata - un contesto puo'
+  esporre piu' tipi documento, dichiarati dall'albero stesso, non da un campo
+  del form. "Nome del contesto nel token" e' `codice_contesto`, gia' esistente
+  (FR-018) - solo chiarito nella copy, nessun campo nuovo.
+- **5b (integration-health)** concretizza User Story 3 con un dettaglio nuovo:
+  7 controlli espliciti alla verifica, incluso **"Attributi non riconosciuti"**
+  - la segnalazione delle dimensioni sconosciute richiesta da
+  `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE` trova qui la sua sede concreta
+  (banner ambra con link diretto a 4a), non in un meccanismo separato. Inoltre
+  introduce un **controllo periodico schedulabile con storico/sparkline** -
+  questo e' il FR-015 gia' esistente ma **rinviato nel MVP**: il design ne
+  disegna la UI target, non lo riporta automaticamente in scope; va deciso
+  esplicitamente se questo incremento lo riattiva.
+- **Aperto anche nel design**: se la verifica manuale scriva subito l'albero
+  registrato o proponga un diff da approvare (5b, nota finale).
+
+### Session 2026-09-21: policy per-dimensione della categorizzazione
+
+Aggiunge User Story 5 sotto. Decisioni collegate: `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`
+(owner `002`, questa spec e' `spec_interessata`), `DEC-007-FALLBACK-LIVELLO-CATALOGO`.
+
+- Q: Perche' non basta l'esempio di struttura gia' definito (`DefinizioneStruttura`,
+  User Story 1)? -> A: Quell'esempio e' solo presentazionale, usato per generare la
+  documentazione di contratto per il team dev GEBAN (User Story 2) - non e'
+  vincolante e l'albero reale puo' divergere. La policy "questa dimensione genera
+  un modello distinto o no" deve restare stabile anche se l'esempio cambia per
+  motivi puramente documentali, quindi vive in un'entita' separata
+  (`PolicyDimensione`, scollegata da `DefinizioneStruttura`).
+- Q: Si annota per ogni nodo dell'albero? -> A: No, una volta per nome dimensione
+  e tipo documento (es. `"lingua"`), vale ovunque quel nome ricompaia. Annotare
+  per nodo/foglia obbligherebbe a ripetere la stessa scelta decine di volte.
+- Q: Cosa succede se GEBAN aggiunge una dimensione mai vista? -> A: L'ingestione
+  non fallisce (`NodoDiscovery` ha gia' `extra="allow"`), ma la dimensione resta
+  inerte finche' nessuno le assegna una policy. Va aggiunta una segnalazione
+  esplicita (dashboard/audit) quando l'adapter la incontra, invece di lasciarla
+  invisibile - altrimenti nessuno si accorge che serve una decisione.
+- Q: Chi decide la policy per una dimensione nuova? -> A: Un admin, esplicitamente,
+  mai dedotta automaticamente dalla forma del JSON (es. "campo opzionale = ammette
+  generico") - quella forma non e' un impegno preso da GEBAN.
+
 ### Session 2026-09-17: integrazione per software e MVP senza editor
 
 - Q: Da dove nasce la voce GEBAN nell'admin? -> A: Da una creazione esplicita
@@ -261,6 +319,52 @@ stato, data ed esito. Su installazione senza configurazioni l'elenco e' vuoto.
 1. **Given** esistono integrazioni in stati diversi, **When** l'operatore apre
    la dashboard, **Then** vede per ciascuna lo stato corrente e, se applicabile,
    l'esito dell'ultimo test di connessione.
+
+### User Story 5 - Impostare la policy di fork per dimensione (Priority: P1)
+
+*(Aggiunta 2026-09-21, vedi Clarifications. Copre `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`.
+Posizionamento in questa spec vs `002` non ancora confermato - vedi nota li'.)*
+
+Come admin, voglio navigare l'albero di categorizzazione live di
+un'integrazione connessa e dichiarare, per ciascuna dimensione incontrata
+(es. livello, lingua), se ammette un valore generico o richiede sempre una
+scelta esplicita, cosi' che il builder sappia quando un valore diverso crea
+un modello distinto senza bisogno di nuovo codice per ogni dimensione futura.
+
+**Why this priority**: senza questa configurazione esplicita, il
+comportamento di fork resta hardcoded nel codice per ogni dimensione
+conosciuta oggi (lingua, livello) e non si estende a dimensioni che GEBAN
+aggiunge in futuro senza una modifica di codice.
+
+**Independent Test**: un admin apre la configurazione di un tipo documento
+con un'integrazione connessa, naviga fino a una foglia, vede le dimensioni
+dichiarate su quella foglia; per una dimensione mai configurata il sistema
+lo segnala e chiede la policy; una volta impostata, vale per l'intero tipo
+documento, non solo per quella foglia.
+
+**Acceptance Scenarios**:
+
+1. **Given** un'integrazione connessa con un albero live, **When** l'admin
+   naviga fino a una foglia, **Then** vede le dimensioni dichiarate su quella
+   foglia e, per ciascuna gia' configurata altrove nell'albero, la policy
+   corrente in sola lettura (non richiesta di nuovo).
+2. **Given** una dimensione mai incontrata prima per quel tipo documento,
+   **When** l'admin la vede per la prima volta, **Then** il sistema la
+   segnala esplicitamente e richiede di impostare `consente_valore_generico`
+   prima che quella dimensione sia utilizzabile nella creazione modello.
+3. **Given** una dimensione con `consente_valore_generico=false` (es.
+   lingua), **When** il builder crea un modello, **Then** il form non offre
+   mai un'opzione "Tutti i valori" per quella dimensione.
+4. **Given** una dimensione con `consente_valore_generico=true` (es.
+   livello), **When** GEBAN interroga un valore specifico privo di modello
+   dedicato, **Then** il catalogo (001) applica il fallback al generico
+   secondo `DEC-007-FALLBACK-LIVELLO-CATALOGO`.
+5. **Given** l'albero live contiene un attributo che il parser non conosce,
+   **When** l'admin naviga fin li', **Then** il sistema lo mostra come
+   "dimensione non gestita" invece di ometterlo silenziosamente - la stessa
+   segnalazione compare anche nella verifica endpoint di User Story 3
+   (controllo "attributi non riconosciuti", design handoff 5b), con link
+   diretto a questa schermata.
 
 ### Edge Cases
 

@@ -169,7 +169,8 @@ def test_genera_e_download_funzionano_nel_proprio_contesto(db_engine, client):
 
     esito = _as(client, principal).post("/api/v1/documenti/genera", json=payload)
     assert esito.status_code == 200, esito.text
-    riferimento = esito.json()["riferimento_documentale"]
+    assert esito.headers["content-type"] == "application/pdf"
+    riferimento = esito.headers["x-riferimento-documentale"]
     assert riferimento
 
     stato = _as(client, principal).get(f"/api/v1/documenti/{riferimento}")

@@ -29,7 +29,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Legge la struttura corrente di un tipo documento
+         * @description Legge la struttura correntemente definita (2026-09-21, necessaria per precompilare un editor invece di farlo ripartire vuoto ad ogni modifica). Tipo documento senza definizione ancora salvata torna liste vuote.
+         */
+        get: operations["getStrutturaTipoDocumento"];
         /**
          * Definisce o aggiorna la struttura catalogo di un tipo documento
          * @description Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna modifica
@@ -460,6 +464,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getStrutturaTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example BANDO_CONCORSO */
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Struttura corrente (eventualmente vuota se mai definita) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrutturaTipoDocumento"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AmbiguousSource"];
         };
     };
     updateStrutturaTipoDocumento: {

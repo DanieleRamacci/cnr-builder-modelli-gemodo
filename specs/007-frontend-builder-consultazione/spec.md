@@ -68,6 +68,55 @@ design stesso (`screens.json.screens[].openQuestions` di 3a): derivazione a piu'
 livelli e sua rappresentazione in 1b, traduzione automatica dei testi ereditati
 al cambio lingua, se rendere modificabili i livelli L1-L4 del derivato.
 
+### Session 2026-09-21 (fallback catalogo, policy dimensione, associazione)
+
+Chiude parte delle domande lasciate aperte dalla sessione precedente
+(dimensioni di derivazione generiche oltre la lingua) con tre decisioni
+registrate in `docs/decision-register.yaml`:
+
+- **`DEC-007-FALLBACK-LIVELLO-CATALOGO`**: `GET /catalogo/modelli` con un
+  `livello_professionale` specifico privo di modello dedicato MUST cercare, in
+  un secondo passo esplicito, il modello con `livello_professionale IS NULL`
+  (il generico) invece di restituire lista vuota. Supera *parzialmente* la
+  regola "nessun fallback automatico" della sessione 2026-09-18 (mai stata una
+  voce di questo registro, solo prosa): il fallback vale **solo** per il
+  livello. `lingua` e `percorso_categorizzazione` restano a match esatto,
+  senza fallback - motivato dal fatto che ogni edizione linguistica ha un
+  ciclo di vita di pubblicazione indipendente (FR-034..038), tornare
+  un'edizione diversa da quella richiesta sarebbe scorretto, non una
+  scorciatoia accettabile.
+- **`DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`**: ogni dimensione della
+  categorizzazione (`livello`, `lingua`, e future) ha una policy booleana
+  `consente_valore_generico`, registrata per `tipo_documento_id +
+  nome_dimensione` (una volta per nome, non per nodo/foglia). Oggi hardcoded
+  nel codice; va resa configurazione esplicita e persistita, **separata** da
+  `DefinizioneStruttura`/`StrutturaInput` (l'esempio presentazionale di
+  contratto per GEBAN, modulo `configurazione`) per non legare un
+  comportamento runtime a un documento che resta volutamente non vincolante.
+  L'albero reale, per un contesto integrato, arriva sempre live dall'adapter
+  discovery, mai da quell'esempio. Owner spec `002`, impatto su `010` (dove va
+  costruita la schermata di configurazione, sezione dedicata sotto) e su
+  questa spec (il form di creazione modello legge questa policy invece di
+  avere lingua/livello hardcoded).
+- **`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`**: la creazione di un'edizione
+  collegata (oggi "Crea edizione collegata"/T067; nome provvisorio in UI
+  "Crea versione inglese") MUST registrare un riferimento esplicito al modello
+  di origine (associazione dedicata, non un `famiglia_modello_id` sul modello
+  - resta valido quanto deciso in `DEC-001-LINGUA-IT-EN`). `GET
+  /catalogo/modelli` MUST annidare le edizioni collegate dentro il modello che
+  le referenzia, non piu' righe piatte slegate. Il meccanismo, oggi limitato a
+  `lingua`, si generalizza a qualunque dimensione con
+  `consente_valore_generico=false` una volta introdotta la policy sopra.
+
+**Aggiornamento 2026-09-21 (bis)**: il design handoff e' stato esteso con la
+schermata 4a (`configure-dimensions`), che colloca questa configurazione
+sotto un'area admin "Impostazioni", quindi in `010`, non in questa spec -
+coerente con l'ipotesi gia' scritta qui sopra. Resta pero' **aperto anche nel
+design stesso** (`screens.json`, `openQuestions` di 4a: "se questa UI vive in
+una sezione Impostazioni a se o dentro il builder") - trattarlo come proposta
+forte, non decisione chiusa, finche' non confermato esplicitamente dall'utente.
+Vedi `010`'s Clarifications sessione "bis" e la User Story 5 li' aggiunta.
+
 ### Session 2026-09-21
 
 - Q: Come interagisce la lingua del modello con i campi discovery? -> A: La
@@ -440,6 +489,15 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
 - **FR-023**: Visibilita' e azioni MUST rispettare i permessi per ciascun
   contesto anche con token multicontesto; URL e funzioni amministrative MUST NOT
   essere esposti al manager privo di autorizzazione amministrativa.
+- **FR-024**: `GET /catalogo/modelli` con `livello_professionale` valorizzato
+  e privo di modello dedicato MUST tornare il modello con
+  `livello_professionale IS NULL` della stessa combinazione tipo/percorso/lingua
+  invece di lista vuota (`DEC-007-FALLBACK-LIVELLO-CATALOGO`). Il fallback
+  MUST NOT applicarsi a `lingua` ne' a `percorso_categorizzazione`.
+- **FR-025**: La risposta di `GET /catalogo/modelli` MUST annidare le edizioni
+  collegate (oggi solo per lingua) dentro il modello che le referenzia
+  (`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`), non restituirle come righe piatte
+  indipendenti.
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
 selezionata nella navigazione. Tipo documentale e discovery sono risolti per
@@ -484,6 +542,9 @@ cliccabile) quando US1/US2/US3 verranno pianificate in dettaglio.
 | 2a | categorize-wizard | `/contesti/:ctxId/modelli/nuovo` | sostituisce l'albero cliccabile (confermato) |
 | 2b | builder-editor | `/modelli/:modelId/builder` | editor completo, FR-011, non pianificato |
 | 3a | derive-model | `/modelli/:modelId/deriva` | target futuro per FR-010; dipende da 2b; oggi solo il sottoinsieme T067 |
+| 4a/4b | configure-dimensions | `/configurazione/tipi-documento/:codice/dimensioni` | vive in `010` (US5), non in questa spec - vedi tabella Design Reference li' |
+| 5a | new-context | `/configurazione/contesti/nuovo` | vive in `010` (US1+US2) |
+| 5b | integration-health | `/configurazione/contesti/:ctxId/integrazione` | vive in `010` (US3); banner collega a 4a |
 
 ## Success Criteria *(mandatory)*
 

@@ -64,6 +64,60 @@ stato `CONNESSO` fornisce una porta di discovery, senza URL d'ambiente e
 senza fallback locale (T082). Le letture manager per contesto (T083) restano
 un task aperto.
 
+### Associazione Modello E Policy Dimensione (2026-09-21, canonico)
+
+Due entita' nuove, non storiche - a differenza della sezione sotto, queste
+descrivono cosa va costruito, decise in `DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`
+e `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`.
+
+**`AssociazioneModello`**: collega un modello derivato al modello di origine.
+
+- `id`
+- `modello_id`: il modello derivato (figlio).
+- `modello_origine_id`: il modello di partenza (padre). Nessun
+  `famiglia_modello_id` sull'entita' `ModelloDocumento` (resta valido
+  `DEC-001-LINGUA-IT-EN`) - la relazione vive solo qui.
+- `dimensione_variata`: nome della dimensione che distingue derivato da
+  origine (es. `"lingua"`).
+- `created_at`, `created_by`.
+
+Validation: un modello ha al massimo un `modello_origine_id` (niente
+derivazioni multiple in questo incremento - la derivazione a piu' livelli e'
+tra le domande esplicitamente aperte ereditate dal design handoff, screen 3a).
+`GET /catalogo/modelli` (001) legge questa tabella per annidare le edizioni
+collegate dentro il modello di origine invece di righe piatte.
+
+**`PolicyDimensione`**: dichiara se una dimensione della categorizzazione
+ammette un valore generico (fallback, un solo modello copre tutti i valori) o
+richiede sempre una scelta esplicita (ogni valore = modello/id distinto).
+
+- `id`
+- `tipo_documento_id`
+- `nome_dimensione`: es. `"livello"`, `"lingua"`, in futuro altre aggiunte da
+  un'integrazione.
+- `consente_valore_generico`: boolean. `true` per `livello` (fallback secondo
+  `DEC-007-FALLBACK-LIVELLO-CATALOGO`), `false` per `lingua` (sempre
+  esplicita, mai fallback).
+- `created_at`, `updated_by`.
+
+Validation: chiave logica `tipo_documento_id + nome_dimensione`, una riga sola
+per nome (mai per singolo nodo/foglia - la policy vale ovunque quel nome
+ricompaia nell'albero di quel tipo documento). **Esplicitamente scollegata**
+da `DefinizioneStruttura`/`StrutturaInput` (modulo `configurazione`, 010) -
+quella resta solo l'esempio presentazionale di contratto per il team dev
+GEBAN e non deve mai determinare comportamento runtime. Letta dal form di
+creazione modello (oggi hardcoded lingua/livello in
+`frontend/src/features/builder/modello-crea.component.ts` e
+`backend/app/builder/service.py::_identita_modello`) per decidere se offrire
+un'opzione "Tutti i valori" per quella dimensione. Scrittura: schermata di
+configurazione `configure-dimensions` (design handoff, screen 4a), collocata
+in proposta sotto `010`/Impostazioni - ancora aperto anche nel design stesso
+(vedi `010`'s Clarifications sessione "bis") - naviga l'albero live via
+`PortaDiscovery` sopra e segnala le dimensioni ancora prive di policy invece
+di lasciarle inerti (`NodoDiscovery` ha gia' `extra="allow"`, non va in
+errore ma le ignora); la stessa segnalazione compare anche nella verifica
+endpoint di `010` (screen 5b).
+
 ## Entities (Archivio Storico, Non Schema Runtime)
 
 Le entita', validazioni e relazioni seguenti documentano il progetto precedente.

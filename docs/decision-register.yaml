@@ -896,3 +896,86 @@ decisions:
       (esempi e regole di validazione), `deploy/coolify-test/index.html`.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-16
+
+  - id: DEC-007-FALLBACK-LIVELLO-CATALOGO
+    titolo: Fallback al livello generico nella ricerca catalogo
+    owner_spec: specs/007-frontend-builder-consultazione
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Supera PARZIALMENTE la regola "nessun fallback automatico" della sessione
+      007 2026-09-18 (mai stata una voce di questo registro, solo prosa in
+      spec.md): il fallback vale unicamente per `livello_professionale`, non
+      per `lingua` ne' per `percorso_categorizzazione`, che restano a match
+      esatto senza fallback. `GET /catalogo/modelli` con un livello specifico
+      privo di modello dedicato deve cercare, in un secondo passo esplicito, il
+      modello con `livello_professionale IS NULL` (il generico che copre tutti
+      i livelli di quel profilo) invece di restituire lista vuota - mai "il
+      primo livello trovato", solo quello esplicitamente generico. Motivato dal
+      vincolo gia' confermato "tutti i livelli dell'ultima foglia usano lo
+      stesso contratto campi" (Clarification 007 sessione 2026-09-21), che
+      garantisce compatibilita' anche quando il fallback scatta. Lingua non ha
+      fallback perche' ogni edizione linguistica ha un ciclo di vita di
+      pubblicazione indipendente (FR-034..038, DEC-001-LINGUA-IT-EN) - tornare
+      un'edizione diversa da quella esplicitamente richiesta sarebbe scorretto,
+      non solo una scorciatoia.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-09-21
+
+  - id: DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE
+    titolo: Policy per-dimensione (genera modello distinto o generico) scollegata dall'esempio di contratto
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/010-configurazione-cataloghi-integrazioni
+      - specs/007-frontend-builder-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Ogni dimensione della categorizzazione (oggi `livello`, `lingua`; in
+      futuro altre aggiunte da GEBAN, es. ambito/canale) ha una policy
+      booleana `consente_valore_generico`, registrata per
+      `tipo_documento_id + nome_dimensione` (non per nodo/foglia: una volta
+      per nome, vale ovunque quel nome ricompaia nell'albero). Oggi hardcoded
+      nel codice (`livello` -> true, ammette fallback per
+      DEC-007-FALLBACK-LIVELLO-CATALOGO; `lingua` -> false, sempre esplicita).
+      Va resa una configurazione esplicita e persistita. Punto critico: questa
+      policy e' ESPLICITAMENTE SEPARATA da `DefinizioneStruttura`/
+      `StrutturaInput` (modulo `configurazione`, che genera solo l'esempio
+      presentazionale di contratto per il team dev GEBAN) - non deve mai
+      essere letta da li' ne' influenzata da modifiche puramente
+      documentali/presentazionali a quell'esempio, per non creare una
+      dipendenza fragile fra "documentazione mostrata a GEBAN" e
+      "comportamento reale a runtime" (l'albero vero, per un contesto
+      integrato, arriva sempre live dall'adapter discovery, mai da li').
+      `NodoDiscovery` ha gia' `extra="allow"` (non va in errore su attributi
+      sconosciuti) ma li ignora silenziosamente: va aggiunta una segnalazione
+      quando l'adapter incontra una dimensione priva di policy registrata,
+      invece di lasciarla invisibile.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-09-21
+
+  - id: DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO
+    titolo: Associazione esplicita fra modello e le sue edizioni collegate, annidata nel catalogo
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/007-frontend-builder-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Quando si crea un'edizione collegata (oggi "Crea edizione collegata"/
+      T067; in UI diventera' "Crea versione inglese" come nome provvisorio),
+      il nuovo modello ottiene un riferimento esplicito al modello di origine
+      (associazione, non un `famiglia_modello_id` sull'entita' modello - resta
+      valido quanto gia' deciso in DEC-001-LINGUA-IT-EN, questa e' una
+      relazione a parte). `GET /catalogo/modelli` annida le edizioni collegate
+      DENTRO il modello che le referenzia invece di restituirle come righe
+      piatte slegate come oggi (`ModelloCatalogoSchema` guadagna una struttura
+      annidata). Il meccanismo di fork si applica oggi solo a `lingua`; con
+      DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE si generalizza a qualunque
+      dimensione con `consente_valore_generico=false`.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-09-21

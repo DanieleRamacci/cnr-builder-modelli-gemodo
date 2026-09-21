@@ -14,7 +14,10 @@
     "templates-* -> builder-editor (Modifica)",
     "categorize-wizard -> builder-editor (Genera modello)",
     "builder-editor -> derive-model (Crea modello derivato)",
-    "derive-model -> builder-editor (Crea e apri nel builder, sul nuovo modello)"
+    "derive-model -> builder-editor (Crea e apri nel builder, sul nuovo modello)",
+    "configure-dimensions: raggiungibile da Impostazioni > Integrazioni > <integrazione> > Dimensioni",
+    "new-context -> integration-health (Crea contesto e passa alla verifica)",
+    "integration-health -> configure-dimensions (banner attributo non riconosciuto)"
   ],
   "screens": [
     {
@@ -135,6 +138,92 @@
         "traduzione automatica dei testi al cambio lingua",
         "se rendere modificabili i livelli L1-L4"
       ]
+    },
+    {
+      "id": "4a",
+      "file": "screens/configure-dimensions.md",
+      "label": "configure-dimensions",
+      "route": "/configurazione/tipi-documento/:codice/dimensioni",
+      "name": "Dimensioni e policy di derivazione",
+      "status": "proposta unica",
+      "purpose": "Un admin naviga l'albero live dell'integrazione (drill-down nodo per nodo, non tendine) e per ogni foglia configura le dimensioni dichiarate. La policy e unica per nome dimensione su tutto il tipo documento: le dimensioni gia configurate altrove appaiono in sola lettura con link Modifica.",
+      "keyElements": [
+        "header con Impostazioni attivo",
+        "nota di disambiguazione dalla definizione struttura",
+        "colonna albero 300px con breadcrumb e drill-down",
+        "card dimensione con badge ambra 'nuova, non ancora configurata'",
+        "scelta binaria esplicita distinct/generic con esempi testuali",
+        "pill 'si applica a tutte le foglie di questo tipo documento'",
+        "banner di conflitto fra sessioni",
+        "aside 340px con riepilogo editabile delle policy del tipo documento"
+      ],
+      "openQuestions": [
+        "se questa UI vive in una sezione Impostazioni a se o dentro il builder",
+        "dove linkare la definizione struttura (schermata non ancora disegnata)",
+        "come segnalare in audit/dashboard le dimensioni scoperte ma senza policy"
+      ]
+    },
+    {
+      "id": "4b",
+      "file": "screens/configure-dimensions.md",
+      "label": "configure-dimensions-states",
+      "route": "/configurazione/tipi-documento/:codice/dimensioni",
+      "name": "Stati di 4a: caricamento ed errore di sorgente",
+      "status": "stati, non schermata a se",
+      "purpose": "Skeleton durante la lettura dell'albero e stato di errore quando l'integrazione non risponde: mai una lista vuota silenziosa.",
+      "keyElements": [
+        "spinner + skeleton righe e blocco",
+        "nota: nessuna policy modificabile senza albero letto",
+        "box errore rosso con orario, host, causa",
+        "azioni Riprova / Vedi solo le policy salvate / Dettagli tecnici"
+      ]
+    },
+    {
+      "id": "5a",
+      "file": "screens/new-context.md",
+      "label": "new-context",
+      "route": "/configurazione/contesti/nuovo",
+      "name": "Nuovo contesto / integrazione",
+      "status": "proposta unica",
+      "purpose": "Un amministratore registra una nuova integrazione (es. GEBAN) e genera la struttura minima di esempio da consegnare agli sviluppatori del servizio. Il campo identificativo e il nome con cui il contesto si presenta nel token di autenticazione; non esiste un campo codice tipo documento.",
+      "keyElements": [
+        "stepper 3 passi",
+        "dati contesto: nome, sigla, nome nel token (mono), descrizione, referente, ambiente",
+        "chip dimensioni previste",
+        "nota: documentazione di contratto, non runtime",
+        "anteprima JSON su fondo scuro con Carica/Copia/Scarica",
+        "elenco file da consegnare",
+        "CTA verso la verifica"
+      ],
+      "openQuestions": [
+        "se le dimensioni previste dichiarate qui debbano precompilare le policy o solo la struttura di esempio"
+      ]
+    },
+    {
+      "id": "5b",
+      "file": "screens/integration-health.md",
+      "label": "integration-health",
+      "route": "/configurazione/contesti/:ctxId/integrazione",
+      "name": "Verifica endpoint e storico scansioni",
+      "status": "proposta unica",
+      "purpose": "Inserimento dell'endpoint fornito dagli sviluppatori del contesto, verifica immediata (raggiungibilita, TLS, autenticazione, schema, contenuto, attributi non riconosciuti, campi obbligatori) e storico dei controlli periodici.",
+      "keyElements": [
+        "tab di contesto Integrazione/Dimensioni/Struttura/Permessi",
+        "campo endpoint + metodo autenticazione + Verifica ora",
+        "esito in evidenza con codice e durata",
+        "7 controlli singoli con pastiglia esito",
+        "banner ambra attributo non riconosciuto con link a 4a",
+        "controllo periodico con frequenza",
+        "sparkline 14 scansioni + elenco esiti"
+      ],
+      "openQuestions": [
+        "se la verifica manuale scriva l'albero registrato o proponga un diff da approvare",
+        "policy di notifica sugli esiti negativi"
+      ]
     }
-  ]
+  ],
+  "notes": {
+    "distinzione-importante": "4a (configure-dimensions) configura il comportamento a runtime del catalogo. La definizione struttura / esempio di contratto per l'integrazione e invece 5a (new-context, colonna destra): descrive la forma minima che il servizio deve esporre e NON influenza il runtime. Sono due oggetti distinti, non unirli in una sola schermata.",
+    "nessun-codice-tipo-documento": "La maschera 5a NON ha un campo 'codice tipo documento': un contesto puo esporre piu tipi di documento e quali siano lo dichiara l'alberatura restituita dal servizio. Il campo identificativo richiesto e invece il nome con cui il contesto si presenta nel token di autenticazione."
+  }
 }

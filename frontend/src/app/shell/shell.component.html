@@ -16,8 +16,11 @@
       >Home</a
     >
     @if (isAdmin) {
-      <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+      <a routerLink="/configurazione" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link"
         >Integrazione servizi</a
+      >
+      <a routerLink="/configurazione/tipi-documento" routerLinkActive="active" class="nav-link"
+        >Tipi documento</a
       >
     }
     @if (isManager) {

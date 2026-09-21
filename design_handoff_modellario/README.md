@@ -2,18 +2,19 @@
 
 ## Overview
 Interfaccia web per un software che genera **modelli di documento** per la PA.
-Flusso: **contesti applicativi** → **elenco modelli del contesto** → **categorizzazione** (tendine a cascata dal servizio di categorizzazione) → **builder** del modello (editor tipo docx con segnaposto). Dal builder si può inoltre **derivare** un nuovo modello da uno esistente, ereditandone struttura e testi e cambiando solo gli attributi aggiuntivi (es. la lingua).
+Flusso amministrativo: **creazione del contesto/integrazione** → **verifica dell'endpoint e scansioni periodiche** → **configurazione delle policy dimensione**.
+Flusso redazionale: **contesti applicativi** → **elenco modelli del contesto** → **categorizzazione** (tendine a cascata dal servizio di categorizzazione) → **builder** del modello (editor tipo docx con segnaposto). Dal builder si può inoltre **derivare** un nuovo modello da uno esistente, ereditandone struttura e testi e cambiando solo gli attributi aggiuntivi (es. la lingua).
 
 ## About the Design Files
 I file in `design/` sono **riferimenti di design realizzati in HTML**: prototipi che mostrano aspetto e comportamento attesi, **non codice di produzione da copiare**.
 Il compito è **ricreare queste schermate nell'ambiente del codebase di destinazione** (Angular + design-angular-kit, React, Vue…) usando i suoi pattern e le sue librerie. Se non esiste ancora un ambiente, scegliere il framework più adatto — per questo progetto la scelta naturale è **Angular con `@italia/design-angular-kit`**, perché il prototipo è già costruito sul CSS di Bootstrap Italia.
 
-`design/Gestione Modelli.dc.html` è un singolo documento "canvas" che contiene **tutte e sette le schermate** affiancate. Ogni schermata è un `<div class="dv-opt" id="<id>" data-screen-label="<nome>">`: si apre nel browser e si raggiunge via anchor (es. `…#2b`). `support.js` è il runtime del prototipo e **non va portato** nel progetto.
+`design/Gestione Modelli.dc.html` è un singolo documento "canvas" che contiene **tutte e undici le viste** affiancate. Ogni schermata è un `<div class="dv-opt" id="<id>" data-screen-label="<nome>">`: si apre nel browser e si raggiunge via anchor (es. `…#2b`). `support.js` è il runtime del prototipo e **non va portato** nel progetto.
 
 ## Fidelity
 **High-fidelity.** Colori, tipografia, spaziature, stati e copy sono definitivi e derivati da Bootstrap Italia. Ricreare l'UI fedelmente usando i componenti equivalenti del design system, non riscrivendo il CSS a mano.
 
-Le schermate **1b / 1c / 1d sono tre varianti della stessa pagina** (elenco modelli): scegliere una direzione. Suggerimento: 1b come vista di default, 1c come toggle "griglia". 1a, 2a, 2b, 3a sono proposte uniche.
+Le schermate **1b / 1c / 1d sono tre varianti della stessa pagina** (elenco modelli): scegliere una direzione. Suggerimento: 1b come vista di default, 1c come toggle "griglia". 1a, 2a, 2b, 3a, 4a, 5a, 5b sono proposte uniche; 4b non è una schermata ma la raccolta degli stati di 4a.
 
 ## Screens / Views
 
@@ -28,6 +29,10 @@ Mappa file ↔ schermata in `screens.json` (leggibile da un agente). Sintesi:
 | 2a | categorize-wizard | Categorizzazione del modello | `/contesti/:ctxId/modelli/nuovo` |
 | 2b | builder-editor | Builder del modello | `/modelli/:modelId/builder` |
 | 3a | derive-model | Crea modello derivato (dialogo sopra il builder) | `/modelli/:modelId/deriva` |
+| 4a | configure-dimensions | Configura dimensioni e policy di derivazione | `/configurazione/tipi-documento/:codice/dimensioni` |
+| 4b | configure-dimensions-states | Stati di 4a: caricamento ed errore di sorgente | — (stessa rotta) |
+| 5a | new-context | Nuovo contesto / integrazione + struttura di esempio | `/configurazione/contesti/nuovo` |
+| 5b | integration-health | Contesto: verifica endpoint e storico scansioni | `/configurazione/contesti/:ctxId/integrazione` |
 
 ---
 
@@ -183,6 +188,101 @@ Footer del pannello: `margin-top: auto`, fondo `#f2f5f8`, bordo superiore, 12.5p
 - Se al cambio di lingua i testi ereditati vadano tradotti automaticamente o restino in italiano da tradurre a mano.
 - Se i livelli L1–L4 debbano diventare modificabili (ora bloccati per garantire la stessa famiglia di atto).
 
+---
+
+### 4a — configure-dimensions · Dimensioni e policy di derivazione
+**Rotta.** `/configurazione/tipi-documento/:codice/dimensioni` (nel mock: `BANDO_CONCORSO`).
+
+**Purpose.** Un admin naviga l'albero di categorizzazione **reale e live** dell'integrazione connessa e, per ogni foglia che raggiunge, vede le dimensioni che quella foglia dichiara (`livello`, `lingua`, in futuro altre come `canale`). Per ogni dimensione stabilisce **se il cambio di valore biforca il modello** o se un modello generico copre tutti i valori.
+
+**Il concetto da rendere evidente:** la policy si imposta **una volta per nome dimensione**, valida su tutto il tipo documento — non nodo per nodo. Se `lingua` è già stata configurata su un'altra foglia, qui compare **già impostata e in sola lettura**, con link "Modifica"; non viene richiesta di nuovo. Tre elementi lo comunicano insieme: il badge verde "configurata", la riga "Configurata da <utente> il <data> · si applica a tutte le foglie di questo tipo documento", e la pill blu accanto al pulsante di salvataggio "si applica a tutte le foglie di questo tipo documento".
+
+⚠️ **Non confondere con la definizione struttura.** Questa schermata configura **comportamento a runtime** del catalogo. La *definizione struttura* (`DefinizioneStruttura`/`StrutturaInput`) serve solo a generare la documentazione di contratto per l'integrazione e **non deve influenzare il runtime**: sono due oggetti distinti. Nel prototipo la distinzione è resa da una nota informativa fissa sotto l'header (box `background #f2f7fc`, `border 1px solid #d9e4ef`, `border-left: 4px solid #0066cc`, radius 4px, padding `12px 15px`, testo 13.5px/1.55 `#33485c`, icona info 17px `#0059b3`). **La *definizione struttura* è ora disegnata in **5a** (colonna destra: struttura minima di esempio da consegnare agli sviluppatori): da 4a va linkata lì.**
+
+**Layout** (canvas 1320px).
+1. Header applicativo standard (60px, `#0066cc`) con **"Impostazioni"** come voce attiva.
+2. Breadcrumb `Impostazioni / Integrazioni / GEBAN / Dimensioni`.
+3. Page header: `h1` 30px/700 `#17324d` + badge codice tipo documento (`#e6f0fa`/`#0066cc`, `Roboto Mono` 11px/600); sottotitolo 15px/1.5 `#5a6772` max-width 720px che enuncia la regola ("La policy vale per **nome dimensione** su tutto il tipo documento"). A destra, stato sorgente allineato a destra, 12.5px: pallino 8px `#1b7a34` + "sorgente live connessa" (600, `#1b7a34`), host in `Roboto Mono`, "albero letto il <data> · ricarica".
+4. Nota di disambiguazione (sopra).
+5. Corpo: `grid-template-columns: 300px 1fr 340px`, min-height 640px, `border-top 1px solid #e3e7eb`.
+
+**Colonna 1 — Albero dell'integrazione** (fondo `#fbfcfd`, `border-right #e3e7eb`, padding `16px 0 20px`).
+Navigazione **a drill-down, non a tendine**: breadcrumb dei nodi visitati (12.5px, separatore `›` opacity .45, nodo corrente 700 `#17324d`, gli altri link `#0066cc` cliccabili per risalire) e sotto l'elenco dei figli del nodo corrente. Riga nodo: padding `11px 18px`, `border-left: 3px solid transparent`, label 13.5px/600 `#17324d`, codice `Roboto Mono` 11px/500 `#5a6772`, meta 11.5px `#5a6772` ("5 profili" per i rami, "3 livelli · IT/EN · +1 dimensione" per le foglie), chevron 15px se ha figli, pill grigia "foglia" (`#eceff2`/`#5a6772`, radius 10px, 11px/700) se è una foglia. Quando il nodo corrente è una **foglia**, la colonna mostra i **fratelli** (gli altri profili dello stesso ramo) con la foglia corrente evidenziata — `background #eaf3fc` + `border-left: 3px solid #0066cc`, meta "foglia selezionata" — così l'admin passa da un profilo all'altro senza risalire dal breadcrumb.
+
+**Colonna 2 — Dimensioni della foglia** (padding `18px 24px 26px`).
+- Intestazione: `h2` 21px/700 `#17324d` (nome della foglia) + riga `Roboto Mono` 12px ("profilo · COLLABORATORE_TECNICO_ER"); a destra pill di sintesi — ambra "N dimensione da configurare" (`#fdf1d8`/`#8a5a00`), verde "tutte le dimensioni configurate" (`#e0f2e4`/`#1b7a34`), grigia "seleziona una foglia" quando si è su un ramo. Sotto, spiegazione 14px/1.55 `#5a6772`.
+- **Banner di conflitto** (quando un'altra sessione ha cambiato la stessa policy): box `#fdf1d8`, `border 1px solid #f0d9a8`, `border-left: 4px solid #8a5a00`, icona triangolo, titolo 13.5px/700 `#5c3d00` con il nome dimensione in mono, testo 13px che dice **chi**, **cosa** e **quando** ("G. Bianchi ha impostato 'un solo modello copre tutti i valori' 2 minuti fa"), e due azioni: "Usa la versione aggiornata" (fondo `#8a5a00`, testo bianco) / "Mantieni la mia scelta" (bordo `#8a5a00`). Nessun salvataggio silenzioso: la scelta è dell'admin.
+- **Card dimensione** (una per dimensione dichiarata, gap 16px). Bordo e fondo cambiano con lo stato: non configurata → `border #f0d9a8`, `background #fffdf7`; configurata → `border #e3e7eb`, `background #fff`. Padding `16px 18px 18px`, radius 4px.
+  - Riga superiore: nome dimensione come token (`Roboto Mono` 13.5px/500 `#0059b3` su `#e9f2fb`, radius 3px, padding `2px 8px`) + **badge di stato**: ambra "nuova, non ancora configurata" (`#fdf1d8`/`#8a5a00` — stesso stile della pill "In revisione" di 1b) oppure verde "configurata" (`#e0f2e4`/`#1b7a34`). A destra "valori su questa foglia:" 12.5px + chip valore (bordo `#dbe2e8`, radius 11px, `Roboto Mono` 11.5px `#33485c`).
+  - **Stato configurato (sola lettura)**: box interno bianco bordo `#e3e7eb`, spunta verde 15px `#1b7a34`, etichetta della policy 14px/700, esempio 13px `#5a6772`, riga di provenienza 12.5px "Configurata da M. Rossi il 18/09/2026 · si applica a tutte le foglie di questo tipo documento", link **Modifica** 13.5px/600 a destra.
+  - **Stato da configurare (o in modifica)**: domanda 14.5px/700 `#17324d` — *"Questa dimensione genera un modello distinto quando cambia valore?"* — e **due opzioni esplicite** (non una checkbox, non "sì/no" nudo), righe cliccabili con radio disegnato (cerchio 18px, bordo 2px `#c5cdd4` → `#0066cc`, punto interno 9px), bordo `#dbe2e8` → `#0066cc` e fondo `#fff` → `#f2f7fc` quando selezionata:
+    1. **"Sì, ogni valore è un modello a sé"** — esempio: *"cambiare valore crea sempre un nuovo id, mai un fallback"* — nota "come lingua".
+    2. **"No, un solo modello copre tutti i valori salvo scelta esplicita"** — esempio: *"se non trovo un modello per il valore richiesto, uso quello generico"* — nota "come livello".
+  - Azioni: **Salva policy** (primaria h 38px, disabilitata finché non si sceglie), "Annulla" (solo quando si sta modificando una policy esistente), e la pill blu `#e6f0fa`/`#0059b3` "si applica a tutte le foglie di questo tipo documento" accanto al pulsante — il punto in cui l'admin capisce che **non** sta configurando solo quel nodo.
+
+**Colonna 3 — Policy del tipo documento** (aside, fondo `#fbfcfd`, `border-left #e3e7eb`, padding `18px 20px 22px`). Riepilogo **editabile** di tutte le dimensioni già configurate: label uppercase 12.5px/700 + nota "Valgono per **BANDO_CONCORSO** su tutte le foglie dell'albero". Card per dimensione (bianca, bordo `#e3e7eb`, radius 4px, padding `12px 13px`): nome in mono 12.5px `#0059b3`, pill della policy a destra — "biforca il modello" (`#e6f0fa`/`#0059b3`) o "ammette il generico" (`#e0f2e4`/`#1b7a34`) —, sintesi 13px `#33485c`, autore+data 12px e link "modifica" (apre la card corrispondente in colonna 2 in stato editabile). In fondo, nota separata da `border-top`: "Le dimensioni non ancora configurate compaiono qui appena l'integrazione le dichiara su una foglia: **N** in attesa" (numero in `#8a5a00`).
+
+**Albero del prototipo** (forma `NodoDiscovery`): `BANDO_CONCORSO` › `CP` Concorsi Pubblici (tipologia) › 5 profili — COLLABORATORE_TECNICO_ER (IV/V/VI, base VI, IT/EN, **+ dimensione `canale`: PEC / Portale bandi / Albo pretorio** = il caso "dimensione nuova"), OPERATORE_TECNICO (VI–VIII, IT), RICERCATORE (I–III, IT/EN), TECNOLOGO (I–III, IT/EN), FUNZIONARIO_AMMINISTRAZIONE (IV–V, IT).
+Policy preconfigurate nel mock: `lingua` → biforca (distinct), `livello` → ammette il generico. `canale` è nuova e non configurata: è la card ambra.
+
+### 4b — configure-dimensions-states · Stati di 4a
+Due stati resi come card separate (larghezza 620px) perché non convivono nella stessa vista:
+1. **Albero non ancora caricato** — spinner 15px (bordo `#c5cdd4` con `border-top-color: #0066cc`) + "Interrogazione dell'integrazione in corso…"; tre skeleton riga h 38px e un blocco h 96px (bordo `#eef1f4`, radius 4px, riempimento `linear-gradient(90deg,#f2f5f8,#e8edf2,#f2f5f8)` con la banda chiara a offset diversi); nota: nessuna policy è modificabile finché l'albero non è stato letto, perché le dimensioni arrivano dalla sorgente e non dalla cache.
+2. **Sorgente esterna non raggiungibile** — box `#fdeaea`, `border 1px solid #f0c9c9`, `border-left: 4px solid #a3242c`, icona 18px; titolo 14px/700 `#7a1b22` "Albero non disponibile: l'integrazione non risponde"; testo con **orario dell'ultimo tentativo, host e causa** ("timeout dopo 10s") e la garanzia che le policy salvate restano attive; tre azioni: "Riprova" (fondo `#a3242c`, testo bianco), "Vedi solo le policy salvate", "Dettagli tecnici" (bordo `#a3242c`). Regola: **mai una lista vuota silenziosa** — l'assenza di nodi è sempre spiegata, con orario e via d'uscita.
+
+*(Colori dell'errore: sono i soli due valori nuovi rispetto ai token già documentati — `#a3242c` / `#7a1b22` su `#fdeaea` / `#f0c9c9`, l'`error` di Bootstrap Italia. Vedi Design Tokens.)*
+
+---
+
+### 5a — new-context · Nuovo contesto / integrazione
+**Rotta.** `/configurazione/contesti/nuovo`.
+
+**Purpose.** Un amministratore registra una nuova integrazione (nel mock: **GEBAN**) e ne ricava la **struttura minima di esempio** da consegnare agli sviluppatori del servizio, perché i dati arrivino nella forma che ci serve.
+
+**Layout** (canvas 1240px). Header applicativo con **"Impostazioni"** attivo; breadcrumb `Impostazioni / Contesti / Nuovo contesto`; stepper a 3 passi — 1 Dati del contesto, 2 Struttura di esempio (entrambi attivi, pallino `#0066cc`), 3 Verifica dell'endpoint (inattivo, `opacity .55`, link a **5b**). Titolo `h1` 30px/700, sottotitolo 15px/1.5 max-width 700px. Corpo: `grid-template-columns: 1fr 1fr`, gap 26px.
+
+**Colonna sinistra — Dati del contesto.** Campi (label 13.5px/600 `#33485c`, input h 40px bordo `#c5cdd4` radius 4px 14.5px):
+| campo | valore nel mock | note |
+|---|---|---|
+| Nome del contesto | GEBAN — Bandi di concorso | testo libero, in griglia `1fr 200px` con la sigla |
+| Sigla | `GEBAN` | mono |
+| **Nome del contesto nel token** | `geban` | **mono** — è il valore con cui il contesto si presenta nel **token di autenticazione**: deve coincidere esattamente con quello emesso dagli sviluppatori, altrimenti le chiamate non vengono associate a questo contesto |
+| Descrizione | testo su 2 righe | `textarea`, resize verticale |
+| Referente tecnico | dev-geban@cnr.esempio.it | in griglia con Ambiente |
+| Ambiente | Test / Collaudo / Produzione | select |
+| Dimensioni previste | chip `livello`, `lingua` + "+ aggiungi" | chip `#e6f0fa`/`#0059b3` radius 13px con "×" di rimozione; il chip "+ aggiungi" è tratteggiato `#c5cdd4` |
+
+⚠️ **Non esiste un campo "codice tipo documento".** Un contesto può esporre **più tipi di documento**: quali siano lo dichiara l'alberatura restituita dal servizio, non questa schermata. Non reintrodurre quel campo in implementazione.
+Nota sotto le dimensioni: dichiararle qui le include nella struttura di esempio, ma la **policy runtime** di ciascuna si imposta dopo la prima scansione, in **4a**.
+
+**Colonna destra — Struttura minima di esempio.**
+- Nota informativa blu (stesso box di 4a: `#f2f7fc`, `border-left 4px solid #0066cc`): il file è **documentazione di contratto**, descrive la forma minima che il servizio deve esporre e **non** determina il comportamento a runtime (quello è 4a); più la precisazione sui tipi di documento multipli.
+- **Blocco file**: cornice `1px solid #dbe2e8` radius 4px. Barra superiore `#f7f9fb`: nome file in mono 12px (`geban-discovery.example.json`), pill grigia "bozza", e a destra tre azioni h 30px — **Carica .json** e **Copia** (bordo `#c5cdd4`) + **Scarica .json** (primaria). Il file si può quindi generare, scaricare, modificare e ricaricare.
+- **Anteprima del JSON**: fondo `#17324d`, testo `#dbe6f2`, `Roboto Mono` 11.5px/1.75, `white-space: pre`; il primo elemento di `campi` è evidenziato in `#8fb9e8` come esempio di campo. Contenuto: `codice_tipo_documento`, `validita`, `nodi[]` con una tipologia `CP` e un `PROFILO_ESEMPIO` che dichiara `livelli_possibili`, `livello_base`, `lingue_possibili` e un campo di esempio — la forma `NodoDiscovery`.
+- **"Cosa consegnare agli sviluppatori"**: tre righe file (bordo `#e3e7eb`, radius 4px) con nome in mono `#0059b3`, descrizione 12.5px e link "scarica" — esempio JSON, contratto OpenAPI dell'endpoint, regole su campi e dimensioni.
+- Azioni finali: **"Crea contesto e passa alla verifica"** (primaria h 44px → **5b**) + "Salva come bozza" (outline).
+
+---
+
+### 5b — integration-health · Verifica dell'endpoint e storico scansioni
+**Rotta.** `/configurazione/contesti/:ctxId/integrazione`.
+
+**Purpose.** Nel contesto scelto, l'amministratore inserisce l'endpoint fornito dagli sviluppatori, verifica che risponda e che la risposta sia valida, e consulta lo storico dei controlli periodici.
+
+**Layout** (canvas 1240px). Header con "Impostazioni" attivo; breadcrumb `Impostazioni / Contesti / GEBAN`; page header con `h1` 30px/700 + badge codice in `#e6f0fa` e azioni a destra ("Dimensioni" → 4a, "Modelli del contesto" → 1b). **Tab di contesto** (bordo inferiore `#e3e7eb`, 14px, gap 22px; attiva 700 `#0059b3` + `border-bottom 3px solid #0066cc`): Integrazione · Dimensioni · Struttura di esempio · Permessi. Corpo: `grid-template-columns: 1fr 360px`, gap 24px.
+
+**Colonna principale.**
+1. *Endpoint di discovery*: input mono h 42px (flex, min-width 280px) + select metodo di autenticazione 150px (Token statico / OAuth 2.0 / mTLS) + **"Verifica ora"** (primaria h 42px, icona refresh).
+2. *Esito in evidenza*: box verde `#e0f2e4`, `border 1px solid #bfe3c8`, `border-left 4px solid #1b7a34`, ink `#12592a`; cerchio 28px `#1b7a34` con spunta bianca; titolo 15px/700 "Endpoint raggiungibile e risposta valida"; riga meta con **orario, elementi letti e confronto con l'albero registrato**; a destra pill bianca mono "200 OK · 412 ms".
+3. *Elenco controlli*: righe bianche separate da 1px `#e3e7eb` (tecnica: contenitore con `gap:1px` su fondo `#e3e7eb`), ciascuna con pastiglia 20px (spunta verde `#e0f2e4`/`#1b7a34`, "!" ambra `#fdf1d8`/`#8a5a00`), label 14px/600, dettaglio 13px `#5a6772`, valore a destra in mono 12px. I sette controlli: Raggiungibilità (412 ms) · Certificato TLS (valido, scadenza) · Autenticazione (token accettato) · Schema della risposta (conforme a NodoDiscovery) · Contenuto dell'albero (1 tipologia, 5 profili, 18 campi) · **Attributi non riconosciuti (1: `canale`)** · Campi obbligatori mancanti (0).
+4. *Banner ambra* (`#fdf1d8`, `border-left 4px solid #8a5a00`): l'attributo `canale` trovato su 1 foglia non ha policy registrata, **oggi viene ignorato a runtime**, con link "Configura la policy" → **4a**. È l'anello fra scoperta e configurazione.
+
+**Colonna laterale.**
+- *Controllo periodico* (box `#fbfcfd`): pill verde "attivo" + "prossima alle 18:00"; select **Frequenza** (ogni 6 ore / una volta al giorno / una volta a settimana); nota: ogni scansione verifica raggiungibilità, schema e differenze rispetto all'albero registrato, e gli esiti negativi notificano il referente tecnico.
+- *Storico scansioni* (cornice `#e3e7eb`): intestazione con "30 giorni"; **sparkline** delle ultime 14 scansioni (barre `flex:1`, radius 2px, altezza = durata; verde `#1b7a34` conforme, ambra `#8a5a00` warning, rosso `#a3242c` fallita) con didascalia "più alto = più lento"; poi le righe delle scansioni recenti — pastiglia esito, titolo 13.5px/600, riga "data ora · origine (manuale con utente / automatica) · dettaglio", durata a destra in mono. Nel mock: 2 conformi, 1 attributo non riconosciuto, 1 **timeout dopo 10 s con 3 tentativi**, 1 conforme. In fondo link "Vedi tutte le scansioni".
+
+**Aperto:** se la verifica manuale possa **scrivere** subito l'albero registrato o debba solo proporre un diff da approvare (nel mock riporta "nessuna differenza", non decide).
+
 ## Interactions & Behavior
 - **1a → 1b/1c/1d**: click su card contesto / "Apri contesto".
 - **1b/1c/1d → 2a**: CTA "Nuovo modello".
@@ -194,13 +294,22 @@ Footer del pannello: `margin-top: auto`, fondo `#f2f5f8`, bordo superiore, 12.5p
 - **Sezioni bloccate**: non editabili, fondo `#fbfaf6`, etichetta ambra, lucchetto nell'outline.
 - **2b → 3a**: pulsante "Crea modello derivato" nella topbar; il dialogo si apre sopra il builder, "Annulla" e "×" tornano indietro.
 - **3a — derivazione**: ogni select parte da "eredita"; al cambio di un valore il blocco si evidenzia, compare la pill "modificato" e nome, codice e chip del riepilogo si ricalcolano; la CTA si abilita al primo attributo divergente e porta al builder del nuovo modello.
+- **4a — drill-down**: click su una riga nodo scende di livello; il breadcrumb dell'albero risale a qualsiasi antenato. Nessuna tendina: la navigazione è nodo per nodo, perché l'albero è live e può cambiare profondità.
+- **4a — configurazione**: una dimensione senza policy mostra le due opzioni; il click su un'opzione la seleziona e abilita "Salva policy"; al salvataggio la card passa in sola lettura e compare nel riepilogo a destra. "Modifica" (nella card o nel riepilogo) la riapre in scrittura con "Annulla". Salvare una policy la rende in sola lettura **su tutte le foglie**, non solo su quella corrente.
+- **4a — conflitto**: se la stessa policy è stata cambiata altrove, il banner ambra chiede di scegliere fra versione aggiornata e propria scelta; nessuna scrittura automatica.
+- **5a → 5b**: "Crea contesto e passa alla verifica"; lo stepper mostra la verifica come passo 3 dello stesso flusso.
+- **5a — struttura di esempio**: si rigenera dai dati del form; può essere copiata, scaricata, oppure **caricata** da file per partire da una struttura già scritta dagli sviluppatori.
+- **5b — verifica**: "Verifica ora" esegue una scansione manuale e aggiorna esito, controlli e storico; il controllo periodico fa lo stesso senza intervento, con notifica al referente sugli esiti negativi.
+- **5b → 4a**: dal banner ambra sugli attributi non riconosciuti si va direttamente alla configurazione della policy della dimensione scoperta.
 - **Stati mancanti da progettare in implementazione**: loading delle tendine (skeleton/spinner sulla select), errore del servizio di categorizzazione, salvataggio in corso/fallito nella topbar, segnaposto non risolvibile (evidenziazione rossa), lista modelli vuota.
 
 ## State Management
 **2a**: `cat: string[4]` (il percorso scelto) → derivati: opzioni per livello, abilitazioni, conteggio livelli, codice anteprima, sezioni proposte, abilitazione CTA.
+**5b**: `scanFreq` (frequenza del controllo periodico); esito dell'ultima scansione, elenco dei controlli e storico arrivano dall'API.
+**4a**: `tpath: string[]` (percorso nell'albero), `policies: Record<nomeDimensione, {policy:'distinct'|'generic', who, when}>` — **chiave per nome dimensione + tipo documento, non per nodo**, `editing` (dimensione in scrittura), `draft` (scelta non ancora salvata), `conflict`. Le dimensioni della foglia sono derivate dal nodo (livelli, lingue, attributi extra), non memorizzate.
 **3a**: `deriv: Record<string,string>` (solo gli attributi effettivamente cambiati; valore vuoto = ereditato) → derivati: evidenziazione dei campi, nome e codice risultanti, chip di riepilogo, abilitazione CTA, hint del contatore. La categorizzazione ereditata è di sola lettura e arriva dal modello padre.
 **2b**: `sections` (numero/elenco di sezioni presenti), `active` (indice sezione selezionata), `tab` (`segnaposto | blocchi | proprietà`), + riferimento al `Range` di inserimento (fuori da React state: non deve causare re-render).
-**Dati da API**: elenco contesti; elenco modelli per contesto (incluso il riferimento al modello padre per i derivati) (con stato, versione, utilizzi, autore); albero di categorizzazione (per livello, dato il percorso); dimensioni di derivazione disponibili con il valore corrente del padre; schema dei segnaposto disponibili (raggruppati per fonte dati); contenuto del modello (sezioni con testo, flag locked/obbligatorietà/ripetibilità); storico versioni.
+**Dati da API**: elenco contesti; elenco modelli per contesto (incluso il riferimento al modello padre per i derivati) (con stato, versione, utilizzi, autore); albero di categorizzazione (per livello, dato il percorso); dimensioni di derivazione disponibili con il valore corrente del padre; albero live dell'integrazione (drill-down per nodo) e policy dimensione registrate per tipo documento; esito della verifica endpoint (controlli singoli) e storico delle scansioni; schema dei segnaposto disponibili (raggruppati per fonte dati); contenuto del modello (sezioni con testo, flag locked/obbligatorietà/ripetibilità); storico versioni.
 **Nota sul re-render**: nel prototipo il contenuto editabile è montato una volta e poi modificato dal DOM. In un'app reale, tenere il testo delle sezioni fuori dal ciclo di re-render (editor dedicato tipo TipTap/ProseMirror/CKEditor) invece di un `contenteditable` controllato, altrimenti il cursore salta a ogni digitazione.
 
 ## Design Tokens
@@ -230,7 +339,12 @@ Footer del pannello: `margin-top: auto`, fondo `#f2f5f8`, bordo superiore, 12.5p
 | ink-400 | `#8a93a0` | badge livello in sola lettura |
 | success | bg `#e0f2e4` / ink `#1b7a34` | stato Pubblicato |
 | warning | bg `#fdf1d8` / ink `#8a5a00` | In revisione, bloccata |
-| neutral | bg `#eceff2` / ink `#5a6772` | Bozza |
+| neutral | bg `#eceff2` / ink `#5a6772` | Bozza, pill "foglia" |
+| error | bg `#fdeaea` / border `#f0c9c9` / accent `#a3242c` / ink `#7a1b22` | errore di sorgente (4b), scansione fallita (5b) |
+| success-strong | bg `#e0f2e4` / border `#bfe3c8` / accent `#1b7a34` / ink `#12592a` | esito positivo della verifica (5b) |
+| code-surface | bg `#17324d` / ink `#dbe6f2` / accent `#8fb9e8` | anteprima del file di esempio (5a) |
+| attention-bg | `#fffdf7` | fondo card dimensione non configurata |
+| skeleton | `#f2f5f8` → `#e8edf2` | riempimento dei placeholder in caricamento |
 
 **Tipografia.** `Titillium Web` 300/400/600/700 (UI, font di Bootstrap Italia); `Roboto Mono` 400/500 (codici, segnaposto, date tecniche).
 Scala: h1 pagina 30–34px/700 (letter-spacing -.3px) · h1 sezione 28px · h2 23px · card title 16–17.5px/700 · sezione documento 14.5px/700 uppercase (ls .4px) · body UI 14–15px · corpo documento 13.5px/1.75 · meta 12.5–13px · label uppercase 12–12.5px/700 (ls .6px) · mono 11.5px. **Mai sotto 11.5px.**
@@ -247,6 +361,6 @@ Lo stemma dell'ente nel builder è un placeholder 38×44: serve il logo reale de
 Font da Google Fonts (Titillium Web, Roboto Mono).
 
 ## Files
-- `design/Gestione Modelli.dc.html` — tutte e sette le schermate, identificate da `id` e `data-screen-label`. Aprire nel browser; aggiungere `#2b` all'URL per saltare al builder. Interattivo: tendine a cascata (2a), tab/outline/inserimento segnaposto (2b), attributi di derivazione (3a).
+- `design/Gestione Modelli.dc.html` — tutte e undici le viste, identificate da `id` e `data-screen-label`. Aprire nel browser; aggiungere `#2b` all'URL per saltare al builder. Interattivo: tendine a cascata (2a), tab/outline/inserimento segnaposto (2b), attributi di derivazione (3a), drill-down dell'albero e salvataggio delle policy (4a), frequenza del controllo periodico (5b).
 - `design/support.js` — runtime del prototipo, **non portare in produzione**.
 - `screens.json` — mappa macchina-leggibile id → label → nome → rotta → scopo → elementi chiave. Da dare in pasto all'agente insieme a questo README.

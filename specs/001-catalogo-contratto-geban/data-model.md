@@ -301,6 +301,26 @@ Validation:
 - le modifiche contenutistiche a una versione pubblicata creano una bozza derivata e non
   aggiornano direttamente la versione pubblicata.
 
+**Ricerca catalogo, fallback livello (2026-09-21, `DEC-007-FALLBACK-LIVELLO-CATALOGO`)**:
+`GET /catalogo/modelli` con `livello_professionale` valorizzato e senza un
+modello pubblicato per quell'esatto valore MUST cercare, come secondo passo
+esplicito, il modello della stessa combinazione tipo/percorso/lingua con
+`livello_professionale IS NULL` (il generico) prima di restituire lista
+vuota. Non e' "togliere il filtro livello" (che restituirebbe qualunque
+livello trovato per primo) - e' un secondo lookup mirato solo sul valore
+`NULL`. Il fallback vale **solo** su `livello_professionale`; `lingua` e
+`percorso_categorizzazione` restano a match esatto, mai fallback.
+
+**Associazione ed edizioni collegate (2026-09-21, `DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`)**:
+`ModelloCatalogoSchema` (risposta di `GET /catalogo/modelli`) guadagna una
+struttura annidata per le edizioni collegate al modello (oggi solo edizioni
+linguistiche create via "Crea edizione collegata"): il modello di origine
+porta annidati i riferimenti ai modelli collegati, non piu' righe piatte
+indipendenti nello stesso array `modelli`. Owner della relazione: `002`
+(vedi la nuova entita' `AssociazioneModello` in
+`specs/002-builder-modelli/data-model.md`); questa spec ne consuma solo la
+proiezione in lettura.
+
 ### ModelloCampoRichiesto
 
 Campo dichiarato nel contratto dati di una versione modello.

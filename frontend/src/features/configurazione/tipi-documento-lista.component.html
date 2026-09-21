@@ -1,0 +1,51 @@
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
+  <h1>Tipi documento</h1>
+  <a routerLink="nuovo" class="btn btn-primary">Nuovo tipo documento</a>
+</div>
+
+@if (caricamento()) {
+  <p>Caricamento...</p>
+} @else if (errore()) {
+  <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+  <button type="button" class="btn btn-outline-primary" (click)="carica()">Riprova</button>
+} @else if (tipi().length === 0) {
+  <p>Nessun tipo documento configurato. Creane uno per iniziare.</p>
+} @else {
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Codice</th>
+          <th scope="col">Nome</th>
+          <th scope="col">Contesto</th>
+          <th scope="col">Stato</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (tipo of tipi(); track tipo.codice) {
+          <tr>
+            <td>{{ tipo.codice }}</td>
+            <td>{{ tipo.nome }}</td>
+            <td>{{ tipo.codice_contesto }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.text-bg-secondary]="badge(tipo.stato_integrazione).variant === 'neutro'"
+                [class.text-bg-success]="badge(tipo.stato_integrazione).variant === 'positivo'"
+                [class.text-bg-danger]="badge(tipo.stato_integrazione).variant === 'errore'"
+              >
+                {{ badge(tipo.stato_integrazione).label }}
+              </span>
+            </td>
+            <td>
+              <a [routerLink]="[tipo.codice]" class="btn btn-sm btn-outline-primary"
+                >Modifica struttura</a
+              >
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

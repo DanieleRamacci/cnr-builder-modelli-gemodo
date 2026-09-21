@@ -34,6 +34,11 @@ def crea(request: TipoDocumentoCreate, principal: Admin, service: Service):
     return service.crea(request, principal)
 
 
+@router.get("/{codice}/struttura", response_model=StrutturaInput)
+def leggi_struttura(codice: str, principal: Admin, service: Service):
+    return service.struttura_corrente(codice)
+
+
 @router.put("/{codice}/struttura", response_model=TipoDocumentoDashboard)
 def aggiorna(codice: str, request: StrutturaInput, principal: Admin, service: Service):
     return service.aggiorna(codice, request, principal)

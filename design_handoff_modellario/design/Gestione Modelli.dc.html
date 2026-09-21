@@ -30,6 +30,529 @@ em.ph{font-style:normal;font-family:"Roboto Mono",monospace;font-size:11.5px;col
 </style>
 </helmet>
 
+<section class="dv-turn" id="t5">
+<div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Creazione contesto e verifica dell'integrazione</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="5a" data-screen-label="new-context">
+<div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Nuovo contesto — dati dell'integrazione e struttura di esempio per gli sviluppatori</div>
+<div class="dv-card" style="width:1240px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Modelli</span>
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Impostazioni</span>
+</nav>
+<span style="display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font:700 12.5px 'Titillium Web',sans-serif">MR</span>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772">Impostazioni <span style="opacity:.5;padding:0 6px">/</span> <a href="#1a" style="text-decoration:none">Contesti</a> <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Nuovo contesto</span></div>
+
+<div style="display:flex;align-items:center;padding:16px 28px 0">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0066cc;color:#fff;font-weight:700;font-size:13.5px">1</span>
+<span style="font-size:14.5px;font-weight:700;color:#17324d">Dati del contesto</span>
+</div>
+<span style="flex:1;height:2px;background:#e3e7eb;margin:0 14px;max-width:110px"></span>
+<div style="display:flex;align-items:center;gap:10px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0066cc;color:#fff;font-weight:700;font-size:13.5px">2</span>
+<span style="font-size:14.5px;font-weight:700;color:#17324d">Struttura di esempio</span>
+</div>
+<span style="flex:1;height:2px;background:#e3e7eb;margin:0 14px;max-width:110px"></span>
+<div style="display:flex;align-items:center;gap:10px;opacity:.55">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid #c5cdd4;color:#5a6772;font-weight:700;font-size:13.5px">3</span>
+<a href="#5b" style="font-size:14.5px;color:#33485c;text-decoration:none">Verifica dell'endpoint</a>
+</div>
+</div>
+
+<div style="padding:16px 28px 10px">
+<h1 style="margin:0;font-size:30px;font-weight:700;color:#17324d;letter-spacing:-.3px">Nuovo contesto</h1>
+<p style="margin:7px 0 0;max-width:700px;font-size:15px;line-height:1.5;color:#5a6772">Un contesto rappresenta un'integrazione che fornisce i dati dei documenti. Registra i dati identificativi, poi consegna agli sviluppatori la struttura minima che il loro servizio deve esporre.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;padding:12px 28px 28px">
+
+<div>
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Dati del contesto</div>
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:13px">
+<div style="display:grid;grid-template-columns:1fr 200px;gap:12px">
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Nome del contesto</label>
+<input class="form-control" type="text" value="GEBAN — Bandi di concorso" style="margin-top:5px;height:40px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14.5px;padding:0 11px">
+</div>
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Sigla</label>
+<input class="form-control" type="text" value="GEBAN" style="margin-top:5px;height:40px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font:500 14.5px 'Roboto Mono',monospace;padding:0 11px">
+</div>
+</div>
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Nome del contesto nel token</label>
+<input class="form-control" type="text" value="geban" style="margin-top:5px;height:40px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font:500 14.5px 'Roboto Mono',monospace;padding:0 11px">
+<div style="margin-top:5px;font-size:12.5px;line-height:1.5;color:#5a6772">È il valore con cui il contesto si presenta nel token di autenticazione: deve coincidere esattamente con quello emesso dagli sviluppatori, altrimenti le chiamate non vengono associate a questo contesto.</div>
+</div>
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Descrizione</label>
+<textarea class="form-control" rows="2" style="margin-top:5px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14.5px;padding:8px 11px;resize:vertical">Bandi e avvisi di concorso pubblico: tipologie, profili, livelli e campi forniti dal servizio GEBAN.</textarea>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Referente tecnico</label>
+<input class="form-control" type="text" value="dev-geban@cnr.esempio.it" style="margin-top:5px;height:40px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 11px">
+</div>
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Ambiente</label>
+<select class="form-select" style="margin-top:5px;width:100%;height:40px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14.5px;padding:0 11px"><option>Test</option><option>Collaudo</option><option>Produzione</option></select>
+</div>
+</div>
+<div>
+<label style="font-size:13.5px;font-weight:600;color:#33485c">Dimensioni previste</label>
+<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">
+<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:13px;background:#e6f0fa;color:#0059b3;font-size:12.5px;font-weight:600">livello <span style="opacity:.6">×</span></span>
+<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:13px;background:#e6f0fa;color:#0059b3;font-size:12.5px;font-weight:600">lingua <span style="opacity:.6">×</span></span>
+<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px dashed #c5cdd4;border-radius:13px;color:#0066cc;font-size:12.5px;font-weight:600">+ aggiungi</span>
+</div>
+<div style="margin-top:6px;font-size:12.5px;line-height:1.5;color:#5a6772">Dichiararle qui le include nella struttura di esempio. La <strong style="color:#17324d">policy runtime</strong> di ciascuna si imposta dopo la prima scansione, in <a href="#4a" style="text-decoration:none">Dimensioni</a>.</div>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display:flex;align-items:baseline;gap:10px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Struttura minima di esempio</div>
+<span style="font-size:12.5px;color:#5a6772">generata dai dati a sinistra</span>
+</div>
+
+<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding:12px 14px;border:1px solid #d9e4ef;border-left:4px solid #0066cc;border-radius:4px;background:#f2f7fc">
+<svg viewBox="0 0 24 24" width="17" height="17" style="color:#0059b3;flex:none;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 11v6M12 7.6v.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="font-size:13px;line-height:1.55;color:#33485c">Questo file è <strong style="color:#17324d">documentazione di contratto</strong>: descrive la forma minima che il servizio deve esporre, perché i dati arrivino come ci servono. Non determina il comportamento a runtime del catalogo — quello si configura in <a href="#4a" style="text-decoration:none">Dimensioni</a>. Un contesto può esporre <strong style="color:#17324d">più tipi di documento</strong>: quali siano lo dichiara l'alberatura restituita dal servizio, non questa schermata.</div>
+</div>
+
+<div style="margin-top:12px;border:1px solid #dbe2e8;border-radius:4px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#f7f9fb;border-bottom:1px solid #e3e7eb">
+<span style="font:500 12px 'Roboto Mono',monospace;color:#33485c">geban-discovery.example.json</span>
+<span style="padding:2px 8px;border-radius:10px;background:#eceff2;color:#5a6772;font-size:11px;font-weight:700">bozza</span>
+<div style="margin-left:auto;display:flex;gap:7px">
+<button class="btn btn-sm" style="height:30px;padding:0 11px;border:1px solid #c5cdd4;color:#33485c;font-size:12.5px;white-space:nowrap">Carica .json</button>
+<button class="btn btn-sm" style="height:30px;padding:0 11px;border:1px solid #c5cdd4;color:#33485c;font-size:12.5px;white-space:nowrap">Copia</button>
+<button class="btn btn-sm btn-primary" style="height:30px;padding:0 11px;font-size:12.5px;white-space:nowrap">Scarica .json</button>
+</div>
+</div>
+<div style="padding:14px 15px;background:#17324d;color:#dbe6f2;font:400 11.5px/1.75 'Roboto Mono',monospace;white-space:pre;overflow:hidden">{
+  "codice_tipo_documento": "BANDO_CONCORSO",
+  "validita": "2026-09-21T00:00:00Z",
+  "nodi": [
+    {
+      "codice": "CP",
+      "descrizione": "Concorsi Pubblici",
+      "tipo_livello": "tipologia",
+      "figli": [
+        {
+          "codice": "PROFILO_ESEMPIO",
+          "descrizione": "Profilo di esempio",
+          "tipo_livello": "profilo",
+          "livelli_possibili": ["IV", "V", "VI"],
+          "livello_base": "VI",
+          "lingue_possibili": ["IT", "EN"],
+          "campi": [
+            <span style="color:#8fb9e8">{ "codice": "codice_bando", "etichetta": "Codice bando",
+              "tipo": "string", "lingua": "IT",
+              "obbligatorio": true, "ordine": 1 }</span>
+          ]
+        }
+      ]
+    }
+  ]
+}</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Cosa consegnare agli sviluppatori</div>
+<sc-for list="{{ handoffItems }}" as="h" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid #e3e7eb;border-radius:4px;background:#fff">
+<div style="flex:1;min-width:0">
+<div style="font:500 12.5px 'Roboto Mono',monospace;color:#0059b3">{{ h.file }}</div>
+<div style="margin-top:2px;font-size:12.5px;color:#5a6772">{{ h.desc }}</div>
+</div>
+<a href="#5a" style="font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">scarica</a>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:center;gap:11px;margin-top:18px">
+<a href="#5b" class="btn btn-primary" style="height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:9px;white-space:nowrap;text-decoration:none">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M5 12h14m-5-6 6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+Crea contesto e passa alla verifica
+</a>
+<button class="btn btn-outline-primary" style="height:44px;padding:0 18px;white-space:nowrap">Salva come bozza</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="5b" data-screen-label="integration-health">
+<div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>Contesto GEBAN — verifica dell'endpoint e storico delle scansioni</div>
+<div class="dv-card" style="width:1240px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Modelli</span>
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Impostazioni</span>
+</nav>
+<span style="display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font:700 12.5px 'Titillium Web',sans-serif">MR</span>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772">Impostazioni <span style="opacity:.5;padding:0 6px">/</span> Contesti <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">GEBAN</span></div>
+
+<div style="display:flex;align-items:flex-start;gap:24px;padding:12px 28px 16px">
+<div>
+<div style="display:flex;align-items:center;gap:10px">
+<h1 style="margin:0;font-size:30px;font-weight:700;color:#17324d;letter-spacing:-.3px">GEBAN — Bandi di concorso</h1>
+<span style="padding:3px 9px;border-radius:3px;background:#e6f0fa;color:#0066cc;font:600 11px 'Roboto Mono',monospace">BANDO_CONCORSO</span>
+</div>
+<p style="margin:6px 0 0;font-size:15px;line-height:1.5;color:#5a6772">Verifica del servizio esposto dagli sviluppatori GEBAN e stato dei dati che leggiamo.</p>
+</div>
+<div style="margin-left:auto;display:flex;gap:10px">
+<a href="#4a" class="btn btn-outline-primary btn-sm" style="height:40px;padding:0 16px;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none">Dimensioni</a>
+<a href="#1b" class="btn btn-outline-primary btn-sm" style="height:40px;padding:0 16px;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none">Modelli del contesto</a>
+</div>
+</div>
+
+<div style="display:flex;border-bottom:1px solid #e3e7eb;padding:0 28px;font-size:14px;gap:22px">
+<span style="padding:11px 0;border-bottom:3px solid #0066cc;font-weight:700;color:#0059b3">Integrazione</span>
+<span style="padding:11px 0;border-bottom:3px solid transparent;color:#33485c">Dimensioni</span>
+<span style="padding:11px 0;border-bottom:3px solid transparent;color:#33485c">Struttura di esempio</span>
+<span style="padding:11px 0;border-bottom:3px solid transparent;color:#33485c">Permessi</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:24px;padding:20px 28px 28px">
+
+<div>
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Endpoint di discovery</div>
+<div style="display:flex;gap:10px;margin-top:9px;flex-wrap:wrap">
+<div style="position:relative;flex:1;min-width:280px">
+<input class="form-control" type="text" value="https://test.si.cnr.it/geban/api/discovery/bando-concorso" style="height:42px;background:#fff;border:1px solid #c5cdd4;border-radius:4px;font:500 13.5px 'Roboto Mono',monospace;padding:0 11px">
+</div>
+<select class="form-select" style="width:150px;height:42px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px"><option>Token statico</option><option>OAuth 2.0</option><option>mTLS</option></select>
+<button class="btn btn-primary" onClick="{{ onVerify }}" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap">
+<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+{{ verifyLabel }}
+</button>
+</div>
+
+<div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding:13px 16px;border:1px solid {{ resultEdge }};border-left:4px solid {{ resultAccent }};border-radius:4px;background:{{ resultBg }}">
+<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:50%;background:{{ resultAccent }};color:#fff">
+<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"></path></svg>
+</span>
+<div style="flex:1">
+<div style="font-size:15px;font-weight:700;color:{{ resultInk }}">{{ resultTitle }}</div>
+<div style="margin-top:2px;font-size:13px;color:{{ resultInk }}">{{ resultMeta }}</div>
+</div>
+<span style="padding:3px 11px;border-radius:12px;background:#fff;color:{{ resultInk }};font:600 12px 'Roboto Mono',monospace;white-space:nowrap">{{ resultCode }}</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:1px;margin-top:16px;border:1px solid #e3e7eb;border-radius:4px;background:#e3e7eb;overflow:hidden">
+<sc-for list="{{ checks }}" as="c" hint-placeholder-count="6">
+<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 15px;background:#fff">
+<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;margin-top:1px;border-radius:50%;background:{{ c.tint }};color:{{ c.ink }};font-size:12px;font-weight:700">{{ c.glyph }}</span>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600;color:#17324d">{{ c.label }}</div>
+<div style="margin-top:2px;font-size:13px;line-height:1.5;color:#5a6772">{{ c.detail }}</div>
+</div>
+<span style="font:500 12px 'Roboto Mono',monospace;color:#5a6772;white-space:nowrap;margin-top:2px">{{ c.value }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;gap:11px;align-items:flex-start;margin-top:14px;padding:12px 15px;border:1px solid #f0d9a8;border-left:4px solid #8a5a00;border-radius:4px;background:#fdf1d8">
+<svg viewBox="0 0 24 24" width="17" height="17" style="color:#8a5a00;flex:none;margin-top:1px" aria-hidden="true"><path d="M12 4.5 21 19.5H3z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"></path><path d="M12 10v4M12 16.4v.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="flex:1;font-size:13.5px;line-height:1.55;color:#5c3d00">La scansione ha trovato l'attributo <span style="font-family:'Roboto Mono',monospace">canale</span> su 1 foglia: è una dimensione non ancora registrata, quindi oggi viene ignorata a runtime. <a href="#4a" style="color:#5c3d00;font-weight:700">Configura la policy</a> per renderla effettiva.</div>
+</div>
+</div>
+
+<aside>
+<div style="border:1px solid #e3e7eb;border-radius:4px;background:#fbfcfd;padding:15px 16px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Controllo periodico</div>
+<div style="display:flex;align-items:center;gap:9px;margin-top:11px">
+<span style="display:inline-flex;align-items:center;gap:7px;padding:3px 10px;border-radius:12px;background:#e0f2e4;color:#1b7a34;font-size:12px;font-weight:700"><span style="width:7px;height:7px;border-radius:50%;background:#1b7a34"></span>attivo</span>
+<span style="font-size:13px;color:#5a6772">prossima alle 18:00</span>
+</div>
+<label style="display:block;margin-top:12px;font-size:13.5px;font-weight:600;color:#33485c">Frequenza</label>
+<select class="form-select" value="{{ scanFreq }}" onChange="{{ onScanFreq }}" style="margin-top:5px;width:100%;height:38px;background-color:#fff;border:1px solid #c5cdd4;border-radius:4px;font-size:14px;padding:0 10px">
+<option value="6h">ogni 6 ore</option>
+<option value="24h">una volta al giorno</option>
+<option value="7d">una volta a settimana</option>
+</select>
+<div style="margin-top:10px;font-size:12.5px;line-height:1.5;color:#5a6772">Ogni scansione verifica raggiungibilità, schema della risposta e differenze rispetto all'albero registrato. Gli esiti negativi generano una notifica al referente tecnico.</div>
+</div>
+
+<div style="margin-top:16px;border:1px solid #e3e7eb;border-radius:4px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:9px;padding:12px 15px;border-bottom:1px solid #e3e7eb;background:#f7f9fb">
+<span style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Storico scansioni</span>
+<span style="margin-left:auto;font-size:12.5px;color:#5a6772">30 giorni</span>
+</div>
+<div style="display:flex;align-items:flex-end;gap:3px;padding:14px 15px 10px;height:64px">
+<sc-for list="{{ scanBars }}" as="b" hint-placeholder-count="14">
+<span style="flex:1;height:{{ b.h }};border-radius:2px;background:{{ b.color }}"></span>
+</sc-for>
+</div>
+<div style="padding:0 15px 12px;font-size:12px;color:#5a6772">esiti delle ultime 14 scansioni · più alto = più lento</div>
+<sc-for list="{{ scans }}" as="s" hint-placeholder-count="5">
+<div style="display:flex;align-items:flex-start;gap:11px;padding:12px 15px;border-top:1px solid #eef1f4">
+<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;margin-top:1px;border-radius:50%;background:{{ s.tint }};color:{{ s.ink }};font-size:12px;font-weight:700">{{ s.glyph }}</span>
+<div style="flex:1;min-width:0">
+<div style="font-size:13.5px;font-weight:600;color:#17324d">{{ s.outcome }}</div>
+<div style="margin-top:2px;font-size:12.5px;color:#5a6772">{{ s.when }} · {{ s.detail }}</div>
+</div>
+<span style="font:500 11.5px 'Roboto Mono',monospace;color:#5a6772;white-space:nowrap;margin-top:2px">{{ s.dur }}</span>
+</div>
+</sc-for>
+<div style="padding:12px 15px;border-top:1px solid #eef1f4;background:#fbfcfd">
+<a href="#5b" style="font-size:13px;font-weight:600;text-decoration:none">Vedi tutte le scansioni</a>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “in <a class="dv-oid" href="#5b">5b</a> mostra lo stato con endpoint appena inserito e mai verificato” · “aggiungi il diff fra albero registrato e albero appena letto”</p>
+</section>
+
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Configurazione dimensioni</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="4a" data-screen-label="configure-dimensions">
+<div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Configura dimensioni — drill-down sull'albero live + policy per nome dimensione</div>
+<div class="dv-card" style="width:1320px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Contesti</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Modelli</span>
+<span style="padding:19px 0;border-bottom:3px solid transparent;color:rgba(255,255,255,.82)">Generazioni</span>
+<span style="padding:19px 0;border-bottom:3px solid #fff;font-weight:600">Impostazioni</span>
+</nav>
+<span style="display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font:700 12.5px 'Titillium Web',sans-serif">MR</span>
+</div>
+
+<div style="padding:22px 28px 0;font-size:13px;color:#5a6772">Impostazioni <span style="opacity:.5;padding:0 6px">/</span> Integrazioni <span style="opacity:.5;padding:0 6px">/</span> GEBAN <span style="opacity:.5;padding:0 6px">/</span> <span style="color:#1c2024;font-weight:600">Dimensioni</span></div>
+
+<div style="display:flex;align-items:flex-start;gap:24px;padding:12px 28px 18px">
+<div>
+<div style="display:flex;align-items:center;gap:10px">
+<h1 style="margin:0;font-size:30px;font-weight:700;color:#17324d;letter-spacing:-.3px">Dimensioni e policy di derivazione</h1>
+<span style="padding:3px 9px;border-radius:3px;background:#e6f0fa;color:#0066cc;font:600 11px 'Roboto Mono',monospace">BANDO_CONCORSO</span>
+</div>
+<p style="margin:6px 0 0;max-width:720px;font-size:15px;line-height:1.5;color:#5a6772">Naviga l'albero pubblicato dall'integrazione e configura ogni dimensione la prima volta che la incontri. La policy vale per <strong style="color:#17324d">nome dimensione</strong> su tutto il tipo documento: non va ripetuta nodo per nodo.</p>
+</div>
+<div style="margin-left:auto;text-align:right;font-size:12.5px;color:#5a6772;line-height:1.6;white-space:nowrap">
+<div style="display:inline-flex;align-items:center;gap:7px;color:#1b7a34;font-weight:600"><span style="width:8px;height:8px;border-radius:50%;background:#1b7a34"></span>sorgente live connessa</div>
+<div style="font-family:'Roboto Mono',monospace">test.si.cnr.it</div>
+<div>albero letto il 15/09/2026 · <a href="#4a" style="text-decoration:none">ricarica</a></div>
+</div>
+</div>
+
+<div style="display:flex;gap:11px;align-items:flex-start;margin:0 28px 20px;padding:12px 15px;border:1px solid #d9e4ef;border-left:4px solid #0066cc;border-radius:4px;background:#f2f7fc">
+<svg viewBox="0 0 24 24" width="17" height="17" style="color:#0059b3;flex:none;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 11v6M12 7.6v.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="font-size:13.5px;line-height:1.55;color:#33485c">Questa schermata configura <strong style="color:#17324d">il comportamento a runtime</strong> del catalogo: quando una dimensione biforca un modello e quando invece un modello generico ne copre tutti i valori. Non è la <em>definizione struttura</em>, che serve solo a generare la documentazione di contratto per l'integrazione e non influenza il runtime. Sono due oggetti distinti.</div>
+</div>
+
+<div style="display:grid;grid-template-columns:300px 1fr 340px;min-height:640px;border-top:1px solid #e3e7eb">
+
+<div style="border-right:1px solid #e3e7eb;background:#fbfcfd;padding:16px 0 20px">
+<div style="padding:0 18px 10px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Albero dell'integrazione</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:0 18px 12px;font-size:12.5px;color:#5a6772">
+<sc-for list="{{ treeCrumbs }}" as="c" hint-placeholder-count="3">
+<a href="#4a" onClick="{{ c.onClick }}" style="text-decoration:none;color:{{ c.ink }};font-weight:{{ c.weight }}">{{ c.label }}</a>
+<span style="opacity:.45">{{ c.sep }}</span>
+</sc-for>
+</div>
+<sc-for list="{{ treeItems }}" as="n" hint-placeholder-count="5">
+<div onClick="{{ n.onClick }}" style="display:flex;align-items:center;gap:10px;padding:11px 18px;border-left:3px solid {{ n.edge }};background:{{ n.bg }};cursor:pointer">
+<div style="flex:1;min-width:0">
+<div style="font-size:13.5px;font-weight:600;color:#17324d;line-height:1.3">{{ n.label }}</div>
+<div style="margin-top:2px;font:500 11px 'Roboto Mono',monospace;color:#5a6772">{{ n.code }}</div>
+<div style="margin-top:3px;font-size:11.5px;color:#5a6772">{{ n.meta }}</div>
+</div>
+<sc-if value="{{ n.isLeaf }}" hint-placeholder-val="{{ false }}">
+<span style="padding:2px 8px;border-radius:10px;background:#eceff2;color:#5a6772;font-size:11px;font-weight:700;white-space:nowrap">foglia</span>
+</sc-if>
+<sc-if value="{{ n.hasChildren }}" hint-placeholder-val="{{ true }}">
+<svg viewBox="0 0 24 24" width="15" height="15" style="color:#5a6772;flex:none" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="padding:18px 24px 26px">
+<div style="display:flex;align-items:flex-start;gap:14px">
+<div style="flex:1;min-width:0">
+<h2 style="margin:0;font-size:21px;font-weight:700;color:#17324d">{{ leafTitle }}</h2>
+<div style="margin-top:4px;font:500 12px 'Roboto Mono',monospace;color:#5a6772;white-space:nowrap">{{ leafCode }}</div>
+</div>
+<span style="margin-left:auto;padding:3px 10px;border-radius:12px;background:{{ leafPillBg }};color:{{ leafPillInk }};font-size:12px;font-weight:700;white-space:nowrap">{{ leafPill }}</span>
+</div>
+<p style="margin:9px 0 0;font-size:14px;line-height:1.55;color:#5a6772">{{ leafHint }}</p>
+
+<sc-if value="{{ hasConflict }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:11px;align-items:flex-start;margin-top:16px;padding:12px 15px;border:1px solid #f0d9a8;border-left:4px solid #8a5a00;border-radius:4px;background:#fdf1d8">
+<svg viewBox="0 0 24 24" width="17" height="17" style="color:#8a5a00;flex:none;margin-top:1px" aria-hidden="true"><path d="M12 4.5 21 19.5H3z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"></path><path d="M12 10v4M12 16.4v.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="flex:1">
+<div style="font-size:13.5px;font-weight:700;color:#5c3d00">La dimensione <span style="font-family:'Roboto Mono',monospace">livello</span> è stata configurata in un'altra sessione</div>
+<div style="margin-top:3px;font-size:13px;line-height:1.5;color:#5c3d00">G. Bianchi ha impostato “un solo modello copre tutti i valori” 2 minuti fa. La tua vista non era aggiornata: scegli quale valore mantenere prima di salvare.</div>
+<div style="display:flex;gap:9px;margin-top:10px">
+<button class="btn btn-sm" onClick="{{ onConflictReload }}" style="height:34px;padding:0 14px;background:#8a5a00;color:#fff;font-weight:600;white-space:nowrap">Usa la versione aggiornata</button>
+<button class="btn btn-sm" onClick="{{ onConflictKeep }}" style="height:34px;padding:0 14px;border:1px solid #8a5a00;color:#5c3d00;font-weight:600;white-space:nowrap">Mantieni la mia scelta</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="display:flex;flex-direction:column;gap:16px;margin-top:18px">
+<sc-for list="{{ dims }}" as="d" hint-placeholder-count="3">
+<div style="border:1px solid {{ d.edge }};border-radius:4px;background:{{ d.bg }};padding:16px 18px 18px">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<span style="font:500 13.5px 'Roboto Mono',monospace;color:#0059b3;background:#e9f2fb;border-radius:3px;padding:2px 8px">{{ d.name }}</span>
+<span style="padding:2px 10px;border-radius:12px;background:{{ d.pillBg }};color:{{ d.pillInk }};font-size:11.5px;font-weight:700;white-space:nowrap">{{ d.pill }}</span>
+<span style="margin-left:auto;font-size:12.5px;color:#5a6772">valori su questa foglia:</span>
+<div style="display:flex;gap:5px">
+<sc-for list="{{ d.values }}" as="v" hint-placeholder-count="3">
+<span style="padding:2px 8px;border:1px solid #dbe2e8;border-radius:11px;background:#fff;font:500 11.5px 'Roboto Mono',monospace;color:#33485c">{{ v }}</span>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{ d.readOnly }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:flex-start;gap:12px;margin-top:13px;padding:12px 14px;border:1px solid #e3e7eb;border-radius:4px;background:#fff">
+<svg viewBox="0 0 24 24" width="15" height="15" style="color:#1b7a34;flex:none;margin-top:2px" aria-hidden="true"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+<div style="flex:1">
+<div style="font-size:14px;font-weight:700;color:#17324d">{{ d.policyLabel }}</div>
+<div style="margin-top:3px;font-size:13px;line-height:1.5;color:#5a6772">{{ d.policyExample }}</div>
+<div style="margin-top:6px;font-size:12.5px;color:#5a6772">Configurata da {{ d.who }} il {{ d.when }} · si applica a tutte le foglie di questo tipo documento</div>
+</div>
+<a href="#4a" onClick="{{ d.onEdit }}" style="font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap">Modifica</a>
+</div>
+</sc-if>
+
+<sc-if value="{{ d.editing }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:13px">
+<div style="font-size:14.5px;font-weight:700;color:#17324d">Questa dimensione genera un modello distinto quando cambia valore?</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:11px">
+<sc-for list="{{ d.choices }}" as="c" hint-placeholder-count="2">
+<div onClick="{{ c.onPick }}" style="display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid {{ c.edge }};border-radius:4px;background:{{ c.bg }};cursor:pointer">
+<span style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;margin-top:1px;border-radius:50%;border:2px solid {{ c.dotEdge }};background:#fff">
+<span style="width:9px;height:9px;border-radius:50%;background:{{ c.dot }}"></span>
+</span>
+<div>
+<div style="font-size:14px;font-weight:700;color:#17324d">{{ c.label }}</div>
+<div style="margin-top:3px;font-size:13px;line-height:1.5;color:#5a6772">{{ c.example }}</div>
+<div style="margin-top:4px;font-size:12.5px;color:#5a6772">come {{ c.like }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:11px;margin-top:14px;flex-wrap:wrap">
+<button class="btn btn-primary btn-sm" onClick="{{ d.onSave }}" disabled="{{ d.saveDisabled }}" style="height:38px;padding:0 16px;white-space:nowrap">Salva policy</button>
+<sc-if value="{{ d.cancellable }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn-outline-primary btn-sm" onClick="{{ d.onCancel }}" style="height:38px;padding:0 14px;white-space:nowrap">Annulla</button>
+</sc-if>
+<span style="display:inline-flex;align-items:center;gap:7px;padding:3px 10px;border-radius:12px;background:#e6f0fa;color:#0059b3;font-size:12px;font-weight:600">
+<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+si applica a tutte le foglie di questo tipo documento
+</span>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+
+<aside style="border-left:1px solid #e3e7eb;background:#fbfcfd;padding:18px 20px 22px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Policy del tipo documento</div>
+<div style="margin-top:6px;font-size:12.5px;line-height:1.5;color:#5a6772">Valgono per <strong style="color:#17324d">BANDO_CONCORSO</strong> su tutte le foglie dell'albero.</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+<sc-for list="{{ registry }}" as="r" hint-placeholder-count="3">
+<div style="border:1px solid #e3e7eb;border-radius:4px;background:#fff;padding:12px 13px">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font:500 12.5px 'Roboto Mono',monospace;color:#0059b3">{{ r.name }}</span>
+<span style="margin-left:auto;padding:2px 9px;border-radius:11px;background:{{ r.pillBg }};color:{{ r.pillInk }};font-size:11px;font-weight:700;white-space:nowrap">{{ r.pill }}</span>
+</div>
+<div style="margin-top:6px;font-size:13px;line-height:1.45;color:#33485c">{{ r.policyShort }}</div>
+<div style="display:flex;align-items:baseline;gap:8px;margin-top:7px">
+<span style="font-size:12px;color:#5a6772">{{ r.meta }}</span>
+<a href="#4a" onClick="{{ r.onEdit }}" style="margin-left:auto;font-size:12.5px;font-weight:600;text-decoration:none">modifica</a>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid #e3e7eb;font-size:12.5px;line-height:1.55;color:#5a6772">
+Le dimensioni non ancora configurate compaiono qui appena l'integrazione le dichiara su una foglia: <strong style="color:#8a5a00">{{ unconfiguredCount }}</strong> in attesa.
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="4b" data-screen-label="configure-dimensions-states">
+<div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Stati della stessa schermata — caricamento e errore di sorgente</div>
+<div class="dv-card" style="width:620px">
+<div style="padding:18px 22px;border-bottom:1px solid #e3e7eb">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Stato 1 — albero non ancora caricato</div>
+<div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px">
+<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#5a6772">
+<span style="width:15px;height:15px;border-radius:50%;border:2px solid #c5cdd4;border-top-color:#0066cc"></span>
+Interrogazione dell'integrazione in corso…
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+<div style="height:38px;border:1px solid #eef1f4;border-radius:4px;background:linear-gradient(90deg,#f2f5f8,#e8edf2 40%,#f2f5f8)"></div>
+<div style="height:38px;border:1px solid #eef1f4;border-radius:4px;background:linear-gradient(90deg,#f2f5f8,#e8edf2 55%,#f2f5f8)"></div>
+<div style="height:38px;border:1px solid #eef1f4;border-radius:4px;background:linear-gradient(90deg,#f2f5f8,#e8edf2 25%,#f2f5f8)"></div>
+<div style="height:96px;border:1px solid #eef1f4;border-radius:4px;background:#f7f9fb"></div>
+</div>
+<div style="font-size:12.5px;color:#5a6772">Nessuna policy è modificabile finché l'albero non è stato letto: le dimensioni dichiarate arrivano dalla sorgente, non dalla cache locale.</div>
+</div>
+</div>
+<div style="padding:18px 22px 22px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Stato 2 — sorgente esterna non raggiungibile</div>
+<div style="display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:14px 16px;border:1px solid #f0c9c9;border-left:4px solid #a3242c;border-radius:4px;background:#fdeaea">
+<svg viewBox="0 0 24 24" width="18" height="18" style="color:#a3242c;flex:none;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 7.5v5.5M12 15.9v.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="flex:1">
+<div style="font-size:14px;font-weight:700;color:#7a1b22">Albero non disponibile: l'integrazione non risponde</div>
+<div style="margin-top:4px;font-size:13px;line-height:1.55;color:#7a1b22">Ultimo tentativo alle 11:38 su <span style="font-family:'Roboto Mono',monospace">test.si.cnr.it</span> — timeout dopo 10s. Le policy già salvate restano attive; non è possibile scoprire nuove dimensioni finché la sorgente non risponde.</div>
+<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">
+<button class="btn btn-sm" style="height:34px;padding:0 14px;background:#a3242c;color:#fff;font-weight:600;white-space:nowrap">Riprova</button>
+<button class="btn btn-sm" style="height:34px;padding:0 14px;border:1px solid #a3242c;color:#7a1b22;font-weight:600;white-space:nowrap">Vedi solo le policy salvate</button>
+<button class="btn btn-sm" style="height:34px;padding:0 14px;border:1px solid #a3242c;color:#7a1b22;font-weight:600;white-space:nowrap">Dettagli tecnici</button>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;font-size:12.5px;line-height:1.55;color:#5a6772">Mai una lista vuota silenziosa: l'assenza di nodi è sempre spiegata come errore, con l'orario del tentativo e la via d'uscita.</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “in <a class="dv-oid" href="#4a">4a</a> mostra la dimensione scoperta ma non ancora dichiarata da nessuna foglia” · “aggiungi la vista di audit delle dimensioni non registrate”</p>
+</section>
+
 <section class="dv-turn" id="t3">
 <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Modello derivato</span></div>
 <div class="dv-opts">
@@ -854,8 +1377,47 @@ const DERIV = [
   { key: "soglia", label: "Soglia di importo", current: "Sotto soglia", options: ["Sopra soglia UE", "Affidamento diretto < 140.000 €"] },
 ];
 
+const TREE = {
+  code: "BANDO_CONCORSO", label: "Bandi di concorso",
+  children: [{
+    code: "CP", label: "Concorsi Pubblici", kind: "tipologia",
+    children: [
+      { code: "COLLABORATORE_TECNICO_ER", label: "Collaboratore Tecnico E.R.", kind: "profilo", livelli: ["IV", "V", "VI"], base: "VI", lingue: ["IT", "EN"], extra: [{ name: "canale", values: ["PEC", "Portale bandi", "Albo pretorio"] }] },
+      { code: "OPERATORE_TECNICO", label: "Operatore Tecnico", kind: "profilo", livelli: ["VI", "VII", "VIII"], base: "VIII", lingue: ["IT"] },
+      { code: "RICERCATORE", label: "Ricercatore", kind: "profilo", livelli: ["I", "II", "III"], base: "III", lingue: ["IT", "EN"] },
+      { code: "TECNOLOGO", label: "Tecnologo", kind: "profilo", livelli: ["I", "II", "III"], base: "III", lingue: ["IT", "EN"] },
+      { code: "FUNZIONARIO_AMMINISTRAZIONE", label: "Funzionario di Amministrazione", kind: "profilo", livelli: ["IV", "V"], base: "V", lingue: ["IT"] },
+    ],
+  }],
+};
+
+const POLICY_COPY = {
+  distinct: { label: "Sì, ogni valore è un modello a sé", example: "cambiare valore crea sempre un nuovo id, mai un fallback", short: "Ogni valore ha il suo modello: nessun fallback.", pill: "biforca il modello", pillBg: "#e6f0fa", pillInk: "#0059b3" },
+  generic: { label: "No, un solo modello copre tutti i valori salvo scelta esplicita", example: "se non trovo un modello per il valore richiesto, uso quello generico", short: "Un modello generico copre i valori senza modello dedicato.", pill: "ammette il generico", pillBg: "#e0f2e4", pillInk: "#1b7a34" },
+};
+
 class Component extends DCLogic {
-  state = { cat: ["", "", "", ""], tab: "ph", active: 1, sections: BLOCKS.length, deriv: {} };
+  state = {
+    cat: ["", "", "", ""], tab: "ph", active: 1, sections: BLOCKS.length, deriv: {},
+    tpath: ["CP", "COLLABORATORE_TECNICO_ER"],
+    policies: {
+      lingua: { policy: "distinct", who: "M. Rossi", when: "18/09/2026" },
+      livello: { policy: "generic", who: "M. Rossi", when: "18/09/2026" },
+    },
+    editing: null, draft: null, conflict: true, scanFreq: "6h",
+  };
+
+  nodeAt(path) {
+    let n = TREE;
+    for (const c of path) n = (n.children || []).find(x => x.code === c) || n;
+    return n;
+  }
+
+  dimsFor(leaf) {
+    if (!leaf || leaf.children) return [];
+    const d = [{ name: "livello", values: leaf.livelli }, { name: "lingua", values: leaf.lingue }];
+    return d.concat(leaf.extra || []);
+  }
 
   pickDeriv(key) {
     return e => this.setState(s => ({ deriv: { ...s.deriv, [key]: e.target.value } }));
@@ -955,6 +1517,13 @@ class Component extends DCLogic {
     const proposed = CAT.sections[famKey] || CAT.sections[c[1]] || ["Intestazione", "Corpo del documento", "Sottoscrizione"];
     const code = chosenCount ? "MOD-" + c.filter(Boolean).map(v => v.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, "")).join("-") + "-NEW" : "assegnato alla generazione";
 
+    const current = this.nodeAt(this.state.tpath);
+    const isLeaf = !current.children;
+    const siblingPath = isLeaf ? this.state.tpath.slice(0, -1) : this.state.tpath;
+    const siblingScope = (isLeaf ? this.nodeAt(siblingPath) : current).children || [];
+    const leafDims = this.dimsFor(current);
+    const unconfigured = leafDims.filter(d => !this.state.policies[d.name]);
+
     const derivParts = DERIV.map(d => this.state.deriv[d.key]).filter(Boolean);
     const derivCount = derivParts.length;
 
@@ -987,6 +1556,114 @@ class Component extends DCLogic {
       proposedSections: proposed,
       generateDisabled: chosenCount < 3,
       onGenerate: () => { location.hash = "#2b"; },
+
+      handoffItems: [
+        { file: "geban-discovery.example.json", desc: "Struttura minima di esempio, nella forma NodoDiscovery" },
+        { file: "geban-discovery-endpoint.openapi.yaml", desc: "Contratto dell'endpoint: rotta, parametri, codici di risposta" },
+        { file: "campi-e-dimensioni.md", desc: "Regole sui campi obbligatori, lingue e dimensioni dichiarate" },
+      ],
+      verifyLabel: "Verifica ora",
+      onVerify: () => {},
+      resultTitle: "Endpoint raggiungibile e risposta valida",
+      resultMeta: "Ultima verifica: 21/09/2026 alle 12:04 · 5 profili e 18 campi letti · nessuna differenza rispetto all'albero registrato",
+      resultCode: "200 OK · 412 ms",
+      resultBg: "#e0f2e4", resultEdge: "#bfe3c8", resultAccent: "#1b7a34", resultInk: "#12592a",
+      checks: [
+        { label: "Raggiungibilità", detail: "Connessione stabilita, nessun redirect", value: "412 ms", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { label: "Certificato TLS", detail: "Valido, scade il 14/02/2027", value: "TLS 1.3", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { label: "Autenticazione", detail: "Token statico accettato", value: "200", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { label: "Schema della risposta", detail: "Conforme a NodoDiscovery: codice_tipo_documento, validita, nodi", value: "valido", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { label: "Contenuto dell'albero", detail: "1 tipologia, 5 profili, 18 campi, livelli e lingue dichiarati su ogni foglia", value: "5 foglie", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { label: "Attributi non riconosciuti", detail: "1 attributo presente sulle foglie senza policy registrata: canale", value: "1", glyph: "!", tint: "#fdf1d8", ink: "#8a5a00" },
+        { label: "Campi obbligatori mancanti", detail: "Tutti i campi dichiarati obbligatori sono presenti e ordinati", value: "0", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+      ],
+      scanFreq: this.state.scanFreq,
+      onScanFreq: e => this.setState({ scanFreq: e.target.value }),
+      scanBars: [40, 34, 38, 52, 36, 33, 41, 100, 44, 37, 35, 39, 33, 36].map((h, i) => ({
+        h: h + "%", color: i === 7 ? "#a3242c" : (i === 11 ? "#8a5a00" : "#1b7a34"),
+      })),
+      scans: [
+        { outcome: "Struttura conforme", when: "21/09/2026 12:04", detail: "manuale, M. Rossi", dur: "412 ms", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { outcome: "Struttura conforme", when: "21/09/2026 06:00", detail: "automatica", dur: "388 ms", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+        { outcome: "Attributo non riconosciuto", when: "20/09/2026 18:00", detail: "nuovo attributo canale su 1 foglia", dur: "401 ms", glyph: "!", tint: "#fdf1d8", ink: "#8a5a00" },
+        { outcome: "Endpoint non raggiungibile", when: "20/09/2026 12:00", detail: "timeout dopo 10 s, 3 tentativi", dur: "10 s", glyph: "×", tint: "#fdeaea", ink: "#a3242c" },
+        { outcome: "Struttura conforme", when: "20/09/2026 06:00", detail: "automatica", dur: "377 ms", glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34" },
+      ],
+
+      treeCrumbs: [{ code: null, label: "BANDO_CONCORSO" }].concat(this.state.tpath.map((c, i) => ({ code: c, label: this.nodeAt(this.state.tpath.slice(0, i + 1)).label })))
+        .map((c, i, arr) => ({
+          label: c.label, sep: i < arr.length - 1 ? "›" : "",
+          ink: i === arr.length - 1 ? "#17324d" : "#0066cc",
+          weight: i === arr.length - 1 ? 700 : 400,
+          onClick: e => { e.preventDefault(); this.setState({ tpath: this.state.tpath.slice(0, i), editing: null, draft: null }); },
+        })),
+      treeItems: siblingScope.map(n => ({
+        label: n.label, code: n.code,
+        meta: n.children ? (n.children.length + " profili") : (n.code === current.code ? "foglia selezionata" : n.livelli.length + " livelli · " + n.lingue.join("/") + (n.extra ? " · +" + n.extra.length + " dimensione" : "")),
+        isLeaf: !n.children, hasChildren: !!n.children,
+        edge: n.code === current.code ? "#0066cc" : "transparent",
+        bg: n.code === current.code ? "#eaf3fc" : "transparent",
+        onClick: () => this.setState({ tpath: siblingPath.concat([n.code]), editing: null, draft: null }),
+      })),
+      leafTitle: isLeaf ? current.label : current.label,
+      leafCode: isLeaf ? "profilo · " + current.code : (current.kind || "tipo documento") + " · " + current.code,
+      leafPill: isLeaf ? (unconfigured.length ? unconfigured.length + " dimensione da configurare" : "tutte le dimensioni configurate") : "seleziona una foglia",
+      leafPillBg: isLeaf ? (unconfigured.length ? "#fdf1d8" : "#e0f2e4") : "#eceff2",
+      leafPillInk: isLeaf ? (unconfigured.length ? "#8a5a00" : "#1b7a34") : "#5a6772",
+      leafHint: isLeaf
+        ? "Dimensioni dichiarate dall'integrazione su questa foglia. Quelle già configurate altrove nell'albero sono in sola lettura: la policy è unica per nome dimensione."
+        : "Scendi nell'albero fino a un profilo per vedere le dimensioni che dichiara.",
+      hasConflict: isLeaf && this.state.conflict,
+      onConflictReload: () => this.setState({ conflict: false, policies: { ...this.state.policies, livello: { policy: "generic", who: "G. Bianchi", when: "21/09/2026" } }, editing: null, draft: null }),
+      onConflictKeep: () => this.setState({ conflict: false }),
+      dims: leafDims.map(d => {
+        const saved = this.state.policies[d.name];
+        const isNew = !saved;
+        const draft = this.state.editing === d.name ? this.state.draft : (isNew ? null : saved.policy);
+        const copy = saved ? POLICY_COPY[saved.policy] : null;
+        return {
+          name: d.name, values: d.values,
+          pill: isNew ? "nuova, non ancora configurata" : "configurata",
+          pillBg: isNew ? "#fdf1d8" : "#e0f2e4",
+          pillInk: isNew ? "#8a5a00" : "#1b7a34",
+          edge: isNew ? "#f0d9a8" : "#e3e7eb",
+          bg: isNew ? "#fffdf7" : "#fff",
+          readOnly: !!saved && this.state.editing !== d.name,
+          editing: isNew || this.state.editing === d.name,
+          policyLabel: copy ? copy.label : "",
+          policyExample: copy ? copy.example : "",
+          who: saved ? saved.who : "", when: saved ? saved.when : "",
+          onEdit: e => { e.preventDefault(); this.setState({ editing: d.name, draft: saved ? saved.policy : null }); },
+          choices: ["distinct", "generic"].map(k => {
+            const c = POLICY_COPY[k];
+            const picked = draft === k;
+            return {
+              label: c.label, example: c.example, like: k === "distinct" ? "lingua" : "livello",
+              onPick: () => this.setState({ editing: d.name, draft: k }),
+              edge: picked ? "#0066cc" : "#dbe2e8", bg: picked ? "#f2f7fc" : "#fff",
+              dotEdge: picked ? "#0066cc" : "#c5cdd4", dot: picked ? "#0066cc" : "transparent",
+            };
+          }),
+          saveDisabled: !draft,
+          cancellable: !!saved,
+          onSave: () => {
+            const v = draft;
+            if (!v) return;
+            this.setState({ policies: { ...this.state.policies, [d.name]: { policy: v, who: "M. Rossi", when: "21/09/2026" } }, editing: null, draft: null });
+          },
+          onCancel: () => this.setState({ editing: null, draft: null }),
+        };
+      }),
+      registry: Object.keys(this.state.policies).map(name => {
+        const p = this.state.policies[name];
+        const c = POLICY_COPY[p.policy];
+        return {
+          name, pill: c.pill, pillBg: c.pillBg, pillInk: c.pillInk, policyShort: c.short,
+          meta: p.who + " · " + p.when,
+          onEdit: e => { e.preventDefault(); this.setState({ editing: name, draft: p.policy }); },
+        };
+      }),
+      unconfiguredCount: unconfigured.length,
 
       inheritedPath: [
         { n: 1, value: "Atti amministrativi", label: "Dominio documentale" },

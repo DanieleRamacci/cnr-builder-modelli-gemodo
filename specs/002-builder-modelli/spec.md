@@ -12,6 +12,20 @@ PROPRIETARIO`/`DEC-001-REGISTRO-CONTRATTI-DATI`/`DEC-002-GESTORE-UFFICIO-MAPPING
 
 ## Clarifications
 
+### Associazione modello e policy dimensione - 2026-09-21
+
+Due nuove entita' (`AssociazioneModello`, `PolicyDimensione`), dettagliate in
+`data-model.md`. `AssociazioneModello` collega un modello derivato al modello
+di origine (oggi solo per lingua) e alimenta l'annidamento nella risposta
+catalogo di `001` (`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO`). `PolicyDimensione`
+dichiara, per nome dimensione e non per nodo, se quella dimensione ammette un
+valore generico (fallback) o richiede sempre una scelta esplicita
+(`DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`) - esplicitamente scollegata
+dall'esempio di contratto presentazionale (`DefinizioneStruttura`, modulo
+`configurazione` di `010`). **Aperto**: dove vive la schermata di
+configurazione che la scrive (`002` o `010`), da confermare nella prossima
+sessione di pianificazione.
+
 ### Decisione MVP 2026-09-17 - ADR 0002
 
 Prevale sui riferimenti storici a registri locali e seed: il manager naviga

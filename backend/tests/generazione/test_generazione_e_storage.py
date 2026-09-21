@@ -98,9 +98,11 @@ def test_generazione_reale_produce_pdf_scaricabile(db_engine, client):
 
     esito = client.post("/api/v1/documenti/genera", json=payload)
     assert esito.status_code == 200, esito.text
-    body = esito.json()
-    assert body["stato"] == "COMPLETATO"
-    riferimento = body["riferimento_documentale"]
+    assert esito.headers["content-type"] == "application/pdf"
+    assert esito.content.startswith(b"%PDF")
+    assert b"Bando reale" in esito.content
+    assert b"Prima nota" in esito.content
+    riferimento = esito.headers["x-riferimento-documentale"]
     assert riferimento
 
     stato = client.get(f"/api/v1/documenti/{riferimento}")
@@ -109,11 +111,10 @@ def test_generazione_reale_produce_pdf_scaricabile(db_engine, client):
     assert stato.json()["hash_file"]
     assert stato.json()["dimensione_byte"] > 0
 
+    # il riferimento resta consultabile/riscaricabile anche dopo la prima risposta diretta
     download = client.get(f"/api/v1/documenti/{riferimento}/download")
     assert download.status_code == 200
-    assert download.content.startswith(b"%PDF")
-    assert b"Bando reale" in download.content
-    assert b"Prima nota" in download.content
+    assert download.content == esito.content
 
 
 @pytest.mark.integration
@@ -152,7 +153,8 @@ def test_stessa_chiave_stessi_dati_replica_lo_stesso_documento(db_engine, client
 
     primo = client.post("/api/v1/documenti/genera", json=payload)
     secondo = client.post("/api/v1/documenti/genera", json=payload)
-    assert primo.json()["riferimento_documentale"] == secondo.json()["riferimento_documentale"]
+    assert primo.headers["x-riferimento-documentale"] == secondo.headers["x-riferimento-documentale"]
+    assert primo.content == secondo.content
 
     with Session(db_engine) as db:
         count = db.execute(sa.text(
@@ -237,7 +239,7 @@ def test_concorrenza_sulla_stessa_chiave_produce_un_solo_documento(db_engine):
         app.dependency_overrides.clear()
 
     assert all(r.status_code == 200 for r in risposte)
-    riferimenti = {r.json()["riferimento_documentale"] for r in risposte}
+    riferimenti = {r.headers["x-riferimento-documentale"] for r in risposte}
     assert len(riferimenti) == 1
     with Session(db_engine) as db:
         count = db.execute(sa.text(

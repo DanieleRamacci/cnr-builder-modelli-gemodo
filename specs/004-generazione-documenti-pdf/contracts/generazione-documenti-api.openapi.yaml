@@ -1,13 +1,15 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Generazione Documenti (Incremento MVP FR-019/020)
-  version: 0.2.0
+  version: 0.3.0
   description: >
     Sostituisce la risposta simulata storica di 001 (GenerazioneDocumentoResponse,
     ora ritirata in geban-catalog-api.openapi.yaml). Produce un PDF reale, sempre
     non ufficiale (etichettato TEST): non esiste ancora un percorso "ufficiale"
-    (FR-001..018 di questa spec restano non implementati). Persistenza, stato e
-    download sono descritti in storage-documenti-api.openapi.yaml (005).
+    (FR-001..018 di questa spec restano non implementati). Persistenza e
+    consultazione successiva sono descritte in storage-documenti-api.openapi.yaml
+    (005); dal 2026-09-21 una sola chiamata basta per ottenere il file (vedi sotto),
+    il riferimento resta disponibile solo per riscaricare/consultare in seguito.
 servers:
   - url: /api/v1
 security:
@@ -16,7 +18,15 @@ paths:
   /documenti/genera:
     post:
       operationId: generaDocumento
-      summary: Valida il payload e produce un PDF di test reale
+      summary: Valida il payload e, se COMPLETATO, ritorna subito il PDF prodotto
+      description: >
+        Una sola chiamata: se la generazione ha successo (o e' il replay
+        idempotente di una precedente generazione riuscita) il corpo della
+        risposta 200 e' direttamente il file PDF (application/pdf), con
+        l'header X-Riferimento-Documentale per chi vuole riconsultarlo dopo
+        via storage-documenti-api.openapi.yaml. Se lo stato e' FALLITO o
+        DATI_NON_VALIDI, il corpo resta JSON (EsitoGenerazione) come prima -
+        non c'e' file da restituire.
       requestBody:
         required: true
         content:
@@ -25,9 +35,18 @@ paths:
       responses:
         '200':
           description: >
-            Esito della richiesta: COMPLETATO/FALLITO (documento prodotto o meno)
-            oppure DATI_NON_VALIDI (nessun tentativo di rendering).
+            COMPLETATO (anche in replay idempotente): corpo binario PDF.
+            FALLITO/DATI_NON_VALIDI: corpo JSON EsitoGenerazione.
+          headers:
+            X-Riferimento-Documentale:
+              description: Presente solo quando il corpo e' il PDF (stato COMPLETATO)
+              schema: {type: string}
+            Content-Disposition:
+              description: Presente solo quando il corpo e' il PDF (stato COMPLETATO)
+              schema: {type: string}
           content:
+            application/pdf:
+              schema: {type: string, format: binary}
             application/json:
               schema: {$ref: '#/components/schemas/EsitoGenerazione'}
         '401': {$ref: '#/components/responses/Unauthorized'}
@@ -66,8 +85,10 @@ components:
           nullable: true
           description: >
             Assente solo se stato=DATI_NON_VALIDI (nessun tentativo di
-            produzione); presente per COMPLETATO e FALLITO, per consultare lo
-            stato/l'errore via storage-documenti-api.openapi.yaml.
+            produzione); presente per FALLITO, per consultare l'errore via
+            storage-documenti-api.openapi.yaml. Per COMPLETATO questo schema
+            non e' il corpo effettivo della risposta (che e' il PDF binario) -
+            il riferimento arriva invece nell'header X-Riferimento-Documentale.
         validazione:
           type: object
           additionalProperties: false

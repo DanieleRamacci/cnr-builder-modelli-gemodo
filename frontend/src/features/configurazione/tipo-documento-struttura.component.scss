@@ -1,0 +1,137 @@
+// Design tokens da design_handoff_modellario/README.md ("Design Tokens").
+// Bootstrap Italia usa gia' lo stesso blu istituzionale come $primary di default
+// (nessuna variabile ridefinita in styles.scss), quindi qui non serve
+// sovrascrivere .btn-primary/.badge: bastano i token per cio' che Bootstrap
+// non copre (spaziatura puntuale, Roboto Mono, pannelli annidati).
+:host {
+  --td-primary: #0066cc;
+  --td-primary-dark: #0059b3;
+  --td-primary-050: #e6f0fa;
+  --td-primary-border: #d9e4ef;
+  --td-ink-900: #17324d;
+  --td-ink-600: #33485c;
+  --td-ink-500: #5a6772;
+  --td-border-300: #c5cdd4;
+  --td-border-200: #e3e7eb;
+  --td-surface-50: #fbfcfd;
+  --td-surface-100: #f2f5f8;
+  --td-warning-bg: #fdf1d8;
+  --td-warning-ink: #8a5a00;
+  --td-success-bg: #e0f2e4;
+  --td-success-ink: #1b7a34;
+
+  display: block;
+}
+
+h1 {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--td-ink-900);
+  letter-spacing: -0.3px;
+}
+
+.td-section {
+  border: 1px solid var(--td-border-200);
+  border-radius: 4px;
+  background: #fff;
+  padding: 18px 20px 20px;
+  margin-bottom: 24px;
+}
+
+.td-section legend {
+  font-size: 17.5px;
+  font-weight: 700;
+  color: var(--td-ink-900);
+  padding: 0;
+  width: auto;
+  margin-bottom: 12px;
+}
+
+.td-hint {
+  font-size: 13.5px;
+  color: var(--td-ink-500);
+  margin-bottom: 14px;
+}
+
+.td-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--td-ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+
+.td-field input,
+.td-field select {
+  border: 1px solid var(--td-border-300);
+  border-radius: 4px;
+}
+
+.td-field input:focus,
+.td-field select:focus {
+  border-color: var(--td-primary);
+  box-shadow: 0 0 0 0.2rem var(--td-primary-050);
+}
+
+.td-mono {
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.td-panel {
+  border: 1px solid var(--td-primary-border);
+  border-radius: 4px;
+  background: var(--td-surface-50);
+  padding: 14px 16px 16px;
+  margin-bottom: 12px;
+}
+
+.td-panel-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--td-ink-500);
+  margin-bottom: 10px;
+}
+
+.td-row-remove {
+  color: var(--td-ink-500);
+  border-color: var(--td-border-300);
+}
+
+.td-badge-obbligatorio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.td-badge-obbligatorio.is-on {
+  background: var(--td-warning-bg);
+  color: var(--td-warning-ink);
+}
+.td-badge-obbligatorio.is-off {
+  background: var(--td-success-bg);
+  color: var(--td-success-ink);
+}
+.td-badge-obbligatorio label {
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.td-badge-obbligatorio input {
+  cursor: pointer;
+}
+
+.td-add {
+  color: var(--td-primary-dark);
+  border-color: var(--td-primary-border);
+  font-weight: 600;
+}
+.td-add:hover {
+  background: var(--td-primary-050);
+}

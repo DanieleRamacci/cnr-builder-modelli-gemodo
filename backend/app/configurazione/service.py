@@ -132,6 +132,13 @@ class ConfigurazioneService:
             raise DomainError("TIPO_DOCUMENTO_NOT_FOUND", "Tipo documento non trovato", status_code=404)
         return tipo
 
+    def struttura_corrente(self, codice: str) -> StrutturaInput:
+        tipo = self._tipo(codice)
+        definizione = repository.definizione_corrente(self.db, tipo.id)
+        if definizione is None:
+            return StrutturaInput()
+        return StrutturaInput.model_validate(definizione.contenuto)
+
     def _audit(self, tipo_id, principal: PrincipalGEMODO, evento: str, payload: dict):
         self.db.add(AuditEventoConfigurazione(
             tipo_documento_id=tipo_id, tipo_evento=evento, soggetto_id=principal.subject,

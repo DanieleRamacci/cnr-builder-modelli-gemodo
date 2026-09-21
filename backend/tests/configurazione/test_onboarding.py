@@ -76,11 +76,17 @@ def test_definition_export_revisions_and_audit(admin_client):
     exported = client.get(base + "/schema-discovery/1")
     assert exported.status_code == 200
     assert exported.json() == original
+    letta = client.get(base + "/struttura")
+    assert letta.status_code == 200, letta.text
+    assert letta.json()["campi"][0]["etichetta"] == "Livello"
+    assert letta.json()["campi"][0]["obbligatorio"] is True
+    assert letta.json()["tipologie"][0]["codice"] == "TD"
     modified = copy.deepcopy(STRUTTURA)
     modified["campi"][0]["etichetta"] = "Livello aggiornato"
     response = client.put(base + "/struttura", json=modified)
     assert response.status_code == 200, response.text
     assert response.json()["versione_definizione"] == 2
+    assert client.get(base + "/struttura").json()["campi"][0]["etichetta"] == "Livello aggiornato"
     assert response.json()["versione_schema_corrente"] is None
     second = client.post(base + "/schema-discovery").json()
     assert second["versione"] == 2
@@ -136,6 +142,7 @@ def test_routes_require_admin_and_export_is_scoped(admin_client):
     for method, path, body in [
         ("get", "/api/v1/configurazione/tipi-documento", None),
         ("post", "/api/v1/configurazione/tipi-documento", {}),
+        ("get", base + "/struttura", None),
         ("put", base + "/struttura", STRUTTURA),
         ("post", base + "/schema-discovery", None),
         ("get", base + "/schema-discovery/1", None),

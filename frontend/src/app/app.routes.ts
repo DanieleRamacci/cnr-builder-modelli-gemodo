@@ -43,6 +43,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'tipi-documento',
+        loadComponent: () =>
+          import('../features/configurazione/tipi-documento-lista.component').then(
+            (m) => m.TipiDocumentoListaComponent,
+          ),
+      },
+      {
+        path: 'tipi-documento/nuovo',
+        loadComponent: () =>
+          import('../features/configurazione/tipo-documento-struttura.component').then(
+            (m) => m.TipoDocumentoStrutturaComponent,
+          ),
+      },
+      {
+        path: 'tipi-documento/:codice',
+        loadComponent: () =>
+          import('../features/configurazione/tipo-documento-struttura.component').then(
+            (m) => m.TipoDocumentoStrutturaComponent,
+          ),
+      },
+      {
         path: ':id',
         loadComponent: () =>
           import('../features/configurazione/integrazione-configura.component').then(

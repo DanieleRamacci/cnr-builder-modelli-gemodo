@@ -530,9 +530,9 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
 
     generazione = builder_client.post("/api/v1/documenti/genera", json=payload)
     assert generazione.status_code == 200, generazione.text
-    esito = generazione.json()
-    assert esito["stato"] == "COMPLETATO"
-    riferimento = esito["riferimento_documentale"]
+    assert generazione.headers["content-type"] == "application/pdf"
+    assert generazione.content.startswith(b"%PDF")
+    riferimento = generazione.headers["x-riferimento-documentale"]
     assert riferimento
 
     stato = builder_client.get(f"/api/v1/documenti/{riferimento}")
@@ -543,12 +543,13 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
     download = builder_client.get(f"/api/v1/documenti/{riferimento}/download")
     assert download.status_code == 200, download.text
     assert download.headers["content-type"] == "application/pdf"
-    assert download.content.startswith(b"%PDF")
+    assert download.content == generazione.content
     assert b"Bando pytest" in download.content
 
     replay = builder_client.post("/api/v1/documenti/genera", json=payload)
     assert replay.status_code == 200, replay.text
-    assert replay.json()["riferimento_documentale"] == riferimento
+    assert replay.headers["x-riferimento-documentale"] == riferimento
+    assert replay.content == generazione.content
 
     payload_diverso = {**payload, "dati": {**payload["dati"], "numero_posti": 99}}
     conflitto = builder_client.post("/api/v1/documenti/genera", json=payload_diverso)

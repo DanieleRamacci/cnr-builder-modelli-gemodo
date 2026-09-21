@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
     documentazione di discovery da consegnare agli integratori. Questo contratto
@@ -83,6 +83,32 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
   /configurazione/tipi-documento/{codice}/struttura:
+    get:
+      description: >
+        Legge la struttura correntemente definita (2026-09-21, necessaria per
+        precompilare un editor invece di farlo ripartire vuoto ad ogni modifica).
+        Tipo documento senza definizione ancora salvata torna liste vuote.
+      tags: [ConfigurazioneCataloghi]
+      summary: Legge la struttura corrente di un tipo documento
+      operationId: getStrutturaTipoDocumento
+      x-required-role: GEMODO_ADMIN
+      parameters:
+        - $ref: "#/components/parameters/CodiceTipoDocumento"
+      responses:
+        "200":
+          description: Struttura corrente (eventualmente vuota se mai definita)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrutturaTipoDocumento"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/AmbiguousSource"
     put:
       description: Codice ambiguo restituisce 409 SORGENTE_AMBIGUA, nessuna modifica
       tags: [ConfigurazioneCataloghi]
