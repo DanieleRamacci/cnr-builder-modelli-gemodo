@@ -17,6 +17,57 @@ Il quality gate indipendente non e' superato.
 
 ## Clarifications
 
+### Session 2026-09-21 (design handoff `design_handoff_modellario/`)
+
+Riferimento grafico ricevuto per l'incremento futuro (User Story 1/2/3, editor
+completo): `design_handoff_modellario/README.md` + `screens.json` + il
+prototipo HTML `design/Gestione Modelli.dc.html`. E' un prototipo generico per
+PA (contesti di esempio "Appalti e contratti" ecc.), hi-fi su colori/
+tipografia/spaziature/stati, **da adattare** ai contesti reali di GEMODO, non
+da copiare come codice. Sette schermate: 1a contexts-list, 1b/1c/1d varianti
+della lista modelli, 2a categorize-wizard, 2b builder-editor, 3a derive-model.
+
+Decisioni confermate con l'utente su due conflitti reali fra design e
+implementazione MVP gia' costruita (T039/T040/T055):
+
+- **1a sostituisce le tab dei contesti**: la pagina dedicata a card
+  (ricerca, filtri a chip, metriche) diventa la nuova landing `/contesti` per
+  il prossimo incremento, al posto delle tab attuali dentro la stessa pagina.
+  Richiede rilavorare uno schermo gia' verificato con Playwright - non e' un
+  semplice restyle.
+- **2a adotta le tendine a cascata**: il futuro editor completo sostituisce la
+  navigazione ad albero cliccabile (usata oggi in `modello-crea.component.ts`
+  per l'MVP US5) con 4 select L1-L4 dipendenti, azzeramento a cascata e
+  stepper 3 passi, come nel prototipo.
+- **1b tabella resta il default, 1c griglia il toggle vista** (`?view=grid`):
+  seguito il suggerimento del designer nel README, non ridiscusso. **1d
+  master/detail** resta proposta unica non pianificata, valutabile in un
+  incremento successivo.
+- **3a (`Crea modello derivato`) e' il target futuro** per generare da un
+  modello esistente una variante che eredita sezioni, testi, flag di blocco e
+  mapping segnaposto del padre, cambiando solo attributi aggiuntivi (lingua in
+  primis). **Dipende da 2b** (editor completo con sezioni/segnaposto persistiti
+  per versione), che non esiste ancora: finche' 2b non e' costruito, 3a non e'
+  implementabile nella sua forma piena. Il meccanismo oggi disponibile e gia'
+  funzionante (`T067`, "Crea edizione collegata" in Contesti/lista modelli)
+  resta l'unico modo reale di ottenere un modello derivato per lingua fino a
+  quel momento: precompila integrazione/tipo/percorso/livello e propone la
+  lingua ancora disponibile, ma crea un modello indipendente (nessuna copia di
+  contenuto, nessun riferimento al padre) - un sottoinsieme volutamente piu'
+  semplice di 3a.
+
+**Non ancora modellato, richiede decisione prima di specificare FR/schema**:
+3a nel design propone dimensioni di derivazione generiche oltre la lingua
+(esempi nel prototipo: ambito, canale, soglia) con select "eredita" per
+ciascuna. Nessuna di queste esiste oggi nel dominio (`001`/`002` modellano solo
+`lingua` e `livello_professionale`, migration `0016`). Non vanno inventate qui:
+se servono davvero, richiedono un nuovo `DEC-007-*` in
+`docs/decision-register.yaml` con owner e impatto su `001`/`002`, non solo una
+riga di UI. Restano inoltre esplicitamente aperte le domande gia' segnalate dal
+design stesso (`screens.json.screens[].openQuestions` di 3a): derivazione a piu'
+livelli e sua rappresentazione in 1b, traduzione automatica dei testi ereditati
+al cambio lingua, se rendere modificabili i livelli L1-L4 del derivato.
+
 ### Session 2026-09-21
 
 - Q: Come interagisce la lingua del modello con i campi discovery? -> A: La
@@ -176,6 +227,14 @@ bozza dall'interfaccia.
 4. **Given** il gestore compone sezioni con placeholder, **When** inserisce contenuti,
    **Then** l'interfaccia propone placeholder disponibili e mostra anomalie funzionali
    senza richiedere digitazione tecnica libera.
+5. **Given** un modello esistente con sezioni e segnaposto gia' composti, **When** il
+   gestore avvia "Crea modello derivato" (schermata 3a, design handoff), **Then**
+   l'interfaccia mostra la categorizzazione ereditata in sola lettura, propone solo gli
+   attributi aggiuntivi ancora disponibili (lingua in primis) e crea un nuovo modello
+   indipendente che copia sezioni/testi/segnaposto del padre senza modificarlo. Finche'
+   l'editor completo (2b) non esiste, questo scenario resta soddisfatto nella sua forma
+   ridotta dall'azione "Crea edizione collegata" gia' disponibile (T067), che precompila
+   la creazione ma non copia contenuto ne' mantiene un riferimento al padre.
 
 ---
 
@@ -360,7 +419,7 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
 - **FR-007**: GEBAN MUST NOT usare questo frontend per compilare dati di processo.
 - **FR-008**: L'interfaccia MUST mostrare o abilitare azioni coerenti con ruolo, stato della risorsa e contesto operativo, fermo restando che l'autorizzazione definitiva e' applicata dal servizio backend.
 - **FR-009**: L'interfaccia MUST gestire i workflow di versione modello `BOZZA`, `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`, `ARCHIVIATO` e `SOSPESO` coerentemente con le spec builder e sicurezza.
-- **FR-010**: L'interfaccia MUST impedire modifica diretta di contenuti, campi e sezioni di versioni pubblicate e deve rendere chiara la creazione o modifica di bozze derivate.
+- **FR-010**: L'interfaccia MUST impedire modifica diretta di contenuti, campi e sezioni di versioni pubblicate e deve rendere chiara la creazione o modifica di bozze derivate. Nell'incremento futuro con editor completo, la creazione di un modello derivato (schermata 3a) MUST ereditare categorizzazione, sezioni, testi e segnaposto del padre senza modificarlo, lasciando modificabili solo gli attributi di derivazione effettivamente disponibili; fino ad allora resta valido il sottoinsieme gia' implementato in "Crea edizione collegata" (T067).
 - **FR-011**: L'interfaccia MUST supportare la composizione di sezioni con contenuto strutturato controllato e placeholder selezionabili tra quelli disponibili per la versione modello.
 - **FR-012**: L'interfaccia MUST mostrare blocchi di pubblicazione relativi a campi richiesti, placeholder, schema dati, sezioni e validazioni di modello.
 - **FR-013**: L'interfaccia MUST rendere evidente quando una generazione e' bozza o ufficiale.
@@ -408,6 +467,23 @@ Le chiamate tecniche conservano i controlli sul client e sul profilo ammesso.
 - **Vista Dettaglio Generazione**: pagina o pannello che mostra stato, metadati, validazione, riferimento file e azioni consentite.
 - **Errore Funzionale UI**: messaggio comprensibile che traduce un blocco applicativo senza esporre dettagli tecnici o sensibili.
 - **Payload Consultabile**: dati ricevuti o snapshot visualizzabili solo quando autorizzazione e finalita' lo consentono.
+
+### Schermate target dell'incremento futuro (design handoff)
+
+Mappa screen id -> rotta -> stato, da `design_handoff_modellario/screens.json`,
+confermata 2026-09-21 (vedi Clarifications). Sostituisce la landing e la
+categorizzazione descritte nell'MVP attuale (Contesti a tab, albero
+cliccabile) quando US1/US2/US3 verranno pianificate in dettaglio.
+
+| id | schermata | rotta | stato |
+| --- | --- | --- | --- |
+| 1a | contexts-list | `/contesti` | sostituisce le tab attuali (confermato) |
+| 1b | templates-table | `/contesti/:ctxId/modelli` | default confermato |
+| 1c | templates-grid | `/contesti/:ctxId/modelli?view=grid` | toggle vista, confermato |
+| 1d | templates-split | `/contesti/:ctxId/modelli/:modelId` | proposta, non pianificata |
+| 2a | categorize-wizard | `/contesti/:ctxId/modelli/nuovo` | sostituisce l'albero cliccabile (confermato) |
+| 2b | builder-editor | `/modelli/:modelId/builder` | editor completo, FR-011, non pianificato |
+| 3a | derive-model | `/modelli/:modelId/deriva` | target futuro per FR-010; dipende da 2b; oggi solo il sottoinsieme T067 |
 
 ## Success Criteria *(mandatory)*
 

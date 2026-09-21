@@ -16,7 +16,17 @@ STATO_PUBBLICATO = "PUBBLICATO"
 
 
 def get_tipo_documento_by_codice(db: Session, codice: str) -> TipoDocumento | None:
-    types = list(db.scalars(select(TipoDocumento).where(TipoDocumento.codice == codice).limit(2)))
+    # Only ATTIVA candidates compete for ambiguity: a BOZZA/abandoned onboarding
+    # draft sharing the same codice (e.g. an incomplete admin-side definition
+    # left next to the real builder-provisioned one) must never block a
+    # catalog read that has exactly one real, usable source.
+    types = list(
+        db.scalars(
+            select(TipoDocumento)
+            .where(TipoDocumento.codice == codice, TipoDocumento.stato == STATO_ATTIVO)
+            .limit(2)
+        )
+    )
     if len(types) > 1:
         raise DomainError("SORGENTE_AMBIGUA", "Indicare l'integrazione del tipo documento", status_code=409)
     return types[0] if types else None

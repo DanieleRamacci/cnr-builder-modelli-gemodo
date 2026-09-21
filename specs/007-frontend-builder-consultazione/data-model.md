@@ -125,3 +125,30 @@ scope (vedi `plan.md` Summary).
   persa al refresh, nessun autosave in questo MVP (spec.md Edge Cases
   "Errore di salvataggio durante modifica bozza" si applica al builder pieno,
   fuori scope qui: qui la creazione e' un'unica submit atomica lato backend).
+
+## Design Reference — entita' candidate per l'incremento futuro (2026-09-21)
+
+Da `design_handoff_modellario/` (vedi spec.md Clarifications e la tabella
+schermate). Nessuna di queste esiste oggi nello schema (`migration 0016` copre
+solo `lingua`/`livello_professionale`); vanno trattate come bozza di lettura
+del design, non come contratto gia' valido.
+
+- **Attributo di Derivazione** (screen 3a, colonna destra "D1-D4"): coppia
+  chiave/valore aggiuntiva rispetto a categorizzazione/lingua/livello usata per
+  distinguere un modello derivato dal padre. Il prototipo mostra `ambito`,
+  `canale`, `soglia` come esempi, non come elenco chiuso. **Non modellare
+  finche' non esiste un `DEC-007-*` in `docs/decision-register.yaml`** che
+  stabilisca l'elenco reale, l'owner e l'impatto su `001`/`002` - altrimenti si
+  rischia di persistere colonne per dimensioni mai confermate da GEBAN o dagli
+  altri contesti.
+- **Riferimento al modello padre** (`modello_padre_id`, opzionale) + flag
+  "mantieni collegamento": se attivo, le sezioni bloccate del padre si
+  propagano al derivato. Implica un meccanismo di propagazione non ancora
+  progettato (chi lo esegue, quando, cosa succede se il padre e' pubblicato
+  mentre il derivato e' in bozza) - da disegnare insieme a `003` quando 2b
+  viene pianificato, non improvvisato qui.
+- **Sottoinsieme gia' reale**: l'azione "Crea edizione collegata" (T067, gia'
+  implementata) copre solo la precompilazione di
+  integrazione/tipo/percorso/livello con lingua alternativa - nessuna copia di
+  contenuto, nessun `modello_padre_id`. E' il comportamento su cui si puo'
+  contare oggi per una prova end-to-end verso GEBAN.

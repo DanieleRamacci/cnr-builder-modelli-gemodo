@@ -54,7 +54,7 @@ def test_endpoint_history_is_inert_and_codes_are_scoped(postgres_database_url, m
             db.flush()
             principal = PrincipalGEMODO("admin", "gemodo-frontend", ("gemodo-backend",),
                                         ("GEMODO_ADMIN",), "https://sso.example.test")
-            types = [TipoDocumento(codice=code, nome="Demo", stato="BOZZA", spec_owner="010",
+            types = [TipoDocumento(codice=code, nome="Demo", stato="ATTIVA", spec_owner="010",
                                    codice_contesto="demo", integrazione_id=source.id) for source in sources]
             db.add_all(types)
             db.flush()
