@@ -16,6 +16,56 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-22 (ter): sorveglianza dell'integrazione dopo la verifica
+
+Emersa verificando end-to-end il flusso "Tipi documento e policy" contro
+l'endpoint GEBAN reale
+(`https://geban-service.test.si.cnr.it/api/v1/gemodo/discovery`, risposta
+osservata: 1 catalogo `BANDO_CONCORSO`, 10 tipologie, 7 profili, 75 percorsi,
+65 foglie, conforme al contratto 0.5.0, dimensioni presenti esclusivamente
+`lingua` e `livello`, nessuna chiave extra su nessuna foglia).
+
+La lettura dell'albero e' genuinamente live: la cache discovery ha TTL 60
+secondi, quindi un tipo o una dimensione aggiunti da GEBAN compaiono da soli
+nelle schermate. Cio' che manca non e' la freschezza del dato, ma la
+**sorveglianza**: nessun processo osserva l'integrazione fra una verifica
+manuale e la successiva. `IntegrazioniService.verifica` ha un unico chiamante,
+`POST /api/v1/configurazione/integrazioni/{id}/verifica`, cioe' il bottone
+dell'admin; nel backend non esiste alcuno scheduler.
+
+Ne derivano tre lacune distinte, tracciate come FR-026, FR-027 e FR-028:
+
+- **Stato di connessione non rivalutato**: `endpoint_integrazione.stato`
+  resta `CONNESSO` anche se GEBAN diventa in seguito irraggiungibile o non
+  conforme. La dashboard di User Story 4 mostra quindi un'informazione vera
+  al momento della verifica e potenzialmente falsa dopo. Il fallimento emerge
+  solo quando un admin apre una schermata che legge il discovery.
+- **Dimensioni nuove non segnalate**: lo scenario 5 di User Story 5 chiede
+  che una dimensione non ancora configurata sia segnalata esplicitamente.
+  Oggi la segnalazione esiste solo *dentro* la pagina policy del singolo
+  tipo documento (`dimensioni_non_configurate`): nessun avviso raggiunge
+  l'admin che non apre proprio quella pagina.
+- **Versione di contratto congelata**: `versione_contratto_verificata`
+  registra il valore al momento della verifica e non viene piu' confrontata,
+  quindi un cambio di versione del contratto discovery lato GEBAN non produce
+  alcun segnale.
+
+Nota sull'origine del rilievo: l'interfaccia in test mostrava un avviso "la
+dimensione `canale` e' comparsa su una foglia di GEBAN senza policy
+registrata". Quell'avviso era **testo statico** nel template della home, non
+prodotto da alcun flusso; `canale` non esiste nella risposta GEBAN reale ne'
+in alcun punto del codice di produzione. L'avviso descriveva una
+funzionalita' non implementata: FR-027 e' il requisito che la renderebbe
+vera.
+
+Questa sessione **non** sostituisce la "Decisione 2026-09-17: verifica
+autonoma delle variazioni GEBAN", che riguarda l'obsolescenza del singolo
+**modello** rispetto al ramo da cui e' nato (firma SHA-256, FR-014/FR-015).
+Sono due livelli diversi e complementari: la' si sorveglia un modello, qui si
+sorveglia l'integrazione. Il runner periodico previsto da FR-015 e' pero' lo
+stesso ciclo di esecuzione: FR-026..FR-028 devono riusarlo, non introdurne un
+secondo.
+
 ### Session 2026-09-22: elenco live dei tipi e prima configurazione
 
 - `/configurazione/tipi-documento` mostra i tipi documento restituiti in quel
@@ -592,6 +642,40 @@ documento, non solo per quella foglia.
   `ENG` al posto di `EN`, normalizzandoli nel vocabolario GEMODO. Se alias e
   nome canonico sono entrambi presenti con valori discordanti, la risposta
   MUST restare non conforme.
+- **FR-026** (2026-09-22, sorveglianza dell'integrazione — vedi Clarifications
+  "Session 2026-09-22 (ter)"): lo stato di connessione di un'integrazione MUST
+  essere rivalutato periodicamente e non solo su richiesta esplicita
+  dell'admin. Un'integrazione che ha superato la verifica e in seguito diventa
+  irraggiungibile o non conforme MUST smettere di essere presentata come
+  `CONNESSO` nella dashboard di User Story 4. Il controllo MUST distinguere
+  "non conforme" (risposta ottenuta ma invalida) da "non verificabile"
+  (indisponibilita' esterna): un'indisponibilita' temporanea MUST NOT
+  cancellare da sola l'esito positivo precedente, ma MUST essere visibile con
+  la data dell'ultimo esito valido. La riverifica automatica MUST NOT
+  modificare la `revisione` dell'integrazione ne' richiedere `revisione_attesa`,
+  perche' non e' una riconfigurazione.
+- **FR-027** (2026-09-22, stessa sessione; rende vero lo scenario 5 di User
+  Story 5 fuori dalla pagina del singolo tipo): quando l'albero live di
+  un'integrazione connessa dichiara una dimensione priva di policy registrata
+  per quel tipo documento, il sistema MUST segnalarlo all'admin senza che
+  questi debba aprire la pagina policy di quel tipo. La segnalazione MUST
+  indicare integrazione, codice tipo documento e nome della dimensione, e MUST
+  portare direttamente alla schermata di configurazione della policy. La
+  segnalazione MUST derivare esclusivamente dalla risposta live: nessuna
+  dimensione MUST essere annunciata sulla base di esempi, fixture o contenuti
+  statici dell'interfaccia.
+- **FR-028** (2026-09-22, stessa sessione): la versione del contratto discovery
+  osservata a ogni controllo MUST essere confrontata con
+  `versione_contratto_verificata`. Una divergenza MUST produrre una
+  segnalazione esplicita all'admin, distinta da "non conforme": il contratto
+  puo' essere cambiato restando valido. Il valore registrato MUST NOT essere
+  aggiornato automaticamente, perche' la presa d'atto di un cambio di
+  contratto e' una decisione dell'admin.
+
+Nota di attuazione comune a FR-026..FR-028: i tre controlli MUST condividere
+il runner periodico previsto da FR-015, una sola risposta discovery per
+integrazione e per ciclo. Frequenza, timeout e politica di ritentativo sono
+le stesse e restano da dettagliare insieme a quelle di FR-015.
 
 ### Key Entities *(include if feature involves data)*
 

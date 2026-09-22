@@ -33,6 +33,7 @@ describe('home and profile', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('a[href="/configurazione"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('a[href="/contesti"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).not.toContain('canale');
   });
   it('keeps the token hidden until requested and logs out through Keycloak', () => {
     const logout = vi.fn().mockResolvedValue(undefined);

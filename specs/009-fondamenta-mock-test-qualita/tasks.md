@@ -297,3 +297,27 @@ After Phase 2:
 - `[US1]`, `[US2]`, `[US3]` map to the user stories in `spec.md`.
 - `tasks.md` is generated only for planning; no task is implemented until explicitly started.
 - Open decisions from spec 006 remain provisional and must be revisited before implementing impacted runtime security behavior.
+
+## Phase: Isolamento della suite su database condiviso (2026-09-22)
+
+**Origine**: scoperto scrivendo `.github/workflows/ci.yml`. Il docstring di
+`backend/tests/support/postgres.py` invita a impostare `DATABASE_URL` "in CI o
+in ambiente di sviluppo per riusare un'istanza PostgreSQL esistente". Facendolo,
+**13 test falliscono** per inquinamento incrociato fra moduli; gli stessi test
+passano su un database pulito (verificato isolando `tests/validation`, 7 passed).
+
+Moduli coinvolti: `tests/validation/test_validazione_payload_api.py` (5),
+`tests/catalog/test_catalog_service_integration.py` (4),
+`tests/builder/test_builder_flow_api.py`, `tests/catalog/test_ritiro_catalogo_migration.py`,
+`tests/configurazione/{test_foundation,test_onboarding,test_registry_foundation,test_software_endpoint_migration}.py`.
+
+La CI aggira il problema non impostando `DATABASE_URL` e lasciando che
+Testcontainers dia un'istanza isolata. E' una soluzione, non la soluzione: chi
+segue l'indicazione del docstring oggi ottiene 13 rossi e non capisce perche'.
+
+- [ ] T101 Rendere la suite eseguibile su un'unica istanza condivisa: schema o
+      database per modulo di test, oppure troncamento delle tabelle fra un
+      modulo e l'altro. Il vincolo e' che `modello_versione_id: 1` atteso da
+      `tests/validation` non dipenda da cosa hanno scritto altri moduli
+- [ ] T102 Correggere il docstring di `backend/tests/support/postgres.py`, che
+      oggi consiglia una configurazione che rompe la suite

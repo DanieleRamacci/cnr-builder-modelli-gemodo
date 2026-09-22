@@ -1,0 +1,208 @@
+# Requisiti senza riga in docs/quality-coverage-matrix.yaml, congelati
+# al 2026-09-22 da scripts/check-coverage-matrix.py.
+#
+# Questo file e' un cricchetto: puo' solo restringersi. Quando si copre un
+# requisito lo si toglie da qui; lo script rifiuta di vederlo ricomparire.
+# Un requisito nuovo NON va aggiunto qui: va coperto.
+#
+# Rigenerare con: python scripts/check-coverage-matrix.py --aggiorna-baseline
+# (solo per restringere, mai per assorbire un buco nuovo).
+
+scoperti:
+  001-catalogo-contratto-geban:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-011
+  - FR-012
+  - FR-013
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  - FR-018
+  - FR-019
+  - FR-023
+  - FR-026
+  - FR-031
+  - FR-032
+  - FR-033
+  - FR-034
+  - FR-035
+  - FR-036
+  - FR-037
+  - FR-038
+  002-builder-modelli:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-010
+  - FR-012
+  - FR-013
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  003-sezioni-placeholder-versionamento:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-013
+  004-generazione-documenti-pdf:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  - FR-018
+  - FR-019
+  - FR-020
+  - FR-021
+  - FR-022
+  005-storage-idempotenza-consultazione:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-013
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  - FR-018
+  - FR-019
+  - FR-020
+  006-sicurezza-autorizzazioni-audit:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-013
+  - FR-015
+  - FR-016
+  - FR-017
+  007-frontend-builder-consultazione:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-013
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  - FR-018
+  - FR-019
+  - FR-020
+  - FR-021
+  - FR-022
+  - FR-023
+  - FR-024
+  - FR-025
+  - FR-026
+  - FR-027
+  008-ai-mcp-readiness:
+  - FR-001
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-006
+  - FR-007
+  - FR-008
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-012
+  - FR-013
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-017
+  - FR-018
+  - FR-019
+  - FR-020
+  009-fondamenta-mock-test-qualita:
+  - FR-002
+  - FR-003
+  - FR-004
+  - FR-005
+  - FR-009
+  - FR-010
+  - FR-011
+  - FR-014
+  - FR-015
+  - FR-016
+  - FR-019
+  - FR-020
+  - FR-021
+  - FR-022
+  - FR-024
+  - FR-025
+  - FR-026
+  - FR-027
+  - FR-028
+  - FR-029
+  - FR-030
+  - FR-031
+  - FR-032
+  - FR-033
+  - FR-034
+  - FR-035
+  - FR-036
+  - FR-037
+  - FR-038
+  - FR-040

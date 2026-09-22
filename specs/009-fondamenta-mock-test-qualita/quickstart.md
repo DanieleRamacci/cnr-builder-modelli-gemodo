@@ -256,3 +256,40 @@ Expected:
 - la licenza e' tracciata come `DA_CONFERMARE` finche' non viene decisa;
 - la documentazione e' in formato testuale versionabile;
 - non sono richiesti documenti privati o conoscenza implicita per capire scelte e vincoli.
+
+## Scenario 11 - Configurazione integrazioni e discovery live
+
+*(Aggiunto 2026-09-22. Gli scenari 1-10 coprono il flusso di generazione GEBAN e le
+fondamenta; nessuno copriva il flusso amministrativo di `010`, che per questo non aveva
+righe nella matrice di copertura. Questo scenario e' la controparte eseguibile di quelle
+righe. Procedura effettivamente eseguita il 2026-09-22 contro il discovery servito da
+`infra/local/discovery-mock/discovery.json`.)*
+
+1. Registrare un'integrazione (`POST /api/v1/configurazione/integrazioni`) e verificare
+   che nasca disconnessa, senza alcuna chiamata verso l'esterno.
+2. Configurare l'URL di discovery (`PUT .../{id}`) con la revisione attesa corrente e
+   verificare che una destinazione fuori allowlist venga rifiutata.
+3. Verificare l'integrazione (`POST .../{id}/verifica`) e controllare che lo stato passi a
+   `CONNESSO` con esito, data e versione di contratto registrate.
+4. Leggere l'elenco live dei tipi documento (`GET .../{id}/tipi-documento`) e confermare
+   che provenga dalla risposta discovery, non da righe locali.
+5. Leggere l'albero di un tipo (`GET .../{id}/tipi-documento/{codice}/struttura`) e le sue
+   policy (`.../policy-dimensioni`), confermando che le dimensioni siano derivate dalle
+   foglie live.
+6. Salvare una policy (`PUT .../policy-dimensioni`) e confermare che sia persistita.
+7. Creare un modello dal builder e confermare che la policy appena salvata ne governi
+   l'esito.
+8. Rifiutare una dimensione non dichiarata nell'albero live.
+
+Expected:
+
+- registrare un'integrazione non contatta mai l'endpoint (ADR 0002);
+- una destinazione non in allowlist produce `DESTINAZIONE_NON_APPROVATA`;
+- l'elenco dei tipi e le dimensioni derivano esclusivamente dalla risposta live: un tipo o
+  una dimensione aggiunti dall'integrazione compaiono senza modifiche di codice;
+- una dimensione non dichiarata dall'albero live e' rifiutata con
+  `DIMENSIONE_NON_DISPONIBILE`;
+- `lingua` rifiuta il valore generico con `GENERICO_NON_SUPPORTATO`;
+- la policy salvata cambia davvero l'esito della creazione modello: senza valore e con
+  generico negato la creazione fallisce con `DIMENSIONE_RICHIEDE_VALORE`;
+- nessun elenco vuoto viene mostrato al posto di un errore della sorgente.

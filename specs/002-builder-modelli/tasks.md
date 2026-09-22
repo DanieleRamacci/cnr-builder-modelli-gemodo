@@ -1,5 +1,45 @@
 # Tasks: Builder Modelli Documentali
 
+> ## ⚠ RICONCILIAZIONE 2026-09-22 — T001-T064 SUPERATI
+>
+> **La funzionalita' di questa spec e' in esercizio.** Le caselle non spuntate
+> da T001 a T064 descrivono un'**architettura di file** che non e' mai stata
+> costruita, non lavoro mancante. Verifica condotta il 2026-09-22 confrontando
+> i percorsi citati nei task con il codice su disco ed esercitando le API vere.
+>
+> **Esito: dei 47 percorsi citati, 35 non esistono.** L'implementazione ha
+> adottato un modulo `builder` **piatto** invece della gerarchia pianificata:
+>
+> | Pianificato (inesistente) | Reale |
+> | --- | --- |
+> | `builder/api/{modelli,classificazione,pubblicazione,schemas,security}.py` | `builder/api.py`, `builder/schemas.py` |
+> | `builder/service/{modelli,versioni,pubblicazione,workflow,audit}.py` | `builder/service.py`, `builder/audit.py` |
+> | `builder/repository/{modelli,versioni,pubblicazione}.py` | `builder/repository.py` |
+> | `builder/validation/*.py` | dentro `builder/service.py` |
+> | migration `0005_builder_admin_workflow.py` | `0005` e' `classificazione_catalogo_geban` |
+> | `tests/builder/contract/test_*.py` (8 file) | `tests/builder/test_builder_flow_api.py`, `test_builder_modelli_contract.py` |
+>
+> **Stato reale per user story:**
+>
+> | User story | Stato | Prova |
+> | --- | --- | --- |
+> | US1 — leggere la struttura disponibile | **IMPLEMENTATA** (la *storia* e' stata riscritta, i *task* no) | Attenzione: il titolo della Phase 3 qui sotto, "Configurare tipi e categorie documento", e' la versione **vecchia** della storia. `spec.md` la riscrive il 2026-09-15 in "Leggere la struttura disponibile per un tipo documento connesso", con FR-002 corretto "da gestione a lettura". Nella forma attuale e' implementata: `GET /tipi-documento/{codice}/struttura-disponibile` in `builder/api.py:166`, `service.struttura_disponibile` in `builder/service.py:159`. I task di Phase 3 che creano/scrivono tipi e categorie sono invece **annullati da `010` FR-016**, che ritira repository e API di classificazione: non esiste ne' deve esistere un `POST /api/v1/builder/tipi-documento`. |
+> | US2 — gestire modelli e versioni | **IMPLEMENTATA** | `POST /modelli`, `GET /modelli`, `GET /modelli/{id}`, `DELETE /modelli/{id}`, `POST /modelli/{id}/versioni` in `builder/api.py`. Creazione modello esercitata end-to-end il 2026-09-22 contro discovery live. |
+> | US3 — pubblicare e archiviare versioni | **IMPLEMENTATA** | `invia-revisione`, `approva`, `pubblica` in `builder/api.py`; tabella di transizione stati in `builder/service.py:37-38`; evento `VERSIONE_ARCHIVIATA` in `service.py:490`. |
+> | Policy per dimensione (T065-T072) | **FATTA E SPUNTATA** | Unico blocco scritto contro il codice reale, infatti e' l'unico con le spunte corrette. |
+>
+> **RISOLTA il 2026-09-22** (`DEC-002-LEDGER-RISCRITTO-DAL-CODICE`): le Phase
+> 1-6 sono state riscritte contro la struttura reale e rinumerate T001-T038.
+> Il ledger ora dice il vero: **37 fatti, 6 aperti, 3 annullati**. Gli aperti
+> sono lavoro genuino, non archeologia:
+>
+> | Task | Cosa manca davvero |
+> | --- | --- |
+> | T005 | `backend/app/builder/README.md` |
+> | T032 | Route HTTP per `archivia` e `sospendi` (le transizioni esistono nel service, nessun endpoint le espone) |
+> | T033 | Validazione di etichette-variante duplicate |
+> | T036-T038 | Quickstart, seed di una variante personalizzata, nota di coerenza `001`/`002` in `project-map.md` |
+
 **Input**: Design documents from `specs/002-builder-modelli/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/builder-modelli-api.openapi.yaml`, `quickstart.md`
@@ -50,6 +90,17 @@ Postgres reale)**:
   quel codice — prova concreta che l'endpoint di generazione e' davvero
   generico rispetto alla struttura del modello.
 
+**Aggiornamento 2026-09-22**: tre dei gap elencati qui sotto sono stati chiusi
+dopo il 2026-09-16 e l'elenco non era stato aggiornato. Chiusi: la bozza
+derivata da una pubblicata (FR-006, `POST /modelli/{id}/edizioni-derivate`);
+il vincolo **a livello DB** sulla versione pubblicata corrente (l'indice unico
+parziale `uq_modello_versione_pubblicata_corrente` esiste fin da `0002`, quindi
+la preoccupazione "solo applicativo" era gia' infondata quando fu scritta); il
+contratto OpenAPI, oggi presente e verificato da un test. Restano veri: nessuna
+route `archivia`/`sospendi`, nessuna validazione di etichette-variante
+duplicate, nessun `README.md` di modulo. Vedi T029, T030, T034 e T032, T033,
+T005.
+
 **Deliberatamente NON fatto stasera (gap reali, non da assumere coperti)**:
 - Nessun endpoint per modificare il contenuto di una versione gia' pubblicata
   ne' per derivare una bozza da una pubblicata (FR-005/FR-006) — esiste solo
@@ -74,140 +125,145 @@ Postgres reale)**:
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Builder API skeleton over the shared catalog domain.
+**Riscritta 2026-09-22 dal codice reale** (`DEC-002-LEDGER-RISCRITTO-DAL-CODICE`).
+La versione precedente pianificava i sottopacchetti `api/`, `repository/`,
+`service/`, `validation/`: non sono mai esistiti. L'implementazione usa moduli
+piatti, funzionalmente equivalenti. I task qui sotto descrivono cosa c'e'
+davvero, con il percorso vero, e sono spuntati solo dove il file esiste.
 
-- [ ] T001 Create builder package structure `api/`, `repository/`, `service/`, `validation/` under `backend/app/builder/`
-- [ ] T002 Create builder test package structure `contract/`, `integration/`, `unit/` under `backend/tests/builder/`
-- [ ] T003 Register a builder router include point in `backend/app/main.py`
-- [ ] T004 [P] Add builder OpenAPI contract publication wiring for `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml` in the existing API docs support
-- [ ] T005 [P] Add builder module documentation in `backend/app/builder/README.md`
+- [x] T001 Modulo builder piatto in `backend/app/builder/`: `api.py` (279 righe),
+      `service.py` (536), `repository.py` (236), `schemas.py` (149),
+      `audit.py` (35), `integrazioni_service.py` (90)
+- [x] T002 Test builder in `backend/tests/builder/`: `test_builder_flow_api.py`,
+      `test_builder_modelli_contract.py`, `test_integrazioni_manager.py`,
+      `test_policy_dimensione.py`
+- [x] T003 Router builder montato in `backend/app/main.py` con prefisso
+      `/api/v1/builder`
+- [x] T004 Contratto OpenAPI in
+      `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`,
+      verificato da `backend/tests/builder/test_builder_modelli_contract.py`
+- [ ] T005 [P] Documentazione di modulo in `backend/app/builder/README.md`
+      (ancora assente; unico elemento della Phase 1 non realizzato)
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Shared builder primitives required by all user stories.
-
-**CRITICAL**: No user story work can begin until this phase is complete.
-
-- [ ] T006 Extend the shared catalog persistence design in `backend/app/catalog/models.py` without introducing duplicate `tipo_documento`, `categoria_documento`, `modello_documento` or `modello_versione` tables
-- [ ] T007 Create builder workflow migration in `backend/alembic/versions/0005_builder_admin_workflow.py` for state metadata, audit table and publication uniqueness constraints
-- [ ] T008 [P] Create builder workflow enum and transition rules in `backend/app/builder/service/workflow.py`
-- [ ] T009 [P] Create builder Pydantic schemas in `backend/app/builder/api/schemas.py`
-- [ ] T010 Create builder authorization dependencies using `backend/app/common/security.py` in `backend/app/builder/api/security.py`
-- [ ] T011 Add builder error codes including `ACCESSO_NON_AUTENTICATO`, `ACCESSO_NON_AUTORIZZATO`, `MODELLO_VERSIONE_NON_MODIFICABILE` and `VERSIONE_CORRENTE_DUPLICATA` in `backend/app/common/errors.py`
-- [ ] T012 [P] Create builder validation helpers for codes, labels, active state and duplicate variants in `backend/app/builder/validation/classificazione.py`
-- [ ] T013 Create builder audit service for model/version state changes in `backend/app/builder/service/audit.py`
-
-**Checkpoint**: Foundation ready; user story implementation can now begin.
+- [x] T006 Persistenza condivisa in `backend/app/catalog/models.py` senza
+      tabelle duplicate: `TipoDocumento`, `ModelloDocumento`,
+      `ModelloDocumentoVersione`, `ModelloCampoRichiesto`, `PolicyDimensione`,
+      `AuditEventoModello`
+- [x] T007 Migration del workflow builder: `0002_catalogo_modelli.py` aggiunge
+      `variante`, validita', `pubblicato_at` e gli indici unici parziali
+      `uq_modello_versione_pubblicata_corrente` (una sola versione
+      `PUBBLICATO` per modello) e `uq_modello_documento_public_id`
+- [x] T008 Regole di transizione stato in `backend/app/builder/service.py:37`
+      (`TRANSIZIONI_VALIDE`: BOZZA -> IN_REVISIONE -> APPROVATO/BOZZA -> ...)
+- [x] T009 Schemi Pydantic in `backend/app/builder/schemas.py`
+      (`CreaModelloRequest`, `CreaVersioneRequest`, `VersioneResponse`,
+      `PolicyDimensione*`, `ModelloDettaglioResponse`, ...)
+- [x] T010 Autorizzazione per contesto tramite
+      `verify_scrittura_su_contesto` di `backend/app/common/security.py`,
+      richiamata da ogni scrittura del service
+- [x] T011 Codici errore builder in `backend/app/common/errors.py`
+      (`MODELLO_NON_TROVATO`, `CONTESTO_NON_VALIDO`,
+      `DIMENSIONE_RICHIEDE_VALORE`, ...)
+- [x] T012 Validazione di codici, varianti e identita' modello in
+      `backend/app/builder/service.py` (`_slug`, `_identita_modello`)
+- [x] T013 Audit dei cambi di stato in `backend/app/builder/audit.py`
+      (`registra_evento`) su tabella `audit_evento_modello`
 
 ---
 
-## Phase 3: User Story 1 - Configurare tipi e categorie documento (Priority: P1)
+## Phase 3: User Story 1 - Leggere la struttura disponibile (Priority: P1)
 
-**Goal**: Gestire tipi documento e categorie attive/non attive.
+**Attenzione al titolo storico**: fino al 2026-09-22 questa fase si chiamava
+"Configurare tipi e categorie documento". `spec.md` ha riscritto la storia il
+2026-09-15 in **sola lettura** (FR-002 corretto "da gestione a lettura"), e
+`010` FR-016 ha ritirato repository e API di classificazione. I task di
+creazione/modifica di tipi e categorie sono percio' **annullati nel merito**,
+non solo mai eseguiti.
 
-**Independent Test**: dato un tipo documento e una categoria attivi, il gestore puo' renderli disponibili alla configurazione di un modello.
-
-### Tests for User Story 1
-
-- [ ] T014 [P] [US1] Add contract tests for protected `GET /api/v1/builder/tipi-documento` and `POST /api/v1/builder/tipi-documento` in `backend/tests/builder/contract/test_tipi_documento_api.py`
-- [ ] T015 [P] [US1] Add contract tests for protected `GET /api/v1/builder/tipi-documento/{codice}/categorie` and `POST /api/v1/builder/tipi-documento/{codice}/categorie` in `backend/tests/builder/contract/test_categorie_documento_api.py`
-- [ ] T016 [P] [US1] Add authorization tests for viewer versus manager on type/category routes in `backend/tests/builder/contract/test_builder_auth_api.py`
-- [ ] T017 [P] [US1] Add integration tests for type/category creation, update and duplicate handling in `backend/tests/builder/integration/test_tipi_categorie.py`
-- [ ] T018 [P] [US1] Add integration tests that inactive types/categories cannot be selected for new models in `backend/tests/builder/integration/test_tipi_categorie.py`
-
-### Implementation for User Story 1
-
-- [ ] T019 [US1] Implement type/category repository functions over shared catalog models in `backend/app/builder/repository/classificazione.py`
-- [ ] T020 [US1] Implement `TipoDocumentoBuilderService` in `backend/app/builder/service/tipi_documento.py`
-- [ ] T021 [US1] Implement `CategoriaDocumentoBuilderService` in `backend/app/builder/service/categorie_documento.py`
-- [ ] T022 [US1] Implement type/category FastAPI routes in `backend/app/builder/api/classificazione.py`
-- [ ] T023 [US1] Apply `require_modelli_viewer` to read routes and `require_modelli_gestore` to write routes in `backend/app/builder/api/classificazione.py`
-- [ ] T024 [US1] Persist audit events for type/category create and update operations in `backend/app/builder/service/audit.py`
-- [ ] T025 [US1] Register builder classification routes in `backend/app/builder/api/__init__.py`
-
-**Checkpoint**: Tipi e categorie are independently usable through protected builder APIs.
+- [x] T014 `GET /api/v1/builder/tipi-documento/{codice}/struttura-disponibile`
+      in `backend/app/builder/api.py:166`, servita da
+      `BuilderService.struttura_disponibile` (`service.py:159`) tramite la
+      porta discovery
+- [x] T015 `GET /api/v1/builder/integrazioni` e
+      `GET /api/v1/builder/integrazioni/{id}/tipi-documento` e `.../struttura`
+      in `backend/app/builder/integrazioni_service.py`, filtrate per contesto
+      autorizzato e stato CONNESSO
+- [x] T016 Lettura limitata ai contesti del token, verificata da
+      `test_integrazioni_manager.py::test_manager_sees_only_connected_integrations_authorized_in_their_context`
+      e `::test_multicontext_token_does_not_leak_permission_across_contexts`
+- [-] T017 ANNULLATO da `010` FR-016: creazione tipo documento dal builder
+      (`POST /api/v1/builder/tipi-documento`). Non esiste e non deve esistere
+- [-] T018 ANNULLATO da `010` FR-016: gestione categorie/tipologie locali dal
+      builder
+- [-] T019 ANNULLATO da `010` FR-016: repository di classificazione locale
 
 ---
 
 ## Phase 4: User Story 2 - Gestire modelli e versioni (Priority: P1)
 
-**Goal**: Creare modelli, assegnare variante obbligatoria, creare versioni e impedire modifiche dirette a versioni pubblicate.
-
-**Independent Test**: dato un modello in bozza, il gestore puo' creare una versione, modificarla e portarla a uno stato di revisione/pubblicazione.
-
-### Tests for User Story 2
-
-- [ ] T026 [P] [US2] Add contract tests for protected `GET /api/v1/builder/modelli` and `POST /api/v1/builder/modelli` in `backend/tests/builder/contract/test_modelli_api.py`
-- [ ] T027 [P] [US2] Add contract tests for protected `POST /api/v1/builder/modelli/{modelloId}/versioni` in `backend/tests/builder/contract/test_versioni_api.py`
-- [ ] T028 [P] [US2] Add contract tests for `PUT /api/v1/builder/modelli/{modelloId}/versioni/{versioneId}` immutability errors in `backend/tests/builder/contract/test_versioni_api.py`
-- [ ] T029 [P] [US2] Add integration tests for default `STANDARD` variant in `backend/tests/builder/integration/test_varianti.py`
-- [ ] T030 [P] [US2] Add integration tests for duplicate variant rejection in `backend/tests/builder/integration/test_varianti.py`
-- [ ] T031 [P] [US2] Add unit tests for version mutability and derived draft rules in `backend/tests/builder/unit/test_mutabilita_versione.py`
-
-### Implementation for User Story 2
-
-- [ ] T032 [US2] Extend shared catalog models with builder-only version metadata in `backend/app/catalog/models.py`
-- [ ] T033 [US2] Implement model repository functions in `backend/app/builder/repository/modelli.py`
-- [ ] T034 [US2] Implement version repository functions in `backend/app/builder/repository/versioni.py`
-- [ ] T035 [US2] Implement `ModelloDocumentoBuilderService` with variant default `STANDARD` in `backend/app/builder/service/modelli.py`
-- [ ] T036 [US2] Implement `ModelloVersioneBuilderService` with draft creation and derived version rules in `backend/app/builder/service/versioni.py`
-- [ ] T037 [US2] Implement immutability guard for `PUBBLICATO` versions in `backend/app/builder/validation/versioni.py`
-- [ ] T038 [US2] Implement model and version FastAPI routes in `backend/app/builder/api/modelli.py`
-- [ ] T039 [US2] Apply `require_modelli_viewer` to model/version reads and `require_modelli_gestore` to writes in `backend/app/builder/api/modelli.py`
-- [ ] T040 [US2] Persist audit events for model creation and version modification in `backend/app/builder/service/audit.py`
-- [ ] T041 [US2] Register model/version routes in `backend/app/builder/api/__init__.py`
-
-**Checkpoint**: Models and draft/derived versions are independently manageable through protected builder APIs.
+- [x] T020 `POST /api/v1/builder/modelli` (`api.py:206`,
+      `service.crea_modello:206`): risolve il percorso nell'albero discovery,
+      applica le policy per dimensione, assegna variante e identita'
+- [x] T021 `GET /api/v1/builder/modelli` e `GET /api/v1/builder/modelli/{id}`
+      con paginazione e filtro per contesto
+- [x] T022 `POST /api/v1/builder/modelli/{id}/versioni`
+      (`service.crea_versione:388`) con clonazione dei campi richiesti
+- [x] T023 `DELETE /api/v1/builder/modelli/{id}` (`service.elimina:509`):
+      eliminazione logica con archiviazione delle versioni pubblicate e audit
+- [x] T024 `GET /api/v1/builder/contesti` (`service.contesti:80`) tramite
+      `contesti_con_permesso`
+- [x] T025 Campi del contratto dati derivati dalla foglia discovery
+      selezionata, non da dati locali (FR-003, FR-015)
 
 ---
 
-## Phase 5: User Story 3 - Pubblicare e archiviare versioni modello (Priority: P1)
+## Phase 5: User Story 3 - Pubblicare e archiviare versioni (Priority: P1)
 
-**Goal**: Pubblicare versioni approvate, archiviare versioni pubblicate e garantire una sola versione pubblicata corrente per variante.
-
-**Independent Test**: una versione non pubblicata non appare nel catalogo operativo; una versione pubblicata valida appare nel catalogo.
-
-### Tests for User Story 3
-
-- [ ] T042 [P] [US3] Add contract tests for `POST /api/v1/builder/modelli/{modelloId}/versioni/{versioneId}/approva` in `backend/tests/builder/contract/test_approvazione_api.py`
-- [ ] T043 [P] [US3] Add contract tests for `POST /api/v1/builder/modelli/{modelloId}/versioni/{versioneId}/pubblica` in `backend/tests/builder/contract/test_pubblicazione_api.py`
-- [ ] T044 [P] [US3] Add contract tests for archive and suspend routes in `backend/tests/builder/contract/test_archiviazione_api.py`
-- [ ] T045 [P] [US3] Add authorization tests proving only `GEMODO_MODELLI_GESTORE` can approve, publish, archive or suspend in `backend/tests/builder/contract/test_builder_auth_api.py`
-- [ ] T046 [P] [US3] Add integration tests for automatic archive of previous current version in `backend/tests/builder/integration/test_pubblicazione.py`
-- [ ] T047 [P] [US3] Add integration tests for preventing two current published versions in same variant in `backend/tests/builder/integration/test_pubblicazione.py`
-- [ ] T048 [P] [US3] Add integration tests for allowing separate published variants in same context in `backend/tests/builder/integration/test_pubblicazione.py`
-- [ ] T049 [P] [US3] Add integration test that the `001` catalog sees only the current published version in `backend/tests/builder/integration/test_catalogo_compatibilita.py`
-
-### Implementation for User Story 3
-
-- [ ] T050 [US3] Implement approval transition in `backend/app/builder/service/workflow.py`
-- [ ] T051 [US3] Implement transactional publication with automatic archive of previous current version in `backend/app/builder/service/pubblicazione.py`
-- [ ] T052 [US3] Implement archive and suspend operations in `backend/app/builder/service/pubblicazione.py`
-- [ ] T053 [US3] Implement publication repository locking or uniqueness strategy in `backend/app/builder/repository/pubblicazione.py`
-- [ ] T054 [US3] Implement approve, publish, archive and suspend FastAPI routes in `backend/app/builder/api/pubblicazione.py`
-- [ ] T055 [US3] Apply `require_modelli_gestore` to all state transition routes in `backend/app/builder/api/pubblicazione.py`
-- [ ] T056 [US3] Persist audit events for approve, publish, archive and suspend transitions in `backend/app/builder/service/audit.py`
-- [ ] T057 [US3] Ensure catalog service in `backend/app/catalog/service.py` filters only current `PUBBLICATO` versions after builder publication
-- [ ] T058 [US3] Register publication routes in `backend/app/builder/api/__init__.py`
-
-**Checkpoint**: Publication workflow is independently usable and catalog-safe.
+- [x] T026 `POST .../versioni/{id}/invia-revisione`, `.../approva`,
+      `.../pubblica` in `backend/app/builder/api.py:253-279`, servite da
+      `service.transizione:450`
+- [x] T027 Archiviazione automatica della versione corrente precedente alla
+      pubblicazione di una nuova, verificata a livello DB da
+      `test_builder_flow_api.py`
+- [x] T028 Immutabilita' delle versioni pubblicate: nessun percorso di
+      scrittura sul contenuto di una versione `PUBBLICATO` (FR-005)
+- [x] T029 `POST /api/v1/builder/modelli/{id}/edizioni-derivate`
+      (`api.py:225`, `service.crea_edizione_derivata:294`): bozza derivata da
+      una configurazione gia' pubblicata (FR-006). *Chiude il gap dichiarato
+      aperto dalla nota del 2026-09-16*
+- [x] T030 Al massimo una versione `PUBBLICATO` corrente per modello, imposta
+      **a livello DB** dall'indice unico parziale
+      `uq_modello_versione_pubblicata_corrente` di `0002` (FR-007).
+      *Chiude il gap "solo applicativo" dichiarato dalla nota del 2026-09-16*
+- [x] T031 Registrazione di chi crea, approva, pubblica o archivia (FR-008)
+      tramite `audit.registra_evento` su `audit_evento_modello`
+- [ ] T032 Route HTTP dedicate per `archivia` e `sospendi`: le transizioni
+      PUBBLICATO -> ARCHIVIATO/SOSPESO sono ammesse da `TRANSIZIONI_VALIDE` e
+      raggiungibili dal service, ma nessun endpoint le espone
+- [ ] T033 Validazione esplicita di etichette-variante duplicate
+      (Edge Case dedicato in `spec.md`, mai implementato)
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Alignment, documentation and validation across the feature.
-
-- [ ] T059 [P] Update success and error examples for the builder OpenAPI contract in `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
-- [ ] T060 [P] Update seed/demo data for one standard variant and one custom variant in `infra/local/postgres/seed-demo-catalog.yaml`
-- [ ] T061 [P] Add completed validation notes to `specs/002-builder-modelli/quickstart.md`
-- [ ] T062 [P] Update generated Spec Kit documentation from `scripts/generate-spec-docs.py`
-- [ ] T063 Run builder pytest tests and related catalog compatibility tests from `backend/`
-- [ ] T064 Run cross-spec consistency check between specs `001` and `002` for variant/version/security rules and record status in `docs/project-map.md`
+- [x] T034 Contratto OpenAPI con esempi di successo ed errore, verificato da
+      `test_builder_modelli_contract.py`
+- [x] T035 Suite builder eseguita su Postgres reale (parte dei 354 test
+      backend verdi al 2026-09-22)
+- [ ] T036 [P] Aggiornare `specs/002-builder-modelli/quickstart.md` con le
+      note di validazione effettive
+- [ ] T037 [P] Dati seed per una variante standard e una personalizzata in
+      `infra/local/postgres/seed-demo-catalog.yaml`
+- [ ] T038 Registrare in `docs/project-map.md` l'esito del controllo di
+      coerenza fra `001` e `002` su variante, versione e regole di sicurezza
 
 ---
+
 
 ## Dependencies & Execution Order
 

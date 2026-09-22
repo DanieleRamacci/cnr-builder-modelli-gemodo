@@ -355,3 +355,233 @@ coverage:
     contract_ref: specs/009-fondamenta-mock-test-qualita/contracts/quality-readiness-contract.yaml
     stato: COPERTO
     note: contains_secrets/contains_real_personal_data verificati come regole vere nel manifest locale
+
+  # --- Configurazione cataloghi e integrazioni (spec 010, FR-001..FR-028) ---
+  # Aggiunte 2026-09-22: la spec 010 era la piu' sviluppata e non aveva alcuna riga
+  # nella matrice. Ogni riga COPERTO cita un test realmente esistente ed eseguito
+  # (suite backend verde, 354 test, 2026-09-22). Lo scenario eseguibile di
+  # riferimento e' SCENARIO-11 in specs/009-fondamenta-mock-test-qualita/quickstart.md.
+
+  - id: COV-041
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-001
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_definition_export_revisions_and_audit copre definizione, codice_contesto e audit
+
+  - id: COV-042
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-002
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: tipologie definite dentro StrutturaInput, validate da test_incomplete_duplicate_and_invalid_references
+
+  - id: COV-043
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-003
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: profili con AttributoProfilo persistiti da _salva, coperti da test_definition_export_revisions_and_audit
+
+  - id: COV-044
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-004
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_incomplete_duplicate_and_invalid_references verifica combinazioni tipologia/profilo non valide
+
+  - id: COV-045
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-005
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_contract_foundation.py
+    stato: COPERTO
+    note: test_admin_documentation_example_obeys_common_field_shape copre codice/etichetta/tipo/lingua/obbligatorio/ordine
+
+  - id: COV-046
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-006
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding_contratti.py
+    stato: COPERTO
+    note: test_contratti_onboarding_definizione_schema_endpoint_connesso genera lo schema dalla definizione
+
+  - id: COV-047
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-007
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_routes_require_admin_and_export_is_scoped copre export e suo confine di autorizzazione
+
+  - id: COV-048
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-008
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_integrazioni_admin.py
+    stato: COPERTO
+    note: test_verify_end_to_end_connects_against_a_real_server verifica contro un server HTTP reale
+
+  - id: COV-049
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-009
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/builder/test_integrazioni_manager.py
+    stato: COPERTO
+    note: test_not_connected_integration_returns_409 e test_not_yet_connected_integration_is_excluded_from_the_list
+
+  - id: COV-050
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-010
+    scenario_id: SCENARIO-11
+    contract_ref: specs/010-configurazione-cataloghi-integrazioni/spec.md
+    stato: DA_COPRIRE
+    note: RINVIATO fuori dall'incremento FR-016 dalla spec stessa; T036 sospeso. Nessun test atteso finche' non rientra in scope
+
+  - id: COV-051
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-011
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/discovery/test_pagination.py
+    stato: COPERTO
+    note: test_real_http_hal_assembles_pages e test_pagination_rejects_invalid_or_unsafe_pages
+
+  - id: COV-052
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-012
+    scenario_id: SCENARIO-7
+    contract_ref: backend/tests/configurazione/test_foundation.py
+    stato: COPERTO
+    note: test_configuration_requires_admin piu' test_admin_routes_reject_non_admin_principals in test_integrazioni_admin.py
+
+  - id: COV-053
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-013
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_redefinition_preserves_software_connection_and_old_schema piu' test_parallel_revisions_are_serialized_per_document_type
+
+  - id: COV-054
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-014
+    scenario_id: SCENARIO-11
+    contract_ref: specs/010-configurazione-cataloghi-integrazioni/tasks.md
+    stato: DA_COPRIRE
+    note: firma SHA-256 sulla versione modello rinviata nel MVP; T055-T056 aperti
+
+  - id: COV-055
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-015
+    scenario_id: SCENARIO-11
+    contract_ref: specs/010-configurazione-cataloghi-integrazioni/tasks.md
+    stato: DA_COPRIRE
+    note: runner di verifica periodica rinviato nel MVP; T057-T058 aperti. Prerequisito di FR-026..FR-028
+
+  - id: COV-056
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-016
+    scenario_id: SCENARIO-2
+    contract_ref: backend/tests/catalog/test_ritiro_catalogo_migration.py
+    stato: COPERTO
+    note: migration 0009 piu' test_ritiro_classificazione_api.py::test_old_classification_routes_are_removed
+
+  - id: COV-057
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-017
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_integrazioni_admin.py
+    stato: COPERTO
+    note: test_create_starts_disconnected_and_rejects_duplicate_code piu' test_list_and_get_roundtrip_and_missing_id_is_404
+
+  - id: COV-058
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-018
+    scenario_id: SCENARIO-7
+    contract_ref: backend/tests/common/test_autorizzazione_per_contesto.py
+    stato: COPERTO
+    note: il contesto non assegna ruoli; il mapping resta della 006, verificato per singolo contesto
+
+  - id: COV-059
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-019
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/discovery/test_discovery_map.py
+    stato: COPERTO
+    note: test_one_response_validates_all_types_and_shares_navigation_cache piu' test_cache_is_isolated_by_source_and_revision
+
+  - id: COV-060
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-020
+    scenario_id: SCENARIO-7
+    contract_ref: backend/tests/builder/test_integrazioni_manager.py
+    stato: COPERTO
+    note: test_manager_sees_only_connected_integrations_authorized_in_their_context piu' test_multicontext_token_does_not_leak_permission_across_contexts
+
+  - id: COV-061
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-021
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_integrazioni_admin.py
+    stato: COPERTO
+    note: test_verify_maps_unreachable_and_non_conformant_responses piu' test_verify_with_stale_revision_does_not_connect
+
+  - id: COV-062
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-022
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_admin_cannot_create_active_duplicate_of_integration_owned_type
+
+  - id: COV-063
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-023
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: test_disattivazione_per_id_risolve_il_codice_duplicato piu' test_disattivazione_bloccata_se_esistono_modelli
+
+  - id: COV-064
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-024
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/configurazione/test_onboarding.py
+    stato: COPERTO
+    note: indice unico parziale piu' _tipo_per_integrazione; duplicato di altra integrazione rifiutato
+
+  - id: COV-065
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-025
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/discovery/test_discovery.py
+    stato: COPERTO
+    note: test_geban_languages_alias_is_normalized piu' test_geban_languages_alias_must_match_canonical_value
+
+  - id: COV-066
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-026
+    scenario_id: SCENARIO-11
+    contract_ref: specs/010-configurazione-cataloghi-integrazioni/tasks.md
+    stato: DA_COPRIRE
+    note: riverifica periodica dello stato di connessione; T096-T097 aperti, dipendono da T057 (FR-015)
+
+  - id: COV-067
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-027
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/builder/test_policy_dimensione.py
+    stato: DA_COPRIRE
+    note: test_an_unconfigured_dimension_is_signalled_not_silently_ignored copre la segnalazione dentro la pagina del tipo; la segnalazione fuori da quella pagina e' T098, aperta
+
+  - id: COV-068
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-028
+    scenario_id: SCENARIO-11
+    contract_ref: specs/010-configurazione-cataloghi-integrazioni/tasks.md
+    stato: DA_COPRIRE
+    note: confronto continuo della versione di contratto discovery; T099 aperta

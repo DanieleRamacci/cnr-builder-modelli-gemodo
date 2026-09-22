@@ -6,6 +6,32 @@ per FR-020 vale la ricerca v0.4 aggiornata nella spec: filtro senza
 corrispondenze -> 200/modelli vuoti, non TIPOLOGIA_SOL_NON_VALIDA.
 Task di rinomina tabelle del catalogo T080-T084 sono SUPERATI/SOSPESI.
 
+**Riconciliazione 2026-09-22 — convenzione `- [-]`**: da oggi un task
+superato si marca `- [-]` invece di `- [ ]`. `scripts/generate-spec-docs.py`
+conta i fatti con `^- \[x\]` e il totale con `^- \[[ xX]\]`, quindi `[-]`
+resta fuori da entrambi: e' esattamente "non e' da fare, non e' arretrato".
+Un task lasciato `- [ ]` significa invece lavoro reale ancora aperto.
+
+Applicata qui a T080-T084, che la nota del 2026-09-17 dichiarava gia'
+superati ma che continuavano a essere conteggiati come arretrato. Verifica
+del 2026-09-22: `TipologiaBandoSOL`, `TipologiaDocumento` e
+`get_tipologia_sol_by_codice` non compaiono in nessun file di `backend/app`;
+la migration `0009_ritiro_catalogo_esterno_locale` **elimina**
+`tipologia_bando_sol` (righe 34-41) invece di rinominarla. L'entita' non e'
+stata generalizzata: e' stata cancellata da `010` FR-016.
+
+**Stato reale dei restanti task aperti di questa spec:**
+
+| Blocco | Stato | Nota |
+| --- | --- | --- |
+| T077-T079 | APERTI, valore basso | Toccano `infra/local/postgres/seed-demo-catalog.yaml`, che le note stesse dei task declassano a fixture per adapter locale/mock. Non e' piu' seed di produzione. |
+| T080-T084 | **SUPERATI** | Vedi sopra. Marcati `[-]`. |
+| T086 | SUPERATO per annotazione propria | Gia' dichiarato "non piu' necessaria" nel task stesso. |
+| T087-T092 | **APERTI, ma la base e' crollata** | Il loader DB-backed dei profili non esiste (`load_sistemi_richiedenti_db` assente, `_configured_sistemi` legge ancora lo YAML). Ma `registro_contratti_dati`, su cui T087 aveva fatto la parte fatta, e' stato **droppato** da `0009`. Vanno ripianificati, non ripresi. |
+| T093-T102 | **APERTI e reali** | Perimetro del profilo di integrazione mai implementato: `PROFILO_INTEGRAZIONE_NON_ABILITATO` non esiste in `backend/app`. |
+| T103-T107 | APERTI | Allineamento documentale e coverage. |
+| T114-T115 | APERTI | T115 e' una decisione da prendere, non codice: quando attivare `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` (oggi default `false`). |
+
 **Input**: Design documents from `specs/001-catalogo-contratto-geban/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/geban-catalog-api.openapi.yaml`, `quickstart.md`
@@ -429,7 +455,7 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       `bando-concorso-common-fields-v1` (codice, `tipo_documento: BANDO_CONCORSO`,
       versione, campi ricalcati da `CAMPI_DEMO`/`ModelloCampoRichiesto`).
       *(2026-09-15: stessa nota di T078 — fixture per adapter locale/mock)*
-- [ ] T080 *(2026-09-16: numero migration aggiornato da `0008` a `0009` — `0008`
+- [-] T080 *(2026-09-16: numero migration aggiornato da `0008` a `0009` — `0008`
       e' stato preso da T085, implementata prima perche' necessaria stasera)*
       Migration Alembic `0009` in
       `backend/alembic/versions/0009_generalizza_tipologia_documento.py`: rinomina
@@ -443,18 +469,18 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       09-15: la rinomina/generalizzazione dello schema resta valida cosi' com'e';
       il refresh periodico di queste righe in produzione per BANDO_CONCORSO passa
       pero' dall'adapter HTTP di `010`, non solo da questa migration one-shot)*
-- [ ] T081 [P] Rinominare `TipologiaBandoSOL` -> `TipologiaDocumento` in
+- [-] T081 [P] Rinominare `TipologiaBandoSOL` -> `TipologiaDocumento` in
       `backend/app/catalog/models.py`, aggiungere relazione/FK
       `tipo_documento_id`, rinominare `codice_sol` -> `riferimento_esterno`
       (nullable)
-- [ ] T082 Aggiornare `get_tipologia_sol_by_codice` in
+- [-] T082 Aggiornare `get_tipologia_sol_by_codice` in
       `backend/app/catalog/repository.py` per filtrare anche per
       `tipo_documento_id` (depends on T080, T081)
-- [ ] T083 Aggiornare riferimenti a `TipologiaBandoSOL`/`codice_sol` in
+- [-] T083 Aggiornare riferimenti a `TipologiaBandoSOL`/`codice_sol` in
       `backend/app/catalog/service.py` e `backend/app/catalog/schemas.py`
       (nessun cambio del contratto pubblico: `codice_tipologia` e
       `TIPOLOGIA_SOL_NON_VALIDA` restano invariati)
-- [ ] T084 [P] Aggiornare fixture e test esistenti che referenziano
+- [-] T084 [P] Aggiornare fixture e test esistenti che referenziano
       `TipologiaBandoSOL`/`codice_sol` in `backend/tests/catalog/`,
       `backend/tests/support/`, `backend/tests/integration/test_seed_demo_validation.py`
 - [x] T085 *(implementata 2026-09-16, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`:
@@ -468,7 +494,7 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       migration va estesa a leggere dal seed invece di restare hardcoded.
       Verificato su Postgres reale (`alembic upgrade head` pulito, colonna letta
       correttamente via SQLAlchemy).
-- [ ] T086 *(2026-09-15: non piu' necessaria — non esiste piu' un modello
+- [-] T086 *(2026-09-15: non piu' necessaria — non esiste piu' un modello
       SQLAlchemy `Ufficio` da aggiungere; `codice_contesto` in T085 e' gia' un
       campo diretto su `TipoDocumento`, nessuna relazione separata)*
 - [x] T087 (parziale, `registro_contratti_dati` — 2026-09-16) / [ ] (rimane,

@@ -840,3 +840,53 @@ duplicare qui la persistenza, e non leggerla da `DefinizioneStruttura`.
 - [ ] T094 Test e2e Playwright del flusso completo: registra contesto,
       consegna la bozza, verifica l'endpoint, configura una policy di
       dimensione e conferma l'effetto nella creazione modello
+
+## Phase 15: Sorveglianza dell'integrazione dopo la verifica (2026-09-22)
+
+**Goal**: FR-026, FR-027 e FR-028 **di questa spec** (da non confondere con
+`FR-026` di `007`, il vincolo grafico citato nella Phase 14). Oggi la verifica di un'integrazione e' un
+evento puntuale innescato dall'admin; dopo di essa nessun processo osserva
+l'endpoint. Questa fase aggiunge l'osservazione continua.
+
+**Origine**: verifica end-to-end del 2026-09-22 contro GEBAN reale. Vedi
+Clarifications "Session 2026-09-22 (ter)" in `spec.md`.
+
+**Vincolo architetturale**: un solo runner periodico, condiviso con FR-015
+(T057). Una sola risposta discovery per integrazione e per ciclo, riusata da
+tutti e tre i controlli. Non introdurre un secondo scheduler.
+
+**Dipendenza**: T096 dipende da T057. T097-T099 dipendono da T096.
+
+- [ ] T096 [FR-026] Estendere il runner di T057 con un ciclo per integrazione
+      registrata: recupera il discovery una sola volta, ne deriva stato di
+      raggiungibilita', conformita', versione di contratto e insieme delle
+      dimensioni dichiarate per tipo documento. Nessuna scrittura della
+      `revisione`, nessun `revisione_attesa`: non e' una riconfigurazione.
+      Esito `NON_VERIFICABILE` per indisponibilita' esterna, distinto da
+      `NON_CONFORME`. In `backend/app/configurazione/`.
+- [ ] T097 [FR-026] Persistere l'esito della riverifica automatica separandolo
+      dall'ultima verifica manuale, cosi' che la dashboard di User Story 4
+      possa mostrare "connesso, ultimo controllo automatico fallito" senza
+      perdere la data dell'ultimo esito valido. Migration piu' proiezione in
+      `IntegrazioneAdmin`. Auditare ogni transizione di stato.
+- [ ] T098 [FR-027] Calcolare, per ogni tipo documento live di ogni
+      integrazione connessa, le dimensioni dichiarate prive di policy
+      registrata, ed esporle come elenco di segnalazioni con integrazione,
+      codice tipo documento e nome dimensione. Riusare
+      `IntegrazioniService._dimensioni_catalogo`, non reimplementarla: e' la
+      stessa regola che governa la pagina policy.
+- [ ] T099 [FR-028] Confrontare la versione di contratto osservata con
+      `versione_contratto_verificata` e segnalare la divergenza come esito
+      proprio, distinto da non conforme. Non aggiornare il valore registrato
+      in automatico.
+- [ ] T100 [P] Superficie admin delle segnalazioni: sostituire le schede
+      statiche della home con lo stato reale delle integrazioni e l'elenco
+      prodotto da T098, con link diretto alla schermata 4a della dimensione
+      interessata. Rimuovere contestualmente i contenuti hardcoded residui in
+      `frontend/src/app/home.component.ts` (schede integrazioni, scheda SIGLA,
+      data fissa). Nessuna segnalazione MUST provenire da esempi o fixture.
+- [ ] T101 Test di integrazione dei tre controlli con endpoint simulato:
+      integrazione che passa la verifica e poi diventa irraggiungibile,
+      diventa non conforme, cambia versione di contratto, e aggiunge una
+      dimensione nuova su una foglia. Verificare che un ciclo esegua una sola
+      richiesta per integrazione.

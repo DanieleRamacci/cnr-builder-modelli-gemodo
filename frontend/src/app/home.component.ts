@@ -23,15 +23,6 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
         <span>22/09/2026</span>
       </section>
 
-      @if (admin) {
-        <section class="attention-strip" aria-label="Azioni richieste">
-          <strong>2 cose richiedono attenzione.</strong>
-          La dimensione <code>canale</code> e' comparsa su una foglia di GEBAN senza policy
-          registrata. SIGLA ha fallito l'ultima scansione notturna.
-          <a routerLink="/configurazione" class="btn btn-sm">Risolvi</a>
-        </section>
-      }
-
       <section class="home-actions" aria-labelledby="home-actions-title">
         <h2 id="home-actions-title">Cosa vuoi fare</h2>
         <div class="home-action-grid">

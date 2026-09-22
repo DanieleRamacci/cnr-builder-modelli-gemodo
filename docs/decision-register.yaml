@@ -1010,3 +1010,75 @@ decisions:
       dimensione con `consente_valore_generico=false`.
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-21
+
+  - id: DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO
+    titolo: Il corpo del documento (sezioni con placeholder) rientra in scope e va ripianificato contro il builder reale
+    owner_spec: specs/003-sezioni-placeholder-versionamento
+    spec_interessate:
+      - specs/002-builder-modelli
+      - specs/004-generazione-documenti-pdf
+      - specs/008-ai-mcp-readiness
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Deciso con l'utente il 2026-09-22 dopo la verifica dello stato reale.
+      Oggi il PDF generato e' un elenco etichetta/valore costruito in
+      `generazione/service.py` da `list_required_fields` piu' `render_pdf`,
+      marcato "DOCUMENTO DI TEST - NON UFFICIALE": non esiste alcun corpo
+      documentale. La tabella `sezione_modello` esiste da `0001` ma non e'
+      referenziata da alcun file di `backend/app`, e `load_document_model`
+      (validatore `GEMODO_DOCUMENT_V1`) ha zero chiamanti. Un bando reale e'
+      testo con segnaposto dentro i paragrafi, non una tabella di campi:
+      finche' `003` non e' implementata GEMODO non puo' produrre un documento
+      ufficiale. I task originali di `003` sono SUPERATI (51 dei 54 percorsi
+      citati non esistono, i package `builder/sections|placeholders|
+      complex_fields|document_model` non sono mai stati creati e le migration
+      `0006`/`0007` pianificate sono occupate da altro lavoro): vanno
+      riscritti contro il modulo `builder` piatto esistente. US3
+      (`GEMODO_DOCUMENT_V1`) e' di fatto gia' implementata e appartiene a
+      `009`; va collegata alla generazione invece che riscritta.
+    fase_bloccante: TASKS
+    data_ultima_revisione: 2026-09-22
+
+  - id: DEC-002-LEDGER-RISCRITTO-DAL-CODICE
+    titolo: I task di 002 vanno riscritti dal codice reale, non eseguiti
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Deciso con l'utente il 2026-09-22. US1 (riscritta il 2026-09-15 da
+      "configurare" a "leggere la struttura disponibile"), US2 e US3 sono
+      implementate e verificate end-to-end. I task T001-T064 descrivono una
+      gerarchia di file mai creata (35 dei 47 percorsi citati non esistono):
+      l'implementazione ha adottato un modulo `builder` piatto. Vanno
+      rigenerati contro la struttura reale e spuntati, non eseguiti. I soli
+      task che restano annullati nel merito sono quelli che creano o
+      modificano tipi e categorie, ritirati da `010` FR-016.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-22
+
+  - id: DEC-008-AI-MCP-FUORI-SCOPE
+    titolo: AI/MCP resta fuori scope finche' il corpo del documento non esiste
+    owner_spec: specs/008-ai-mcp-readiness
+    spec_interessate:
+      - specs/003-sezioni-placeholder-versionamento
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Deciso con l'utente il 2026-09-22. `008` resta senza `plan.md` ne'
+      `tasks.md`. La ragione non e' la priorita' dichiarata dalla spec
+      ("non nel primo rilascio", US1 P2 e US2 P3) ma una dipendenza reale:
+      il caso d'uso portante - un assistente che propone una bozza di sezione
+      - presuppone che le sezioni esistano, quindi `008` e' bloccata da
+      `DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO`. I suoi 20 FR restano nella
+      baseline di copertura (`docs/coverage-baseline.yaml`): visibili,
+      misurati, non bloccanti. Rivalutare quando `003` e' implementata.
+      Nota: i guardrail FR-003, FR-014, FR-017 e FR-018 valgono a
+      prescindere dall'AI; se in futuro servissero attivi prima di `008`,
+      il loro posto naturale e' `006`, non un anticipo di questa spec.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-22
