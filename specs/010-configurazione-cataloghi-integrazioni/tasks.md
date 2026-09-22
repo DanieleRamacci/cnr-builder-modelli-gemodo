@@ -120,7 +120,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 - [x] T016 [P] [US1] Integration test: creazione completa (tipo + tipologia +
       profilo + campo) -> stato "definito, non connesso" (Acceptance Scenario 1)
       in `backend/tests/configurazione/integration/test_definizione_struttura.py`
-- [ ] T017 [P] [US1] Integration test: campo che referenzia un
+- [x] T017 (2026-09-22: coperto da `test_onboarding_contratti.py`, dove lo stesso campo `soglia` eredita tre opzioni da FORN e due da SERV senza portarne di proprie; la risoluzione simbolica nel builder live resta fuori scope di questo test, vedi US5) [P] [US1] Integration test: campo che referenzia un
       `AttributoProfilo` non richiede opzioni proprie, le eredita dal profilo
       scelto (Acceptance Scenario 2)
       IN CORSO: ereditarieta' risolta nell'esempio generato e testata;
@@ -277,7 +277,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       in T002 per FR-001..FR-009
 - [x] T048 [P] Verificare Swagger/ReDoc locale per il nuovo contratto
       (Costituzione, principio VI)
-- [ ] T049 [P] Scrivere `quickstart.md`: scenario end-to-end con una fixture
+- [x] T049 (2026-09-22: `quickstart.md` scritto sull'esito di un test reale, `tests/configurazione/test_onboarding_contratti.py`, con un tipo CONTRATTO_APPALTO estraneo al dominio dei bandi: definizione -> schema -> esportazione -> endpoint CONNESSO su server HTTP vero) [P] Scrivere `quickstart.md`: scenario end-to-end con una fixture
       tipo-Contratti (diversa da `BANDO_CONCORSO`, per dimostrare che il motore
       e' generico — vedi conversazione 2026-09-15), definizione -> generazione
       schema -> registrazione endpoint mock (T013) -> stato `CONNESSO`
@@ -287,7 +287,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       schema) sia funzionante
 - [ ] T051 Aggiornare `docs/project-map.md` con lo stato effettivamente
       implementato di questa spec
-- [ ] T052 Eseguire la suite pytest completa su Postgres reale (non mock) e
+- [x] T052 (2026-09-22: 319 passati, 12 esclusi, su PostgreSQL reale; esiti in `quickstart.md`) Eseguire la suite pytest completa su Postgres reale (non mock) e
       registrare l'esito in `quickstart.md`
 
 ---
