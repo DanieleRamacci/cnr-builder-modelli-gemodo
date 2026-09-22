@@ -1,5 +1,11 @@
 # Review Findings 2026-09-01 - ADev, Codex, Claude
 
+> **Documento storico del 2026-09-01.** Esito di una review su uno stato del
+> codice ampiamente superato: quasi tutti i rilievi sono stati chiusi dalle
+> spec `001`, `002`, `006`, `009` e `010`. Non usarlo come elenco di lavoro
+> aperto; resta agli atti come traccia delle decisioni prese allora.
+
+
 ## Purpose
 
 Questo file raccoglie gli esiti delle review eseguite sul repository

@@ -493,6 +493,7 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
         [
         "## Entrate Principali",
         "",
+        "- [API per un sistema esterno](api-per-geban.md) - da qui parte chi deve integrarsi con GEMODO",
         "- [Proposta sorgente](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
         "- [Spec Kit Index](spec-kit/index.md)",
         "- [Feature attiva](spec-kit/active-feature.md)",

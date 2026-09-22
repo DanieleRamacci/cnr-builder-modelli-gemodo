@@ -1,9 +1,18 @@
 # Flusso Configurazione, Builder E Generazione Documento
 
+> **Documento storico, fermo al 2026-09-16.** Fotografa com'era il flusso quando
+> l'area amministrativa di `010` non esisteva ancora e alcuni passi si facevano a
+> mano. Le parti marcate "non ancora costruito" e "fatto stasera a mano" sono
+> **superate**: registrazione dell'integrazione, verifica dell'endpoint e
+> creazione del modello avvengono da interfaccia dal 2026-09-21.
+>
+> Per integrare un sistema esterno usare **[API per un sistema esterno](api-per-geban.md)**.
+> Per lo stato corrente delle spec, [Project Map](project-map.md).
+> Questo file resta perche' spiega *perche'* il flusso e' fatto cosi', non per
+> essere seguito passo passo.
+
 Descrizione end-to-end del flusso GEBAN &harr; GEMODO cosi' come definito nelle
-spec `001`, `002`, `010` e implementato al 2026-09-16. Ogni sezione dice
-esplicitamente cosa e' **reale e testato oggi** e cosa e' **solo specificato**
-(non ancora costruito), per rendere facile trovare buchi.
+spec `001`, `002`, `010` e implementato al 2026-09-16.
 
 ## Stato In Un Colpo D'occhio
 

@@ -31,7 +31,7 @@ app = FastAPI(
         "Documentazione interattiva generata dalla stessa sorgente OpenAPI (Swagger UI, ReDoc)."
     ),
     version="0.1.0",
-    docs_url="/docs",
+    docs_url="/docs/runtime",
     redoc_url="/redoc",
 )
 
