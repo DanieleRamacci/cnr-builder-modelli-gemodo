@@ -76,10 +76,21 @@ Ripresa backend amministrativo 010: migration 0010/0011 per esempi,
 revisioni, schemi, endpoint e audit; API di definizione, generazione/export
 e lettura dashboard con `GEMODO_ADMIN`, senza catalogo esterno persistente.
 Swagger/ReDoc: `/docs/configurazione-cataloghi`, `/redoc/configurazione-cataloghi`.
-Suite finale non-e2e: 221 passati, 12 e2e esclusi, nessuno saltato; 15 mirati.
-Registrazione/verifica endpoint US3 e risoluzione live dei riferimenti attributo
-restano aperte. Review esterna e hash/runner rinviati dall'utente; quality gate
-non superato per questi incrementi. Dettagli: `specs/010-configurazione-cataloghi-integrazioni/definizione-export.md`.
+Aggiornamento 2026-09-22: **User Story 1-3 complete e verificate**. La
+registrazione e verifica dell'endpoint (US3) e' implementata sotto la forma
+introdotta dal pivot FR-017: l'endpoint appartiene all'Integrazione, non al
+TipoDocumento, quindi un solo URL puo' servire piu' tipi. Copre blocco
+ottimistico sulla revisione, allowlist di egress con rifiuto degli IP privati
+dietro un host pubblico, verifica concorrente con tentativo a scadenza e
+ritorno a DEFINITO quando l'URL cambia. Onboarding end-to-end dimostrato su un
+tipo estraneo al dominio dei bandi (CONTRATTO_APPALTO) in
+`specs/010-configurazione-cataloghi-integrazioni/quickstart.md`.
+Suite non-e2e: 319 passati, 12 e2e esclusi, su PostgreSQL reale.
+Restano fuori per decisione esplicita: FR-010 self-service (rinviato con
+l'incremento FR-016), FR-014/FR-015 firma e verifica periodica (rinviati nel
+MVP) e la User Story 5 sulla policy per dimensione, specificata ma non
+implementata. Review esterna rinviata dall'utente a software completato;
+quality gate non dichiarato superato. Dettagli: `specs/010-configurazione-cataloghi-integrazioni/definizione-export.md`.
 
 | Spec | Area | Stato | Fonte proposta | Note |
 |---|---|---|---|---|
@@ -164,8 +175,8 @@ Stato sintetico:
 
 - `001`: primo incremento completato; secondo incremento parziale con
   `tipo_documento.codice_contesto` e `registro_contratti_dati` gia' migrati su Postgres
-  reale; restano task aperti per enforcement reale del perimetro per-profilo e ritiro
-  API di classificazione legacy (T108, dipendente da `010`).
+  reale; resta aperto l'enforcement reale del perimetro per-profilo. Il ritiro delle
+  API di classificazione legacy (T108) e' stato verificato e chiuso il 2026-09-22.
 - `002`: prima verticale reale implementata e testata su Postgres reale; i task granulari
   storici non sono piu' un indicatore 1:1 dello stato del codice, leggere sempre la nota
   iniziale in `specs/002-builder-modelli/tasks.md` prima di riprendere lavoro li'.

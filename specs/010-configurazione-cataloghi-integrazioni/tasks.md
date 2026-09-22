@@ -285,7 +285,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       delle tre API di classificazione legacy) — solo ora sbloccato, come da
       `plan.md` Dependencies; non eseguire T108 prima che T029 (esportazione
       schema) sia funzionante
-- [ ] T051 Aggiornare `docs/project-map.md` con lo stato effettivamente
+- [x] T051 (2026-09-22: stato US1-US3 aggiornato, pivot FR-017 spiegato, chiusura di T108 riportata anche nella riga di `001`) Aggiornare `docs/project-map.md` con lo stato effettivamente
       implementato di questa spec
 - [x] T052 (2026-09-22: 319 passati, 12 esclusi, su PostgreSQL reale; esiti in `quickstart.md`) Eseguire la suite pytest completa su Postgres reale (non mock) e
       registrare l'esito in `quickstart.md`
