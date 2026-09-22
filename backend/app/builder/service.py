@@ -80,6 +80,13 @@ class BuilderService:
         verify_scrittura_su_contesto(principal, codice_contesto)
         return builder_repository.lista_modelli(self.db, codice_contesto, offset=offset, limit=limit)
 
+    def dettaglio(self, principal: PrincipalGEMODO, modello_id: uuid.UUID) -> ModelloDocumento:
+        modello = builder_repository.modello_con_campi(self.db, modello_id)
+        if modello is None:
+            raise DomainError("RISORSA_NON_TROVATA", "Risorsa non disponibile", status_code=404)
+        verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
+        return modello
+
     def _catalogo(self, codice: str, *, aggiornato: bool = False, tipo: TipoDocumento | None = None) -> CatalogoDiscovery:
         tipo = tipo if tipo is not None else self._resolve_tipo_documento(codice)
         porta = self.discovery if self.discovery is not None else discovery_per_tipo(self.db, tipo)

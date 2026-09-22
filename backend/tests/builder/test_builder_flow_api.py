@@ -1010,3 +1010,48 @@ def test_gestore_di_un_contesto_non_puo_scrivere_su_un_tipo_documento_di_un_altr
     # sopra, quel ruolo non deve mai autorizzare una scrittura sul contesto "contratti".
     assert response.status_code == 403
     assert response.json()["codice"] == "ACCESSO_NON_AUTORIZZATO"
+
+
+@pytest.mark.integration
+def test_model_detail_exposes_contract_fields_of_a_draft_version(builder_client, catalogo_esterno):
+    """L'anteprima (2b ridotta) deve funzionare su una BOZZA.
+
+    `GET /catalogo/modelli/{id}/campi-richiesti` risponde 409 finche' la versione
+    non e' pubblicata, quindi non puo' alimentare la schermata del builder: serve
+    un dettaglio lato builder, autorizzato per contesto come la lista.
+    """
+    modello = _crea_modello(builder_client, codice="dettaglio-bozza")
+    versione = _crea_versione(builder_client, modello["id"])
+    assert versione["stato"] == "BOZZA"
+
+    response = builder_client.get(f"/api/v1/builder/modelli/{modello['id']}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["id"] == modello["id"]
+    assert body["codice"] == modello["codice"]
+    assert body["percorso_categorizzazione"] == modello["percorso_categorizzazione"]
+    assert [v["id"] for v in body["versioni"]] == [versione["id"]]
+    campi = body["versioni"][0]["campi"]
+    assert [(c["codice"], c["lingua"]) for c in campi] == [
+        (c["codice"], c["lingua"]) for c in CAMPI_BASE
+    ]
+    primo = campi[0]
+    for chiave in ("codice", "etichetta", "tipo", "lingua", "obbligatorio", "ordine"):
+        assert chiave in primo, f"campo {chiave} mancante nell'anteprima"
+
+
+@pytest.mark.integration
+def test_model_detail_is_not_readable_from_another_context(builder_client, monkeypatch, catalogo_esterno):
+    """Stesso isolamento per contesto della lista: l'id da solo non basta."""
+    modello = _crea_modello(builder_client, codice="dettaglio-isolato")
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT", "altro")
+    monkeypatch.setenv("GEMODO_MOCK_CONTEXT_ROLES", "ROLE_MANAGER#altro")
+    with TestClient(app) as altro_contesto:
+        response = altro_contesto.get(f"/api/v1/builder/modelli/{modello['id']}")
+    assert response.status_code in {403, 404}, response.text
+
+
+@pytest.mark.integration
+def test_model_detail_of_an_unknown_id_is_not_found(builder_client):
+    response = builder_client.get(f"/api/v1/builder/modelli/{uuid.uuid4()}")
+    assert response.status_code == 404, response.text

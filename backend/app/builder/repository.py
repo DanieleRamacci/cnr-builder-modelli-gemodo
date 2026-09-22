@@ -21,6 +21,16 @@ def lista_modelli(db: Session, codice_contesto: str, *, offset: int, limit: int)
         .offset(offset).limit(limit)))
 
 
+def modello_con_campi(db: Session, modello_id):
+    """Dettaglio di un modello con i campi di ogni versione, bozze incluse."""
+    return db.scalar(select(ModelloDocumento)
+        .where(ModelloDocumento.id == modello_id, ModelloDocumento.stato != "ELIMINATO")
+        .options(
+            joinedload(ModelloDocumento.tipo_documento),
+            selectinload(ModelloDocumento.versioni).selectinload(ModelloDocumentoVersione.campi),
+        ))
+
+
 def _prossimo_public_id(db: Session, model) -> int:
     massimo = db.scalar(select(func.max(model.public_id)))
     return (massimo or 0) + 1

@@ -19,7 +19,9 @@ from app.builder.schemas import (
     CreaVersioneRequest,
     IntegrazioneVisibile,
     ModelloResponse,
+    ModelloDettaglioResponse,
     ModelloGestioneResponse,
+    VersioneDettaglioResponse,
     StrutturaDisponibileResponse,
     StrutturaTipoDocumentoResponse,
     VersioneResponse,
@@ -47,6 +49,40 @@ def lista_modelli(
     return [_modello_gestione_response(model) for model in service.lista(
         principal, codice_contesto, offset=offset, limit=limit
     )]
+
+
+@router.get("/modelli/{modelloId}", response_model=ModelloDettaglioResponse)
+def dettaglio_modello(
+    modelloId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    """Dettaglio con il contratto dati, leggibile anche su una BOZZA (2b ridotta)."""
+    modello = service.dettaglio(principal, modelloId)
+    return ModelloDettaglioResponse(
+        **_modello_response(modello).model_dump(),
+        codice_contesto=modello.tipo_documento.codice_contesto,
+        integrazione_id=modello.tipo_documento.integrazione_id,
+        created_at=modello.created_at,
+        versioni=[
+            VersioneDettaglioResponse(
+                **_versione_response(v).model_dump(),
+                campi=[
+                    {
+                        "codice": campo.codice,
+                        "etichetta": campo.etichetta,
+                        "tipo": campo.tipo_dato,
+                        "lingua": campo.lingua,
+                        "obbligatorio": campo.obbligatorio,
+                        "ordine": campo.ordine,
+                        "descrizione": campo.descrizione,
+                    }
+                    for campo in sorted(v.campi, key=lambda c: (c.ordine, c.codice))
+                ],
+            )
+            for v in sorted(modello.versioni, key=lambda v: v.versione, reverse=True)
+        ],
+    )
 
 
 def _modello_response(modello: ModelloDocumento) -> ModelloResponse:

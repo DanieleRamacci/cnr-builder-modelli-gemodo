@@ -85,6 +85,34 @@ class VersioneResponse(BaseModel):
     pubblicato_at: datetime | None
 
 
+class CampoVersioneResponse(BaseModel):
+    """Il contratto dati della versione, come lo espone l'anteprima del builder.
+
+    Deliberatamente identico per forma a `CampoRichiestoSchema` del catalogo, ma
+    leggibile anche su una BOZZA: il catalogo risponde solo su versioni
+    pubblicate.
+    """
+
+    codice: str
+    etichetta: str
+    tipo: str
+    lingua: str
+    obbligatorio: bool
+    ordine: int
+    descrizione: str | None = None
+
+
+class VersioneDettaglioResponse(VersioneResponse):
+    campi: list[CampoVersioneResponse]
+
+
+class ModelloDettaglioResponse(ModelloResponse):
+    codice_contesto: str
+    integrazione_id: uuid.UUID | None
+    created_at: datetime
+    versioni: list[VersioneDettaglioResponse]
+
+
 class ModelloGestioneResponse(ModelloResponse):
     codice_contesto: str
     integrazione_id: uuid.UUID | None
