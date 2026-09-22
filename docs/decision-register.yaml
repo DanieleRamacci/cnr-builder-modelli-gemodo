@@ -954,8 +954,13 @@ decisions:
       sconosciuti) ma li ignora silenziosamente: va aggiunta una segnalazione
       quando l'adapter incontra una dimensione priva di policy registrata,
       invece di lasciarla invisibile.
-    fase_bloccante: TASKS
-    data_ultima_revisione: 2026-09-21
+      CHIUSA 2026-09-22 con l'utente: ripartizione confermata e task scritti.
+      `002` possiede entita', migration, API ed enforcement (T065-T072);
+      `010` possiede la schermata amministrativa 4a/4b, che scrive le policy
+      chiamando quell'API (T089-T094). Resta vincolante la separazione da
+      `DefinizioneStruttura`/`StrutturaInput`.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-22
 
   - id: DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO
     titolo: Associazione esplicita fra modello e le sue edizioni collegate, annidata nel catalogo

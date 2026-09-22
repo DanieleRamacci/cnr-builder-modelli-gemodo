@@ -718,3 +718,21 @@ Playwright su stack reale.
 - [x] T091 (2026-09-21: `contesti-lista.component` su `/contesti` con card, ricerca e chip; metriche solo reali = integrazioni per contesto; `/builder` reindirizza; 62 test Vitest, lint e build passati; e2e aggiornato ma NON eseguito su stack reale) Landing contesti `/contesti` a card (schermata 1a: ricerca, filtri a chip, metriche) al posto delle tab in `frontend/src/features/builder/integrazioni-manager.component.*`, con test Vitest e verifica Playwright
 - [x] T092 (2026-09-21: `modello-crea.component` con blocchi-livello dinamici L1..Ln, stepper a 3 passi, riepilogo laterale, Genera modello; 56 test Vitest, lint e build passati; `e2e/builder-lifecycle.spec.ts` aggiornato al nuovo flusso ma NON eseguito su stack reale) Categorizzazione a tendine a cascata (schermata 2a: select L1-L4 dipendenti, azzeramento a cascata, stepper 3 passi) al posto dell'albero cliccabile in `frontend/src/features/builder/modello-crea.component.*`, con test per percorso ambiguo (assorbe T021/T022/T026)
 - [x] T093 [P] (2026-09-21: metriche sui modelli caricati, ricerca + filtri stato/lingua, tabella 1b e griglia 1c con toggle `?view=grid`, badge di stato del design; nessuna metrica inventata - solo conteggi reali della pagina caricata; 65 test Vitest, lint e build passati) Lista modelli `/contesti/:ctxId/modelli` in tabella (1b) con toggle griglia `?view=grid` (1c), stati vuoto/errore/caricamento
+
+
+## Phase 15: Anteprima modello sulla schermata 2b ridotta (2026-09-22)
+
+**Goal**: vedere i campi che l'API mette a disposizione per un modello, sulla
+stessa pagina che diventera' l'editor quando `003` sara' implementata.
+
+- [ ] T094 [P] Unit test per l'anteprima: campi del contratto resi dall'API
+      con codice, etichetta, tipo, lingua e obbligatorieta'; stati di
+      caricamento, errore e modello senza versioni, in
+      `frontend/src/features/builder/modello-anteprima.component.spec.ts`
+- [ ] T095 Schermata 2b in versione ridotta su `/modelli/:modelId/builder`:
+      topbar con codice, versione e stato, pannello destro con i campi del
+      contratto nello stile segnaposto del design, percorso di categorizzazione
+      nel footer del pannello. Outline sezioni e foglio centrale restano vuoti
+      con uno stato esplicito, non finti: i contenuti arrivano con `003`
+- [ ] T096 Collegamento dalla lista modelli (1b/1c) all'anteprima e ritorno,
+      con verifica Playwright sul flusso reale

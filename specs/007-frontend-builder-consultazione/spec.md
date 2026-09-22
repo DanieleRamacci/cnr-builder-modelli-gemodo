@@ -17,6 +17,22 @@ Il quality gate indipendente non e' superato.
 
 ## Clarifications
 
+### Session 2026-09-22: anteprima modello sulla schermata 2b in versione ridotta
+
+L'anteprima del modello con i campi resi disponibili dall'API viene realizzata
+sulla schermata **2b (builder-editor)** in versione ridotta, non su 1d e non su
+una schermata nuova: la stessa pagina diventera' l'editor vero quando `003`
+(sezioni e segnaposto) sara' implementata, quindi non si butta lavoro.
+
+Nella versione ridotta di oggi sono reali e popolati dall'API: la topbar con
+codice, versione e stato, il pannello destro con i campi del contratto della
+versione (codice, etichetta, tipo, lingua, obbligatorieta') e il percorso di
+categorizzazione nel footer del pannello. L'outline delle sezioni e il foglio
+centrale restano vuoti con uno stato esplicito, perche' non esiste ancora
+alcun contenuto da mostrare: compariranno con `003`.
+
+`1d` (templates-split) resta una proposta non pianificata.
+
 ### Session 2026-09-21 (design handoff `design_handoff_modellario/`)
 
 Riferimento grafico ricevuto per l'incremento futuro (User Story 1/2/3, editor

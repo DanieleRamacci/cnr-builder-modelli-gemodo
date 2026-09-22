@@ -269,3 +269,54 @@ Task: "Implement version repository functions"
 - Do not update published content in place.
 - Do not publish a new version without archiving the previous current version of the same variant in the same transaction.
 - Do not rely on frontend checks for authorization; protected builder APIs must enforce JWT roles in the backend.
+
+
+## Phase: Policy per dimensione della categorizzazione (2026-09-22)
+
+**Goal**: rendere configurabile cio' che oggi e' scritto a mano nel codice -
+la lingua esige sempre una scelta esplicita, il livello ammette un generico -
+cosi' che una dimensione nuova aggiunta da un'integrazione non richieda una
+modifica al codice.
+
+**Owner**: `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`. Entita', API ed
+enforcement vivono qui; la schermata amministrativa 4a/4b vive in `010`
+(vedi Clarifications del 2026-09-22 in `010/spec.md`).
+
+**Vincolo non negoziabile**: `PolicyDimensione` MUST restare separata da
+`DefinizioneStruttura`/`StrutturaInput` del modulo `configurazione`. Quello e'
+solo l'esempio presentazionale per il team GEBAN e non deve mai determinare il
+comportamento a runtime.
+
+**Independent Test**: un admin dichiara `consente_valore_generico=false` per
+una dimensione nuova; il form di creazione modello smette di offrire "Tutti i
+valori" per quella dimensione e due valori diversi producono due modelli
+distinti, esattamente come accade oggi per la lingua.
+
+- [ ] T065 [P] Test di persistenza per `PolicyDimensione`: chiave logica
+      `(tipo_documento_id, nome_dimensione)` unica, una riga sola per nome
+      anche quando lo stesso nome ricompare su piu' foglie dell'albero, in
+      `backend/tests/builder/test_policy_dimensione.py`
+- [ ] T066 [P] Test che l'applicazione della policy sostituisce il
+      comportamento hardcoded: con `consente_valore_generico=false` la
+      creazione senza valore esplicito e' rifiutata, con `true` e' ammessa e
+      produce il modello generico; verificare che lingua e livello continuino a
+      comportarsi come oggi quando le policy corrispondenti sono registrate, in
+      `backend/tests/builder/test_builder_flow_api.py`
+- [ ] T067 [P] Test che una dimensione priva di policy registrata viene
+      segnalata e non silenziosamente ignorata (`NodoDiscovery` ha gia'
+      `extra="allow"`), in `backend/tests/discovery/`
+- [ ] T068 Migration e mapping ORM di `PolicyDimensione` in
+      `backend/alembic/versions/` e `backend/app/catalog/models.py`
+- [ ] T069 API di lettura e scrittura delle policy per tipo documento,
+      protetta da `GEMODO_ADMIN` in scrittura e leggibile dal gestore, con
+      contratto OpenAPI aggiornato in
+      `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
+- [ ] T070 Sostituire i controlli hardcoded su lingua e livello con la lettura
+      della policy in `backend/app/builder/service.py` (oggi righe ~169 e ~176)
+      e includere la dimensione nello scope di unicita' della pubblicazione
+- [ ] T071 Esporre le dimensioni prive di policy come segnalazione esplicita
+      sia nella lettura della struttura live sia nella verifica dell'endpoint
+      (consumata da `010` 4a e 5b)
+- [ ] T072 Migrazione dei dati esistenti: registrare `lingua=false` e
+      `livello=true` per i tipi documento gia' presenti, cosi' che il
+      comportamento non cambi al primo deploy

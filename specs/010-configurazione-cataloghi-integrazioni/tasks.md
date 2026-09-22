@@ -797,3 +797,40 @@ e la corsa fra riconfigurazione dell'URL e verifica in volo.
 
 T036 resta aperto ma RINVIATO insieme a FR-010: non e' lavoro residuo di questo
 incremento.
+
+
+## Phase 14: Schermate amministrative del design handoff (2026-09-22)
+
+**Goal**: chiudere il flusso di onboarding lato interfaccia - registrare un
+contesto, consegnare la bozza di struttura all'integratore, verificare che
+l'integrazione sia in linea e configurare le policy sull'albero live.
+
+**Vincolo grafico**: FR-026 di `007`. Le schermate 4a, 4b, 5a e 5b esistono in
+`design_handoff_modellario/`, quindi struttura, organizzazione e stile vanno
+seguiti, adattati ad Angular + design-angular-kit.
+
+**Dipendenza**: 4a scrive le policy tramite l'API di `002` (T069). Non
+duplicare qui la persistenza, e non leggerla da `DefinizioneStruttura`.
+
+- [ ] T089 [P] [US5] Unit test per la schermata dimensioni: albero live
+      navigato a drill-down nodo per nodo (non tendine), dimensioni gia'
+      configurate altrove mostrate in sola lettura con link Modifica,
+      dimensione mai vista segnalata e bloccante, in
+      `frontend/src/features/configurazione/dimensioni.component.spec.ts`
+- [ ] T090 [US5] Schermata 4a `configure-dimensions` su
+      `/configurazione/tipi-documento/:codice/dimensioni`, con gli stati di 4b
+      (skeleton durante la lettura dell'albero, errore esplicito quando
+      l'integrazione non risponde, mai una lista vuota silenziosa)
+- [ ] T091 [US5] Visualizzazione della struttura JSON restituita
+      dall'integrazione, leggibile accanto all'albero, cosi' che l'admin veda
+      cosa ha effettivamente risposto l'endpoint prima di dichiarare le policy
+- [ ] T092 [P] Completare la schermata 5a: alla creazione del contesto,
+      generare e rendere scaricabile la bozza di struttura da consegnare agli
+      sviluppatori dell'integrazione (oggi il form crea solo l'integrazione),
+      in `frontend/src/features/configurazione/integrazione-crea.component.*`
+- [ ] T093 [P] Completare la schermata 5b: storico delle verifiche e
+      segnalazione degli attributi non riconosciuti, con link diretto a 4a,
+      in `frontend/src/features/configurazione/integrazione-configura.component.*`
+- [ ] T094 Test e2e Playwright del flusso completo: registra contesto,
+      consegna la bozza, verifica l'endpoint, configura una policy di
+      dimensione e conferma l'effetto nella creazione modello

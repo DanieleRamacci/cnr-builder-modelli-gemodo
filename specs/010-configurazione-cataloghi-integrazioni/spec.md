@@ -16,6 +16,34 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-22: proprieta' della policy per dimensione e uso di 4a
+
+Decisione presa con l'utente, chiude il posizionamento lasciato aperto dalla
+sessione "bis" del 2026-09-21.
+
+Restano due configurazioni **distinte**, mai la stessa cosa:
+
+- **Configurazione di esempio per l'integratore** (`DefinizioneStruttura` /
+  `StrutturaInput`, modulo `configurazione` di questa spec): serve solo a
+  generare il documento di forma da consegnare al team di sviluppo esterno.
+  Non determina alcun comportamento a runtime.
+- **Configurazione della categorizzazione ufficiale** (`PolicyDimensione`,
+  entita' canonica di `002`): dichiara, per nome di dimensione, se ammette un
+  valore generico o se ogni valore identifica un modello distinto, come gia'
+  accade per la lingua. Si applica all'albero **live** restituito
+  dall'integrazione, non all'esempio.
+
+Tenerle separate e' un requisito di `DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE`:
+se coincidessero, una modifica puramente documentale all'esempio mostrato a
+GEBAN cambierebbe il comportamento reale della creazione modelli.
+
+Ripartizione confermata:
+
+- `002` possiede entita', migration, API di lettura/scrittura e l'applicazione
+  della policy nella creazione del modello.
+- `010` possiede la schermata amministrativa 4a/4b, che naviga l'albero live e
+  scrive le policy chiamando l'API di `002`.
+
 ### Session 2026-09-21 (ter): problemi reali trovati testando l'ambiente di test
 
 Testando le API sull'ambiente di test reale (`https://dev-gemodo.concorsi.cnr.it`,
