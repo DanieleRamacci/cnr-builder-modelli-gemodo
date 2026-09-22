@@ -925,6 +925,32 @@ decisions:
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-21
 
+  - id: DEC-002-DEFAULT-VALORE-DIMENSIONE
+    titolo: Quale valore proporre di default per una dimensione della categorizzazione
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/007-frontend-builder-consultazione
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: APERTA
+    assunzione_provvisoria: >
+      Oggi il form di creazione modello preseleziona semplicemente il primo
+      valore dell'elenco che la foglia discovery dichiara (per la lingua esce
+      'IT' solo perche' l'integrazione GEBAN la elenca per prima, non per una
+      regola). Nessuna regola e' scritta da nessuna parte.
+    impatto: >
+      Ipotesi indicata dall'utente il 2026-09-22: il default e' il primo valore
+      nell'ordine dichiarato dall'integrazione, e vale come default soltanto
+      quando la dimensione e' obbligatoria, cioe' quando la sua
+      PolicyDimensione ha consente_valore_generico=false. Quando la dimensione
+      ammette il generico, l'assenza di valore resta la scelta di default.
+      Da confermare guardando i dati reali: dipende dal fatto che l'ordine
+      restituito dall'integrazione sia significativo e stabile, cosa che il
+      contratto di discovery oggi non garantisce. Tocca il form di creazione
+      (frontend/src/features/builder/modello-crea.component.ts) e la
+      documentazione del contratto discovery.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-22
+
   - id: DEC-002-POLICY-DIMENSIONE-CATEGORIZZAZIONE
     titolo: Policy per-dimensione (genera modello distinto o generico) scollegata dall'esempio di contratto
     owner_spec: specs/002-builder-modelli
