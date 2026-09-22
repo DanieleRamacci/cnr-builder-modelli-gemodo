@@ -1,7 +1,27 @@
-<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h1>{{ modalitaModifica ? 'Modifica struttura' : 'Nuovo tipo documento' }}</h1>
-  <a routerLink="/configurazione/tipi-documento" class="btn btn-outline-secondary">Torna all'elenco</a>
-</div>
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a>
+  <span class="mx-1">/</span>
+  <a routerLink="/configurazione">Integrazioni</a>
+  <span class="mx-1">/</span>
+  <a routerLink="/configurazione/tipi-documento">Policy dati</a>
+  <span class="mx-1">/</span>
+  <strong>{{ modalitaModifica ? 'Modifica struttura' : 'Nuova struttura' }}</strong>
+</nav>
+
+<header class="mm-page-header mb-3">
+  <div>
+    <h1>{{ modalitaModifica ? 'Modifica policy dati' : 'Policy dati da struttura GEBAN' }}</h1>
+    <p>
+      Incolla o genera la forma JSON dell'API, poi indica nella sezione campi quali valori sono
+      obbligatori nel contratto dati.
+    </p>
+  </div>
+  <div class="mm-page-actions">
+    <a routerLink="/configurazione/tipi-documento" class="btn btn-outline-secondary"
+      >Torna all'elenco</a
+    >
+  </div>
+</header>
 
 @if (caricamento()) {
   <p>Caricamento...</p>
@@ -11,7 +31,8 @@
   }
   @if (salvatoOra()) {
     <div class="alert alert-success" role="status">
-      Struttura salvata: viene creata una nuova versione di definizione, non modificata quella precedente.
+      Struttura salvata: viene creata una nuova versione di definizione, non modificata quella
+      precedente.
     </div>
   }
 
@@ -19,9 +40,10 @@
     <legend>Carica o esporta come JSON</legend>
     <p class="td-hint">
       Più veloce che compilare riga per riga: incolla qui un JSON con tipologie/profili/campi (anche
-      dall'esempio ricevuto da GEBAN) e premi "Applica JSON" - riempie automaticamente la form sotto,
-      dove poi puoi correggere a mano quali campi sono obbligatori. "Esporta" fa il percorso inverso: prende
-      quello che hai compilato nella form e lo mostra qui come JSON, da copiare o salvare.
+      dall'esempio ricevuto da GEBAN) e premi "Applica JSON" - riempie automaticamente la form
+      sotto, dove poi puoi correggere a mano quali campi sono obbligatori. "Esporta" fa il percorso
+      inverso: prende quello che hai compilato nella form e lo mostra qui come JSON, da copiare o
+      salvare.
     </p>
     <textarea
       class="form-control td-mono td-json-textarea"
@@ -60,34 +82,62 @@
         </div>
         <div class="col-md-4 td-field">
           <label for="codiceContesto">Contesto</label>
-          <input id="codiceContesto" formControlName="codiceContesto" class="form-control td-mono" />
+          <input
+            id="codiceContesto"
+            formControlName="codiceContesto"
+            class="form-control td-mono"
+          />
         </div>
       </div>
     </fieldset>
 
     <fieldset class="td-section">
       <legend>Tipologie</legend>
-      <p class="td-hint">Il primo livello dell'albero di categorizzazione (es. Concorso Pubblico, Tempo Determinato).</p>
+      <p class="td-hint">
+        Il primo livello dell'albero di categorizzazione (es. Concorso Pubblico, Tempo Determinato).
+      </p>
       @for (tipologia of tipologie.controls; track $index) {
         <div [formGroup]="tipologia" class="row g-2 align-items-end mb-2">
           <div class="col-md-3 td-field">
             <label for="tip-codice-{{ $index }}">Codice</label>
-            <input id="tip-codice-{{ $index }}" formControlName="codice" class="form-control form-control-sm td-mono" />
+            <input
+              id="tip-codice-{{ $index }}"
+              formControlName="codice"
+              class="form-control form-control-sm td-mono"
+            />
           </div>
           <div class="col-md-6 td-field">
             <label for="tip-descrizione-{{ $index }}">Descrizione</label>
-            <input id="tip-descrizione-{{ $index }}" formControlName="descrizione" class="form-control form-control-sm" />
+            <input
+              id="tip-descrizione-{{ $index }}"
+              formControlName="descrizione"
+              class="form-control form-control-sm"
+            />
           </div>
           <div class="col-md-2 td-field">
             <label for="tip-riferimento-{{ $index }}">Riferimento esterno</label>
-            <input id="tip-riferimento-{{ $index }}" formControlName="riferimentoEsterno" class="form-control form-control-sm" />
+            <input
+              id="tip-riferimento-{{ $index }}"
+              formControlName="riferimentoEsterno"
+              class="form-control form-control-sm"
+            />
           </div>
           <div class="col-md-1">
-            <button type="button" class="btn btn-sm btn-outline-danger td-row-remove" (click)="rimuoviTipologia($index)">✕</button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger td-row-remove"
+              (click)="rimuoviTipologia($index)"
+            >
+              ✕
+            </button>
           </div>
         </div>
       }
-      <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiTipologia()">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary td-add"
+        (click)="aggiungiTipologia()"
+      >
         + Tipologia
       </button>
     </fieldset>
@@ -95,22 +145,34 @@
     <fieldset class="td-section">
       <legend>Profili e attributi</legend>
       <p class="td-hint">
-        Un attributo (es. "livello") diventa selezionabile dal builder solo se i suoi valori ammessi sono
-        dichiarati qui.
+        Un attributo (es. "livello") diventa selezionabile dal builder solo se i suoi valori ammessi
+        sono dichiarati qui.
       </p>
       @for (profilo of profili.controls; track $index; let pIndex = $index) {
         <div [formGroup]="profilo" class="td-panel">
           <div class="row g-2 align-items-end mb-2">
             <div class="col-md-3 td-field">
               <label for="prof-codice-{{ pIndex }}">Codice profilo</label>
-              <input id="prof-codice-{{ pIndex }}" formControlName="codice" class="form-control form-control-sm td-mono" />
+              <input
+                id="prof-codice-{{ pIndex }}"
+                formControlName="codice"
+                class="form-control form-control-sm td-mono"
+              />
             </div>
             <div class="col-md-7 td-field">
               <label for="prof-descrizione-{{ pIndex }}">Descrizione</label>
-              <input id="prof-descrizione-{{ pIndex }}" formControlName="descrizione" class="form-control form-control-sm" />
+              <input
+                id="prof-descrizione-{{ pIndex }}"
+                formControlName="descrizione"
+                class="form-control form-control-sm"
+              />
             </div>
             <div class="col-md-2">
-              <button type="button" class="btn btn-sm btn-outline-danger td-row-remove" (click)="rimuoviProfilo(pIndex)">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger td-row-remove"
+                (click)="rimuoviProfilo(pIndex)"
+              >
                 Rimuovi profilo
               </button>
             </div>
@@ -121,15 +183,29 @@
               <div [formGroup]="attributo" class="row g-2 align-items-end mb-2">
                 <div class="col-md-3 td-field">
                   <label for="attr-nome-{{ pIndex }}-{{ $index }}">Nome</label>
-                  <input id="attr-nome-{{ pIndex }}-{{ $index }}" formControlName="nome" class="form-control form-control-sm td-mono" />
+                  <input
+                    id="attr-nome-{{ pIndex }}-{{ $index }}"
+                    formControlName="nome"
+                    class="form-control form-control-sm td-mono"
+                  />
                 </div>
                 <div class="col-md-5 td-field">
-                  <label for="attr-valori-{{ pIndex }}-{{ $index }}">Valori ammessi (separati da virgola)</label>
-                  <input id="attr-valori-{{ pIndex }}-{{ $index }}" formControlName="valoriAmmessi" class="form-control form-control-sm" />
+                  <label for="attr-valori-{{ pIndex }}-{{ $index }}"
+                    >Valori ammessi (separati da virgola)</label
+                  >
+                  <input
+                    id="attr-valori-{{ pIndex }}-{{ $index }}"
+                    formControlName="valoriAmmessi"
+                    class="form-control form-control-sm"
+                  />
                 </div>
                 <div class="col-md-3 td-field">
                   <label for="attr-default-{{ pIndex }}-{{ $index }}">Default</label>
-                  <input id="attr-default-{{ pIndex }}-{{ $index }}" formControlName="valoreDefault" class="form-control form-control-sm" />
+                  <input
+                    id="attr-default-{{ pIndex }}-{{ $index }}"
+                    formControlName="valoreDefault"
+                    class="form-control form-control-sm"
+                  />
                 </div>
                 <div class="col-md-1">
                   <button
@@ -142,13 +218,23 @@
                 </div>
               </div>
             }
-            <button type="button" class="btn btn-sm btn-outline-secondary td-add" (click)="aggiungiAttributo(profilo)">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary td-add"
+              (click)="aggiungiAttributo(profilo)"
+            >
               + Attributo
             </button>
           </div>
         </div>
       }
-      <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiProfilo()">+ Profilo</button>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary td-add"
+        (click)="aggiungiProfilo()"
+      >
+        + Profilo
+      </button>
     </fieldset>
 
     <fieldset class="td-section">
@@ -157,7 +243,11 @@
         <div [formGroup]="combinazione" class="row g-2 align-items-end mb-2">
           <div class="col-md-4 td-field">
             <label for="comb-tipologia-{{ $index }}">Tipologia</label>
-            <select id="comb-tipologia-{{ $index }}" formControlName="codiceTipologia" class="form-select form-select-sm td-mono">
+            <select
+              id="comb-tipologia-{{ $index }}"
+              formControlName="codiceTipologia"
+              class="form-select form-select-sm td-mono"
+            >
               <option value="">Seleziona</option>
               @for (codice of codiciTipologie(); track codice) {
                 <option [value]="codice">{{ codice }}</option>
@@ -166,7 +256,11 @@
           </div>
           <div class="col-md-4 td-field">
             <label for="comb-profilo-{{ $index }}">Profilo</label>
-            <select id="comb-profilo-{{ $index }}" formControlName="codiceProfilo" class="form-select form-select-sm td-mono">
+            <select
+              id="comb-profilo-{{ $index }}"
+              formControlName="codiceProfilo"
+              class="form-select form-select-sm td-mono"
+            >
               <option value="">Seleziona</option>
               @for (codice of codiciProfili(); track codice) {
                 <option [value]="codice">{{ codice }}</option>
@@ -174,13 +268,21 @@
             </select>
           </div>
           <div class="col-md-1">
-            <button type="button" class="btn btn-sm btn-outline-danger td-row-remove" (click)="rimuoviCombinazione($index)">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger td-row-remove"
+              (click)="rimuoviCombinazione($index)"
+            >
               ✕
             </button>
           </div>
         </div>
       }
-      <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiCombinazione()">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary td-add"
+        (click)="aggiungiCombinazione()"
+      >
         + Combinazione
       </button>
     </fieldset>
@@ -200,22 +302,38 @@
     <fieldset class="td-section">
       <legend>Campi del contratto dati</legend>
       <p class="td-hint">
-        "Obbligatorio" marca i campi che il payload di generazione deve sempre contenere; i campi non spuntati
-        restano opzionali nel contratto dati esposto a GEBAN.
+        "Obbligatorio" marca i campi che il payload di generazione deve sempre contenere; i campi
+        non spuntati restano opzionali nel contratto dati esposto a GEBAN.
       </p>
       @for (campo of campi.controls; track $index) {
-        <div [formGroup]="campo" class="row g-2 align-items-end mb-2 pb-2" style="border-bottom: 1px solid var(--td-border-200)">
+        <div
+          [formGroup]="campo"
+          class="row g-2 align-items-end mb-2 pb-2"
+          style="border-bottom: 1px solid var(--td-border-200)"
+        >
           <div class="col-md-2 td-field">
             <label for="campo-codice-{{ $index }}">Codice</label>
-            <input id="campo-codice-{{ $index }}" formControlName="codice" class="form-control form-control-sm td-mono" />
+            <input
+              id="campo-codice-{{ $index }}"
+              formControlName="codice"
+              class="form-control form-control-sm td-mono"
+            />
           </div>
           <div class="col-md-2 td-field">
             <label for="campo-etichetta-{{ $index }}">Etichetta</label>
-            <input id="campo-etichetta-{{ $index }}" formControlName="etichetta" class="form-control form-control-sm" />
+            <input
+              id="campo-etichetta-{{ $index }}"
+              formControlName="etichetta"
+              class="form-control form-control-sm"
+            />
           </div>
           <div class="col-md-2 td-field">
             <label for="campo-tipo-{{ $index }}">Tipo</label>
-            <select id="campo-tipo-{{ $index }}" formControlName="tipo" class="form-select form-select-sm">
+            <select
+              id="campo-tipo-{{ $index }}"
+              formControlName="tipo"
+              class="form-select form-select-sm"
+            >
               @for (tipo of tipiCampo; track tipo) {
                 <option [value]="tipo">{{ tipo }}</option>
               }
@@ -223,7 +341,11 @@
           </div>
           <div class="col-md-1 td-field">
             <label for="campo-lingua-{{ $index }}">Lingua</label>
-            <select id="campo-lingua-{{ $index }}" formControlName="lingua" class="form-select form-select-sm">
+            <select
+              id="campo-lingua-{{ $index }}"
+              formControlName="lingua"
+              class="form-select form-select-sm"
+            >
               @for (lingua of lingue; track lingua) {
                 <option [value]="lingua">{{ lingua }}</option>
               }
@@ -231,28 +353,63 @@
           </div>
           <div class="col-md-1 td-field">
             <label for="campo-ordine-{{ $index }}">Ordine</label>
-            <input id="campo-ordine-{{ $index }}" type="number" formControlName="ordine" class="form-control form-control-sm" min="1" />
+            <input
+              id="campo-ordine-{{ $index }}"
+              type="number"
+              formControlName="ordine"
+              class="form-control form-control-sm"
+              min="1"
+            />
           </div>
           <div class="col-md-2 td-field">
             <label for="campo-dipende-{{ $index }}">Dipende da attributo</label>
-            <input id="campo-dipende-{{ $index }}" formControlName="dipendeDaAttributoProfilo" class="form-control form-control-sm td-mono" />
+            <input
+              id="campo-dipende-{{ $index }}"
+              formControlName="dipendeDaAttributoProfilo"
+              class="form-control form-control-sm td-mono"
+            />
           </div>
           <div class="col-md-1">
-            <span class="td-badge-obbligatorio" [class.is-on]="campo.value.obbligatorio" [class.is-off]="!campo.value.obbligatorio">
-              <input type="checkbox" id="obbligatorio-{{ $index }}" formControlName="obbligatorio" class="form-check-input mt-0" />
-              <label for="obbligatorio-{{ $index }}" class="mb-0">{{ campo.value.obbligatorio ? 'Obbligatorio' : 'Opzionale' }}</label>
+            <span
+              class="td-badge-obbligatorio"
+              [class.is-on]="campo.value.obbligatorio"
+              [class.is-off]="!campo.value.obbligatorio"
+            >
+              <input
+                type="checkbox"
+                id="obbligatorio-{{ $index }}"
+                formControlName="obbligatorio"
+                class="form-check-input mt-0"
+              />
+              <label for="obbligatorio-{{ $index }}" class="mb-0">{{
+                campo.value.obbligatorio ? 'Obbligatorio' : 'Opzionale'
+              }}</label>
             </span>
           </div>
           <div class="col-md-1">
-            <button type="button" class="btn btn-sm btn-outline-danger td-row-remove" (click)="rimuoviCampo($index)">✕</button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger td-row-remove"
+              (click)="rimuoviCampo($index)"
+            >
+              ✕
+            </button>
           </div>
         </div>
       }
-      <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiCampo()">+ Campo</button>
+      <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiCampo()">
+        + Campo
+      </button>
     </fieldset>
 
     <button type="submit" class="btn btn-primary" [disabled]="salvataggio()">
-      {{ salvataggio() ? 'Salvataggio...' : modalitaModifica ? 'Salva nuova versione struttura' : 'Crea tipo documento' }}
+      {{
+        salvataggio()
+          ? 'Salvataggio...'
+          : modalitaModifica
+            ? 'Salva nuova versione struttura'
+            : 'Crea tipo documento'
+      }}
     </button>
   </form>
 }

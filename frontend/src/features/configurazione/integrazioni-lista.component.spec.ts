@@ -77,9 +77,16 @@ describe('IntegrazioniListaComponent', () => {
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Da completare');
-    expect(fixture.nativeElement.querySelector('tbody a').getAttribute('href')).toBe(
-      '/00000000-0000-4000-8000-000000000001',
-    );
+    expect(
+      fixture.nativeElement.querySelector(
+        'a[href="/configurazione/contesti/00000000-0000-4000-8000-000000000001/integrazione"]',
+      )?.textContent,
+    ).toContain('Software demo');
+    expect(
+      fixture.nativeElement.querySelector(
+        'a.btn[href="/configurazione/contesti/00000000-0000-4000-8000-000000000001/integrazione"]',
+      )?.textContent,
+    ).toContain('Verifica endpoint');
   });
 
   it('shows a failed load instead of an empty registry and allows retry', () => {

@@ -57,6 +57,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'contesti/nuovo',
+        loadComponent: () =>
+          import('../features/configurazione/integrazione-crea.component').then(
+            (m) => m.IntegrazioneCreaComponent,
+          ),
+      },
+      {
+        path: 'contesti/:id/integrazione',
+        loadComponent: () =>
+          import('../features/configurazione/integrazione-configura.component').then(
+            (m) => m.IntegrazioneConfiguraComponent,
+          ),
+      },
+      {
         path: 'tipi-documento',
         loadComponent: () =>
           import('../features/configurazione/tipi-documento-lista.component').then(
@@ -65,6 +79,13 @@ export const routes: Routes = [
       },
       {
         path: 'tipi-documento/nuovo',
+        loadComponent: () =>
+          import('../features/configurazione/tipo-documento-struttura.component').then(
+            (m) => m.TipoDocumentoStrutturaComponent,
+          ),
+      },
+      {
+        path: 'tipi-documento/:codice/dimensioni',
         loadComponent: () =>
           import('../features/configurazione/tipo-documento-struttura.component').then(
             (m) => m.TipoDocumentoStrutturaComponent,

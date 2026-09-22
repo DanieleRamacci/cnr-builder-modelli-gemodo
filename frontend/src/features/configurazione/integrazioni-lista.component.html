@@ -1,73 +1,89 @@
-<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h1>Integrazioni</h1>
-  <a routerLink="nuova" class="btn btn-primary">Nuova integrazione</a>
-</div>
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  Impostazioni <span class="mx-1">/</span> <strong>Integrazioni</strong>
+</nav>
+
+<header class="mm-page-header">
+  <div>
+    <h1>Integrazione servizi</h1>
+    <p>
+      Gestisci i contesti collegati ai servizi esterni: struttura JSON per gli sviluppatori,
+      verifica endpoint e policy dei dati dopo la scansione.
+    </p>
+  </div>
+  <div class="mm-page-actions">
+    <a routerLink="/configurazione/contesti/nuovo" class="btn btn-primary">Nuovo contesto</a>
+  </div>
+</header>
 
 @if (caricamento()) {
-  <p>Caricamento...</p>
+  <p class="mt-4" role="status">Caricamento...</p>
 } @else if (errore()) {
-  <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+  <div class="alert alert-danger mt-4" role="alert">{{ errore() }}</div>
   @if (sessioneScaduta()) {
     <button type="button" class="btn btn-primary" (click)="accedi()">Accedi nuovamente</button>
   } @else {
     <button type="button" class="btn btn-outline-primary" (click)="carica()">Riprova</button>
   }
 } @else if (integrazioni().length === 0) {
-  <p>Nessuna integrazione registrata. Creane una per iniziare.</p>
+  <section class="mm-card mt-4">
+    <h2 class="h5">Nessuna integrazione registrata</h2>
+    <p class="text-muted mb-3">Crea GEBAN o un altro contesto per iniziare.</p>
+    <a routerLink="/configurazione/contesti/nuovo" class="btn btn-primary">Nuovo contesto</a>
+  </section>
 } @else {
-  <div class="table-responsive">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Codice</th>
-          <th scope="col">Nome</th>
-          <th scope="col">Contesto</th>
-          <th scope="col">Stato</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (integrazione of integrazioni(); track integrazione.id) {
-          <tr>
-            <td>{{ integrazione.codice }}</td>
-            <td>{{ integrazione.nome }}</td>
-            <td>{{ integrazione.codice_contesto }}</td>
-            <td>
-              <span
-                class="badge"
-                [class.text-bg-secondary]="badge(integrazione.stato).variant === 'neutro'"
-                [class.text-bg-success]="badge(integrazione.stato).variant === 'positivo'"
-                [class.text-bg-danger]="badge(integrazione.stato).variant === 'errore'"
-              >
-                {{
-                  integrazione.stato === 'DEFINITO' && !integrazione.url
-                    ? 'Da completare'
-                    : badge(integrazione.stato).label
-                }}
-              </span>
-              @if (integrazione.ultima_verifica) {
-                <div class="small text-muted">
-                  {{ integrazione.ultima_verifica.data }} - v{{
-                    integrazione.ultima_verifica.versione_contratto
-                  }}
-                </div>
+  <div class="home-list mt-4">
+    @for (integrazione of integrazioni(); track integrazione.id) {
+      <article>
+        <span class="context-mark" aria-hidden="true">{{ integrazione.codice.slice(0, 2) }}</span>
+        <div>
+          <h3>
+            <a [routerLink]="['/configurazione/contesti', integrazione.id, 'integrazione']">
+              {{ integrazione.nome }}
+            </a>
+          </h3>
+          <p>
+            <code>{{ integrazione.codice_contesto }}</code>
+            · {{ integrazione.codice }}
+            @if (integrazione.ultima_verifica) {
+              · ultimo controllo {{ integrazione.ultima_verifica.data }}
+            }
+          </p>
+          @if (integrazione.ultima_verifica?.errori?.length) {
+            <ul class="small text-danger mb-0">
+              @for (errore of integrazione.ultima_verifica?.errori; track errore.codice) {
+                <li>{{ errore.messaggio }}</li>
               }
-              @if (integrazione.ultima_verifica?.errori?.length) {
-                <ul class="small text-danger mb-0">
-                  @for (errore of integrazione.ultima_verifica?.errori; track errore.codice) {
-                    <li>{{ errore.messaggio }}</li>
-                  }
-                </ul>
-              }
-            </td>
-            <td>
-              <a [routerLink]="[integrazione.id]" class="btn btn-sm btn-outline-primary">{{
-                !integrazione.url ? 'Completa configurazione' : 'Configura e verifica'
-              }}</a>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+            </ul>
+          }
+        </div>
+        <span
+          class="status-pill"
+          [class.warning]="integrazione.stato === 'DEFINITO'"
+          [class.error]="integrazione.stato === 'ERRORE'"
+          [class.text-bg-success]="integrazione.stato === 'CONNESSO'"
+        >
+          {{
+            integrazione.stato === 'DEFINITO' && !integrazione.url
+              ? 'Da completare'
+              : badge(integrazione.stato).label
+          }}
+        </span>
+        <a
+          [routerLink]="['/configurazione/contesti', integrazione.id, 'integrazione']"
+          class="btn btn-sm btn-outline-primary"
+        >
+          Verifica endpoint
+        </a>
+        <a routerLink="/configurazione/contesti/nuovo" class="btn btn-sm btn-outline-secondary">
+          Struttura JSON
+        </a>
+        <a
+          routerLink="/configurazione/tipi-documento/nuovo"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          Policy dati
+        </a>
+      </article>
+    }
   </div>
 }

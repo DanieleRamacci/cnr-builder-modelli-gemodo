@@ -94,14 +94,14 @@ describe('1a contexts list', () => {
     load(manager.http, ['geban']);
     manager.fixture.detectChanges();
     expect(
-      manager.fixture.nativeElement.querySelector('a[href="/configurazione/nuova"]'),
+      manager.fixture.nativeElement.querySelector('a[href="/configurazione/contesti/nuovo"]'),
     ).toBeNull();
     TestBed.resetTestingModule();
     const admin = setup(['GEMODO_ADMIN']);
     load(admin.http, ['geban']);
     admin.fixture.detectChanges();
     expect(
-      admin.fixture.nativeElement.querySelector('a[href="/configurazione/nuova"]'),
+      admin.fixture.nativeElement.querySelector('a[href="/configurazione/contesti/nuovo"]'),
     ).not.toBeNull();
   });
 });

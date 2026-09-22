@@ -1,17 +1,38 @@
-<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-  <h1>Tipi documento</h1>
-  <a routerLink="nuovo" class="btn btn-primary">Nuovo tipo documento</a>
-</div>
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a>
+  <span class="mx-1">/</span>
+  <a routerLink="/configurazione">Integrazioni</a>
+  <span class="mx-1">/</span>
+  <strong>Policy dati</strong>
+</nav>
+
+<header class="mm-page-header">
+  <div>
+    <h1>Policy dati e campi obbligatori</h1>
+    <p>
+      Questa schermata vive nel flusso dell'integrazione: qui si apre la struttura del tipo
+      documento letto dall'albero e si marcano i campi obbligatori del contratto dati.
+    </p>
+  </div>
+  <div class="mm-page-actions">
+    <a routerLink="nuovo" class="btn btn-primary">Configura struttura</a>
+  </div>
+</header>
 
 @if (caricamento()) {
-  <p>Caricamento...</p>
+  <p class="mt-4">Caricamento...</p>
 } @else if (errore()) {
-  <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+  <div class="alert alert-danger mt-4" role="alert">{{ errore() }}</div>
   <button type="button" class="btn btn-outline-primary" (click)="carica()">Riprova</button>
 } @else if (tipi().length === 0) {
-  <p>Nessun tipo documento configurato. Creane uno per iniziare.</p>
+  <section class="mm-card mt-4">
+    <p class="mb-3">
+      Nessuna policy dati configurata. Apri la struttura generata da GEBAN per iniziare.
+    </p>
+    <a routerLink="nuovo" class="btn btn-primary">Configura struttura</a>
+  </section>
 } @else {
-  <div class="table-responsive">
+  <div class="table-responsive mt-4">
     <table class="table">
       <thead>
         <tr>

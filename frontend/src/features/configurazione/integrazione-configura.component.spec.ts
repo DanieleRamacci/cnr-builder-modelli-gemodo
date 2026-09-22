@@ -91,7 +91,8 @@ describe('IntegrazioneConfiguraComponent', () => {
     ).find((button) => button.textContent?.includes('Accedi'));
     accedi!.click();
     expect(login).toHaveBeenCalledWith({
-      redirectUri: window.location.origin + '/configurazione/' + saved.id,
+      redirectUri:
+        window.location.origin + '/configurazione/contesti/' + saved.id + '/integrazione',
       prompt: 'login',
     });
   });

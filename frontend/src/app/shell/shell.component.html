@@ -1,41 +1,34 @@
 <header class="app-header">
-  <div class="container header-row" brand>
-    <a routerLink="/" class="text-decoration-none text-white">
-      <strong>GEMODO</strong>
+  <div class="app-header-row">
+    <a routerLink="/" class="brand-link" aria-label="Home Modellario">
+      <span class="brand-mark">M</span>
+      <span>Modellario</span>
     </a>
-    <a routerLink="/profilo" class="user-link" title="Profilo utente"
-      ><it-icon name="user" color="white" /><span>{{ userName }}</span></a
-    >
+    <nav class="app-nav" aria-label="Navigazione principale">
+      @if (isManager || isAdmin) {
+        <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Contesti</a>
+      }
+      @if (isManager) {
+        <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Modelli</a>
+      }
+      @if (isAdmin) {
+        <a routerLink="/configurazione" routerLinkActive="active" class="nav-link">Impostazioni</a>
+      }
+    </nav>
+    <a routerLink="/profilo" class="user-link" title="Profilo utente">
+      <span class="user-name">{{ userName }}</span>
+      <span class="avatar">{{ userInitials || 'U' }}</span>
+    </a>
   </div>
-  <nav class="container app-nav" aria-label="Navigazione principale">
-    <a
-      routerLink="/"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="nav-link"
-      >Home</a
-    >
-    @if (isAdmin) {
-      <a routerLink="/configurazione" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link"
-        >Integrazione servizi</a
-      >
-      <a routerLink="/configurazione/tipi-documento" routerLinkActive="active" class="nav-link"
-        >Tipi documento</a
-      >
-    }
-    @if (isManager) {
-      <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Contesti</a>
-    }
-  </nav>
 </header>
 
-<main class="container app-main">
+<main class="app-main">
   <router-outlet />
 </main>
 
 <footer class="app-footer">
-  <div class="container">
-    GEMODO - CNR
+  <div class="app-footer-row">
+    Modellario - CNR
     @if (externalDocsUrl) {
       <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
     }

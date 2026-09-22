@@ -28,7 +28,7 @@ type Filtro = 'tutti' | 'con' | 'senza';
         <p>Scegli il contesto applicativo di cui gestire i modelli di documento.</p>
       </div>
       @if (admin) {
-        <a class="btn btn-primary" routerLink="/configurazione/nuova">+ Nuovo contesto</a>
+        <a class="btn btn-primary" routerLink="/configurazione/contesti/nuovo">+ Nuovo contesto</a>
       }
     </header>
     <div class="filtri">
@@ -91,7 +91,7 @@ type Filtro = 'tutti' | 'con' | 'senza';
         </article>
       }
       @if (admin && !loading() && !error()) {
-        <a class="card-nuovo" routerLink="/configurazione/nuova">+ Nuovo contesto</a>
+        <a class="card-nuovo" routerLink="/configurazione/contesti/nuovo">+ Nuovo contesto</a>
       }
     </div>
   `,

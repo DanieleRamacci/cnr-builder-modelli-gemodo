@@ -3,59 +3,139 @@
   flex-direction: column;
   min-height: 100dvh;
 }
+
 .app-header {
-  background: #006647;
-  color: white;
+  background: #0066cc;
+  color: #fff;
 }
-.header-row {
+
+.app-header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
-  padding-top: 24px;
-  padding-bottom: 24px;
+  min-height: 60px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 28px;
 }
-.header-row strong {
-  font-size: 28px;
-}
-.user-link {
-  display: flex;
+
+.brand-link {
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: white;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
 .app-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
+  align-items: stretch;
+  gap: 22px;
+  margin-left: 12px;
+  min-height: 60px;
 }
+
 .app-nav a {
-  color: white;
-  padding: 12px 0;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.82);
+  padding: 0;
   text-decoration: none;
   border-bottom: 3px solid transparent;
+  font-size: 14px;
 }
+
 .app-nav a.active {
-  border-color: white;
+  color: #fff;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.user-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  color: #fff;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 12.5px;
   font-weight: 700;
 }
+
 .app-main {
   flex: 1;
-  padding-top: 32px;
-  padding-bottom: 48px;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 28px 48px;
 }
+
 .app-footer {
-  background: #f0f3f2;
-  padding: 20px 0;
-  border-top: 1px solid #d4ded9;
+  background: #f2f5f8;
+  border-top: 1px solid #e3e7eb;
+  color: #5a6772;
+  font-size: 13.5px;
 }
-@media (max-width: 600px) {
-  .header-row {
-    gap: 16px;
+
+.app-footer-row {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 18px 28px;
+}
+
+@media (max-width: 760px) {
+  .app-header-row {
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
-  .user-link {
-    max-width: 60%;
+
+  .app-nav {
+    order: 3;
+    width: 100%;
+    min-height: 40px;
+    margin-left: 0;
+  }
+
+  .app-nav a {
+    min-height: 40px;
+  }
+
+  .user-name {
+    max-width: 32vw;
   }
 }

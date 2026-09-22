@@ -1,98 +1,183 @@
-<a routerLink="/configurazione" class="d-inline-block mb-3">Tutte le integrazioni</a>
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a>
+  <span class="mx-1">/</span>
+  <a routerLink="/configurazione">Integrazioni</a>
+  <span class="mx-1">/</span>
+  <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
+</nav>
+
 @if (sessioneScaduta()) {
   <div class="alert alert-warning" role="alert">
     Sessione non valida. L'integrazione salvata resta disponibile.
   </div>
   <button type="button" class="btn btn-primary mb-3" (click)="accedi()">Accedi nuovamente</button>
 }
+
 @if (caricando()) {
   <p role="status">Caricamento...</p>
 }
+
 @if (erroreCaricamento()) {
   <div class="alert alert-danger" role="alert">{{ erroreCaricamento() }}</div>
   <button type="button" class="btn btn-outline-primary" (click)="caricaStatoCorrente()">
     Riprova
   </button>
 }
+
 @if (integrazione(); as corrente) {
-  <h1>{{ corrente.codice }}</h1>
-
-  <p>
-    <span
-      class="badge"
-      [class.text-bg-secondary]="badge(corrente.stato).variant === 'neutro'"
-      [class.text-bg-success]="badge(corrente.stato).variant === 'positivo'"
-      [class.text-bg-danger]="badge(corrente.stato).variant === 'errore'"
-    >
-      {{ badge(corrente.stato).label }}
-    </span>
-    @if (corrente.ultima_verifica) {
-      <span class="small text-muted ms-2">
-        {{ corrente.ultima_verifica.data }} - v{{ corrente.ultima_verifica.versione_contratto }}
+  <header class="mm-page-header">
+    <div>
+      <h1>{{ corrente.nome }}</h1>
+      <p>
+        Endpoint, verifica schema e collegamenti per struttura JSON e policy dei campi del contesto
+        <code>{{ corrente.codice_contesto }}</code
+        >.
+      </p>
+    </div>
+    <div class="mm-page-actions">
+      <span
+        class="status-pill"
+        [class.warning]="corrente.stato === 'DEFINITO'"
+        [class.error]="corrente.stato === 'ERRORE'"
+        [class.text-bg-success]="corrente.stato === 'CONNESSO'"
+      >
+        {{ badge(corrente.stato).label }}
       </span>
-    }
-  </p>
+    </div>
+  </header>
 
-  @if (corrente.ultima_verifica?.errori?.length) {
-    <ul class="text-danger">
-      @for (errore of corrente.ultima_verifica?.errori; track errore.codice) {
-        <li>{{ errore.messaggio }}</li>
+  <nav class="mm-tabs" aria-label="Sezioni del contesto">
+    <span class="active">Integrazione</span>
+    <a routerLink="/configurazione/tipi-documento/nuovo">Struttura API</a>
+    <a routerLink="/configurazione/tipi-documento/nuovo">Policy dati</a>
+    <span>Permessi</span>
+  </nav>
+
+  <div class="mm-two-columns">
+    <section class="mm-card">
+      <h2 class="h5">Endpoint discovery</h2>
+      <p class="text-muted small">
+        Salva l'URL fornito dagli sviluppatori del contesto, poi avvia la verifica.
+      </p>
+
+      <form [formGroup]="form" (submit)="$event.preventDefault(); salvaConfigurazione()">
+        <div class="mb-3">
+          <label for="nome" class="form-label">Nome</label>
+          <input
+            id="nome"
+            type="text"
+            class="form-control"
+            formControlName="nome"
+            maxlength="200"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="url" class="form-label">URL discovery</label>
+          <input
+            id="url"
+            type="text"
+            class="form-control"
+            formControlName="url"
+            placeholder="https://..."
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="timeoutMs" class="form-label">Timeout (ms)</label>
+          <input
+            id="timeoutMs"
+            type="number"
+            class="form-control"
+            formControlName="timeoutMs"
+            min="1000"
+            max="10000"
+          />
+        </div>
+
+        @if (erroreServer()) {
+          <div class="alert alert-danger" role="alert">{{ erroreServer() }}</div>
+        }
+        @if (infoServer()) {
+          <div class="alert alert-info" role="status">{{ infoServer() }}</div>
+        }
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="salvando() || verificando() || caricando() || !!erroreCaricamento()"
+        >
+          Salva configurazione
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary ms-2"
+          [disabled]="
+            verificando() || salvando() || caricando() || !!erroreCaricamento() || !corrente.url
+          "
+          (click)="avviaVerifica()"
+        >
+          Verifica ora
+        </button>
+      </form>
+    </section>
+
+    <aside class="mm-card">
+      <h2 class="h5">Esito verifica</h2>
+      @if (corrente.ultima_verifica) {
+        <p class="mb-2">
+          <strong>{{ corrente.ultima_verifica.esito }}</strong>
+          <span class="text-muted">
+            · contratto v{{ corrente.ultima_verifica.versione_contratto }} ·
+            {{ corrente.ultima_verifica.data }}
+          </span>
+        </p>
+      } @else {
+        <p class="text-muted">Nessuna verifica ancora eseguita.</p>
       }
-    </ul>
-  }
 
-  <form [formGroup]="form" (submit)="$event.preventDefault(); salvaConfigurazione()">
-    <div class="mb-3">
-      <label for="nome" class="form-label">Nome</label>
-      <input id="nome" type="text" class="form-control" formControlName="nome" maxlength="200" />
-    </div>
+      <ul class="mm-check-list ps-0">
+        <li>
+          <span>Raggiungibilita' endpoint</span>
+          <strong>{{
+            corrente.stato === 'ERRORE' ? 'KO' : corrente.url ? 'OK' : 'Da fare'
+          }}</strong>
+        </li>
+        <li>
+          <span>Schema JSON discovery</span>
+          <strong>{{ corrente.ultima_verifica ? 'Verificato' : 'Da fare' }}</strong>
+        </li>
+        <li>
+          <span>Tipi documento dichiarati</span>
+          <strong>{{ corrente.ultima_verifica ? "Letti dall'albero" : 'Da fare' }}</strong>
+        </li>
+        <li>
+          <span>Campi obbligatori</span>
+          <strong>{{ corrente.ultima_verifica ? 'Configurabili' : 'Dopo verifica' }}</strong>
+        </li>
+      </ul>
 
-    <div class="mb-3">
-      <label for="url" class="form-label">URL discovery</label>
-      <input
-        id="url"
-        type="text"
-        class="form-control"
-        formControlName="url"
-        placeholder="https://..."
-      />
-    </div>
+      @if (corrente.ultima_verifica?.errori?.length) {
+        <div class="alert alert-danger mt-3">
+          @for (errore of corrente.ultima_verifica?.errori; track errore.codice) {
+            <div>{{ errore.messaggio }}</div>
+          }
+        </div>
+      }
 
-    <div class="mb-3">
-      <label for="timeoutMs" class="form-label">Timeout (ms)</label>
-      <input
-        id="timeoutMs"
-        type="number"
-        class="form-control"
-        formControlName="timeoutMs"
-        min="1000"
-        max="10000"
-      />
-    </div>
+      <div class="mm-info-box mt-3">
+        Dopo una verifica riuscita puoi aprire la policy dati per indicare quali campi del contratto
+        sono obbligatori e quali restano opzionali.
+      </div>
 
-    @if (erroreServer()) {
-      <div class="alert alert-danger" role="alert">{{ erroreServer() }}</div>
-    }
-    @if (infoServer()) {
-      <div class="alert alert-info" role="status">{{ infoServer() }}</div>
-    }
-
-    <button
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="salvando() || verificando() || caricando() || !!erroreCaricamento()"
-    >
-      Salva configurazione
-    </button>
-    <button
-      type="button"
-      class="btn btn-outline-primary ms-2"
-      [disabled]="
-        verificando() || salvando() || caricando() || !!erroreCaricamento() || !corrente.url
-      "
-      (click)="avviaVerifica()"
-    >
-      Verifica
-    </button>
-  </form>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a routerLink="/configurazione/tipi-documento/nuovo" class="btn btn-primary btn-sm">
+          Policy dati e campi obbligatori
+        </a>
+        <a routerLink="/configurazione/contesti/nuovo" class="btn btn-outline-primary btn-sm">
+          Vedi esempio JSON
+        </a>
+      </div>
+    </aside>
+  </div>
 }

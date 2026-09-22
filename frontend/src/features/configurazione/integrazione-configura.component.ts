@@ -35,7 +35,7 @@ export class IntegrazioneConfiguraComponent {
   protected readonly sessioneScaduta = signal(false);
   protected accedi(): void {
     void this.keycloak?.login({
-      redirectUri: window.location.origin + '/configurazione/' + this.id,
+      redirectUri: window.location.origin + '/configurazione/contesti/' + this.id + '/integrazione',
       prompt: 'login',
     });
   }

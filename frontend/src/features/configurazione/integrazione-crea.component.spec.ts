@@ -70,8 +70,9 @@ describe('IntegrazioneCreaComponent', () => {
       codice_contesto: 'geban',
     });
     expect(navigateSpy).toHaveBeenCalledWith([
-      '/configurazione',
+      '/configurazione/contesti',
       '00000000-0000-4000-8000-000000000001',
+      'integrazione',
     ]);
   });
 

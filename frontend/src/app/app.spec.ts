@@ -41,10 +41,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the GEMODO brand in the shell header', async () => {
+  it('should render the Modellario brand in the shell header', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('[brand]')?.textContent).toContain('GEMODO');
+    expect(compiled.querySelector('.brand-link')?.textContent).toContain('Modellario');
   });
 });
