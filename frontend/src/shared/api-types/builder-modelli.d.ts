@@ -74,7 +74,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Dettaglio modello con il contratto dati, leggibile anche su una BOZZA
+         * @description Alimenta l'anteprima del modello nel builder (schermata 2b in versione ridotta, 007). A differenza di /catalogo/modelli/{modelloVersioneId}/campi-richiesti, che risponde solo su versioni pubblicate, qui i campi sono leggibili anche su una versione in BOZZA. Stesso isolamento per contesto della lista.
+         */
+        get: operations["getModelloDettaglio"];
         put?: never;
         post?: never;
         /** Elimina logicamente un modello conservando versioni, audit e PDF */
@@ -217,6 +221,43 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             versioni: components["schemas"]["Versione"][];
+        };
+        /** @description Il campo come lo legge l'anteprima del builder: metadati completi, a differenza di CampoVersione che e' la forma di richiesta alla creazione. */
+        CampoContratto: {
+            codice: string;
+            etichetta: string;
+            tipo: string;
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+        };
+        VersioneDettaglio: components["schemas"]["Versione"] & {
+            campi: components["schemas"]["CampoContratto"][];
+        };
+        ModelloDettaglio: {
+            /** Format: uuid */
+            id: string;
+            public_id: number | null;
+            codice: string;
+            nome: string;
+            codice_tipo_documento: string;
+            codice_categoria: string;
+            codice_tipologia: string | null;
+            percorso_categorizzazione: string[];
+            variante: string;
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+            livello_professionale: string | null;
+            /** Format: uuid */
+            derivato_da_modello_id?: string | null;
+            codice_contesto: string;
+            /** Format: uuid */
+            integrazione_id: string | null;
+            /** Format: date-time */
+            created_at: string;
+            versioni: components["schemas"]["VersioneDettaglio"][];
         };
         /** @description percorso_categorizzazione XOR codice_categoria (+ codice_tipologia opzionale se il percorso e' altrimenti ambiguo) - vedi verifica_selezione in backend/app/builder/schemas.py. */
         CreaModelloRequest: {
@@ -383,7 +424,7 @@ export interface components {
                 "application/json": components["schemas"]["Errore"];
             };
         };
-        /** @description Integrazione non connessa o transizione di stato non valida */
+        /** @description Integrazione non connessa, tipo documento gia' di un'altra integrazione o transizione di stato non valida */
         Conflict: {
             headers: {
                 [name: string]: unknown;
@@ -558,6 +599,29 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getModelloDettaglio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modello con versioni e campi del contratto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelloDettaglio"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     eliminaModello: {

@@ -110,6 +110,24 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
   /modelli/{modelloId}:
+    get:
+      operationId: getModelloDettaglio
+      summary: Dettaglio modello con il contratto dati, leggibile anche su una BOZZA
+      description: >
+        Alimenta l'anteprima del modello nel builder (schermata 2b in versione
+        ridotta, 007). A differenza di /catalogo/modelli/{modelloVersioneId}/campi-richiesti,
+        che risponde solo su versioni pubblicate, qui i campi sono leggibili anche
+        su una versione in BOZZA. Stesso isolamento per contesto della lista.
+      x-required-role: GEMODO_MODELLI_GESTORE
+      responses:
+        '200':
+          description: Modello con versioni e campi del contratto
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ModelloDettaglio'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
     delete:
       operationId: eliminaModello
       summary: Elimina logicamente un modello conservando versioni, audit e PDF
@@ -152,27 +170,6 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
-  /modelli/{modelloId}:
-    parameters:
-      - {$ref: '#/components/parameters/ModelloId'}
-    get:
-      operationId: getModelloDettaglio
-      summary: Dettaglio modello con il contratto dati, leggibile anche su una BOZZA
-      description: >
-        Alimenta l'anteprima del modello nel builder (schermata 2b in versione
-        ridotta, 007). A differenza di /catalogo/modelli/{modelloVersioneId}/campi-richiesti,
-        che risponde solo su versioni pubblicate, qui i campi sono leggibili anche
-        su una versione in BOZZA. Stesso isolamento per contesto della lista.
-      x-required-role: GEMODO_MODELLI_GESTORE
-      responses:
-        '200':
-          description: Modello con versioni e campi del contratto
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/ModelloDettaglio'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
   /modelli/{modelloId}/versioni:
     parameters:
       - {$ref: '#/components/parameters/ModelloId'}
@@ -302,7 +299,10 @@ components:
         integrazione_id: {type: string, format: uuid, nullable: true}
         created_at: {type: string, format: date-time}
         versioni: {type: array, items: {$ref: '#/components/schemas/Versione'}}
-    CampoVersione:
+    CampoContratto:
+      description: >
+        Il campo come lo legge l'anteprima del builder: metadati completi, a
+        differenza di CampoVersione che e' la forma di richiesta alla creazione.
       type: object
       additionalProperties: false
       required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
@@ -320,7 +320,7 @@ components:
         - type: object
           required: [campi]
           properties:
-            campi: {type: array, items: {$ref: '#/components/schemas/CampoVersione'}}
+            campi: {type: array, items: {$ref: '#/components/schemas/CampoContratto'}}
     ModelloDettaglio:
       type: object
       additionalProperties: false
