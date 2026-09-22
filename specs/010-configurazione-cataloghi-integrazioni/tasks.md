@@ -189,11 +189,11 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] Contract test per registrazione/verifica endpoint in
+- [x] T031 (contratto `configurazione-cataloghi-api.openapi.yaml` validato da `tests/configurazione/test_integration_contract.py` e `test_contract_foundation.py`, piu' `test_versioned_admin_documentation_available`; il file indicato nel task non esiste, la copertura vive nei contract test esistenti) [P] [US3] Contract test per registrazione/verifica endpoint in
       `backend/tests/configurazione/contract/test_endpoint_integrazione_api.py`
-- [ ] T032 [P] [US3] Integration test: endpoint conforme -> stato `CONNESSO`
+- [x] T032 (`test_verify_end_to_end_connects_against_a_real_server`) [P] [US3] Integration test: endpoint conforme -> stato `CONNESSO`
       (Acceptance Scenario 1)
-- [ ] T033 [P] [US3] Integration test: endpoint con forma non conforme allo
+- [x] T033 (`test_verify_maps_unreachable_and_non_conformant_responses` piu' `tests/discovery/test_discovery.py::test_invalid_structure_is_functional_error`; le soglie fini restano ASSUNTA_PROVVISORIA come da nota) [P] [US3] Integration test: endpoint con forma non conforme allo
       schema comune (attributi obbligatori mancanti, tipi dato errati, nodo non
       valido) -> stato `ERRORE`, mai `CONNESSO` (Acceptance Scenario 2). Un
       endpoint con valori reali diversi dagli esempi ma conforme alla forma
@@ -202,39 +202,39 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `DEC-001-VERSIONING-RIFERIMENTI-ESTERNI`; questo test copre solo il caso
       gia' deciso — forma non valida = errore, non silenziosamente accettata —
       non le soglie fini)*
-- [ ] T034 [P] [US3] Integration test: endpoint irraggiungibile in fase di
+- [x] T034 (`test_verify_maps_unreachable_and_non_conformant_responses`) [P] [US3] Integration test: endpoint irraggiungibile in fase di
       registrazione -> stato `ERRORE` con messaggio esplicito, non stato
       ambiguo (Edge Case)
-- [ ] T035 [P] [US3] Integration test: endpoint irraggiungibile durante la
+- [x] T035 (`tests/builder/test_integrazioni_manager.py::test_transport_failure_maps_to_502_not_503` e `test_non_conformant_shape_maps_to_502`: 502 `DISCOVERY_NON_DISPONIBILE`, mai lista vuota) [P] [US3] Integration test: endpoint irraggiungibile durante la
       *creazione di un modello* (non la registrazione) -> `PortaDiscovery`
       solleva errore funzionale di connessione, mai un menu vuoto silenzioso
       (Acceptance Scenario 3) — test diretto contro `AdapterHTTP`/`PortaDiscovery`
       (T009-T012), indipendente dal builder `002` non ancora implementato
-- [ ] T036 [P] [US3] Integration test: tipo documento self-service, nessuna
+- [ ] T036 RINVIATO con FR-010 fuori dall'incremento FR-016: nel runtime corrente l'assenza di URL produce `DISCOVERY_NON_CONFIGURATA`, non self-service. Non riaprire finche' FR-010 non rientra in scope. [P] [US3] Integration test: tipo documento self-service, nessuna
       riga `EndpointIntegrazione`, utilizzabile subito dopo US1 (Acceptance
       Scenario 4, SC-003)
-- [ ] T037 [P] [US3] Integration test: ridefinizione struttura dopo
+- [x] T037 (`test_renaming_preserves_connection_but_changing_url_requires_reverification` e `test_removing_the_url_deletes_the_endpoint_row`: dopo il pivot FR-017 la verifica e' legata a URL/revisione dell'integrazione, non allo schema del tipo documento; `richiede_riverifica` riporta lo stato a DEFINITO) [P] [US3] Integration test: ridefinizione struttura dopo
       `CONNESSO` riporta lo stato a `DEFINITO` finche' non c'e' un nuovo test
       riuscito contro la nuova versione dello schema (state transition,
       `data-model.md`)
 
 ### Implementation for User Story 3
 
-- [ ] T038 [US3] Repository `EndpointIntegrazione` in
+- [x] T038 (`repository.endpoint`, con lock) [US3] Repository `EndpointIntegrazione` in
       `backend/app/configurazione/repository.py`
-- [ ] T039 [US3] Service di test di connessione: chiama `AdapterHTTP` (T012)
+- [x] T039 (`IntegrazioniService.verifica`: allowlist di egress, revisione ottimistica, tentativo con scadenza contro verifiche concorrenti) [US3] Service di test di connessione: chiama `AdapterHTTP` (T012)
       contro l'URL registrato, valida la forma della risposta contro lo
       `SchemaDiscoveryGenerato` corrente (T027), senza pretendere che i valori
       reali coincidano con gli esempi, e aggiorna `stato`/`esito_ultimo_test`
       — depende da T012, T027, T038
-- [ ] T040 [US3] Endpoint `POST /configurazione/tipi-documento/{codice}/endpoint-integrazione`
+- [x] T040 SUPERATO nella forma: dopo FR-017 l'endpoint e' dell'integrazione, non del tipo documento. Rotte reali `PUT /configurazione/integrazioni/{id}` (registra) e `POST /configurazione/integrazioni/{id}/verifica` (ri-testa), protette da `require_admin`. [US3] Endpoint `POST /configurazione/tipi-documento/{codice}/endpoint-integrazione`
       (registra + testa) e `POST .../endpoint-integrazione/verifica` (ri-testa),
       protetti dal ruolo FR-012 (T014)
-- [ ] T041 [US3] Collegare `PortaDiscovery.catalogo_discovery` allo stato
+- [x] T041 (`discovery_per_tipo` in `app/discovery/configuration.py` solleva `INTEGRAZIONE_NON_CONNESSA` se lo stato non e' CONNESSO, senza interrogare l'adapter) [US3] Collegare `PortaDiscovery.catalogo_discovery` allo stato
       `EndpointIntegrazione.stato`: un tipo documento non `CONNESSO` (e non
       self-service) MUST rifiutare la richiesta con errore esplicito invece di
       interrogare l'adapter (FR-009) — depende da T009, T038
-- [ ] T042 [US3] Evento audit di registrazione/test/ri-verifica
+- [x] T042 (`AuditEventoIntegrazione`: INTEGRAZIONE_CONFIGURATA, TIPO_ASSOCIATO ed esiti di verifica) [US3] Evento audit di registrazione/test/ri-verifica
 
 **Checkpoint**: User Story 1-3 (tutte P1) complete — il flusso di onboarding end-to-end funziona per un tipo documento integrato o self-service.
 
@@ -767,3 +767,20 @@ Feature attiva invariata; nessun task applicativo di altre spec viene avviato.
       senza rimuovere l'unicita' globale prima dell'adeguamento dei consumer.
       Test PostgreSQL reale passato; T079 resta IN CORSO su endpoint/namespace
       e associazione legacy. Non certifica API admin, manager o PDF disponibili.
+
+## Riallineamento spunte US3 (2026-09-22)
+
+Verificato sul codice prima di spuntare, non a memoria: 97 test passati fra
+`tests/configurazione` e `tests/discovery` su Postgres reale, zero skip.
+La User Story 3 era gia' implementata, ma sotto la forma introdotta dal pivot
+FR-017 del 2026-09-17: l'endpoint appartiene all'Integrazione, non al
+TipoDocumento. I task T038-T042 erano stati scritti prima di quel pivot e
+descrivono rotte che non esistono piu'; la funzione c'e' tutta.
+
+Copertura reale aggiuntiva non prevista dai task originali: revisione
+ottimistica (`REVISIONE_SUPERATA`), allowlist di egress con rifiuto degli IP
+privati dietro un host pubblico, verifica concorrente con tentativo a scadenza,
+e la corsa fra riconfigurazione dell'URL e verifica in volo.
+
+T036 resta aperto ma RINVIATO insieme a FR-010: non e' lavoro residuo di questo
+incremento.
