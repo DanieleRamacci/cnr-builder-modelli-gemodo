@@ -30,6 +30,151 @@ em.ph{font-style:normal;font-family:"Roboto Mono",monospace;font-size:11.5px;col
 </style>
 </helmet>
 
+<section class="dv-turn" id="t6">
+<div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Home page</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="6a" data-screen-label="home">
+<div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>Home — un solo ingresso per ogni schermata, contenuto per ruolo</div>
+<div class="dv-card" style="width:1180px">
+
+<div style="display:flex;align-items:center;gap:24px;padding:0 28px;height:60px;background:#0066cc;color:#fff">
+<div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid rgba(255,255,255,.7);border-radius:4px;font-size:13px">M</span>
+{{ orgName }}
+</div>
+<nav style="display:flex;gap:22px;margin-left:12px;font-size:14px">
+<sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+<a href="{{ n.href }}" style="padding:19px 0;border-bottom:3px solid {{ n.edge }};font-weight:{{ n.weight }};color:{{ n.ink }};text-decoration:none">{{ n.label }}</a>
+</sc-for>
+</nav>
+<div style="margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13.5px">
+<div style="display:flex;border:1px solid rgba(255,255,255,.45);border-radius:4px;overflow:hidden;font-size:12px">
+<sc-for list="{{ roleTabs }}" as="r" hint-placeholder-count="2">
+<span onClick="{{ r.onClick }}" style="padding:6px 11px;background:{{ r.bg }};color:{{ r.ink }};font-weight:700;letter-spacing:.3px;cursor:pointer;white-space:nowrap">{{ r.label }}</span>
+</sc-for>
+</div>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);font-size:12.5px;font-weight:700">{{ userInitials }}</span>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-end;gap:24px;padding:26px 28px 18px">
+<div>
+<h1 style="margin:0;font-size:32px;font-weight:700;color:#17324d;letter-spacing:-.3px">{{ greeting }}</h1>
+<p style="margin:6px 0 0;max-width:640px;font-size:15px;line-height:1.5;color:#5a6772">{{ roleBlurb }}</p>
+</div>
+<span style="margin-left:auto;font-size:13px;color:#5a6772;white-space:nowrap">22/09/2026</span>
+</div>
+
+<sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:11px;align-items:flex-start;margin:0 28px 20px;padding:13px 16px;border:1px solid #f0d9a8;border-left:4px solid #8a5a00;border-radius:4px;background:#fdf1d8">
+<svg viewBox="0 0 24 24" width="18" height="18" style="color:#8a5a00;flex:none;margin-top:1px" aria-hidden="true"><path d="M12 4.5 21 19.5H3z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"></path><path d="M12 10v4M12 16.4v.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg>
+<div style="flex:1;font-size:13.5px;line-height:1.55;color:#5c3d00"><strong>2 cose richiedono attenzione.</strong> La dimensione <span style="font-family:'Roboto Mono',monospace">canale</span> è comparsa su una foglia di GEBAN senza policy registrata. L'integrazione SIGLA ha fallito l'ultima scansione notturna.</div>
+<a href="#4a" class="btn btn-sm" style="height:34px;padding:0 14px;background:#8a5a00;color:#fff;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none">Risolvi</a>
+</div>
+</sc-if>
+
+<div style="padding:0 28px 22px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Cosa vuoi fare</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:12px">
+<sc-for list="{{ primaryActions }}" as="p" hint-placeholder-count="4">
+<a href="{{ p.href }}" style="display:flex;flex-direction:column;border:1px solid {{ p.edge }};border-radius:4px;background:{{ p.bg }};padding:15px 16px 14px;text-decoration:none">
+<span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;background:{{ p.iconBg }};color:{{ p.iconInk }};font:700 13px 'Titillium Web',sans-serif">{{ p.mark }}</span>
+<div style="margin-top:11px;font-size:15.5px;font-weight:700;color:#17324d;line-height:1.3">{{ p.label }}</div>
+<div style="margin-top:4px;font-size:12.5px;line-height:1.45;color:#5a6772">{{ p.desc }}</div>
+</a>
+</sc-for>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:24px;padding:0 28px 30px">
+
+<div>
+<div style="display:flex;align-items:baseline;gap:12px">
+<h2 style="margin:0;font-size:20px;font-weight:700;color:#17324d">{{ listTitle }}</h2>
+<span style="font-size:13px;color:#5a6772">{{ listHint }}</span>
+<a href="{{ listAllHref }}" style="margin-left:auto;font-size:13.5px;font-weight:600;text-decoration:none">vedi tutti</a>
+</div>
+
+<sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:1px;margin-top:13px;border:1px solid #e3e7eb;border-radius:4px;background:#e3e7eb;overflow:hidden">
+<sc-for list="{{ integrations }}" as="i" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff">
+<div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border-radius:4px;background:#e6f0fa;color:#0066cc;font-weight:700;font-size:13px">{{ i.abbr }}</div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:9px">
+<a href="#5b" style="font-size:15px;font-weight:700;color:#17324d;text-decoration:none">{{ i.name }}</a>
+<span style="padding:2px 9px;border-radius:11px;background:{{ i.tint }};color:{{ i.ink }};font-size:11.5px;font-weight:700;white-space:nowrap">{{ i.status }}</span>
+</div>
+<div style="margin-top:3px;font-size:12.5px;color:#5a6772">{{ i.meta }}</div>
+</div>
+<div style="text-align:right;white-space:nowrap">
+<div style="font:500 12.5px 'Roboto Mono',monospace;color:#33485c">{{ i.dur }}</div>
+<div style="font-size:12px;color:#5a6772">{{ i.when }}</div>
+</div>
+<a href="#5b" style="font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap">Apri</a>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEditor }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:1px;margin-top:13px;border:1px solid #e3e7eb;border-radius:4px;background:#e3e7eb;overflow:hidden">
+<sc-for list="{{ myContexts }}" as="c" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff">
+<div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border-radius:4px;background:#e6f0fa;color:#0066cc;font-weight:700;font-size:13px">{{ c.abbr }}</div>
+<div style="flex:1;min-width:0">
+<div style="font-size:15px;font-weight:700;color:#17324d;line-height:1.3">{{ c.name }}</div>
+<div style="margin-top:3px;font-size:12.5px;color:#5a6772"><span style="font-family:'Roboto Mono',monospace">{{ c.code }}</span> · {{ c.count }} modelli · {{ c.drafts }} bozze</div>
+</div>
+<a href="#1b" class="btn btn-outline-primary btn-sm" style="height:34px;padding:0 13px;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none">Vedi modelli</a>
+<a href="#2a" style="font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap">+ nuovo modello</a>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:9px;font-size:12.5px;line-height:1.5;color:#5a6772">Contesti e Modelli partono sempre dalla scelta del contesto: da qui, o dal selettore in cima a <a href="#1b" style="text-decoration:none">Modelli</a>.</div>
+</sc-if>
+
+<h2 style="margin:26px 0 0;font-size:20px;font-weight:700;color:#17324d">{{ secondTitle }}</h2>
+<div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+<sc-for list="{{ feed }}" as="f" hint-placeholder-count="4">
+<div style="display:flex;gap:11px;align-items:flex-start">
+<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;margin-top:2px;border-radius:50%;background:{{ f.tint }};color:{{ f.ink }};font-size:11.5px;font-weight:700">{{ f.glyph }}</span>
+<div style="flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:#33485c">{{ f.text }}<div style="font-size:12.5px;color:#5a6772">{{ f.when }}</div></div>
+<a href="{{ f.href }}" style="font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">{{ f.action }}</a>
+</div>
+</sc-for>
+</div>
+</div>
+
+<aside>
+<div style="border:1px solid #e3e7eb;border-radius:4px;background:#fbfcfd;padding:16px 17px 18px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Tutte le schermate</div>
+<div style="margin-top:6px;font-size:12.5px;line-height:1.5;color:#5a6772">Un solo ingresso per ciascuna. Le voci fuori dal tuo ruolo non compaiono.</div>
+<div style="display:flex;flex-direction:column;gap:7px;margin-top:12px">
+<sc-for list="{{ screenLinks }}" as="s" hint-placeholder-count="6">
+<a href="{{ s.href }}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e3e7eb;border-radius:4px;background:#fff;text-decoration:none">
+<span style="font:600 10.5px 'Roboto Mono',monospace;padding:2px 6px;border-radius:3px;background:#e9f2fb;color:#0059b3;flex:none">{{ s.id }}</span>
+<span style="flex:1;min-width:0;font-size:13.5px;font-weight:600;color:#17324d">{{ s.label }}</span>
+<svg viewBox="0 0 24 24" width="14" height="14" style="color:#0066cc;flex:none" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+</a>
+</sc-for>
+</div>
+</div>
+<div style="margin-top:16px;border:1px solid #e3e7eb;border-radius:4px;background:#fbfcfd;padding:16px 17px 18px">
+<div style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#5a6772;font-weight:700">Il tuo ruolo</div>
+<div style="margin-top:9px;font-size:14px;line-height:1.55;color:#33485c">{{ roleNote }}</div>
+<span onClick="{{ onSwitchRole }}" style="display:inline-block;margin-top:9px;font-size:13.5px;font-weight:600;color:#0066cc;cursor:pointer">{{ switchLabel }}</span>
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prova: “aggiungi la home di chi ha entrambi i ruoli” · “metti un grafico dei documenti generati in <a class="dv-oid" href="#6a">6a</a>”</p>
+</section>
+
 <section class="dv-turn" id="t5">
 <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Creazione contesto e verifica dell'integrazione</span></div>
 <div class="dv-opts">
@@ -1404,7 +1549,7 @@ class Component extends DCLogic {
       lingua: { policy: "distinct", who: "M. Rossi", when: "18/09/2026" },
       livello: { policy: "generic", who: "M. Rossi", when: "18/09/2026" },
     },
-    editing: null, draft: null, conflict: true, scanFreq: "6h",
+    editing: null, draft: null, conflict: true, scanFreq: "6h", role: "editor",
   };
 
   nodeAt(path) {
@@ -1517,6 +1662,7 @@ class Component extends DCLogic {
     const proposed = CAT.sections[famKey] || CAT.sections[c[1]] || ["Intestazione", "Corpo del documento", "Sottoscrizione"];
     const code = chosenCount ? "MOD-" + c.filter(Boolean).map(v => v.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, "")).join("-") + "-NEW" : "assegnato alla generazione";
 
+    const admin = this.state.role === "admin";
     const current = this.nodeAt(this.state.tpath);
     const isLeaf = !current.children;
     const siblingPath = isLeaf ? this.state.tpath.slice(0, -1) : this.state.tpath;
@@ -1557,6 +1703,83 @@ class Component extends DCLogic {
       generateDisabled: chosenCount < 3,
       onGenerate: () => { location.hash = "#2b"; },
 
+      isAdmin: admin, isEditor: !admin,
+      userInitials: admin ? "MR" : "GB",
+      greeting: admin ? "Buongiorno, Marta" : "Buongiorno, Giulia",
+      roleBlurb: admin
+        ? "Registri le integrazioni, verifichi che rispondano e configuri le dimensioni che biforcano i modelli."
+        : "Apri un contesto per vedere i suoi modelli, o riprendi da dove hai lasciato.",
+      roleNote: admin
+        ? "Amministratore: integrazioni, endpoint e policy delle dimensioni. Non redigi modelli."
+        : "Redattore modelli: crei e pubblichi i modelli dei contesti che ti sono assegnati. Integrazioni e dimensioni non sono nel tuo menu.",
+      switchLabel: admin ? "Vedi la home di un redattore" : "Vedi la home di un amministratore",
+      onSwitchRole: () => this.setState({ role: admin ? "editor" : "admin" }),
+      roleTabs: [{ k: "admin", label: "AMMIN." }, { k: "editor", label: "REDATTORE" }].map(r => ({
+        label: r.label,
+        onClick: () => this.setState({ role: r.k }),
+        bg: (r.k === "admin") === admin ? "#fff" : "transparent",
+        ink: (r.k === "admin") === admin ? "#0059b3" : "rgba(255,255,255,.88)",
+      })),
+      navItems: (admin
+        ? [{ label: "Home", href: "#6a" }, { label: "Integrazioni", href: "#5b" }, { label: "Contesti", href: "#1a" }, { label: "Utenti e ruoli", href: "#6a" }]
+        : [{ label: "Home", href: "#6a" }, { label: "Contesti", href: "#1a" }, { label: "Modelli", href: "#1b" }, { label: "Generazioni", href: "#6a" }]
+      ).map((n, i) => ({ ...n, edge: i === 0 ? "#fff" : "transparent", weight: i === 0 ? 600 : 400, ink: i === 0 ? "#fff" : "rgba(255,255,255,.82)" })),
+      primaryActions: (admin ? [
+        { mark: "+", label: "Nuovo contesto", desc: "Registra un'integrazione e genera la struttura di esempio", href: "#5a", accent: true },
+        { mark: "↻", label: "Verifica integrazione", desc: "Endpoint, esito dei controlli e storico scansioni", href: "#5b" },
+        { mark: "⌗", label: "Dimensioni e policy", desc: "Cosa biforca un modello e cosa usa il generico", href: "#4a" },
+        { mark: "▤", label: "Contesti", desc: "Tutti i contesti configurati", href: "#1a" },
+      ] : [
+        { mark: "+", label: "Nuovo modello", desc: "Parti dalla categorizzazione del contesto", href: "#2a", accent: true },
+        { mark: "▤", label: "Contesti", desc: "Scegli il contesto di cui gestire i modelli", href: "#1a" },
+        { mark: "✎", label: "Builder", desc: "Sezioni di testo e segnaposto dell'ultimo modello", href: "#2b" },
+        { mark: "⧉", label: "Modello derivato", desc: "Variante di lingua o livello da un modello esistente", href: "#3a" },
+      ]).map(p => ({
+        ...p,
+        edge: p.accent ? "#b8d4ee" : "#e3e7eb",
+        bg: p.accent ? "#f2f7fc" : "#fff",
+        iconBg: p.accent ? "#0066cc" : "#e6f0fa",
+        iconInk: p.accent ? "#fff" : "#0059b3",
+      })),
+      listTitle: admin ? "Integrazioni" : "I tuoi contesti",
+      listHint: admin ? "4 registrate" : "3 su 8 assegnati al tuo ruolo",
+      listAllHref: admin ? "#5b" : "#1a",
+      secondTitle: admin ? "Attività recente" : "Richiede la tua attenzione",
+      feed: admin ? [
+        { glyph: "!", tint: "#fdf1d8", ink: "#8a5a00", text: "Scoperto l'attributo canale su COLLABORATORE_TECNICO_ER (GEBAN), senza policy registrata", when: "oggi 12:04 · scansione manuale", action: "Configura", href: "#4a" },
+        { glyph: "×", tint: "#fdeaea", ink: "#a3242c", text: "SIGLA non ha risposto alla scansione notturna, notifica inviata al referente tecnico", when: "stanotte 02:00", action: "Verifica", href: "#5b" },
+        { glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34", text: "G. Bianchi ha impostato la policy di livello su “ammette il generico”", when: "ieri 16:20", action: "Apri", href: "#4a" },
+        { glyph: "✓", tint: "#e0f2e4", ink: "#1b7a34", text: "Creato il contesto Protocollo, struttura di esempio consegnata al referente", when: "ieri 10:05", action: "Apri", href: "#5a" },
+      ] : [
+        { glyph: "✎", tint: "#eceff2", ink: "#5a6772", text: "Determina a contrarre v3.3 — bozza con 2 segnaposto da mappare", when: "modificata 1 ora fa", action: "Riprendi", href: "#2b" },
+        { glyph: "!", tint: "#fdf1d8", ink: "#8a5a00", text: "Verbale di gara MOD-APP-007 in attesa del tuo parere", when: "L. Ferrari, 4 giorni fa", action: "Rivedi", href: "#2b" },
+        { glyph: "!", tint: "#fdf1d8", ink: "#8a5a00", text: "Bando Ricercatore III livello MOD-BAN-009 in revisione", when: "S. Conti, ieri", action: "Rivedi", href: "#2b" },
+        { glyph: "⧉", tint: "#e6f0fa", ink: "#0059b3", text: "Determina a contrarre — Inglese: testi ereditati ancora in italiano", when: "derivato ieri", action: "Apri", href: "#3a" },
+      ],
+      screenLinks: (admin ? [
+        { id: "5a", label: "Nuovo contesto", href: "#5a" },
+        { id: "5b", label: "Verifica integrazione", href: "#5b" },
+        { id: "4a", label: "Dimensioni e policy", href: "#4a" },
+        { id: "1a", label: "Contesti", href: "#1a" },
+        { id: "1b", label: "Modelli del contesto", href: "#1b" },
+      ] : [
+        { id: "1a", label: "Contesti", href: "#1a" },
+        { id: "1b", label: "Modelli del contesto", href: "#1b" },
+        { id: "2a", label: "Categorizzazione", href: "#2a" },
+        { id: "2b", label: "Builder del modello", href: "#2b" },
+        { id: "3a", label: "Modello derivato", href: "#3a" },
+      ]),
+      integrations: [
+        { abbr: "GB", name: "GEBAN — Bandi di concorso", status: "attiva", tint: "#e0f2e4", ink: "#1b7a34", meta: "5 profili · 18 campi · 1 dimensione da configurare", dur: "412 ms", when: "oggi 12:04", action: "Dimensioni" },
+        { abbr: "SG", name: "SIGLA — Contabilità", status: "scansione fallita", tint: "#fdeaea", ink: "#a3242c", meta: "timeout dopo 10 s, 3 tentativi", dur: "10 s", when: "stanotte 02:00", action: "Verifica" },
+        { abbr: "AN", name: "Anagrafica fornitori", status: "attiva", tint: "#e0f2e4", ink: "#1b7a34", meta: "2 tipologie · 24 campi", dur: "298 ms", when: "oggi 06:00", action: "Apri" },
+        { abbr: "PR", name: "Protocollo — in registrazione", status: "bozza", tint: "#eceff2", ink: "#5a6772", meta: "endpoint non ancora inserito", dur: "—", when: "creata ieri", action: "Completa" },
+      ],
+      myContexts: [
+        { abbr: "AC", name: "Appalti e contratti", code: "CTX-APP", count: "14", drafts: "1" },
+        { abbr: "BC", name: "Bandi di concorso", code: "CTX-BAN", count: "7", drafts: "2" },
+        { abbr: "PC", name: "Personale e concorsi", code: "CTX-PER", count: "17", drafts: "0" },
+      ],
       handoffItems: [
         { file: "geban-discovery.example.json", desc: "Struttura minima di esempio, nella forma NodoDiscovery" },
         { file: "geban-discovery-endpoint.openapi.yaml", desc: "Contratto dell'endpoint: rotta, parametri, codici di risposta" },

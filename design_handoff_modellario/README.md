@@ -33,6 +33,7 @@ Mappa file ↔ schermata in `screens.json` (leggibile da un agente). Sintesi:
 | 4b | configure-dimensions-states | Stati di 4a: caricamento ed errore di sorgente | — (stessa rotta) |
 | 5a | new-context | Nuovo contesto / integrazione + struttura di esempio | `/configurazione/contesti/nuovo` |
 | 5b | integration-health | Contesto: verifica endpoint e storico scansioni | `/configurazione/contesti/:ctxId/integrazione` |
+| 6a | home | Home page, contenuto per ruolo | `/` |
 
 ---
 
@@ -283,7 +284,51 @@ Nota sotto le dimensioni: dichiararle qui le include nella struttura di esempio,
 
 **Aperto:** se la verifica manuale possa **scrivere** subito l'albero registrato o debba solo proporre un diff da approvare (nel mock riporta "nessuna differenza", non decide).
 
+---
+
+### 6a — home · Home page
+**Rotta.** `/`.
+
+**Purpose.** Unico punto di ingresso. La home espone **un solo link per ogni schermata del prodotto** (mai due strade per la stessa cosa) e cambia contenuto in base al ruolo: l'amministratore vede le integrazioni, il redattore vede i contesti che gli sono assegnati.
+
+**Un solo ingresso per schermata.** Le schermate raggiungibili sono le canoniche: **1a** Contesti, **1b** Modelli del contesto, **2a** Categorizzazione, **2b** Builder, **3a** Modello derivato, **4a** Dimensioni e policy, **5a** Nuovo contesto, **5b** Verifica integrazione. 1c/1d (varianti di 1b) e 4b (stati di 4a) **non** compaiono: sono alternative di presentazione, non destinazioni.
+
+**Ruoli.**
+| | Amministratore | Redattore modelli |
+|---|---|---|
+| Nav | Home · Integrazioni · Contesti · Utenti e ruoli | Home · Contesti · Modelli · Generazioni |
+| Azioni primarie | **Nuovo contesto** (5a) · Verifica integrazione (5b) · Dimensioni e policy (4a) · Contesti (1a) | **Nuovo modello** (2a) · Contesti (1a) · Builder (2b) · Modello derivato (3a) |
+| Lista principale | Integrazioni con stato, durata, ultima scansione | I contesti assegnati |
+| Secondo blocco | Attività recente | Richiede la tua attenzione |
+| Link laterali | 5a, 5b, 4a, 1a, 1b | 1a, 1b, 2a, 2b, 3a |
+Nel prototipo lo **switch di ruolo nell'header** (segmentato AMMIN./REDATTORE) serve solo a mostrare le due varianti: in produzione il ruolo viene dal profilo e non è commutabile dall'utente.
+
+**Scelta del contesto.** Contesti e Modelli **partono sempre dalla scelta del contesto**. Nella home il redattore la fa dalla lista "I tuoi contesti": ogni riga ha **"Vedi modelli"** (→ 1b su quel contesto) e **"+ nuovo modello"** (→ 2a). Chi arriva su Modelli senza contesto va prima su 1a. Nessuna schermata di modelli esiste senza un contesto selezionato.
+
+**Layout** (canvas 1180px). Header applicativo standard; saluto `h1` 32px/700 + blurb di ruolo 15px; per l'admin la banda ambra delle cose da risolvere (stesso box di 4a/5b) con CTA "Risolvi"; poi "Cosa vuoi fare" — 4 tessere `repeat(4,1fr)` gap 14px, bordo `#e3e7eb` radius 4px, quadrato icona 34px `#e6f0fa`/`#0059b3`, titolo 15.5px/700, descrizione 12.5px; la **prima tessera è l'azione primaria del ruolo** e si distingue per bordo `#b8d4ee`, fondo `#f2f7fc` e icona `#0066cc` su bianco. Corpo `1fr 320px`: lista principale a righe (contenitore `gap:1px` su fondo `#e3e7eb`) + feed; aside con "Tutte le schermate" (righe con badge id in mono `#e9f2fb`/`#0059b3`) e "Il tuo ruolo".
+
+---
+
+## Header applicativo — regole di riuso
+
+L'header è lo stesso su **tutte** le schermate. Ricrearlo con i componenti del design system (in Angular: `it-header` / `design-angular-kit`), non con misure copiate a mano. Le uniche cose da rispettare:
+
+**Struttura.** Una sola barra, non le tre slim/center/navbar di Bootstrap Italia: logo + nome prodotto a sinistra, navigazione principale accanto al logo (non centrata, non a destra), identità utente a destra.
+
+**Regole di stile** (in token, non in pixel):
+- Fondo: `primary` (`#0066cc`), testo bianco. Altezza: una riga sola, la `md` del kit (nel mock 60px) — non usare l'header alto con slim bar.
+- Voce di menu **attiva**: sottolineatura piena bianca spessa (3px) + peso 600. Voci inattive: bianco all'82% di opacità, senza sottolineatura. Nessun fondo pieno o pill sulla voce attiva.
+- Interlinea del menu: le voci occupano tutta l'altezza dell'header, così la sottolineatura tocca il bordo inferiore.
+- Avatar utente: cerchio, fondo bianco al 18%, iniziali in 700. Il badge di ruolo, quando presente, è una pill con lo stesso fondo.
+- Nessuna ombra, nessun bordo inferiore: la separazione la fa il contrasto col fondo pagina.
+- Padding orizzontale allineato a quello del contenuto sottostante (nel mock 28px), così logo e titolo di pagina sono sulla stessa verticale.
+
+**Cosa cambia per ruolo:** solo le voci di menu (vedi tabella in 6a). Colore, altezza e comportamento restano identici — un cambio di ruolo non deve sembrare un altro prodotto.
+
+**Breadcrumb**: sempre sotto l'header, 13px `ink-500`, separatore `/` al 50% di opacità, ultima voce `#1c2024` 600. Non fa parte dell'header: vive nel contenuto.
+
 ## Interactions & Behavior
+- **6a → tutto il resto**: unico punto di ingresso; ogni schermata ha un solo link. Le azioni primarie e il menu cambiano per ruolo.
 - **1a → 1b/1c/1d**: click su card contesto / "Apri contesto".
 - **1b/1c/1d → 2a**: CTA "Nuovo modello".
 - **1b/1c/1d → 2b**: click sul nome del modello o su "Modifica".
@@ -305,6 +350,7 @@ Nota sotto le dimensioni: dichiararle qui le include nella struttura di esempio,
 
 ## State Management
 **2a**: `cat: string[4]` (il percorso scelto) → derivati: opzioni per livello, abilitazioni, conteggio livelli, codice anteprima, sezioni proposte, abilitazione CTA.
+**6a**: `role` ('admin' | 'editor'). Nel prototipo è commutabile per mostrare le due varianti; in produzione arriva dal profilo utente e determina menu, azioni primarie e liste.
 **5b**: `scanFreq` (frequenza del controllo periodico); esito dell'ultima scansione, elenco dei controlli e storico arrivano dall'API.
 **4a**: `tpath: string[]` (percorso nell'albero), `policies: Record<nomeDimensione, {policy:'distinct'|'generic', who, when}>` — **chiave per nome dimensione + tipo documento, non per nodo**, `editing` (dimensione in scrittura), `draft` (scelta non ancora salvata), `conflict`. Le dimensioni della foglia sono derivate dal nodo (livelli, lingue, attributi extra), non memorizzate.
 **3a**: `deriv: Record<string,string>` (solo gli attributi effettivamente cambiati; valore vuoto = ereditato) → derivati: evidenziazione dei campi, nome e codice risultanti, chip di riepilogo, abilitazione CTA, hint del contatore. La categorizzazione ereditata è di sola lettura e arriva dal modello padre.

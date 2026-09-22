@@ -17,9 +17,31 @@
     "derive-model -> builder-editor (Crea e apri nel builder, sul nuovo modello)",
     "configure-dimensions: raggiungibile da Impostazioni > Integrazioni > <integrazione> > Dimensioni",
     "new-context -> integration-health (Crea contesto e passa alla verifica)",
-    "integration-health -> configure-dimensions (banner attributo non riconosciuto)"
+    "integration-health -> configure-dimensions (banner attributo non riconosciuto)",
+    "home -> 1a, 1b, 2a, 2b, 3a (ruolo redattore) / 5a, 5b, 4a, 1a, 1b (ruolo amministratore)"
   ],
   "screens": [
+    {
+      "id": "6a",
+      "file": "screens/home.md",
+      "label": "home",
+      "route": "/",
+      "name": "Home page",
+      "status": "proposta unica",
+      "purpose": "Unico punto di ingresso. Espone un solo link per ogni schermata canonica e cambia contenuto per ruolo: l'amministratore vede le integrazioni, il redattore i contesti assegnati. La scelta del contesto avviene qui o in 1a.",
+      "keyElements": [
+        "header con voci di menu per ruolo",
+        "banda ambra delle cose da risolvere (solo admin)",
+        "4 tessere 'Cosa vuoi fare' con la prima evidenziata",
+        "lista integrazioni o contesti assegnati con Vedi modelli / + nuovo modello",
+        "feed attivita o revisioni",
+        "aside 'Tutte le schermate' con badge id",
+        "aside 'Il tuo ruolo'"
+      ],
+      "openQuestions": [
+        "cosa vede chi ha entrambi i ruoli: home unica o switch di contesto nell'header"
+      ]
+    },
     {
       "id": "1a",
       "file": "screens/contexts-list.md",
@@ -224,6 +246,9 @@
   ],
   "notes": {
     "distinzione-importante": "4a (configure-dimensions) configura il comportamento a runtime del catalogo. La definizione struttura / esempio di contratto per l'integrazione e invece 5a (new-context, colonna destra): descrive la forma minima che il servizio deve esporre e NON influenza il runtime. Sono due oggetti distinti, non unirli in una sola schermata.",
-    "nessun-codice-tipo-documento": "La maschera 5a NON ha un campo 'codice tipo documento': un contesto puo esporre piu tipi di documento e quali siano lo dichiara l'alberatura restituita dal servizio. Il campo identificativo richiesto e invece il nome con cui il contesto si presenta nel token di autenticazione."
+    "nessun-codice-tipo-documento": "La maschera 5a NON ha un campo 'codice tipo documento': un contesto puo esporre piu tipi di documento e quali siano lo dichiara l'alberatura restituita dal servizio. Il campo identificativo richiesto e invece il nome con cui il contesto si presenta nel token di autenticazione.",
+    "home-un-solo-ingresso": "6a (home) espone un solo link per ogni schermata canonica: 1a, 1b, 2a, 2b, 3a, 4a, 5a, 5b. Le varianti 1c/1d (alternative di 1b) e 4b (stati di 4a) NON sono destinazioni e non vanno collegate dalla home.",
+    "scelta-contesto": "Contesti e Modelli partono sempre dalla scelta del contesto: dalla lista in home (Vedi modelli / + nuovo modello) o da 1a. Non esiste un elenco modelli senza contesto selezionato.",
+    "header": "Header identico su tutte le schermate, da ricreare con i componenti del design system (it-header) seguendo la sezione 'Header applicativo - regole di riuso' del README: una sola barra primary, voce attiva sottolineata 3px bianca + peso 600, inattive bianche all'82%, avatar tondo bianco 18%, nessuna ombra. Per ruolo cambiano solo le voci di menu."
   }
 }
