@@ -890,3 +890,25 @@ tutti e tre i controlli. Non introdurre un secondo scheduler.
       diventa non conforme, cambia versione di contratto, e aggiunge una
       dimensione nuova su una foglia. Verificare che un ciclo esegua una sola
       richiesta per integrazione.
+
+## Phase 16: Pulizia dell'ambiente (2026-09-22)
+
+**Origine**: verifica condotta prima di una campagna di test sull'ambiente
+deployato. Domanda di partenza: "se poi voglio cancellare i dati e ripartire da
+zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
+
+- [x] T102 [FR-029] (`configurazione/repository.py`; test in `backend/tests/builder/test_eliminazione_e_pulizia.py`) `conta_modelli` esclude i modelli `ELIMINATO`, cosi' che
+      disattivare un tipo documento torni possibile dopo aver eliminato i suoi
+      modelli. Test che copre il ciclo crea -> elimina -> disattiva
+- [ ] T103 `DELETE /api/v1/configurazione/integrazioni/{id}`: oggi non esiste
+      (405). Rifiutare la cancellazione se restano tipi o modelli attivi,
+      auditare l'evento
+- [ ] T104 Endpoint o comando di reset dietro `GEMODO_ALLOW_DATABASE_RESET`.
+      **La variabile e' gia' dichiarata in `docker-compose.coolify.yml:66` ma
+      non esiste nel codice**: zero occorrenze in `backend/app`. Deve azzerare
+      integrazioni, tipi documento, modelli, versioni e policy, e **mai** i
+      documenti generati (`generazione_documento` ha `ON DELETE RESTRICT` verso
+      `modello_versione`, ed e' corretto cosi'). Decidere prima se API o CLI
+- [ ] T105 Politica sui residui: oggi ogni eliminazione e' logica e le righe
+      restano per sempre. Decidere se serve una cancellazione fisica per i soli
+      record senza documenti generati collegati
