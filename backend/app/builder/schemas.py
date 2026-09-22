@@ -30,7 +30,7 @@ class CreaModelloRequest(BaseModel):
     percorso_categorizzazione: list[str] | None = Field(default=None, min_length=1, max_length=64)
     codice_categoria: str | None = None
     codice_tipologia: str | None = None
-    lingua: Literal["IT", "EN"]
+    lingua: Literal["IT", "EN"] | None = None
     livello_professionale: str | None = Field(default=None, min_length=1, max_length=64)
 
     @model_validator(mode="after")
@@ -83,6 +83,35 @@ class VersioneResponse(BaseModel):
     numero_versione: int
     stato: str
     pubblicato_at: datetime | None
+
+
+class PolicyDimensioneRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nome_dimensione: str = Field(min_length=1, max_length=64)
+    consente_valore_generico: bool
+
+
+class PolicyDimensioneResponse(BaseModel):
+    nome_dimensione: str
+    consente_valore_generico: bool
+
+
+class DimensioneNonConfigurata(BaseModel):
+    """Una dimensione vista sull'albero live ma priva di policy registrata.
+
+    `NodoDiscovery` ha `extra="allow"`, quindi senza questa segnalazione una
+    dimensione nuova sparirebbe in silenzio (DEC-002-POLICY).
+    """
+
+    nome_dimensione: str
+    motivo: str = "Nessuna policy registrata per questa dimensione"
+
+
+class PolicyDimensioniResponse(BaseModel):
+    codice_tipo_documento: str
+    policy: list[PolicyDimensioneResponse]
+    dimensioni_non_configurate: list[DimensioneNonConfigurata]
 
 
 class CampoVersioneResponse(BaseModel):

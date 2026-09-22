@@ -103,6 +103,32 @@ class ModelloDocumentoVersione(Base):
     campi: Mapped[list[ModelloCampoRichiesto]] = relationship(back_populates="versione_modello")
 
 
+class PolicyDimensione(Base):
+    """Dichiara se una dimensione della categorizzazione ammette un valore generico.
+
+    Una riga per `(tipo_documento_id, nome_dimensione)`: la policy vale ovunque
+    quel nome ricompaia nell'albero di quel tipo documento, mai per singola
+    foglia. Esplicitamente scollegata da `DefinizioneStruttura` (010), che e'
+    solo l'esempio presentazionale per il team dell'integrazione e non deve mai
+    determinare il comportamento a runtime - vedi DEC-002-POLICY.
+    """
+
+    __tablename__ = "policy_dimensione"
+    __table_args__ = (
+        UniqueConstraint("tipo_documento_id", "nome_dimensione", name="uq_policy_dimensione_tipo_nome"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tipo_documento.id", ondelete="CASCADE"), nullable=False
+    )
+    nome_dimensione: Mapped[str] = mapped_column(String(64), nullable=False)
+    consente_valore_generico: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
 class ModelloCampoRichiesto(Base):
     __tablename__ = "campo_modello"
     __table_args__ = (

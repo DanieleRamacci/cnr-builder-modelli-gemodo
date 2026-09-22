@@ -52,15 +52,20 @@ def _identita_modello(
     *,
     tipo: str,
     nodi,
-    lingua: str,
+    lingua: str | None,
     livello: str | None,
     modello_id: uuid.UUID,
 ) -> tuple[str, str]:
+    # Una dimensione assente compare nel nome come "tutte/tutti": e' ammessa solo
+    # quando la policy dichiara che la dimensione consente un valore generico.
     scope = livello or "tutti"
+    lingua_slug = lingua or "tutte"
     suffix = modello_id.hex
-    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), scope, lingua]))
+    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), scope, lingua_slug]))
     codice = f"{prefix[:128 - len(suffix) - 1]}-{suffix}"
-    language_name = "Italiano" if lingua == "IT" else "Inglese"
+    language_name = (
+        "Tutte le lingue" if lingua is None else ("Italiano" if lingua == "IT" else "Inglese")
+    )
     scope_name = f"Livello {livello}" if livello else "Tutti i livelli"
     name_suffix = f" - {scope_name} - {language_name} - {datetime.now(timezone.utc):%Y-%m-%d}"
     descriptions = " - ".join(n.descrizione for n in nodi)
@@ -79,6 +84,65 @@ class BuilderService:
     def lista(self, principal: PrincipalGEMODO, codice_contesto: str, *, offset: int, limit: int):
         verify_scrittura_su_contesto(principal, codice_contesto)
         return builder_repository.lista_modelli(self.db, codice_contesto, offset=offset, limit=limit)
+
+    # Comportamento storico, usato solo come ripiego quando un tipo documento non
+    # ha ancora una policy registrata: e' lo stesso che la migration 0018 scrive
+    # per i tipi esistenti, quindi nulla cambia di nascosto. Una dimensione che
+    # non compare qui resta richiesta, e la lettura delle policy la segnala.
+    POLICY_DI_RIPIEGO = {"lingua": False, "livello": True}
+
+    @classmethod
+    def _verifica_dimensione(cls, nome, valore, ammessi, policy, messaggio_valore_non_ammesso):
+        """Un valore assente e' ammesso solo se la policy consente il generico."""
+        if valore is None:
+            if policy.get(nome, cls.POLICY_DI_RIPIEGO.get(nome, False)):
+                return
+            raise BuilderDomainError(
+                "DIMENSIONE_RICHIEDE_VALORE",
+                f"La dimensione '{nome}' richiede un valore esplicito per questo tipo documento",
+                status_code=400,
+            )
+        if valore not in (ammessi or ()):
+            raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, messaggio_valore_non_ammesso, status_code=400)
+
+    def policy_dimensioni(self, principal: PrincipalGEMODO, codice_tipo_documento: str):
+        tipo = self._resolve_tipo_documento(codice_tipo_documento)
+        verify_scrittura_su_contesto(principal, tipo.codice_contesto)
+        registrate = builder_repository.policy_dimensioni(self.db, tipo.id)
+        nomi = {p.nome_dimensione for p in registrate}
+        return tipo, registrate, sorted(self._dimensioni_note(tipo) - nomi)
+
+    def _dimensioni_note(self, tipo) -> set[str]:
+        """Le dimensioni che il sistema sa gia' leggere dall'albero discovery.
+
+        Quando ne verranno aggiunte altre lato integrazione andranno raccolte da
+        qui, cosi' la schermata 4a le segnala invece di ignorarle.
+        """
+        return {"lingua", "livello"}
+
+    # La persistenza di un valore generico esiste solo dove la colonna lo ammette.
+    # `modello_documento.lingua` e' NOT NULL con vincolo IT/EN (DEC-001-LINGUA-IT-EN)
+    # ed e' esposta non nullabile anche nel catalogo verso GEBAN: dichiarare qui
+    # `lingua` generica e poi salvare 'IT' sarebbe una bugia silenziosa, quindi la
+    # policy viene rifiutata finche' schema e contratto di `001` non cambiano.
+    DIMENSIONI_SENZA_GENERICO = {"lingua"}
+
+    def imposta_policy_dimensione(self, principal: PrincipalGEMODO, codice_tipo_documento: str, request):
+        tipo = self._resolve_tipo_documento(codice_tipo_documento)
+        verify_scrittura_su_contesto(principal, tipo.codice_contesto)
+        if request.consente_valore_generico and request.nome_dimensione in self.DIMENSIONI_SENZA_GENERICO:
+            raise BuilderDomainError(
+                "GENERICO_NON_SUPPORTATO",
+                f"La dimensione '{request.nome_dimensione}' non puo' ammettere un valore generico: "
+                "la persistenza e il contratto del catalogo la richiedono valorizzata",
+                status_code=409,
+            )
+        policy, creata = builder_repository.salva_policy_dimensione(
+            self.db, tipo_documento_id=tipo.id, nome_dimensione=request.nome_dimensione,
+            consente_valore_generico=request.consente_valore_generico, soggetto=principal.subject,
+        )
+        self.db.commit()
+        return policy, creata
 
     def dettaglio(self, principal: PrincipalGEMODO, modello_id: uuid.UUID) -> ModelloDocumento:
         modello = builder_repository.modello_con_campi(self.db, modello_id)
@@ -127,9 +191,17 @@ class BuilderService:
             id=uuid.uuid4(), codice=codice, nome=codice, codice_contesto=source.codice_contesto,
             integrazione_id=source.id, stato="ATTIVA", spec_owner="specs/002-builder-modelli",
         ).on_conflict_do_nothing(constraint="uq_tipo_documento_integrazione_codice"))
-        return self.db.scalar(select(TipoDocumento).where(
+        tipo = self.db.scalar(select(TipoDocumento).where(
             TipoDocumento.integrazione_id == source.id, TipoDocumento.codice == codice,
         ))
+        # Un tipo nuovo nasce con le policy esplicite, come i tipi gia' esistenti
+        # dopo la migration 0018: l'admin le rivede, non deve inventarle da zero.
+        for nome, generico in self.POLICY_DI_RIPIEGO.items():
+            builder_repository.salva_policy_dimensione(
+                self.db, tipo_documento_id=tipo.id, nome_dimensione=nome,
+                consente_valore_generico=generico, soggetto=None,
+            )
+        return tipo
 
     def crea_modello(self, principal: PrincipalGEMODO, request: CreaModelloRequest) -> ModelloDocumento:
         if request.integrazione_id is None:
@@ -173,20 +245,18 @@ class BuilderService:
             categoria, tipologia = riferimenti(percorso)
 
         foglia = indice[percorso]
-        if request.lingua not in (foglia.lingue_possibili or ()):
-            raise BuilderDomainError(
-                ErrorCode.CONTESTO_NON_VALIDO,
-                "Lingua non disponibile per la categorizzazione scelta",
-                status_code=400,
-            )
-        if request.livello_professionale is not None and request.livello_professionale not in (
-            foglia.livelli_possibili or ()
-        ):
-            raise BuilderDomainError(
-                ErrorCode.CONTESTO_NON_VALIDO,
-                "Livello professionale non disponibile per la categorizzazione scelta",
-                status_code=400,
-            )
+        # DEC-002-POLICY: cosa rende due modelli distinti non e' piu' scritto qui,
+        # ma dichiarato per nome di dimensione sul tipo documento.
+        policy = {p.nome_dimensione: p.consente_valore_generico
+                  for p in builder_repository.policy_dimensioni(self.db, tipo.id)}
+        self._verifica_dimensione(
+            "lingua", request.lingua, foglia.lingue_possibili, policy,
+            "Lingua non disponibile per la categorizzazione scelta",
+        )
+        self._verifica_dimensione(
+            "livello", request.livello_professionale, foglia.livelli_possibili, policy,
+            "Livello professionale non disponibile per la categorizzazione scelta",
+        )
         nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
         modello_id = uuid.uuid4()
         codice, nome = _identita_modello(

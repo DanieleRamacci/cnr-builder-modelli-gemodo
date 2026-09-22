@@ -37,6 +37,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
     assert set(contract["paths"]) == {
         "/contesti",
         "/tipi-documento/{codiceTipoDocumento}/struttura-disponibile",
+        "/tipi-documento/{codiceTipoDocumento}/policy-dimensioni",
         "/modelli",
         "/modelli/{modelloId}/versioni",
             "/modelli/{modelloId}",

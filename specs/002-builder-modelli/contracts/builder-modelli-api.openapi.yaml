@@ -109,7 +109,64 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /tipi-documento/{codiceTipoDocumento}/policy-dimensioni:
+    parameters:
+      - {$ref: '#/components/parameters/CodiceTipoDocumento'}
+    get:
+      operationId: getPolicyDimensioni
+      summary: Policy registrate e dimensioni ancora prive di policy
+      description: >
+        DEC-002-POLICY. Dichiara, per nome di dimensione della categorizzazione,
+        se ammette un valore generico (un solo modello copre tutti i valori) o se
+        ogni valore identifica un modello distinto, come gia' accade per la lingua.
+        Esplicitamente scollegata da DefinizioneStruttura di `010`, che e' solo
+        l'esempio presentazionale per il team dell'integrazione.
+        `dimensioni_non_configurate` alimenta la segnalazione della schermata 4a:
+        NodoDiscovery ha extra="allow", quindi senza questo elenco una dimensione
+        nuova sparirebbe in silenzio.
+      x-required-role: GEMODO_MODELLI_GESTORE
+      responses:
+        '200':
+          description: Policy del tipo documento
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDimensioni'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      operationId: setPolicyDimensione
+      summary: Registra o aggiorna la policy di una dimensione
+      description: >
+        Una riga sola per (tipo documento, nome dimensione): la policy vale
+        ovunque quel nome ricompaia nell'albero, mai per singola foglia.
+        Una dimensione la cui persistenza non ammette un valore assente viene
+        rifiutata con GENERICO_NON_SUPPORTATO invece di essere accettata e poi
+        salvata con un valore arbitrario.
+      x-required-role: GEMODO_MODELLI_GESTORE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PolicyDimensioneRequest'}
+      responses:
+        '200':
+          description: Policy registrata o aggiornata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDimensione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: La dimensione non puo' ammettere un valore generico
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Errore'}
+              example: {codice: GENERICO_NON_SUPPORTATO, messaggio: "La dimensione 'lingua' non puo' ammettere un valore generico"}
   /modelli/{modelloId}:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
     get:
       operationId: getModelloDettaglio
       summary: Dettaglio modello con il contratto dati, leggibile anche su una BOZZA
@@ -299,6 +356,37 @@ components:
         integrazione_id: {type: string, format: uuid, nullable: true}
         created_at: {type: string, format: date-time}
         versioni: {type: array, items: {$ref: '#/components/schemas/Versione'}}
+    PolicyDimensioneRequest:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, consente_valore_generico]
+      properties:
+        nome_dimensione: {type: string, minLength: 1, maxLength: 64}
+        consente_valore_generico: {type: boolean}
+    PolicyDimensione:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, consente_valore_generico]
+      properties:
+        nome_dimensione: {type: string}
+        consente_valore_generico: {type: boolean}
+    DimensioneNonConfigurata:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, motivo]
+      properties:
+        nome_dimensione: {type: string}
+        motivo: {type: string}
+    PolicyDimensioni:
+      type: object
+      additionalProperties: false
+      required: [codice_tipo_documento, policy, dimensioni_non_configurate]
+      properties:
+        codice_tipo_documento: {type: string}
+        policy: {type: array, items: {$ref: '#/components/schemas/PolicyDimensione'}}
+        dimensioni_non_configurate:
+          type: array
+          items: {$ref: '#/components/schemas/DimensioneNonConfigurata'}
     CampoContratto:
       description: >
         Il campo come lo legge l'anteprima del builder: metadati completi, a

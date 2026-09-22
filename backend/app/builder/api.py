@@ -21,6 +21,9 @@ from app.builder.schemas import (
     ModelloResponse,
     ModelloDettaglioResponse,
     ModelloGestioneResponse,
+    PolicyDimensioneRequest,
+    PolicyDimensioneResponse,
+    PolicyDimensioniResponse,
     VersioneDettaglioResponse,
     StrutturaDisponibileResponse,
     StrutturaTipoDocumentoResponse,
@@ -122,6 +125,41 @@ def _versione_response(versione: ModelloDocumentoVersione) -> VersioneResponse:
         numero_versione=versione.versione,
         stato=versione.stato,
         pubblicato_at=versione.pubblicato_at,
+    )
+
+
+@router.get("/tipi-documento/{codiceTipoDocumento}/policy-dimensioni", response_model=PolicyDimensioniResponse)
+def leggi_policy_dimensioni(
+    codiceTipoDocumento: str,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    """Policy registrate e dimensioni ancora prive di policy (DEC-002-POLICY)."""
+    tipo, policy, non_configurate = service.policy_dimensioni(principal, codiceTipoDocumento)
+    return PolicyDimensioniResponse(
+        codice_tipo_documento=tipo.codice,
+        policy=[
+            PolicyDimensioneResponse(
+                nome_dimensione=p.nome_dimensione,
+                consente_valore_generico=p.consente_valore_generico,
+            )
+            for p in policy
+        ],
+        dimensioni_non_configurate=[{"nome_dimensione": nome} for nome in non_configurate],
+    )
+
+
+@router.put("/tipi-documento/{codiceTipoDocumento}/policy-dimensioni", response_model=PolicyDimensioneResponse)
+def imposta_policy_dimensione(
+    codiceTipoDocumento: str,
+    request: PolicyDimensioneRequest,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    policy, _ = service.imposta_policy_dimensione(principal, codiceTipoDocumento, request)
+    return PolicyDimensioneResponse(
+        nome_dimensione=policy.nome_dimensione,
+        consente_valore_generico=policy.consente_valore_generico,
     )
 
 

@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
+from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, PolicyDimensione, TipoDocumento
 
 
 def lista_modelli(db: Session, codice_contesto: str, *, offset: int, limit: int):
@@ -29,6 +29,35 @@ def modello_con_campi(db: Session, modello_id):
             joinedload(ModelloDocumento.tipo_documento),
             selectinload(ModelloDocumento.versioni).selectinload(ModelloDocumentoVersione.campi),
         ))
+
+
+def policy_dimensioni(db: Session, tipo_documento_id) -> list[PolicyDimensione]:
+    return list(db.scalars(select(PolicyDimensione)
+        .where(PolicyDimensione.tipo_documento_id == tipo_documento_id)
+        .order_by(PolicyDimensione.nome_dimensione)))
+
+
+def salva_policy_dimensione(
+    db: Session, *, tipo_documento_id, nome_dimensione: str, consente_valore_generico: bool, soggetto: str | None,
+) -> tuple[PolicyDimensione, bool]:
+    """Aggiorna la policy se esiste, altrimenti la crea. Mai due righe per lo stesso nome."""
+    esistente = db.scalar(select(PolicyDimensione).where(
+        PolicyDimensione.tipo_documento_id == tipo_documento_id,
+        PolicyDimensione.nome_dimensione == nome_dimensione,
+    ).with_for_update())
+    if esistente is not None:
+        esistente.consente_valore_generico = consente_valore_generico
+        esistente.updated_at = datetime.now(timezone.utc)
+        esistente.updated_by = soggetto
+        db.flush()
+        return esistente, False
+    creata = PolicyDimensione(
+        tipo_documento_id=tipo_documento_id, nome_dimensione=nome_dimensione,
+        consente_valore_generico=consente_valore_generico, updated_by=soggetto,
+    )
+    db.add(creata)
+    db.flush()
+    return creata, True
 
 
 def _prossimo_public_id(db: Session, model) -> int:

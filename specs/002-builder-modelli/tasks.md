@@ -292,31 +292,48 @@ una dimensione nuova; il form di creazione modello smette di offrire "Tutti i
 valori" per quella dimensione e due valori diversi producono due modelli
 distinti, esattamente come accade oggi per la lingua.
 
-- [ ] T065 [P] Test di persistenza per `PolicyDimensione`: chiave logica
+- [x] T065 [P] Test di persistenza per `PolicyDimensione`: chiave logica
       `(tipo_documento_id, nome_dimensione)` unica, una riga sola per nome
       anche quando lo stesso nome ricompare su piu' foglie dell'albero, in
       `backend/tests/builder/test_policy_dimensione.py`
-- [ ] T066 [P] Test che l'applicazione della policy sostituisce il
+- [x] T066 [P] Test che l'applicazione della policy sostituisce il
       comportamento hardcoded: con `consente_valore_generico=false` la
       creazione senza valore esplicito e' rifiutata, con `true` e' ammessa e
       produce il modello generico; verificare che lingua e livello continuino a
       comportarsi come oggi quando le policy corrispondenti sono registrate, in
       `backend/tests/builder/test_builder_flow_api.py`
-- [ ] T067 [P] Test che una dimensione priva di policy registrata viene
+- [x] T067 [P] Test che una dimensione priva di policy registrata viene
       segnalata e non silenziosamente ignorata (`NodoDiscovery` ha gia'
       `extra="allow"`), in `backend/tests/discovery/`
-- [ ] T068 Migration e mapping ORM di `PolicyDimensione` in
+- [x] T068 Migration e mapping ORM di `PolicyDimensione` in
       `backend/alembic/versions/` e `backend/app/catalog/models.py`
-- [ ] T069 API di lettura e scrittura delle policy per tipo documento,
+- [x] T069 API di lettura e scrittura delle policy per tipo documento,
       protetta da `GEMODO_ADMIN` in scrittura e leggibile dal gestore, con
       contratto OpenAPI aggiornato in
       `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
-- [ ] T070 Sostituire i controlli hardcoded su lingua e livello con la lettura
+- [x] T070 Sostituire i controlli hardcoded su lingua e livello con la lettura
       della policy in `backend/app/builder/service.py` (oggi righe ~169 e ~176)
       e includere la dimensione nello scope di unicita' della pubblicazione
-- [ ] T071 Esporre le dimensioni prive di policy come segnalazione esplicita
+- [x] T071 (lettura `GET /builder/tipi-documento/{codice}/policy-dimensioni` con `dimensioni_non_configurate`; l'aggancio alla verifica endpoint di `010` 5b resta da fare con T093) Esporre le dimensioni prive di policy come segnalazione esplicita
       sia nella lettura della struttura live sia nella verifica dell'endpoint
       (consumata da `010` 4a e 5b)
-- [ ] T072 Migrazione dei dati esistenti: registrare `lingua=false` e
+- [x] T072 Migrazione dei dati esistenti: registrare `lingua=false` e
       `livello=true` per i tipi documento gia' presenti, cosi' che il
       comportamento non cambi al primo deploy
+
+### Note di implementazione (2026-09-22)
+
+- **`lingua` non puo' ammettere un generico**: `modello_documento.lingua` e'
+  NOT NULL con vincolo IT/EN (`DEC-001-LINGUA-IT-EN`) ed e' esposta non
+  nullabile anche nel catalogo verso GEBAN. Dichiararla generica viene rifiutato
+  con `GENERICO_NON_SUPPORTATO` invece di essere accettato e poi salvato con un
+  valore arbitrario. Renderla davvero generica richiede una modifica di schema e
+  contratto in `001`: decisione non presa, non e' un residuo di questo task.
+- **Nessun cambio di comportamento al primo deploy**: la migration `0018`
+  registra `lingua=false` e `livello=true` per i tipi esistenti, e il builder
+  registra le stesse due policy quando crea un tipo nuovo. Il ripiego in codice
+  vale solo per un tipo che non le avesse.
+- **Scope di unicita' della pubblicazione**: gia' comprendeva lingua e livello
+  (`get_versione_pubblicata_corrente`). Generalizzarlo a dimensioni che non
+  siano colonne dedicate richiede il refactor dei valori di dimensione, non
+  previsto qui.

@@ -67,11 +67,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tipi-documento/{codiceTipoDocumento}/policy-dimensioni": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codiceTipoDocumento: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Policy registrate e dimensioni ancora prive di policy
+         * @description DEC-002-POLICY. Dichiara, per nome di dimensione della categorizzazione, se ammette un valore generico (un solo modello copre tutti i valori) o se ogni valore identifica un modello distinto, come gia' accade per la lingua. Esplicitamente scollegata da DefinizioneStruttura di `010`, che e' solo l'esempio presentazionale per il team dell'integrazione. `dimensioni_non_configurate` alimenta la segnalazione della schermata 4a: NodoDiscovery ha extra="allow", quindi senza questo elenco una dimensione nuova sparirebbe in silenzio.
+         */
+        get: operations["getPolicyDimensioni"];
+        /**
+         * Registra o aggiorna la policy di una dimensione
+         * @description Una riga sola per (tipo documento, nome dimensione): la policy vale ovunque quel nome ricompaia nell'albero, mai per singola foglia. Una dimensione la cui persistenza non ammette un valore assente viene rifiutata con GENERICO_NON_SUPPORTATO invece di essere accettata e poi salvata con un valore arbitrario.
+         */
+        put: operations["setPolicyDimensione"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
             cookie?: never;
         };
         /**
@@ -221,6 +249,23 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             versioni: components["schemas"]["Versione"][];
+        };
+        PolicyDimensioneRequest: {
+            nome_dimensione: string;
+            consente_valore_generico: boolean;
+        };
+        PolicyDimensione: {
+            nome_dimensione: string;
+            consente_valore_generico: boolean;
+        };
+        DimensioneNonConfigurata: {
+            nome_dimensione: string;
+            motivo: string;
+        };
+        PolicyDimensioni: {
+            codice_tipo_documento: string;
+            policy: components["schemas"]["PolicyDimensione"][];
+            dimensioni_non_configurate: components["schemas"]["DimensioneNonConfigurata"][];
         };
         /** @description Il campo come lo legge l'anteprima del builder: metadati completi, a differenza di CampoVersione che e' la forma di richiesta alla creazione. */
         CampoContratto: {
@@ -601,11 +646,82 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    getPolicyDimensioni: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codiceTipoDocumento: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy del tipo documento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyDimensioni"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setPolicyDimensione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codiceTipoDocumento: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyDimensioneRequest"];
+            };
+        };
+        responses: {
+            /** @description Policy registrata o aggiornata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyDimensione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description La dimensione non puo' ammettere un valore generico */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "GENERICO_NON_SUPPORTATO",
+                     *       "messaggio": "La dimensione 'lingua' non puo' ammettere un valore generico"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Errore"];
+                };
+            };
+        };
+    };
     getModelloDettaglio: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
             cookie?: never;
         };
         requestBody?: never;
