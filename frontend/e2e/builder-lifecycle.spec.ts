@@ -181,14 +181,24 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   const esito = (await page.getByRole('status').textContent()) ?? '';
   const modelName = /Modello (.+) \(/.exec(esito)![1];
   await page.getByRole('link', { name: 'Torna ai modelli' }).click();
+  // Il nome del modello porta all'anteprima (2b ridotta): li' vivono i campi
+  // del contratto e la creazione dell'edizione inglese, non nella lista.
+  await page.getByRole('link', { name: modelName }).click();
+  await expect(page.getByRole('button', { name: 'Crea versione inglese' })).toBeVisible();
+  await page.getByRole('link', { name: 'Modelli' }).click();
   const row = page.getByRole('row').filter({ hasText: modelName });
   for (const action of ['Invia in revisione', 'Approva', 'Pubblica']) {
-    await row.getByRole('button', { name: action, exact: true }).click();
+    // Le azioni di ciclo di vita vivono nel kebab della riga (design 1b).
+    await row.getByRole('button', { name: /Altre azioni/ }).click();
+    await page.getByRole('menuitem', { name: action, exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.getByRole('button', { name: 'Conferma', exact: true }).click();
   }
   await expect(row).toContainText('PUBBLICATO');
-  await expect(row).toContainText('ID API:');
+  // L'identificativo pubblico per GEBAN vive nel dettaglio del modello, non
+  // nella lista: la tabella 1b ha le colonne Ver. e Stato, non le versioni.
+  await page.getByRole('link', { name: modelName }).click();
+  await expect(page.getByText(/ID API: \d+/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('contesti-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('contesti-mobile.png'), fullPage: true });

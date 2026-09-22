@@ -725,14 +725,35 @@ Playwright su stack reale.
 **Goal**: vedere i campi che l'API mette a disposizione per un modello, sulla
 stessa pagina che diventera' l'editor quando `003` sara' implementata.
 
-- [ ] T094 [P] Unit test per l'anteprima: campi del contratto resi dall'API
+- [x] T094 [P] Unit test per l'anteprima: campi del contratto resi dall'API
       con codice, etichetta, tipo, lingua e obbligatorieta'; stati di
       caricamento, errore e modello senza versioni, in
       `frontend/src/features/builder/modello-anteprima.component.spec.ts`
-- [ ] T095 Schermata 2b in versione ridotta su `/modelli/:modelId/builder`:
+- [x] T095 (2026-09-22) Schermata 2b in versione ridotta su `/modelli/:modelId/builder`:
       topbar con codice, versione e stato, pannello destro con i campi del
       contratto nello stile segnaposto del design, percorso di categorizzazione
       nel footer del pannello. Outline sezioni e foglio centrale restano vuoti
       con uno stato esplicito, non finti: i contenuti arrivano con `003`
-- [ ] T096 Collegamento dalla lista modelli (1b/1c) all'anteprima e ritorno,
+- [x] T096 Collegamento dalla lista modelli (1b/1c) all'anteprima e ritorno,
       con verifica Playwright sul flusso reale
+
+## Correzione allineamento a 1b (2026-09-22)
+
+Segnalazione dell'utente: la lista modelli non era in linea con la schermata 1b
+e la creazione dell'edizione inglese stava nel posto sbagliato.
+
+- La tabella ha ora le colonne di 1b: Modello (nome che porta a 2b + codice),
+  Tipo, Ver., Stato, Creazione, Azioni. Le azioni di riga sono "Modifica" piu'
+  il kebab, che contiene la transizione di ciclo di vita e l'eliminazione.
+- **"Crea versione inglese" e' stata spostata nell'anteprima del modello**,
+  dov'e' il suo posto: la lista non offre piu' quell'azione.
+- Due colonne del design non sono state realizzate perche' i dati non esistono:
+  "Ultima modifica" (l'API espone `created_at`, non la modifica, e nessun
+  autore) e "Utilizzi". Al posto della prima c'e' "Creazione"; la seconda e'
+  omessa. Da riprendere se il backend le esporra'.
+- Regressione trovata e corretta grazie all'e2e: la topbar dell'anteprima
+  mandava la pagina in scroll orizzontale a 390px, perche' il codice generato
+  e' lungo e aveva `nowrap`.
+
+Verifica: 72 test Vitest, lint e build passati; 3 Playwright reali verdi su
+stack dedicato.

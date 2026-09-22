@@ -64,7 +64,7 @@ export class IntegrazioniManagerComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly offset = signal(0);
   protected readonly deleting = signal<Model | null>(null);
-  protected readonly deriving = signal<Model | null>(null);
+  protected readonly menuAperto = signal<string | null>(null);
   protected readonly pending = signal<{ model: Model; version: Version; action: Action } | null>(
     null,
   );
@@ -105,6 +105,25 @@ export class IntegrazioniManagerComponent {
       { etichetta: 'Bozze', valore: conta('BOZZA') },
     ];
   });
+  protected toggleMenu(id: string): void {
+    this.menuAperto.update((aperto) => (aperto === id ? null : id));
+  }
+
+  /** La versione su cui agisce la riga: la piu' recente. */
+  protected versioneCorrente(model: Model): Version | undefined {
+    return (model.versioni ?? []).reduce<Version | undefined>(
+      (latest, v) => (!latest || v.numero_versione > latest.numero_versione ? v : latest),
+      undefined,
+    );
+  }
+
+  /** L'unica transizione proponibile dalla riga, sulla versione corrente. */
+  protected azioneCorrente(model: Model): { version: Version; action: Action } | undefined {
+    const version = this.versioneCorrente(model);
+    const action = version && this.action(version);
+    return version && action ? { version, action } : undefined;
+  }
+
   protected setView(view: 'table' | 'grid'): void {
     this.view.set(view);
     void this.router.navigate([], {
@@ -202,42 +221,6 @@ export class IntegrazioniManagerComponent {
     if (this.saving()) return;
     this.deleting.set(model);
     dialog.showModal();
-  }
-  protected canCreateEnglishEdition(model: Model): boolean {
-    return (
-      model.lingua === 'IT' &&
-      !model.derivato_da_modello_id &&
-      !this.models().some(
-        (candidate) => candidate.derivato_da_modello_id === model.id && candidate.lingua === 'EN',
-      )
-    );
-  }
-  protected requestDerived(model: Model, dialog: HTMLDialogElement): void {
-    if (this.saving() || !this.canCreateEnglishEdition(model)) return;
-    this.deriving.set(model);
-    dialog.showModal();
-  }
-  protected confirmDerived(dialog: HTMLDialogElement): void {
-    const model = this.deriving();
-    if (!model || this.saving()) return;
-    dialog.close();
-    this.deriving.set(null);
-    this.saving.set(true);
-    this.error.set(null);
-    this.api
-      .post<Model>(`/api/v1/builder/modelli/${model.id}/edizioni-derivate`, { lingua: 'EN' })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.saving.set(false);
-          this.load();
-        },
-        error: (e: ApiError) => {
-          this.saving.set(false);
-          this.error.set(e.messaggio);
-          if (e.status === 409) this.load(false);
-        },
-      });
   }
   protected confirmDelete(dialog: HTMLDialogElement): void {
     const model = this.deleting();

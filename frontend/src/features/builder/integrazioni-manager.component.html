@@ -18,24 +18,39 @@
   <p>Nessun contesto autorizzato alla gestione dei modelli.</p>
 }
 <ng-template #azioniModello let-model>
-  @if (canCreateEnglishEdition(model)) {
-    <button
-      class="btn btn-sm btn-outline-primary mt-2 me-2"
-      [disabled]="saving()"
-      (click)="requestDerived(model, derivation)"
-    >
-      <it-icon name="plus" /> Crea versione inglese
-    </button>
-  }
+  <a class="modifica" [routerLink]="['/modelli', model.id, 'builder']">Modifica</a>
   <button
-    class="btn btn-sm btn-outline-danger mt-2"
-    title="Elimina modello"
-    aria-label="Elimina modello"
-    [disabled]="saving()"
-    (click)="requestDelete(model, deletion)"
+    type="button"
+    class="kebab"
+    [attr.aria-expanded]="menuAperto() === model.id"
+    [attr.aria-label]="'Altre azioni per ' + model.nome"
+    (click)="toggleMenu(model.id)"
   >
-    <it-icon name="delete" />
+    &#8942;
   </button>
+  @if (menuAperto() === model.id) {
+    <div class="menu-azioni" role="menu">
+      @if (azioneCorrente(model); as next) {
+        <button
+          type="button"
+          role="menuitem"
+          [disabled]="saving()"
+          (click)="request(model, next.version, confirmation); menuAperto.set(null)"
+        >
+          {{ next.action.label }}
+        </button>
+      }
+      <button
+        type="button"
+        role="menuitem"
+        class="pericolo"
+        [disabled]="saving()"
+        (click)="requestDelete(model, deletion); menuAperto.set(null)"
+      >
+        Elimina
+      </button>
+    </div>
+  }
 </ng-template>
 <ng-template #versioniModello let-model>
   @for (version of model.versioni; track version.id) {
@@ -152,7 +167,9 @@
             <div class="anteprima" aria-hidden="true">
               <span class="badge-stato" [attr.data-stato]="stato(model)">{{ stato(model) }}</span>
             </div>
-            <h2>{{ model.nome }}</h2>
+            <h2>
+              <a [routerLink]="['/modelli', model.id, 'builder']">{{ model.nome }}</a>
+            </h2>
             <span class="codice">{{ model.codice }}</span>
             <div class="tags">
               <span>{{ model.codice_tipo_documento }}</span>
@@ -175,33 +192,40 @@
           <thead>
             <tr>
               <th scope="col">Modello</th>
-              <th scope="col">Categorizzazione</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Ver.</th>
+              <th scope="col">Stato</th>
               <th scope="col">Creazione</th>
-              <th scope="col">Versioni</th>
+              <th scope="col" class="text-end">Azioni</th>
             </tr>
           </thead>
           <tbody>
             @for (model of visibili(); track model.id) {
               <tr>
                 <td>
-                  <strong>{{ model.nome }}</strong>
+                  <a class="nome" [routerLink]="['/modelli', model.id, 'builder']">{{
+                    model.nome
+                  }}</a>
                   <div class="small codice">{{ model.codice }}</div>
-                  <ng-container
-                    *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
-                  ></ng-container>
-                </td>
-                <td>
-                  {{ model.codice_tipo_documento }}
-                  <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
                   <div class="small">
                     {{ model.lingua === 'IT' ? 'Italiano' : 'Inglese' }} ·
                     {{ model.livello_professionale ?? 'Tutti i livelli' }}
                   </div>
                 </td>
-                <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>
+                  {{ model.codice_tipo_documento }}
+                  <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
+                </td>
+                <td>v{{ versioneCorrente(model)?.numero_versione ?? '-' }}</td>
+                <td>
+                  <span class="badge-stato" [attr.data-stato]="stato(model)">{{
+                    stato(model)
+                  }}</span>
+                </td>
+                <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="text-end azioni-cella">
                   <ng-container
-                    *ngTemplateOutlet="versioniModello; context: { $implicit: model }"
+                    *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
                   ></ng-container>
                 </td>
               </tr>
@@ -248,22 +272,6 @@
         Annulla
       </button>
       <button class="btn btn-primary" (click)="confirm(confirmation)">Conferma</button>
-    </div>
-  }
-</dialog>
-<dialog #derivation aria-labelledby="derivation-title" (cancel)="deriving.set(null)">
-  @if (deriving(); as model) {
-    <h2 id="derivation-title" class="h4">Creare la versione inglese?</h2>
-    <p>{{ model.nome }}</p>
-    <p>
-      Viene creato un modello collegato con una nuova versione in bozza. Struttura e campi sono
-      copiati dalla versione piu recente; il modello italiano non viene modificato.
-    </p>
-    <div class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" (click)="deriving.set(null); derivation.close()">
-        Annulla
-      </button>
-      <button class="btn btn-primary" (click)="confirmDerived(derivation)">Crea</button>
     </div>
   }
 </dialog>

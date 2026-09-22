@@ -32,6 +32,13 @@ export const routes: Routes = [
   },
   { path: 'builder', pathMatch: 'full', redirectTo: 'contesti' },
   {
+    path: 'modelli/:modelId/builder',
+    loadComponent: () =>
+      import('../features/builder/modello-anteprima.component').then(
+        (m) => m.ModelloAnteprimaComponent,
+      ),
+  },
+  {
     path: 'configurazione',
     canActivate: [adminGuard],
     children: [

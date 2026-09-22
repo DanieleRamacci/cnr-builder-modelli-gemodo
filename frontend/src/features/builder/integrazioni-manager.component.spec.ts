@@ -33,14 +33,29 @@ const model = {
 };
 
 describe('context models and lifecycle', () => {
+  /** Le azioni di riga vivono nel kebab (design 1b): va aperto prima. */
+  function apriKebab(fixture: { nativeElement: HTMLElement; detectChanges: () => void }) {
+    fixture.nativeElement.querySelector<HTMLButtonElement>('button.kebab')!.click();
+    fixture.detectChanges();
+  }
+
   it('deletes only after confirmation and reloads the list', () => {
     const { fixture, http } = setup(['geban']);
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
     fixture.detectChanges();
-    const dialog = fixture.nativeElement.querySelectorAll('dialog')[2] as HTMLDialogElement;
+    const dialog = fixture.nativeElement.querySelector(
+      'dialog[aria-labelledby="deletion-title"]',
+    ) as HTMLDialogElement;
     dialog.showModal = vi.fn();
     dialog.close = vi.fn();
-    fixture.nativeElement.querySelector('button[aria-label="Elimina modello"]').click();
+    apriKebab(fixture);
+    Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.menu-azioni button',
+      ) as NodeListOf<HTMLButtonElement>,
+    )
+      .find((b) => b.textContent?.trim() === 'Elimina')!
+      .click();
     fixture.detectChanges();
     expect(dialog.showModal).toHaveBeenCalled();
     http.expectNone((r) => r.method === 'DELETE');
@@ -110,7 +125,6 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('Modello CTER');
     expect(fixture.nativeElement.textContent).toContain('Italiano');
     expect(fixture.nativeElement.textContent).toContain('VI');
-    expect(fixture.nativeElement.textContent).toContain('Crea versione inglese');
     http.verify();
   });
   it('refuses a context in the URL that the backend did not authorize, without querying models', () => {
@@ -179,33 +193,32 @@ describe('context models and lifecycle', () => {
     expect(root.textContent).toContain('Invia in revisione');
     http.verify();
   });
-  it('creates the English derived model only after confirmation', () => {
-    const { fixture, http } = setup(['geban']);
+  it('does not offer the English edition here: it belongs to the model screen (1b)', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
     fixture.detectChanges();
-    const dialog = fixture.nativeElement.querySelectorAll('dialog')[1] as HTMLDialogElement;
-    dialog.showModal = vi.fn();
-    dialog.close = vi.fn();
-    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
-      .find((button) => button.textContent?.includes('Crea versione inglese'))!
-      .click();
-    fixture.detectChanges();
-    expect(dialog.showModal).toHaveBeenCalled();
-    http.expectNone((request) => request.method === 'POST');
-    Array.from(dialog.querySelectorAll('button'))
-      .find((button) => button.textContent?.trim() === 'Crea')!
-      .click();
-    const request = http.expectOne('/api/v1/builder/modelli/model/edizioni-derivate');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ lingua: 'EN' });
-    request.flush({ ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' });
-    http
-      .expectOne((candidate) => candidate.url === '/api/v1/builder/modelli')
-      .flush([model, { ...model, id: 'english', lingua: 'EN', derivato_da_modello_id: 'model' }]);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent.match(/Crea versione inglese/g)?.length ?? 0).toBe(0);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).not.toContain('Crea versione inglese');
+    expect(root.querySelector(`a[href="/modelli/${model.id}/builder"]`)).not.toBeNull();
     http.verify();
   });
+
+  it('keeps lifecycle and delete in the row kebab, as the 1b design prescribes', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const kebab = root.querySelector<HTMLButtonElement>('button.kebab')!;
+    expect(kebab).toBeTruthy();
+    expect(root.querySelector('.menu-azioni')).toBeNull();
+    kebab.click();
+    fixture.detectChanges();
+    const menu = root.querySelector('.menu-azioni')!;
+    expect(menu.textContent).toContain('Invia in revisione');
+    expect(menu.textContent).toContain('Elimina');
+    http.verify();
+  });
+
   it('confirms each transition and displays state only after the backend reload', () => {
     const { fixture, http } = setup(['geban']);
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
@@ -213,8 +226,11 @@ describe('context models and lifecycle', () => {
     const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
     dialog.showModal = vi.fn();
     dialog.close = vi.fn();
+    apriKebab(fixture);
     const button = Array.from(
-      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+      fixture.nativeElement.querySelectorAll(
+        '.menu-azioni button',
+      ) as NodeListOf<HTMLButtonElement>,
     ).find((b) => b.textContent?.includes('Invia in revisione'))!;
     button.click();
     fixture.detectChanges();
@@ -227,13 +243,16 @@ describe('context models and lifecycle', () => {
       '/api/v1/builder/modelli/model/versioni/version/invia-revisione',
     );
     fixture.detectChanges();
-    expect(button.disabled).toBe(true);
+    // La colonna Stato mostra ancora BOZZA: la scrittura non e' confermata dal backend.
+    const stato = () =>
+      (fixture.nativeElement as HTMLElement).querySelector('.badge-stato')!.textContent!.trim();
+    expect(stato()).toBe('BOZZA');
     request.flush({ ...version, stato: 'IN_REVISIONE' });
     http
       .expectOne((r) => r.url === '/api/v1/builder/modelli')
       .flush([{ ...model, versioni: [{ ...version, stato: 'IN_REVISIONE' }] }]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Approva');
+    expect(stato()).toBe('IN_REVISIONE');
     http.verify();
   });
   it('distinguishes read failures from an empty registry and permits retry', () => {
@@ -263,7 +282,12 @@ describe('context models and lifecycle', () => {
     const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
     dialog.showModal = vi.fn();
     dialog.close = vi.fn();
-    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+    apriKebab(fixture);
+    Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.menu-azioni button',
+      ) as NodeListOf<HTMLButtonElement>,
+    )
       .find((b) => b.textContent?.includes('Invia in revisione'))!
       .click();
     fixture.detectChanges();
