@@ -16,6 +16,7 @@ import unicodedata
 from datetime import datetime, timezone
 
 from fastapi import Depends
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -381,7 +382,20 @@ class BuilderService:
             modello_versione_id=versione.id,
             payload_minimo={"modello_origine_id": str(origine.id), "lingua": request.lingua},
         )
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError as exc:
+            # Due richieste simultanee per la stessa coppia (origine, lingua):
+            # l'indice parziale di 0019 le separa, il controllo applicativo sopra
+            # non basta. Conflitto funzionale, mai un 500 (002 FR-018).
+            self.db.rollback()
+            if getattr(exc.orig, "sqlstate", None) == "23505":
+                raise BuilderDomainError(
+                    "EDIZIONE_DERIVATA_DUPLICATA",
+                    "Esiste gia' un'edizione derivata nella lingua richiesta",
+                    status_code=409,
+                ) from exc
+            raise
         self.db.refresh(derivato)
         return derivato
 

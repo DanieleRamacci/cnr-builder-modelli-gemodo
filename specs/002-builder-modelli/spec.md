@@ -291,6 +291,22 @@ versione pubblicata valida appare nel catalogo.
   distinguere obbligatorieta' sorgente dalla presenza richiesta degli opzionali
   selezionati secondo il contratto della 001.
 
+- **FR-018** (2026-09-22, difetto trovato verificando la pulizia dell'ambiente):
+  l'eliminazione di un'edizione derivata MUST liberare davvero la coppia
+  (modello origine, lingua), cosi' che la stessa edizione possa essere
+  ricreata. Oggi il codice applicativo gia' si comporta cosi'
+  (`builder/repository.py:get_edizione_derivata` esclude `ELIMINATO`), ma il
+  vincolo di database `uq_modello_derivato_padre_lingua`, creato dalla
+  migration `0017`, **non** esclude le righe eliminate: il controllo
+  applicativo passa, l'INSERT viola il vincolo e l'`IntegrityError` non
+  gestito raggiunge il chiamante come **HTTP 500**. Verificato end-to-end il
+  2026-09-22 (`psycopg.errors.UniqueViolation: duplicate key value violates
+  unique constraint "uq_modello_derivato_padre_lingua"`). Il vincolo di
+  database MUST esprimere la stessa intenzione del codice, e ogni residua
+  violazione concorrente MUST essere tradotta in un conflitto funzionale
+  (`EDIZIONE_DERIVATA_DUPLICATA`, 409), mai in un errore 500 - come gia'
+  avviene per i duplicati di tipo documento.
+
 ### Key Entities
 
 - **Tipo Documento**: famiglia generale del documento; consultabile ma non creabile

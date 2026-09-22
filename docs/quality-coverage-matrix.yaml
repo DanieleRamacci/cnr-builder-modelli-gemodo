@@ -585,3 +585,20 @@ coverage:
     contract_ref: specs/010-configurazione-cataloghi-integrazioni/tasks.md
     stato: DA_COPRIRE
     note: confronto continuo della versione di contratto discovery; T099 aperta
+
+  # --- Correzioni difetti di eliminazione (2026-09-22) ---
+  - id: COV-069
+    spec_owner: specs/010-configurazione-cataloghi-integrazioni
+    requirement_id: FR-029
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/builder/test_eliminazione_e_pulizia.py
+    stato: COPERTO
+    note: test_un_modello_eliminato_non_blocca_la_disattivazione, test_un_modello_vivo_blocca_ancora_la_disattivazione e test_conta_modelli_ignora_gli_eliminati
+
+  - id: COV-070
+    spec_owner: specs/002-builder-modelli
+    requirement_id: FR-018
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/builder/test_eliminazione_e_pulizia.py
+    stato: COPERTO
+    note: test_edizione_derivata_ricreabile_dopo_eliminazione copre crea/duplica-409/elimina/ricrea; migration 0019 rende parziale l'indice

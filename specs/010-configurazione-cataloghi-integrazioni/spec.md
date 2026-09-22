@@ -672,6 +672,20 @@ documento, non solo per quella foglia.
   aggiornato automaticamente, perche' la presa d'atto di un cambio di
   contratto e' una decisione dell'admin.
 
+- **FR-029** (2026-09-22, difetto trovato verificando la pulizia dell'ambiente
+  prima di una campagna di test): la disattivazione di un tipo documento MUST
+  considerare soltanto i modelli **non eliminati**. Oggi il conteggio che
+  protegge la disattivazione (`configurazione/repository.py:conta_modelli`)
+  include anche le righe in stato `ELIMINATO`, mentre l'eliminazione di un
+  modello e' solo logica: ne risulta che un tipo documento su cui sia mai stato
+  creato un modello **non e' piu' disattivabile in alcun modo**, nemmeno dopo
+  aver eliminato ogni modello. Verificato end-to-end il 2026-09-22: crea
+  modello, elimina modello (204, stato `ELIMINATO` in DB), ritenta la
+  disattivazione, ancora `409 TIPO_DOCUMENTO_HA_MODELLI`. Il blocco MUST
+  scattare solo quando esistono modelli che l'operatore puo' ancora vedere e
+  usare, coerentemente con `builder/repository.py`, che gia' esclude
+  `ELIMINATO` da ogni sua lettura.
+
 Nota di attuazione comune a FR-026..FR-028: i tre controlli MUST condividere
 il runner periodico previsto da FR-015, una sola risposta discovery per
 integrazione e per ciclo. Frequenza, timeout e politica di ritentativo sono

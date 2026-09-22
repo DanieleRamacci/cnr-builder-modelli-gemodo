@@ -8,9 +8,22 @@ from app.configurazione.models import DefinizioneStruttura, EndpointIntegrazione
 STATO_INATTIVA = "INATTIVA"
 
 
+STATO_MODELLO_ELIMINATO = "ELIMINATO"
+
+
 def conta_modelli(db: Session, tipo_documento_id) -> int:
+    """Modelli che bloccano la disattivazione: solo quelli ancora utilizzabili.
+
+    Un modello eliminato non conta (010 FR-029). L'eliminazione e' logica, quindi
+    conteggiare anche `ELIMINATO` rendeva un tipo documento non piu' disattivabile
+    per sempre dopo il primo modello, anche dopo averli eliminati tutti. Il resto
+    del builder gia' esclude `ELIMINATO` da ogni lettura.
+    """
     return db.scalar(
-        select(func.count()).select_from(ModelloDocumento).where(ModelloDocumento.tipo_documento_id == tipo_documento_id)
+        select(func.count()).select_from(ModelloDocumento).where(
+            ModelloDocumento.tipo_documento_id == tipo_documento_id,
+            ModelloDocumento.stato != STATO_MODELLO_ELIMINATO,
+        )
     )
 
 

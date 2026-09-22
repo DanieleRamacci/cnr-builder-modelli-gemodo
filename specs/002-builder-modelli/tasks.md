@@ -393,3 +393,16 @@ distinti, esattamente come accade oggi per la lingua.
   (`get_versione_pubblicata_corrente`). Generalizzarlo a dimensioni che non
   siano colonne dedicate richiede il refactor dei valori di dimensione, non
   previsto qui.
+
+## Phase: Correzione difetti di eliminazione (2026-09-22)
+
+- [x] T039 [FR-018] (migration `0019_edizione_derivata_esclude_eliminati.py`) Rendere parziale il vincolo `uq_modello_derivato_padre_lingua`
+      (`WHERE stato <> 'ELIMINATO'`) con una migration, allineandolo a
+      `get_edizione_derivata` che gia' esclude gli eliminati
+- [x] T040 [FR-018] (`builder/service.py`, `IntegrityError` -> 409) Tradurre l'`IntegrityError` residuo su quel vincolo in
+      `EDIZIONE_DERIVATA_DUPLICATA` (409), come gia' fa `configurazione/service.py`
+      per i duplicati di tipo documento. Copre la corsa fra due richieste
+      simultanee, che il solo indice parziale non elimina
+- [x] T041 [FR-018] (`backend/tests/builder/test_eliminazione_e_pulizia.py`) Test del ciclo: crea derivata -> elimina -> ricrea la stessa
+      lingua -> deve riuscire; e test che due creazioni concorrenti diano 409,
+      mai 500
