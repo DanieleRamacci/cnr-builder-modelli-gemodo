@@ -510,6 +510,15 @@ al product owner. Nessuna migrazione viene eseguita sul DB operativo.
       Review indipendente bloccata dalla policy di esecuzione:
       invio del repository/diff a Claude richiede autorizzazione esplicita
       dell'utente. Il PASS precedente copre solo FR-016, non questo incremento.
+      AGGIORNAMENTO 2026-09-22: la parte tecnica e' verificata. Suite completa
+      319 passati, 12 e2e esclusi, su PostgreSQL reale. Giro migrazioni provato
+      davvero su un database dedicato: `upgrade head` -> `downgrade 0009` ->
+      `upgrade head` pulito. `downgrade base` si ferma a 0009 con un errore
+      esplicito e voluto ("rollback richiede ripristino del backup pre-0009",
+      FR-016): il rifiuto e' atomico, il database resta a head. Sicurezza
+      coperta da `test_admin_routes_reject_non_admin_principals`. Resta aperto
+      solo per la review indipendente, che l'utente ha rinviato a software
+      completato.
       Aggiornamento successivo: utente ha rinviato esplicitamente review e
       soglie hash/runner. Suite finale US1/US2: 221 passati, 12 e2e esclusi,
       nessuno saltato; 15 mirati. Non reiterare richiesta di review esterna.
@@ -532,6 +541,10 @@ al product owner. Nessuna migrazione viene eseguita sul DB operativo.
       (coprono anche T015/T016/T018/T024-T026/T043-T044). Review rinviata.
       Verifica locale finale: 221 passati, 12 e2e esclusi, nessuno saltato
       (26.35s); 15 test mirati amministrativi. `git diff --check` pulito.
+      AGGIORNAMENTO 2026-09-22: contratto e runtime riverificati (319 passati),
+      con una difformita' reale trovata e corretta nel manifest di qualita'
+      (T047) ed esempi operativi ora in `quickstart.md` su un tipo estraneo al
+      dominio dei bandi. Resta aperto solo per la review indipendente rinviata.
 
 ### Stato Corrente Prevalente Sulle Note Storiche
 
