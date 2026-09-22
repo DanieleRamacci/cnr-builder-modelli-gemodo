@@ -140,3 +140,37 @@ def test_load_manifest_rejects_a_non_mapping_yaml_document(tmp_path):
 
     with pytest.raises(ContrattoNonValidoError):
         load_manifest(bad_manifest)
+
+
+def test_documented_endpoints_exist_in_the_referenced_openapi_contract(
+    local_quality_readiness_manifest, repo_root
+):
+    """Il manifest non deve promettere endpoint che il contratto non espone.
+
+    La validazione contro il contratto di qualita' controlla la forma delle
+    sezioni, non che ``api_documentation[].endpoints`` corrisponda davvero alle
+    ``paths`` dell'OpenAPI referenziato: senza questo test il ritiro di una rotta
+    (es. `DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`) lascia il manifest a
+    dichiarare un'API che non esiste piu', in silenzio.
+    """
+    import yaml
+
+    for entry in local_quality_readiness_manifest["api_documentation"]:
+        contract_path = repo_root / entry["openapi_ref"]
+        assert contract_path.exists(), f"contratto mancante: {entry['openapi_ref']}"
+        paths = yaml.safe_load(contract_path.read_text(encoding="utf-8"))["paths"]
+        esposti = {
+            f"{method.upper()} {path}"
+            for path, operations in paths.items()
+            for method in operations
+            if method.lower() in {"get", "post", "put", "patch", "delete"}
+        }
+        dichiarati = set(entry["endpoints"])
+        assert dichiarati - esposti == set(), (
+            f"{entry['openapi_ref']}: endpoint dichiarati ma non esposti: "
+            f"{sorted(dichiarati - esposti)}"
+        )
+        assert esposti - dichiarati == set(), (
+            f"{entry['openapi_ref']}: endpoint esposti ma non documentati nel manifest: "
+            f"{sorted(esposti - dichiarati)}"
+        )

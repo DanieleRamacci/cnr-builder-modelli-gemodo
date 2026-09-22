@@ -85,11 +85,13 @@ api_documentation:
     api_scope: GEBAN
     spec_owner: specs/001-catalogo-contratto-geban
     endpoints:
-      - GET /catalogo/tipi-documento
-      - GET /catalogo/tipi-documento/{codiceTipoDocumento}/categorie
+      # Le tre API di classificazione sono state ritirate
+      # (DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE, 001/T108): la forma attesa
+      # dell'endpoint la scopre ora il contratto di discovery generato da 010.
       - GET /catalogo/modelli
       - GET /catalogo/modelli/{modelloVersioneId}/campi-richiesti
       - POST /documenti/valida
+      - POST /documenti/genera
     auth_scheme: bearer-jwt
     authorization_notes: >
       Keycloak valida identita', firma, issuer, audience e ruoli/claim generali del

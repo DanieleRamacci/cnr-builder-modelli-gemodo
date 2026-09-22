@@ -587,7 +587,7 @@ trovato il 2026-09-14 (allow-list mai collegata alle route reali) e' chiuso.
 - [ ] T107 Aggiornare `docs/project-map.md` e l'`impatto` delle decisioni in
       `docs/decision-register.yaml` per riflettere lo stato effettivamente
       implementato (oggi descrivono solo la direzione confermata)
-- [ ] T108 *(2026-09-15, `DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`)* Ritirare da
+- [x] T108 *(2026-09-15, `DEC-001-RITIRO-ENDPOINT-CLASSIFICAZIONE`; verificato il 2026-09-22: le tre operazioni non sono nel contratto, le route non sono in `backend/app/catalog/api.py`, i due file di test non esistono e nessun consumatore le referenzia. Il manifest `infra/local/quality-readiness.local.yaml` le dichiarava ancora: corretto, con un contract test che ora confronta gli endpoint dichiarati con le `paths` dell'OpenAPI)* Ritirare da
       `contracts/geban-catalog-api.openapi.yaml` le tre operazioni
       `listTipiDocumento`, `listProfiliDocumento`, `getClassificazioneDocumento`
       (`/catalogo/tipi-documento`, `/catalogo/tipi-documento/{codice}/profili`,

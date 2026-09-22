@@ -271,7 +271,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T047 [P] Verificare che
+- [x] T047 (2026-09-22: contratto allineato all'implementazione; trovata e corretta una difformita' reale nel manifest di qualita', che dichiarava due API ritirate e ometteva `POST /documenti/genera`, piu' un nuovo contract test che impedisce il ripetersi silenzioso) [P] Verificare che
       `contracts/configurazione-cataloghi-api.openapi.yaml` resti allineato
       all'implementazione effettiva e agli esempi success/error gia' definiti
       in T002 per FR-001..FR-009
@@ -281,7 +281,7 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       tipo-Contratti (diversa da `BANDO_CONCORSO`, per dimostrare che il motore
       e' generico — vedi conversazione 2026-09-15), definizione -> generazione
       schema -> registrazione endpoint mock (T013) -> stato `CONNESSO`
-- [ ] T050 Eseguire `specs/001-catalogo-contratto-geban/tasks.md` T108 (ritiro
+- [x] T050 (2026-09-22: T108 risultava gia' eseguito nel codice e nel contratto; verificata l'assenza di consumatori residui e chiuso in `001/tasks.md`) Eseguire `specs/001-catalogo-contratto-geban/tasks.md` T108 (ritiro
       delle tre API di classificazione legacy) — solo ora sbloccato, come da
       `plan.md` Dependencies; non eseguire T108 prima che T029 (esportazione
       schema) sia funzionante
