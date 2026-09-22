@@ -1,5 +1,6 @@
 import copy
 import uuid
+from datetime import datetime, timezone
 
 import pytest
 import sqlalchemy as sa
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.common.security import PrincipalGEMODO, require_principal
 from app.db.session import get_db
 from app.main import app
+from tests.discovery.conftest import discovery_server  # noqa: F401
 from tests.support.postgres import postgres_database_url
 
 
@@ -58,6 +60,86 @@ def crea(client, struttura=None):
     response = client.post("/api/v1/configurazione/tipi-documento", json=payload)
     assert response.status_code == 201, response.text
     return code, response.json()
+
+
+@pytest.mark.integration
+def test_admin_configures_policy_for_a_type_discovered_live(admin_client, discovery_server):
+    client, engine = admin_client
+    url, responses, _ = discovery_server
+    responses["/discovery"] = (200, {
+        "BANDO_CONCORSO": {
+            "validita": "2026-09-22T10:00:00Z",
+            "nodi": [{
+                "codice": "TD", "descrizione": "Tempo determinato", "tipo_livello": "tipologia",
+                "figli": [{
+                    "codice": "RIC", "descrizione": "Ricercatore", "tipo_livello": "profilo",
+                    "lingue_possibili": ["IT", "EN"], "livelli_possibili": ["I", "II"],
+                    "canale": ["PEC", "Portale"],
+                    "campi": [{
+                        "codice": "titolo", "etichetta": "Titolo", "tipo": "string",
+                        "lingua": "IT", "obbligatorio": True, "ordine": 1,
+                    }],
+                }],
+            }],
+        },
+        "VERBALE": {
+            "validita": "2026-09-22T10:00:00Z",
+            "nodi": [{
+                "codice": "SEDUTA", "descrizione": "Seduta", "lingue_possibili": ["IT"],
+                "campi": [{
+                    "codice": "data", "etichetta": "Data", "tipo": "date",
+                    "lingua": "IT", "obbligatorio": True, "ordine": 1,
+                }],
+            }],
+        },
+    })
+    with engine.begin() as db:
+        integration_id = db.execute(sa.text("""
+            INSERT INTO integrazione (id, codice, nome, codice_contesto)
+            VALUES (gen_random_uuid(), :codice, 'GEBAN live', 'geban') RETURNING id
+        """), {"codice": "LIVE_" + uuid.uuid4().hex[:12]}).scalar_one()
+        db.execute(sa.text("""
+            INSERT INTO endpoint_integrazione (
+                id, integrazione_id, url, timeout_ms, stato, revisione_verificata,
+                versione_contratto_verificata, data_ultimo_test, esito_ultimo_test
+            ) VALUES (
+                gen_random_uuid(), :integration_id, :url, 5000, 'CONNESSO', 1,
+                '0.5.0', :now, CAST(:outcome AS jsonb)
+            )
+        """), {
+            "integration_id": integration_id,
+            "url": url + "/discovery",
+            "now": datetime.now(timezone.utc),
+            "outcome": '{"esito":"CONFORME","errori":[]}',
+        })
+
+    base = f"/api/v1/configurazione/integrazioni/{integration_id}/tipi-documento"
+    listed = client.get(base)
+    assert listed.status_code == 200, listed.text
+    assert listed.json() == ["BANDO_CONCORSO", "VERBALE"]
+
+    policies = client.get(base + "/BANDO_CONCORSO/policy-dimensioni")
+    assert policies.status_code == 200, policies.text
+    assert {item["nome_dimensione"] for item in policies.json()["policy"]} == {
+        "lingua", "livello",
+    }
+    assert {item["nome_dimensione"] for item in policies.json()["dimensioni_non_configurate"]} == {
+        "canale",
+    }
+
+    saved = client.put(base + "/BANDO_CONCORSO/policy-dimensioni", json={
+        "nome_dimensione": "lingua", "consente_valore_generico": False,
+    })
+    assert saved.status_code == 200, saved.text
+    with engine.connect() as db:
+        row = db.execute(sa.text("""
+            SELECT td.integrazione_id, pd.nome_dimensione, pd.consente_valore_generico
+                FROM tipo_documento td
+                JOIN policy_dimensione pd ON pd.tipo_documento_id = td.id
+                WHERE td.codice = 'BANDO_CONCORSO' AND td.integrazione_id = :integration_id
+                  AND pd.nome_dimensione = 'lingua'
+            """), {"integration_id": integration_id}).one()
+        assert row == (integration_id, "lingua", False)
 
 
 @pytest.mark.integration

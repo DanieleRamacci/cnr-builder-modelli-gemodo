@@ -16,6 +16,24 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-09-22: elenco live dei tipi e prima configurazione
+
+- `/configurazione/tipi-documento` mostra i tipi documento restituiti in quel
+  momento dalle integrazioni connesse. Non e' un elenco delle definizioni di
+  esempio salvate localmente: un nuovo tipo aggiunto da GEBAN deve quindi
+  comparire automaticamente dopo la lettura del discovery.
+- La lettura dell'albero live non copia la categorizzazione nel database. Al
+  primo salvataggio di una policy GEMODO associa, oppure crea, soltanto
+  l'identita' locale minima del tipo documento necessaria a persistere la
+  policy; le letture GET non modificano lo stato.
+- Un'identita' locale non ancora associata ma con lo stesso codice e contesto
+  resta visibile alla lettura delle policy. L'associazione all'integrazione
+  avviene al primo salvataggio, preservando le policy gia' configurate.
+- `obbligatorio` nei campi del contratto descrive il payload prodotto da GEBAN
+  ed e' mostrato in sola lettura. E' distinto dalla policy per dimensione
+  (`lingua`, `livello` o attributi futuri), che stabilisce se il builder deve
+  richiedere una scelta distinta o ammettere un valore generico.
+
 ### Session 2026-09-22: proprieta' della policy per dimensione e uso di 4a
 
 Decisione presa con l'utente, chiude il posizionamento lasciato aperto dalla

@@ -8,6 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.builder import repository as builder_repository
 from app.catalog.models import TipoDocumento
 from app.common.errors import DomainError
 from app.common.security import PrincipalGEMODO, ensure_roles
@@ -30,7 +31,7 @@ from app.db.session import get_db
 from app.discovery.adapter_http import AdapterHTTP
 from app.discovery.egress import valida_destinazione_approvata
 from app.discovery.errors import DiscoveryError
-from app.discovery.schemas import VERSIONE_CONTRATTO_DISCOVERY, CatalogoDiscovery
+from app.discovery.schemas import VERSIONE_CONTRATTO_DISCOVERY, CatalogoDiscovery, MappaDiscovery
 
 # Verification runs synchronously inside one request; this margin above the endpoint's
 # own HTTP timeout is how long a reserved tentativo blocks a concurrent verify before
@@ -292,6 +293,165 @@ class IntegrazioniService:
             integrazione_id=integrazione_id, tipo_evento=evento,
             soggetto_id=principal.subject, client_id=principal.client_id, payload_minimo=payload,
         ))
+
+    def _mappa_live(
+        self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO
+    ) -> tuple[Integrazione, MappaDiscovery]:
+        ensure_roles(principal, (ROLE_GEMODO_ADMIN,))
+        source = self._integrazione(integrazione_id)
+        endpoint = repository.endpoint(self.db, source.id)
+        if endpoint is None or endpoint.stato != "CONNESSO":
+            raise DomainError(
+                "INTEGRAZIONE_NON_CONNESSA", "Integrazione non connessa", status_code=409
+            )
+        try:
+            mappa = AdapterHTTP(
+                endpoint.url,
+                timeout_seconds=endpoint.timeout_ms / 1000,
+                cache_scope=f"integrazione:{source.id}:revisione:{endpoint.revisione_verificata}",
+            ).mappa_discovery()
+        except DiscoveryError as exc:
+            if exc.status_code == 503:
+                raise DiscoveryError(exc.codice, exc.messaggio, status_code=502) from exc
+            raise
+        return source, mappa
+
+    def tipi_documento_live(
+        self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO
+    ) -> list[str]:
+        _, mappa = self._mappa_live(integrazione_id, principal)
+        return sorted(mappa.cataloghi)
+
+    def struttura_live(
+        self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO
+    ) -> CatalogoDiscovery:
+        _, mappa = self._mappa_live(integrazione_id, principal)
+        catalogo = mappa.cataloghi.get(codice)
+        if catalogo is None:
+            raise DomainError(
+                "RISORSA_NON_TROVATA",
+                "Tipo documento non disponibile per questa integrazione",
+                status_code=404,
+            )
+        return catalogo
+
+    @staticmethod
+    def _dimensioni_catalogo(catalogo: CatalogoDiscovery) -> set[str]:
+        """Collect controlled dimensions from every live leaf, including future extras."""
+        dimensioni: set[str] = set()
+        stack = list(catalogo.nodi)
+        while stack:
+            nodo = stack.pop()
+            stack.extend(nodo.figli or ())
+            if nodo.campi is None:
+                continue
+            if nodo.lingue_possibili:
+                dimensioni.add("lingua")
+            if nodo.livelli_possibili:
+                dimensioni.add("livello")
+            for nome, valori in (nodo.model_extra or {}).items():
+                if isinstance(valori, (list, tuple)) and valori:
+                    dimensioni.add(nome)
+        return dimensioni
+
+    def _tipo_live_locale(self, source: Integrazione, codice: str, *, associa: bool):
+        tipo = self.db.scalar(
+            select(TipoDocumento).where(
+                TipoDocumento.integrazione_id == source.id,
+                TipoDocumento.codice == codice,
+                TipoDocumento.stato != repository.STATO_INATTIVA,
+            )
+        )
+        if tipo is not None:
+            return tipo
+        query_libero = select(TipoDocumento).where(
+                TipoDocumento.integrazione_id.is_(None),
+                TipoDocumento.codice_contesto == source.codice_contesto,
+                TipoDocumento.codice == codice,
+                TipoDocumento.stato != repository.STATO_INATTIVA,
+            )
+        if associa:
+            query_libero = query_libero.with_for_update()
+        libero = self.db.scalar(query_libero)
+        if libero is not None:
+            if associa:
+                libero.integrazione_id = source.id
+                self.db.flush()
+            return libero
+        if not associa:
+            return None
+        tipo = TipoDocumento(
+            id=uuid.uuid4(),
+            codice=codice,
+            nome=codice,
+            codice_contesto=source.codice_contesto,
+            integrazione_id=source.id,
+            stato="ATTIVA",
+            spec_owner="specs/002-builder-modelli",
+        )
+        self.db.add(tipo)
+        self.db.flush()
+        return tipo
+
+    def policy_dimensioni_live(
+        self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO
+    ):
+        source, mappa = self._mappa_live(integrazione_id, principal)
+        catalogo = mappa.cataloghi.get(codice)
+        if catalogo is None:
+            raise DomainError(
+                "RISORSA_NON_TROVATA",
+                "Tipo documento non disponibile per questa integrazione",
+                status_code=404,
+            )
+        tipo = self._tipo_live_locale(source, codice, associa=False)
+        policy = builder_repository.policy_dimensioni(self.db, tipo.id) if tipo else []
+        configurate = {item.nome_dimensione for item in policy}
+        return policy, sorted(self._dimensioni_catalogo(catalogo) - configurate)
+
+    def imposta_policy_dimensione_live(
+        self, integrazione_id: uuid.UUID, codice: str, request, principal: PrincipalGEMODO
+    ):
+        source, mappa = self._mappa_live(integrazione_id, principal)
+        catalogo = mappa.cataloghi.get(codice)
+        if catalogo is None:
+            raise DomainError(
+                "RISORSA_NON_TROVATA",
+                "Tipo documento non disponibile per questa integrazione",
+                status_code=404,
+            )
+        if request.nome_dimensione not in self._dimensioni_catalogo(catalogo):
+            raise DomainError(
+                "DIMENSIONE_NON_DISPONIBILE",
+                "La dimensione non e' dichiarata nell'albero live",
+                status_code=409,
+            )
+        if request.nome_dimensione == "lingua" and request.consente_valore_generico:
+            raise DomainError(
+                "GENERICO_NON_SUPPORTATO",
+                "La dimensione 'lingua' richiede sempre una scelta esplicita",
+                status_code=409,
+            )
+        tipo = self._tipo_live_locale(source, codice, associa=True)
+        policy, _ = builder_repository.salva_policy_dimensione(
+            self.db,
+            tipo_documento_id=tipo.id,
+            nome_dimensione=request.nome_dimensione,
+            consente_valore_generico=request.consente_valore_generico,
+            soggetto=principal.subject,
+        )
+        self._audit(
+            source.id,
+            principal,
+            "POLICY_DIMENSIONE_CONFIGURATA",
+            {
+                "codice_tipo_documento": codice,
+                "nome_dimensione": request.nome_dimensione,
+                "consente_valore_generico": request.consente_valore_generico,
+            },
+        )
+        self.db.commit()
+        return policy
 
     def lista(self, principal: PrincipalGEMODO) -> list[IntegrazioneAdmin]:
         ensure_roles(principal, (ROLE_GEMODO_ADMIN,))

@@ -1,93 +1,95 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
+import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
+import { PolicyDimensioniService } from './policy-dimensioni.service';
 import { TipiDocumentoListaComponent } from './tipi-documento-lista.component';
-import { TipiDocumentoService, type TipoDocumentoDashboard } from './tipi-documento.service';
 
-function tipo(overrides: Partial<TipoDocumentoDashboard>): TipoDocumentoDashboard {
+function integrazione(overrides: Partial<IntegrazioneAdmin> = {}): IntegrazioneAdmin {
   return {
-    id: '00000000-0000-4000-8000-000000000001',
-    codice: 'BANDO_CONCORSO',
-    nome: 'Bando di concorso',
+    id: 'integration-1',
+    codice: 'GEBAN',
+    nome: 'GEBAN',
     codice_contesto: 'geban',
-    stato_integrazione: 'CONNESSO',
+    modalita: 'SINGOLO_ENDPOINT',
+    revisione: 1,
+    url: 'https://geban.example.test/discovery',
+    timeout_ms: 5000,
+    stato: 'CONNESSO',
+    ultima_verifica: null,
     ...overrides,
   };
 }
 
 describe('TipiDocumentoListaComponent', () => {
   let fixture: ComponentFixture<TipiDocumentoListaComponent>;
-  let service: { dashboard: ReturnType<typeof vi.fn>; disattiva: ReturnType<typeof vi.fn> };
+  let integrations: { lista: ReturnType<typeof vi.fn> };
+  let policies: { tipiDocumento: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    service = { dashboard: vi.fn(), disattiva: vi.fn() };
+    integrations = { lista: vi.fn().mockReturnValue(of([integrazione()])) };
+    policies = {
+      tipiDocumento: vi.fn().mockReturnValue(of(['BANDO_CONCORSO', 'VERBALE'])),
+    };
     TestBed.configureTestingModule({
       imports: [TipiDocumentoListaComponent],
       providers: [
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TipiDocumentoService, useValue: service },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({}) } },
+        },
+        { provide: IntegrazioniAdminService, useValue: integrations },
+        { provide: PolicyDimensioniService, useValue: policies },
       ],
     });
   });
 
-  it('lists both rows of a duplicated codice so the admin can tell them apart by id/stato', () => {
-    service.dashboard.mockReturnValue(
-      of([
-        tipo({ id: 'a', stato_integrazione: 'INCOMPLETO' }),
-        tipo({ id: 'b', stato_integrazione: 'CONNESSO' }),
-      ]),
-    );
+  it('lists every document type returned live by a connected integration', () => {
     fixture = TestBed.createComponent(TipiDocumentoListaComponent);
     fixture.detectChanges();
+
     expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('BANDO_CONCORSO');
+    expect(fixture.nativeElement.textContent).toContain('VERBALE');
+    const links = [...fixture.nativeElement.querySelectorAll('tbody a')] as HTMLAnchorElement[];
+    expect(links[0].getAttribute('href')).toContain('integrazioneId=integration-1');
   });
 
-  it('deactivates the row the admin confirms and reloads the list', () => {
-    service.dashboard.mockReturnValueOnce(of([tipo({ id: 'a', stato_integrazione: 'INCOMPLETO' })]));
-    service.disattiva.mockReturnValue(of(undefined));
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('does not show disconnected integrations as configurable sources', () => {
+    integrations.lista.mockReturnValue(of([integrazione({ stato: 'DEFINITO' })]));
     fixture = TestBed.createComponent(TipiDocumentoListaComponent);
     fixture.detectChanges();
 
-    service.dashboard.mockReturnValueOnce(of([]));
-    (fixture.nativeElement.querySelector('button.btn-outline-danger') as HTMLButtonElement).click();
-
-    expect(service.disattiva).toHaveBeenCalledWith('a');
-    expect(service.dashboard).toHaveBeenCalledTimes(2);
+    expect(policies.tipiDocumento).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Nessun tipo disponibile');
   });
 
-  it('does not call the backend when the admin cancels the confirmation', () => {
-    service.dashboard.mockReturnValue(of([tipo({ id: 'a' })]));
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    fixture = TestBed.createComponent(TipiDocumentoListaComponent);
-    fixture.detectChanges();
-
-    (fixture.nativeElement.querySelector('button.btn-outline-danger') as HTMLButtonElement).click();
-
-    expect(service.disattiva).not.toHaveBeenCalled();
-  });
-
-  it('shows TIPO_DOCUMENTO_HA_MODELLI as a form error instead of a generic one', () => {
-    service.dashboard.mockReturnValue(of([tipo({ id: 'a' })]));
-    service.disattiva.mockReturnValue(
+  it('shows a source failure instead of an empty list', () => {
+    policies.tipiDocumento.mockReturnValue(
       throwError(() => ({
-        status: 409,
-        codice: 'TIPO_DOCUMENTO_HA_MODELLI',
-        messaggio: 'Non disattivabile: esistono modelli collegati a questo tipo documento',
+        status: 502,
+        codice: 'DISCOVERY_NON_DISPONIBILE',
+        messaggio: 'Timeout GEBAN',
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     fixture = TestBed.createComponent(TipiDocumentoListaComponent);
     fixture.detectChanges();
 
-    (fixture.nativeElement.querySelector('button.btn-outline-danger') as HTMLButtonElement).click();
-    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Timeout GEBAN');
+    expect(fixture.nativeElement.textContent).toContain('Nessun elenco vuoto');
+    expect(fixture.nativeElement.textContent).not.toContain('Nessun tipo disponibile');
+  });
 
-    expect(fixture.nativeElement.textContent).toContain('Non disattivabile');
+  it('does not expose the legacy manual document type creation action', () => {
+    fixture = TestBed.createComponent(TipiDocumentoListaComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Configura struttura');
+    expect(fixture.nativeElement.querySelector('a[href*="nuovo"]')).toBeNull();
   });
 });

@@ -78,10 +78,11 @@
           Struttura JSON
         </a>
         <a
-          routerLink="/configurazione/tipi-documento/nuovo"
+          routerLink="/configurazione/tipi-documento"
+          [queryParams]="{ integrazioneId: integrazione.id }"
           class="btn btn-sm btn-outline-secondary"
         >
-          Policy dati
+          Tipi e policy
         </a>
       </article>
     }

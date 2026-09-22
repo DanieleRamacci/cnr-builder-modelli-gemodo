@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Registro Software E Discovery Autorizzato
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Contratto T078, implementato (T081 registro/configurazione/verifica admin,
     T082 resolver builder dal registro, T083 letture manager). La matrice di
@@ -9,6 +9,9 @@ info:
     Registro inizialmente vuoto, senza seed GEBAN. Un software ha un contesto
     JWT e un singolo endpoint che puo' restituire piu' tipi documento.
     La verifica usa la forma comune, non gli esempi amministrativi.
+    Le letture amministrative dei tipi documento e dell'albero restano live;
+    la prima policy salvata materializza solo l'identita' locale minima del tipo,
+    mai una copia dell'albero esterno.
     Policy operativa e scenari in integrazioni-policy.md.
 servers:
   - url: /api/v1
@@ -120,6 +123,89 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/InvalidInput'}
+  /configurazione/integrazioni/{integrazioneId}/tipi-documento:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+    get:
+      operationId: listTipiDocumentoLiveAdmin
+      summary: Elenca le radici correnti della discovery per la configurazione policy
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Codici dei tipi documento restituiti in questo momento dall'integrazione
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string, minLength: 1}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
+  /configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+      - {$ref: '#/components/parameters/CodiceTipoDocumento'}
+    get:
+      operationId: getStrutturaLiveAdmin
+      summary: Legge l'albero live usato dalla schermata delle policy
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Albero live completo, inclusi campi e dimensioni aggiuntive
+          content:
+            application/json:
+              schema:
+                $ref: './geban-discovery-endpoint.openapi.yaml#/components/schemas/StrutturaTipoDocumento'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
+  /configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/policy-dimensioni:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+      - {$ref: '#/components/parameters/CodiceTipoDocumento'}
+    get:
+      operationId: getPolicyDimensioniLiveAdmin
+      summary: Legge policy salvate e dimensioni live ancora da configurare
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Policy valide per tutto il tipo documento
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDimensioni'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
+    put:
+      operationId: setPolicyDimensioneLiveAdmin
+      summary: Registra la policy di una dimensione dichiarata dall'albero live
+      x-required-role: GEMODO_ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PolicyDimensioneRequest'}
+      responses:
+        '200':
+          description: Policy salvata e identita' locale minima associata all'integrazione
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDimensione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '502': {$ref: '#/components/responses/SourceError'}
+        '504': {$ref: '#/components/responses/SourceTimeout'}
   /builder/integrazioni:
     get:
       operationId: listIntegrazioniManager
@@ -188,7 +274,43 @@ components:
       in: path
       required: true
       schema: {type: string, format: uuid}
+    CodiceTipoDocumento:
+      name: codice
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
   schemas:
+    PolicyDimensioneRequest:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, consente_valore_generico]
+      properties:
+        nome_dimensione: {type: string, minLength: 1, maxLength: 64}
+        consente_valore_generico: {type: boolean}
+    PolicyDimensione:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, consente_valore_generico]
+      properties:
+        nome_dimensione: {type: string}
+        consente_valore_generico: {type: boolean}
+    DimensioneNonConfigurata:
+      type: object
+      additionalProperties: false
+      required: [nome_dimensione, motivo]
+      properties:
+        nome_dimensione: {type: string}
+        motivo: {type: string}
+    PolicyDimensioni:
+      type: object
+      additionalProperties: false
+      required: [codice_tipo_documento, policy, dimensioni_non_configurate]
+      properties:
+        codice_tipo_documento: {type: string}
+        policy: {type: array, items: {$ref: '#/components/schemas/PolicyDimensione'}}
+        dimensioni_non_configurate:
+          type: array
+          items: {$ref: '#/components/schemas/DimensioneNonConfigurata'}
     IntegrazioneCreate:
       type: object
       additionalProperties: false

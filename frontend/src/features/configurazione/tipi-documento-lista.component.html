@@ -3,74 +3,69 @@
   <span class="mx-1">/</span>
   <a routerLink="/configurazione">Integrazioni</a>
   <span class="mx-1">/</span>
-  <strong>Policy dati</strong>
+  <strong>Tipi documento</strong>
 </nav>
 
 <header class="mm-page-header">
   <div>
-    <h1>Policy dati e campi obbligatori</h1>
+    <h1>Tipi documento e policy</h1>
     <p>
-      Questa schermata vive nel flusso dell'integrazione: qui si apre la struttura del tipo
-      documento letto dall'albero e si marcano i campi obbligatori del contratto dati.
+      I tipi sono letti in tempo reale dalle integrazioni connesse. Apri un tipo per navigare il suo
+      albero e configurare le policy di lingua, livello e delle dimensioni future.
     </p>
-  </div>
-  <div class="mm-page-actions">
-    <a routerLink="nuovo" class="btn btn-primary">Configura struttura</a>
   </div>
 </header>
 
 @if (caricamento()) {
-  <p class="mt-4">Caricamento...</p>
+  <p class="mt-4" role="status">Lettura dei tipi dalle integrazioni...</p>
 } @else if (errore()) {
   <div class="alert alert-danger mt-4" role="alert">{{ errore() }}</div>
   <button type="button" class="btn btn-outline-primary" (click)="carica()">Riprova</button>
-} @else if (tipi().length === 0) {
+}
+
+@for (item of erroriSorgente(); track item.integrazione.id) {
+  <div class="alert alert-danger mt-3" role="alert">
+    <strong>{{ item.integrazione.nome }}:</strong> {{ item.messaggio }}. Nessun elenco vuoto è stato
+    mostrato al posto dell'errore.
+  </div>
+}
+
+@if (!caricamento() && !errore() && tipi().length === 0 && erroriSorgente().length === 0) {
   <section class="mm-card mt-4">
-    <p class="mb-3">
-      Nessuna policy dati configurata. Apri la struttura generata da GEBAN per iniziare.
-    </p>
-    <a routerLink="nuovo" class="btn btn-primary">Configura struttura</a>
+    <h2 class="h5">Nessun tipo disponibile</h2>
+    <p class="mb-3">Verifica e connetti almeno un'integrazione per leggere i tipi documento.</p>
+    <a routerLink="/configurazione" class="btn btn-primary">Vai alle integrazioni</a>
   </section>
-} @else {
+} @else if (!caricamento() && !errore() && tipi().length > 0) {
   <div class="table-responsive mt-4">
     <table class="table">
       <thead>
         <tr>
           <th scope="col">Codice</th>
-          <th scope="col">Nome</th>
+          <th scope="col">Integrazione</th>
           <th scope="col">Contesto</th>
           <th scope="col">Stato</th>
           <th scope="col"></th>
         </tr>
       </thead>
       <tbody>
-        @for (tipo of tipi(); track tipo.id) {
+        @for (tipo of tipi(); track tipo.integrazione.id + ':' + tipo.codice) {
           <tr>
-            <td>{{ tipo.codice }}</td>
-            <td>{{ tipo.nome }}</td>
-            <td>{{ tipo.codice_contesto }}</td>
             <td>
-              <span
-                class="badge"
-                [class.text-bg-secondary]="badge(tipo.stato_integrazione).variant === 'neutro'"
-                [class.text-bg-success]="badge(tipo.stato_integrazione).variant === 'positivo'"
-                [class.text-bg-danger]="badge(tipo.stato_integrazione).variant === 'errore'"
-              >
-                {{ badge(tipo.stato_integrazione).label }}
-              </span>
+              <code>{{ tipo.codice }}</code>
             </td>
+            <td>{{ tipo.integrazione.nome }}</td>
+            <td>
+              <code>{{ tipo.integrazione.codice_contesto }}</code>
+            </td>
+            <td><span class="badge text-bg-success">Disponibile live</span></td>
             <td class="text-nowrap">
-              <a [routerLink]="[tipo.codice]" class="btn btn-sm btn-outline-primary me-2"
-                >Modifica struttura</a
+              <a
+                [routerLink]="[tipo.codice, 'dimensioni']"
+                [queryParams]="{ integrazioneId: tipo.integrazione.id }"
+                class="btn btn-sm btn-outline-primary"
+                >Configura policy</a
               >
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger"
-                [disabled]="disattivandoId() === tipo.id"
-                (click)="disattiva(tipo)"
-              >
-                {{ disattivandoId() === tipo.id ? '...' : 'Disattiva' }}
-              </button>
             </td>
           </tr>
         }

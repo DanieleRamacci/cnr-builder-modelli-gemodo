@@ -171,8 +171,12 @@
       </div>
 
       <div class="d-flex flex-wrap gap-2 mt-3">
-        <a routerLink="/configurazione/tipi-documento/nuovo" class="btn btn-primary btn-sm">
-          Policy dati e campi obbligatori
+        <a
+          routerLink="/configurazione/tipi-documento"
+          [queryParams]="{ integrazioneId: corrente.id }"
+          class="btn btn-primary btn-sm"
+        >
+          Tipi documento e policy
         </a>
         <a routerLink="/configurazione/contesti/nuovo" class="btn btn-outline-primary btn-sm">
           Vedi esempio JSON

@@ -2,10 +2,10 @@
   "schema": "adev.review_ledger.v1",
   "features": {
     "specs/001-catalogo-contratto-geban": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
-      "document_hash": "27199a7f718b406914fd0b08a4452f273194567d45670f1d959388e40c9e60b3",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
+      "document_hash": "76206f51f47f86586b14b7dfd942dcedba1151751739b4301783c52bce6f91d2",
       "documents": [
         "specs/001-catalogo-contratto-geban/checklists/requirements.md",
         "specs/001-catalogo-contratto-geban/data-model.md",
@@ -15,13 +15,13 @@
         "specs/001-catalogo-contratto-geban/spec.md",
         "specs/001-catalogo-contratto-geban/tasks.md"
       ],
-      "review_count": 12
+      "review_count": 13
     },
     "specs/002-builder-modelli": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
-      "document_hash": "feceda9d915d8f87b337c7e13c6ececdb42dcdfc7aa92e0d4749e9d0cce3ec2a",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
+      "document_hash": "4115e11a0482baa15daa28de072ef7d432493bc588544f8887a832ced4bb0b10",
       "documents": [
         "specs/002-builder-modelli/checklists/requirements.md",
         "specs/002-builder-modelli/data-model.md",
@@ -31,12 +31,12 @@
         "specs/002-builder-modelli/spec.md",
         "specs/002-builder-modelli/tasks.md"
       ],
-      "review_count": 13
+      "review_count": 14
     },
     "specs/003-sezioni-placeholder-versionamento": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
       "document_hash": "9727406001ce2ec95563ae23076cc0968ec186a6f73a0bb515c27f75e71a36b3",
       "documents": [
         "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
@@ -47,12 +47,12 @@
         "specs/003-sezioni-placeholder-versionamento/spec.md",
         "specs/003-sezioni-placeholder-versionamento/tasks.md"
       ],
-      "review_count": 11
+      "review_count": 12
     },
     "specs/004-generazione-documenti-pdf": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
       "document_hash": "290da4d51a61da76c7d5db56484a1399fb5cd8d6063c6697d1fcb6f52df449f6",
       "documents": [
         "specs/004-generazione-documenti-pdf/checklists/requirements.md",
@@ -60,12 +60,12 @@
         "specs/004-generazione-documenti-pdf/spec.md",
         "specs/004-generazione-documenti-pdf/tasks.md"
       ],
-      "review_count": 11
+      "review_count": 12
     },
     "specs/005-storage-idempotenza-consultazione": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
       "document_hash": "d01835b0e5f7ec2ab6a17e39fb32ec1a9eefa29d79918aaf595e181a421ebcd8",
       "documents": [
         "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
@@ -73,12 +73,12 @@
         "specs/005-storage-idempotenza-consultazione/spec.md",
         "specs/005-storage-idempotenza-consultazione/tasks.md"
       ],
-      "review_count": 11
+      "review_count": 12
     },
     "specs/006-sicurezza-autorizzazioni-audit": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
       "document_hash": "f219e1f38f4d276592317041a4724b93ff18ce73c96d0a499aa76cadeb3654fb",
       "documents": [
         "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
@@ -90,13 +90,13 @@
         "specs/006-sicurezza-autorizzazioni-audit/spec.md",
         "specs/006-sicurezza-autorizzazioni-audit/tasks.md"
       ],
-      "review_count": 11
+      "review_count": 12
     },
     "specs/007-frontend-builder-consultazione": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
-      "document_hash": "942e39e7ee723dd4e4f197fe3900fbd3a62861fc85c1d177e5abc793eafc54f1",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
+      "document_hash": "ce3ff88c12bf5b5d3e1703f768a8ee6d226e372729577872f1bb653dd5f0ead2",
       "documents": [
         "specs/007-frontend-builder-consultazione/checklists/requirements.md",
         "specs/007-frontend-builder-consultazione/data-model.md",
@@ -106,7 +106,7 @@
         "specs/007-frontend-builder-consultazione/spec.md",
         "specs/007-frontend-builder-consultazione/tasks.md"
       ],
-      "review_count": 11
+      "review_count": 12
     },
     "specs/008-ai-mcp-readiness": {
       "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
@@ -120,9 +120,9 @@
       "review_count": 2
     },
     "specs/009-fondamenta-mock-test-qualita": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
       "document_hash": "b6dddd00335dc26566350bf53295158aeb4d733ad9260464270bd31546558db5",
       "documents": [
         "specs/009-fondamenta-mock-test-qualita/checklists/requirements.md",
@@ -133,13 +133,13 @@
         "specs/009-fondamenta-mock-test-qualita/spec.md",
         "specs/009-fondamenta-mock-test-qualita/tasks.md"
       ],
-      "review_count": 3
+      "review_count": 4
     },
     "specs/010-configurazione-cataloghi-integrazioni": {
-      "last_reviewed_at": "2026-09-21T20:12:11.270674+00:00",
+      "last_reviewed_at": "2026-09-22T12:14:22.210522+00:00",
       "last_verdict": "FAIL",
-      "last_run_directory": ".adev/reviews/run-20260921T201208Z",
-      "document_hash": "79783a923c8ff5447a7f849505333a5777f1cc5298f0de635204d0f2fd419a3c",
+      "last_run_directory": ".adev/reviews/run-20260922T121419Z",
+      "document_hash": "849ff072390f33462f6442c89f624dbb6215e57e45f5d542a5cc6986fc974705",
       "documents": [
         "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
         "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
@@ -150,12 +150,13 @@
         "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
         "specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md",
         "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+        "specs/010-configurazione-cataloghi-integrazioni/quickstart.md",
         "specs/010-configurazione-cataloghi-integrazioni/research.md",
         "specs/010-configurazione-cataloghi-integrazioni/spec.md",
         "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
       ],
-      "review_count": 12
+      "review_count": 13
     }
   },
-  "updated_at": "2026-09-21T20:12:11.270674+00:00"
+  "updated_at": "2026-09-22T12:14:22.210522+00:00"
 }

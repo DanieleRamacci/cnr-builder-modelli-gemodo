@@ -3,6 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path
 
+from app.builder.schemas import (
+    PolicyDimensioneRequest,
+    PolicyDimensioneResponse,
+    PolicyDimensioniResponse,
+    StrutturaTipoDocumentoResponse,
+)
 from app.common.security import PrincipalGEMODO
 from app.configurazione.schemas import (
     IntegrazioneAdmin,
@@ -82,3 +88,64 @@ def configura_integrazione(integrazione_id: uuid.UUID, request: IntegrazioneUpda
 @router_integrazioni.post("/{integrazione_id}/verifica", response_model=IntegrazioneAdmin)
 def verifica_integrazione(integrazione_id: uuid.UUID, request: VerificaRequest, principal: Admin, service: ServiceIntegrazioni):
     return service.verifica(integrazione_id, request.revisione_attesa, principal)
+
+
+@router_integrazioni.get("/{integrazione_id}/tipi-documento", response_model=list[str])
+def tipi_documento_live(
+    integrazione_id: uuid.UUID, principal: Admin, service: ServiceIntegrazioni
+):
+    return service.tipi_documento_live(integrazione_id, principal)
+
+
+@router_integrazioni.get(
+    "/{integrazione_id}/tipi-documento/{codice}/struttura",
+    response_model=StrutturaTipoDocumentoResponse,
+    response_model_exclude_none=True,
+)
+def struttura_tipo_documento_live(
+    integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni
+):
+    return service.struttura_live(integrazione_id, codice, principal)
+
+
+@router_integrazioni.get(
+    "/{integrazione_id}/tipi-documento/{codice}/policy-dimensioni",
+    response_model=PolicyDimensioniResponse,
+)
+def policy_dimensioni_live(
+    integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni
+):
+    policy, non_configurate = service.policy_dimensioni_live(integrazione_id, codice, principal)
+    return PolicyDimensioniResponse(
+        codice_tipo_documento=codice,
+        policy=[
+            PolicyDimensioneResponse(
+                nome_dimensione=item.nome_dimensione,
+                consente_valore_generico=item.consente_valore_generico,
+            )
+            for item in policy
+        ],
+        dimensioni_non_configurate=[
+            {"nome_dimensione": nome} for nome in non_configurate
+        ],
+    )
+
+
+@router_integrazioni.put(
+    "/{integrazione_id}/tipi-documento/{codice}/policy-dimensioni",
+    response_model=PolicyDimensioneResponse,
+)
+def imposta_policy_dimensione_live(
+    integrazione_id: uuid.UUID,
+    codice: str,
+    request: PolicyDimensioneRequest,
+    principal: Admin,
+    service: ServiceIntegrazioni,
+):
+    policy = service.imposta_policy_dimensione_live(
+        integrazione_id, codice, request, principal
+    )
+    return PolicyDimensioneResponse(
+        nome_dimensione=policy.nome_dimensione,
+        consente_valore_generico=policy.consente_valore_generico,
+    )

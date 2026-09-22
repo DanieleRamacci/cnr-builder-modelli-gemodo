@@ -812,18 +812,24 @@ seguiti, adattati ad Angular + design-angular-kit.
 **Dipendenza**: 4a scrive le policy tramite l'API di `002` (T069). Non
 duplicare qui la persistenza, e non leggerla da `DefinizioneStruttura`.
 
-- [ ] T089 [P] [US5] Unit test per la schermata dimensioni: albero live
+- [x] T089 (`dimensioni.component.spec.ts`: drill-down, policy esistenti,
+      dimensioni nuove, salvataggio, JSON live ed errore sorgente) [P] [US5] Unit test per la schermata dimensioni: albero live
       navigato a drill-down nodo per nodo (non tendine), dimensioni gia'
       configurate altrove mostrate in sola lettura con link Modifica,
       dimensione mai vista segnalata e bloccante, in
       `frontend/src/features/configurazione/dimensioni.component.spec.ts`
-- [ ] T090 [US5] Schermata 4a `configure-dimensions` su
+- [x] T090 (`DimensioniComponent` e `PolicyDimensioniService`) [US5] Schermata 4a `configure-dimensions` su
       `/configurazione/tipi-documento/:codice/dimensioni`, con gli stati di 4b
       (skeleton durante la lettura dell'albero, errore esplicito quando
       l'integrazione non risponde, mai una lista vuota silenziosa)
-- [ ] T091 [US5] Visualizzazione della struttura JSON restituita
+- [x] T091 (`DimensioniComponent.jsonLive`, aggiornato con la foglia selezionata) [US5] Visualizzazione della struttura JSON restituita
       dall'integrazione, leggibile accanto all'albero, cosi' che l'admin veda
       cosa ha effettivamente risposto l'endpoint prima di dichiarare le policy
+- [x] T095 [US5] Popolare l'elenco Tipi documento dal discovery delle
+      integrazioni connesse e aggiungere le API admin live per elenco,
+      struttura e policy. Al primo salvataggio associare o creare soltanto
+      l'identita' locale minima, preservando eventuali policy preesistenti e
+      senza copiare l'albero esterno.
 - [ ] T092 [P] Completare la schermata 5a: alla creazione del contesto,
       generare e rendere scaricabile la bozza di struttura da consegnare agli
       sviluppatori dell'integrazione (oggi il form crea solo l'integrazione),

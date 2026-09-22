@@ -79,16 +79,14 @@ export const routes: Routes = [
       },
       {
         path: 'tipi-documento/nuovo',
-        loadComponent: () =>
-          import('../features/configurazione/tipo-documento-struttura.component').then(
-            (m) => m.TipoDocumentoStrutturaComponent,
-          ),
+        pathMatch: 'full',
+        redirectTo: 'tipi-documento',
       },
       {
         path: 'tipi-documento/:codice/dimensioni',
         loadComponent: () =>
-          import('../features/configurazione/tipo-documento-struttura.component').then(
-            (m) => m.TipoDocumentoStrutturaComponent,
+          import('../features/configurazione/dimensioni.component').then(
+            (m) => m.DimensioniComponent,
           ),
       },
       {

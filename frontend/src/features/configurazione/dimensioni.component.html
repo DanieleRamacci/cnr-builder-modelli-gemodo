@@ -1,0 +1,251 @@
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a><span>/</span>
+  <a routerLink="/configurazione">Integrazioni</a><span>/</span>
+  <strong>{{ integrazione()?.nome ?? 'Integrazione' }}</strong
+  ><span>/</span>
+  Dimensioni
+</nav>
+
+<header class="dimensions-header">
+  <div>
+    <div class="title-line">
+      <h1>Dimensioni e policy di derivazione</h1>
+      <code>{{ codice }}</code>
+    </div>
+    <p>
+      La policy vale per <strong>nome dimensione</strong> su tutto il tipo documento, non soltanto
+      sulla foglia selezionata.
+    </p>
+  </div>
+  @if (integrazione()) {
+    <div class="source-state">
+      <strong><span aria-hidden="true"></span>Sorgente live connessa</strong>
+      <code>{{ host() }}</code>
+      <button type="button" (click)="carica()">Ricarica albero</button>
+    </div>
+  }
+</header>
+
+<div class="runtime-note">
+  <strong>Questa pagina configura il comportamento runtime.</strong>
+  L'albero e i campi arrivano dalla risposta live dell'integrazione. La struttura di esempio
+  consegnata agli sviluppatori è solo documentazione e non modifica queste policy.
+</div>
+
+@if (caricamento()) {
+  <section class="loading-state" role="status">
+    <div>
+      <span class="spinner" aria-hidden="true"></span>Interrogazione dell'integrazione in corso...
+    </div>
+    <i></i><i></i><i></i><i class="block"></i>
+    <p>Nessuna policy è modificabile finché l'albero live non è stato letto.</p>
+  </section>
+} @else if (errore()) {
+  <section class="source-error" role="alert">
+    <h2>Albero non disponibile: l'integrazione non risponde</h2>
+    <p>{{ errore() }}</p>
+    <p>Le policy già salvate restano attive e non vengono cancellate.</p>
+    <button type="button" class="btn btn-danger" (click)="carica()">Riprova</button>
+    <a routerLink="/configurazione/tipi-documento" class="btn btn-outline-danger">
+      Torna ai tipi documento
+    </a>
+  </section>
+} @else {
+  <main class="dimensions-layout">
+    <aside class="tree-panel" aria-label="Albero dell'integrazione">
+      <h2>Albero dell'integrazione</h2>
+      <div class="tree-crumbs">
+        <button type="button" (click)="risali(-1)">{{ codice }}</button>
+        @for (nodo of percorso(); track nodo.codice; let i = $index) {
+          <span>›</span><button type="button" (click)="risali(i)">{{ nodo.codice }}</button>
+        }
+      </div>
+      <div class="node-list">
+        @for (nodo of nodiVisibili(); track nodo.codice) {
+          <button
+            type="button"
+            [attr.data-node]="nodo.codice"
+            [class.selected]="foglia()?.codice === nodo.codice"
+            (click)="seleziona(nodo)"
+          >
+            <span
+              ><strong>{{ nodo.descrizione }}</strong
+              ><code>{{ nodo.codice }}</code></span
+            >
+            @if (nodo.campi) {
+              <small>foglia</small>
+            } @else {
+              <b aria-hidden="true">›</b>
+            }
+          </button>
+        }
+      </div>
+    </aside>
+
+    <section class="dimension-panel">
+      @if (!foglia()) {
+        <div class="select-leaf">
+          <span>Seleziona una foglia</span>
+          <h2>Naviga l'albero nodo per nodo</h2>
+          <p>Le dimensioni e i campi del contratto compariranno quando raggiungi una foglia.</p>
+        </div>
+      } @else {
+        <header class="leaf-header">
+          <div>
+            <h2>{{ foglia()!.descrizione }}</h2>
+            <code>{{ foglia()!.tipo_livello ?? 'foglia' }} · {{ foglia()!.codice }}</code>
+          </div>
+          <span [class.complete]="policy()?.dimensioni_non_configurate?.length === 0">
+            @if (policy()?.dimensioni_non_configurate?.length) {
+              {{ policy()!.dimensioni_non_configurate.length }} da configurare
+            } @else {
+              Tutte configurate
+            }
+          </span>
+        </header>
+
+        @if (erroreSalvataggio()) {
+          <div class="alert alert-danger" role="alert">{{ erroreSalvataggio() }}</div>
+        }
+
+        <div class="dimension-list">
+          @for (dimensione of dimensioni(); track dimensione.nome) {
+            <article class="dimension-card" [class.pending]="!configurata(dimensione)">
+              <header>
+                <code>{{ dimensione.nome }}</code>
+                <span [class.saved]="configurata(dimensione)">
+                  {{ configurata(dimensione) ? 'configurata' : 'nuova, non ancora configurata' }}
+                </span>
+              </header>
+              <div class="values">
+                <small>Valori su questa foglia:</small>
+                @for (valore of dimensione.valori; track valore) {
+                  <code>{{ valore }}</code>
+                }
+              </div>
+
+              @if (!modificabile(dimensione)) {
+                <div class="saved-policy">
+                  <strong>
+                    {{
+                      dimensione.policy!.consente_valore_generico
+                        ? 'Un modello generico può coprire tutti i valori'
+                        : 'Ogni valore richiede una scelta esplicita'
+                    }}
+                  </strong>
+                  <p>Si applica a tutte le foglie di questo tipo documento.</p>
+                  <button type="button" (click)="modifica(dimensione.nome)">Modifica</button>
+                </div>
+              } @else {
+                <fieldset>
+                  <legend>
+                    Questa dimensione genera un modello distinto quando cambia valore?
+                  </legend>
+                  <label [class.selected]="scelta(dimensione.nome) === false">
+                    <input
+                      type="radio"
+                      [id]="dimensione.nome + '-distinto'"
+                      [name]="dimensione.nome"
+                      [checked]="scelta(dimensione.nome) === false"
+                      (change)="scegli(dimensione.nome, false)"
+                    />
+                    <span
+                      ><strong>Sì, ogni valore è un modello a sé</strong
+                      ><small>Nessun fallback a un valore generico.</small></span
+                    >
+                  </label>
+                  <label
+                    [class.selected]="scelta(dimensione.nome) === true"
+                    [class.disabled]="dimensione.nome === 'lingua'"
+                  >
+                    <input
+                      type="radio"
+                      [id]="dimensione.nome + '-generico'"
+                      [name]="dimensione.nome"
+                      [checked]="scelta(dimensione.nome) === true"
+                      [disabled]="dimensione.nome === 'lingua'"
+                      (change)="scegli(dimensione.nome, true)"
+                    />
+                    <span
+                      ><strong>No, un modello può coprire tutti i valori</strong
+                      ><small>Il catalogo può usare il modello generico come fallback.</small></span
+                    >
+                  </label>
+                </fieldset>
+                <footer>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    [attr.data-save-policy]="dimensione.nome"
+                    [disabled]="scelta(dimensione.nome) === null || salvando() !== null"
+                    (click)="salva(dimensione.nome)"
+                  >
+                    {{ salvando() === dimensione.nome ? 'Salvataggio...' : 'Salva policy' }}
+                  </button>
+                  @if (configurata(dimensione)) {
+                    <button
+                      type="button"
+                      class="btn btn-link btn-sm"
+                      (click)="annulla(dimensione.nome)"
+                    >
+                      Annulla
+                    </button>
+                  }
+                  <span>Si applica a tutte le foglie</span>
+                </footer>
+              }
+            </article>
+          }
+        </div>
+
+        <section class="contract-fields">
+          <h3>Campi del contratto restituiti da GEBAN</h3>
+          <p>
+            Qui l'obbligatorietà è quella dichiarata dalla sorgente live; non è la policy di lingua
+            o livello.
+          </p>
+          @for (campo of foglia()!.campi; track campo.codice) {
+            <div>
+              <span
+                ><code>{{ campo.codice }}</code
+                ><small>{{ campo.etichetta }} · {{ campo.tipo }} · {{ campo.lingua }}</small></span
+              >
+              <strong [class.optional]="!campo.obbligatorio">{{
+                campo.obbligatorio ? 'Obbligatorio' : 'Opzionale'
+              }}</strong>
+            </div>
+          }
+        </section>
+      }
+    </section>
+
+    <aside class="summary-panel">
+      <h2>Policy del tipo documento</h2>
+      <p>
+        Valgono per <strong>{{ codice }}</strong> su tutte le foglie.
+      </p>
+      @for (item of policy()?.policy ?? []; track item.nome_dimensione) {
+        <article>
+          <header>
+            <code>{{ item.nome_dimensione }}</code
+            ><span>{{
+              item.consente_valore_generico ? 'ammette il generico' : 'biforca il modello'
+            }}</span>
+          </header>
+          <p>
+            {{
+              item.consente_valore_generico
+                ? 'È ammesso un modello senza valore specifico.'
+                : 'Il valore deve essere scelto esplicitamente.'
+            }}
+          </p>
+          <button type="button" (click)="modifica(item.nome_dimensione)">Modifica</button>
+        </article>
+      }
+      <details class="live-json">
+        <summary>Risposta JSON live</summary>
+        <pre data-live-json>{{ jsonLive() }}</pre>
+      </details>
+    </aside>
+  </main>
+}
