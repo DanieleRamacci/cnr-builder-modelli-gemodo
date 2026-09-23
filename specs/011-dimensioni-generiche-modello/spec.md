@@ -73,30 +73,45 @@ motiva resta il punto di partenza: oggi il form preseleziona il primo valore
 dell'elenco, e «per la lingua esce `IT` solo perche' l'integrazione GEBAN la
 elenca per prima, non per una regola».
 
-### Il contratto campi e' gia' per lingua — vincolo su US4
+### Il contratto campi e' unico, con la lingua sul singolo campo
 
-*(Corretta il 2026-09-23. La prima stesura affermava il contrario, sulla base
-del solo payload demo: e' l'esempio a contenere entrambe le lingue, non il
-comportamento reale. La correzione viene dall'utente e dai dati veri.)*
+*(Sezione riscritta due volte il 2026-09-23. La prima stesura sosteneva che
+GEBAN invia entrambe le lingue insieme; la seconda, correggendola, che il
+contratto campi e' separato per lingua. **Erano sbagliate entrambe.** La prima
+si basava sul payload demo, la seconda su un campione parziale dei campi di un
+modello: ne erano stati letti otto su sedici, tutti italiani per caso. Il dato
+sotto viene dall'albero GEBAN reale, letto per intero.)*
 
-Un modello pubblicato dichiara **campi di una sola lingua**: quello italiano
-letto dall'ambiente deployato il 2026-09-22 ha 16 campi richiesti, tutti con
-`lingua = IT`. `ModelloCampoRichiesto` porta la lingua sul singolo campo e la
-ricerca catalogo filtra i modelli per lingua
-(`catalog/repository.py:100-101`). GEBAN, generando da un modello italiano,
-invia quindi i soli dati italiani; da uno inglese, i soli inglesi.
+Una foglia dichiara **un solo contratto campi**, con la lingua come attributo
+del singolo campo. Sulla foglia `TD > RICERCATORE` dell'albero reale:
 
-Il payload demo `mock-geban/payloads/bando-concorso-valid.json` contiene sei
-campi `_it` e sei `_en` insieme, ma e' un esempio costruito per la demo: non
-descrive cosa un modello richiede davvero.
+- 16 campi in tutto, tutti obbligatori;
+- 13 con `lingua: IT` (`codice_bando`, `profilo`, `livello`, `titolo_it`,
+  `medaglione_it`, ...);
+- 3 con `lingua: EN` (`titolo_en`, `descrizione_em`, `medaglione_em`);
+- la foglia dichiara `lingue: ["IT", "ENG"]`.
 
-**Conseguenza per US4**: la separazione per lingua non vive solo nella colonna
-`modello_documento.lingua`, vive anche nel **contratto campi della versione**.
-Rendere la lingua una dimensione come le altre non e' quindi togliere una
-colonna: significa decidere cosa diventa il contratto campi di un modello che
-copre piu' lingue - due insiemi uniti, oppure un insieme con i campi marcati
-per lingua e resi condizionali. E' piu' lavoro di quanto la prima stesura
-lasciasse intendere, e va messo sul tavolo con GEBAN insieme a FR-008.
+Su tutte le 65 foglie: 852 campi `IT` e 195 `EN`, nello stesso contratto.
+
+Non esistono quindi due contratti da unire. La lingua del **modello** non
+seleziona un contratto campi diverso: sceglie quale documento si produce a
+partire dalla stessa struttura. GEBAN, al momento della generazione, indica il
+modello italiano e invia il testo italiano, oppure quello inglese e invia il
+testo inglese.
+
+**Conseguenza per US4**: e' meno costosa di quanto la stesura precedente
+lasciasse intendere. Non c'e' alcun contratto campi da fondere: resta da
+decidere come `lingua` smette di essere una colonna di `modello_documento` e
+cosa il catalogo espone a GEBAN al suo posto, che e' FR-008.
+
+### Refuso nei codici campo lato GEBAN, da segnalare
+
+Due dei tre campi inglesi hanno un codice che finisce in `_em` invece di `_en`:
+`descrizione_em` e `medaglione_em`. E' sistematico su tutte e 65 le foglie,
+quindi non e' un caso isolato. GEMODO li accetta - il codice campo e' una
+stringa libera - ma chi cercasse `descrizione_en` non troverebbe nulla.
+Va segnalato a GEBAN prima che quei codici entrino nei modelli pubblicati:
+correggerli dopo significherebbe toccare contratti gia' versionati.
 
 
 ## Stato di partenza misurato (2026-09-23)
@@ -176,8 +191,9 @@ entrambi, distinguibili.
 
 ### User Story 4 - La lingua smette di essere privilegiata (Priority: P2)
 
-*(Attenzione: e' la storia piu' costosa. Oltre alla colonna, tocca il contratto
-campi della versione, che e' gia' separato per lingua — vedi Clarifications.)*
+*(Il contratto campi non e' separato per lingua — vedi Clarifications: la
+lingua e' un attributo del singolo campo dentro un contratto unico. Resta
+costosa solo per FR-008, cioe' per cio' che il catalogo espone a GEBAN.)*
 
 Come progetto, vogliamo che `lingua` sia una dimensione come le altre, cosi' che
 la sua regola sia una scelta configurata e non una costante del codice.
