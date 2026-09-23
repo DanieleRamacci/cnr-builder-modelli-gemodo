@@ -73,15 +73,30 @@ motiva resta il punto di partenza: oggi il form preseleziona il primo valore
 dell'elenco, e «per la lingua esce `IT` solo perche' l'integrazione GEBAN la
 elenca per prima, non per una regola».
 
-### Osservazione emersa dall'analisi, non ancora una decisione
+### Il contratto campi e' gia' per lingua — vincolo su US4
 
-`DEC-001-CAMPI-COMUNI-GEBAN` elenca il payload di generazione: «titolo e
-descrizione ridotta IT/EN, sedi e strutture IT/EN, medaglione IT/EN».
-**GEBAN invia gia' entrambe le lingue nella stessa richiesta**, ed e'
-confermato dal payload demo (`titolo_it` e `titolo_en` insieme). La
-separazione per lingua vive quindi nel modello, non nella sorgente dei dati.
-Non cambia nulla di per se', ma e' l'elemento di fatto piu' rilevante per US4 e
-va tenuto sul tavolo quando la si discutera' con GEBAN.
+*(Corretta il 2026-09-23. La prima stesura affermava il contrario, sulla base
+del solo payload demo: e' l'esempio a contenere entrambe le lingue, non il
+comportamento reale. La correzione viene dall'utente e dai dati veri.)*
+
+Un modello pubblicato dichiara **campi di una sola lingua**: quello italiano
+letto dall'ambiente deployato il 2026-09-22 ha 16 campi richiesti, tutti con
+`lingua = IT`. `ModelloCampoRichiesto` porta la lingua sul singolo campo e la
+ricerca catalogo filtra i modelli per lingua
+(`catalog/repository.py:100-101`). GEBAN, generando da un modello italiano,
+invia quindi i soli dati italiani; da uno inglese, i soli inglesi.
+
+Il payload demo `mock-geban/payloads/bando-concorso-valid.json` contiene sei
+campi `_it` e sei `_en` insieme, ma e' un esempio costruito per la demo: non
+descrive cosa un modello richiede davvero.
+
+**Conseguenza per US4**: la separazione per lingua non vive solo nella colonna
+`modello_documento.lingua`, vive anche nel **contratto campi della versione**.
+Rendere la lingua una dimensione come le altre non e' quindi togliere una
+colonna: significa decidere cosa diventa il contratto campi di un modello che
+copre piu' lingue - due insiemi uniti, oppure un insieme con i campi marcati
+per lingua e resi condizionali. E' piu' lavoro di quanto la prima stesura
+lasciasse intendere, e va messo sul tavolo con GEBAN insieme a FR-008.
 
 
 ## Stato di partenza misurato (2026-09-23)
@@ -160,6 +175,9 @@ di una dimensione nuova coesistono; il catalogo verso GEBAN li restituisce
 entrambi, distinguibili.
 
 ### User Story 4 - La lingua smette di essere privilegiata (Priority: P2)
+
+*(Attenzione: e' la storia piu' costosa. Oltre alla colonna, tocca il contratto
+campi della versione, che e' gia' separato per lingua — vedi Clarifications.)*
 
 Come progetto, vogliamo che `lingua` sia una dimensione come le altre, cosi' che
 la sua regola sia una scelta configurata e non una costante del codice.
