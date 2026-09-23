@@ -25,7 +25,7 @@ const ETICHETTE_STATO: Record<string, string> = {
   template: `
     @if (!admin && !manager) {
       <div class="alert alert-warning" role="alert">
-        Non sei autorizzato ad accedere alle funzioni di Modellario.
+        Non sei autorizzato ad accedere alle funzioni di GEMODO.
       </div>
     } @else {
       <section class="home-hero">

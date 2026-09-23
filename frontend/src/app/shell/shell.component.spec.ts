@@ -28,6 +28,13 @@ const voci = (root: HTMLElement) =>
   Array.from(root.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
 
 describe('header applicativo (design handoff)', () => {
+  it('shows the GEMODO name and GM monogram', () => {
+    const root = setup(['GEMODO_ADMIN']);
+    expect(root.querySelector('.brand-link')?.textContent).toContain('GEMODO');
+    expect(root.querySelector('.brand-mark')?.textContent).toBe('GM');
+    expect(root.querySelector('.app-footer')?.textContent).toContain('GEMODO - CNR');
+  });
+
   it('shows the admin navigation without the retired Tipi documento entry', () => {
     const root = setup(['GEMODO_ADMIN']);
     expect(voci(root)).toEqual(['Contesti', 'Impostazioni']);

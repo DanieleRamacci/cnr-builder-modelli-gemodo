@@ -1,8 +1,8 @@
 <header class="app-header">
   <div class="app-header-row">
-    <a routerLink="/" class="brand-link" aria-label="Home Modellario">
-      <span class="brand-mark">M</span>
-      <span>Modellario</span>
+    <a routerLink="/" class="brand-link" aria-label="Home GEMODO">
+      <span class="brand-mark" aria-hidden="true">GM</span>
+      <span>GEMODO</span>
     </a>
     <nav class="app-nav" aria-label="Navigazione principale">
       @if (isManager || isAdmin) {
@@ -28,7 +28,7 @@
 
 <footer class="app-footer">
   <div class="app-footer-row">
-    Modellario - CNR
+    GEMODO - CNR
     @if (externalDocsUrl) {
       <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
     }
