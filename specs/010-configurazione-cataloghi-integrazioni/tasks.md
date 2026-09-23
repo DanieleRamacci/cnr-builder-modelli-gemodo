@@ -900,15 +900,51 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
 - [x] T102 [FR-029] (`configurazione/repository.py`; test in `backend/tests/builder/test_eliminazione_e_pulizia.py`) `conta_modelli` esclude i modelli `ELIMINATO`, cosi' che
       disattivare un tipo documento torni possibile dopo aver eliminato i suoi
       modelli. Test che copre il ciclo crea -> elimina -> disattiva
+- [ ] T106 **Prerequisito di T103 e T105**: rendere nullable
+      `audit_evento_modello.modello_documento_id` e
+      `audit_evento_integrazione.integrazione_id`, oggi entrambe `NOT NULL`.
+      Senza questo, una cancellazione fisica o fallisce o costringe a
+      cancellare l'audit insieme al record: perdere la tracciabilita' per fare
+      pulizia e' il rimedio sbagliato. `audit_evento_modello.modello_versione_id`
+      e' gia' nullable con `ON DELETE SET NULL`, quindi il modello di
+      riferimento esiste gia'. Verificare che i `payload_minimo` portino i
+      codici come testo: quello dell'integrazione gia' lo fa
+      (`{"codice": source.codice}` su INTEGRAZIONE_CREATA), cosi' la storia
+      resta leggibile anche senza la riga
+
 - [ ] T103 `DELETE /api/v1/configurazione/integrazioni/{id}`: oggi non esiste
-      (405). Rifiutare la cancellazione se restano tipi o modelli attivi,
-      auditare l'evento
+      (405). **Impostazione corretta (rivista 2026-09-23)**: `codice` e
+      `codice_contesto` NON devono diventare modificabili - sono identita', e
+      la FK composita `(integrazione_id, codice_contesto)` esiste apposta per
+      impedire che un'integrazione cambi contesto sotto i piedi ai modelli.
+      Il refuso in fase di registrazione si corregge **cancellando e
+      ricreando**, non rinominando. Tre livelli:
+      integrazione senza tipi documento -> cancellabile sempre, anche se gia'
+      connessa e verificata (e' il caso del refuso, ci si accorge subito);
+      integrazione con tipi ma nessun modello -> cancellabile, con i tipi a
+      cascata; integrazione con modelli vivi -> rifiutata, indicando quanti e
+      quali, non un generico "non si puo'". Dipende da T106
 - [ ] T104 Endpoint o comando di reset dietro `GEMODO_ALLOW_DATABASE_RESET`.
       **La variabile e' gia' dichiarata in `docker-compose.coolify.yml:66` ma
       non esiste nel codice**: zero occorrenze in `backend/app`. Deve azzerare
       integrazioni, tipi documento, modelli, versioni e policy, e **mai** i
       documenti generati (`generazione_documento` ha `ON DELETE RESTRICT` verso
-      `modello_versione`, ed e' corretto cosi'). Decidere prima se API o CLI
-- [ ] T105 Politica sui residui: oggi ogni eliminazione e' logica e le righe
-      restano per sempre. Decidere se serve una cancellazione fisica per i soli
-      record senza documenti generati collegati
+      `modello_versione`, ed e' corretto cosi'). Decidere prima se API o CLI.
+      **Nota 2026-09-23**: con T103 e T105 chiusi, un reset totale diventa
+      quasi superfluo - si riporta l'ambiente a zero passando dalle API
+      ordinarie, senza esporre una rotta che azzera il database. Rivalutare se
+      serva ancora dopo averli implementati
+- [ ] T105 Residui: **decidere al momento dell'eliminazione**, non con una
+      pulizia periodica. Un modello le cui versioni hanno prodotto documenti
+      resta `ELIMINATO` come oggi, e deve restarci: `generazione_documento` ha
+      `ON DELETE RESTRICT` verso `modello_versione`, quindi il database stesso
+      impedisce di sbagliare. Un modello senza alcun documento generato viene
+      **cancellato fisicamente subito**. Cosi' i residui non si accumulano mai e
+      non serve alcun job di purge. Dipende da T106
+
+- [ ] T107 [P] Nota, non urgente: `uq_integrazione_codice` e' un vincolo unico
+      **globale**, non per contesto. Due contesti diversi non possono avere
+      un'integrazione con lo stesso codice. Oggi e' irrilevante (ce n'e' una
+      sola); potrebbe diventare una costrizione arbitraria quando si
+      aggiungera' un secondo sistema. Valutare se renderlo
+      `(codice_contesto, codice)`
