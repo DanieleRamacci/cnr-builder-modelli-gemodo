@@ -587,6 +587,58 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   quindi non seguono la larghezza del contenitore. Le griglie di schede MUST
   guadagnare colonne invece di dilatare le schede esistenti.
 
+- **FR-030** (2026-09-23, rilievi dal collaudo dell'interfaccia): la home
+  MUST presentare integrazioni e contesti reali, non contenuti inventati.
+  Oggi `home.component.ts` inietta soltanto `Keycloak` e non esegue alcuna
+  chiamata: le schede "GEBAN - Da verificare", "SIGLA - Errore" e "Appalti e
+  contratti" sono testo scritto a mano. L'effetto e' doppio e grave: mostra
+  sistemi che non esistono e **nasconde** quelli realmente registrati, tanto
+  che un'integrazione appena creata non compare. Le API necessarie esistono
+  gia' (`GET /configurazione/integrazioni` per l'admin,
+  `GET /builder/contesti` per il gestore). Finche' un dato non e' reale MUST
+  NOT essere mostrato come tale: un elenco vuoto e' preferibile a un elenco
+  inventato.
+
+- **FR-031** (2026-09-23): il form di creazione modello MUST offrire soltanto
+  le opzioni che la policy del tipo documento ammette. Oggi
+  `modello-crea.component.ts` presenta sempre l'opzione "Tutti i livelli" e
+  non legge mai le policy: se la dimensione richiede una scelta esplicita,
+  l'utente la seleziona, invia e riceve `DIMENSIONE_RICHIEDE_VALORE`. Il
+  rifiuto del backend e' corretto e MUST restare, ma l'interfaccia MUST NOT
+  proporre una scelta che sa gia' essere invalida. La lettura delle policy e'
+  gia' disponibile (`GET /builder/tipi-documento/{codice}/policy-dimensioni`).
+
+- **FR-032** (2026-09-23): la configurazione di un'integrazione esistente MUST
+  avere una pagina propria, distinta dalla creazione di un nuovo contesto.
+  Oggi i collegamenti "Struttura API" e "Policy dati" puntano entrambi a
+  `/configurazione/tipi-documento/nuovo`, che redirige all'elenco, e l'esempio
+  JSON da consegnare all'integratore vive in `integrazione-crea.component.ts`,
+  cioe' nella schermata di creazione. Un admin che apre la configurazione di
+  GEBAN si ritrova davanti un modulo di creazione. La pagina MUST mostrare
+  l'integrazione corrente, il suo endpoint e stato di verifica, e l'esempio
+  JSON conforme al contratto discovery reale per quel contesto, scaricabile e
+  consegnabile.
+
+- **FR-033** (2026-09-23): la policy per dimensione vale per l'intero tipo
+  documento, non per il ramo su cui l'admin si trova. E' il comportamento
+  previsto da User Story 5 e MUST restare, ma la schermata MUST dichiararlo
+  prima del salvataggio: oggi si naviga fino a una foglia e si modifica un
+  valore che riguarda tutte le altre, senza alcun avviso. L'avviso MUST
+  indicare il tipo documento interessato e quante foglie ne sono toccate.
+  MUST inoltre spiegare perche' una dimensione non ammette il generico invece
+  di limitarsi a rifiutare: per `lingua` la ragione e' che la colonna e'
+  NOT NULL con vincolo IT/EN ed e' esposta non nullabile nel contratto verso
+  GEBAN.
+
+- **FR-034** (2026-09-23): la pagina profilo MUST mostrare, per ogni contesto
+  del token, i ruoli posseduti e cosa ciascuno consente di fare. Oggi mostra i
+  contesti come stringa piatta e nasconde i ruoli, quindi un utente non ha
+  modo di sapere perche' vede o non vede una funzione. Le descrizioni MUST
+  derivare dalla mappatura reale fra ruoli esterni e permessi applicativi
+  (`infra/local/integration-profiles.local.yaml`, `role_mappings`), non da un
+  elenco scritto a mano che divergerebbe.
+
+
 
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione

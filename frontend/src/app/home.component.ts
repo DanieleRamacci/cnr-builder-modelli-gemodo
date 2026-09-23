@@ -1,11 +1,27 @@
-import { Component, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import Keycloak from 'keycloak-js';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+import { ApiClient } from '../shared/api-client';
+import type { ApiError } from '../shared/api-error';
+import type { components as Registry } from '../shared/api-types/integrazioni';
 import { hasClientRole, hasManagerAccess } from './auth/roles';
+
+type Integrazione = Registry['schemas']['IntegrazioneAdmin'];
+
+const ETICHETTE_STATO: Record<string, string> = {
+  CONNESSO: 'Connesso',
+  DEFINITO: 'Da verificare',
+  ERRORE: 'Errore',
+};
 
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [DatePipe, RouterLink],
   template: `
     @if (!admin && !manager) {
       <div class="alert alert-warning" role="alert">
@@ -20,7 +36,7 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
             autorizzati.
           </p>
         </div>
-        <span>22/09/2026</span>
+        <span>{{ oggi | date: 'dd/MM/yyyy' }}</span>
       </section>
 
       <section class="home-actions" aria-labelledby="home-actions-title">
@@ -67,51 +83,61 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
             <a [routerLink]="admin ? '/configurazione' : '/contesti'">vedi tutti</a>
           </div>
 
-          @if (admin) {
-            <div class="home-list">
-              <article>
-                <span class="context-mark">GE</span>
-                <div>
-                  <h3><a routerLink="/configurazione">GEBAN - Bandi di concorso</a></h3>
-                  <p><code>geban</code> · endpoint e struttura di esempio da completare</p>
-                </div>
-                <span class="status-pill warning">Da verificare</span>
-                <a routerLink="/configurazione">Apri</a>
-              </article>
-              <article>
-                <span class="context-mark">SI</span>
-                <div>
-                  <h3>SIGLA</h3>
-                  <p><code>sigla</code> · ultima scansione non conforme</p>
-                </div>
-                <span class="status-pill error">Errore</span>
-                <a routerLink="/configurazione">Apri</a>
-              </article>
-            </div>
+          @if (caricamento()) {
+            <p class="home-stato" role="status">Lettura in corso...</p>
+          } @else if (errore()) {
+            <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+          } @else if (admin) {
+            @if (integrazioni().length) {
+              <div class="home-list">
+                @for (fonte of integrazioni(); track fonte.id) {
+                  <article>
+                    <span class="context-mark">{{ sigla(fonte.codice) }}</span>
+                    <div>
+                      <h3>
+                        <a [routerLink]="['/configurazione', fonte.id]">{{ fonte.nome }}</a>
+                      </h3>
+                      <p>
+                        <code>{{ fonte.codice_contesto }}</code>
+                        &middot; {{ descrizioneStato(fonte) }}
+                      </p>
+                    </div>
+                    <span class="status-pill" [class]="classeStato(fonte.stato)">{{
+                      etichettaStato(fonte.stato)
+                    }}</span>
+                    <a [routerLink]="['/configurazione', fonte.id]">Apri</a>
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="home-stato">
+                Nessuna integrazione registrata.
+                <a routerLink="/configurazione/contesti/nuovo">Registrane una</a>.
+              </p>
+            }
+          } @else if (manager) {
+            @if (contesti().length) {
+              <div class="home-list">
+                @for (contesto of contesti(); track contesto) {
+                  <article>
+                    <span class="context-mark">{{ sigla(contesto) }}</span>
+                    <div>
+                      <h3>{{ contesto }}</h3>
+                      <p><code>{{ contesto }}</code> &middot; modelli del contesto</p>
+                    </div>
+                    <a
+                      class="btn btn-outline-primary btn-sm"
+                      [routerLink]="['/contesti', contesto, 'modelli']"
+                      >Vedi modelli</a
+                    >
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="home-stato">Nessun contesto assegnato.</p>
+            }
           }
 
-          @if (manager) {
-            <div class="home-list">
-              <article>
-                <span class="context-mark">AC</span>
-                <div>
-                  <h3>Appalti e contratti</h3>
-                  <p><code>CTX-APP</code> · modelli e bozze del contesto</p>
-                </div>
-                <a class="btn btn-outline-primary btn-sm" routerLink="/contesti">Vedi modelli</a>
-                <a routerLink="/contesti">+ nuovo modello</a>
-              </article>
-              <article>
-                <span class="context-mark">GE</span>
-                <div>
-                  <h3>GEBAN</h3>
-                  <p><code>geban</code> · bandi e avvisi di concorso</p>
-                </div>
-                <a class="btn btn-outline-primary btn-sm" routerLink="/contesti">Vedi modelli</a>
-                <a routerLink="/contesti">+ nuovo modello</a>
-              </article>
-            </div>
-          }
         </section>
 
         <aside class="screen-aside">
@@ -122,7 +148,7 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
             <a routerLink="/configurazione/contesti/nuovo"
               ><code>5a</code><span>Nuovo contesto</span></a
             >
-            <a routerLink="/configurazione/tipi-documento/nuovo"
+            <a routerLink="/configurazione/tipi-documento"
               ><code>4a</code><span>Policy dati</span></a
             >
           }
@@ -137,9 +163,72 @@ import { hasClientRole, hasManagerAccess } from './auth/roles';
 })
 export class HomeComponent {
   private readonly keycloak = inject(Keycloak);
+  private readonly api = inject(ApiClient);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly admin = hasClientRole(this.keycloak, 'gemodo-backend', 'GEMODO_ADMIN');
   protected readonly manager = hasManagerAccess(this.keycloak);
   protected readonly greeting = this.admin
     ? 'Ciao, configura le integrazioni'
     : 'Ciao, scegli un contesto';
+  protected readonly oggi = new Date();
+  protected readonly integrazioni = signal<Integrazione[]>([]);
+  protected readonly contesti = signal<string[]>([]);
+  protected readonly caricamento = signal(false);
+  protected readonly errore = signal<string | null>(null);
+
+  constructor() {
+    this.carica();
+  }
+
+  /**
+   * Fino al 2026-09-23 questa schermata mostrava integrazioni e contesti
+   * inventati nel template, senza eseguire alcuna chiamata: annunciava sistemi
+   * inesistenti e nascondeva quelli davvero registrati (007 FR-030). Un elenco
+   * vuoto e' preferibile a un elenco inventato.
+   */
+  private carica(): void {
+    if (!this.admin && !this.manager) return;
+    this.caricamento.set(true);
+    forkJoin({
+      integrazioni: this.admin
+        ? this.api.get<Integrazione[]>('/api/v1/configurazione/integrazioni')
+        : of<Integrazione[]>([]),
+      contesti: this.manager
+        ? this.api.get<string[]>('/api/v1/builder/contesti')
+        : of<string[]>([]),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error: ApiError) => {
+          this.errore.set(error.messaggio);
+          return of({ integrazioni: [] as Integrazione[], contesti: [] as string[] });
+        }),
+      )
+      .subscribe(({ integrazioni, contesti }) => {
+        this.integrazioni.set(integrazioni);
+        this.contesti.set(contesti);
+        this.caricamento.set(false);
+      });
+  }
+
+  protected sigla(codice: string): string {
+    return codice.slice(0, 2).toUpperCase();
+  }
+
+  protected etichettaStato(stato: string): string {
+    return ETICHETTE_STATO[stato] ?? stato;
+  }
+
+  protected classeStato(stato: string): string {
+    if (stato === 'CONNESSO') return 'success';
+    return stato === 'ERRORE' ? 'error' : 'warning';
+  }
+
+  /** Solo cio' che il registro dichiara davvero: nessun esito inventato. */
+  protected descrizioneStato(fonte: Integrazione): string {
+    if (!fonte.url) return 'endpoint non configurato';
+    const verifica = fonte.ultima_verifica;
+    if (!verifica) return 'mai verificata';
+    return verifica.esito === 'CONFORME' ? 'ultima verifica conforme' : 'ultima verifica fallita';
+  }
 }

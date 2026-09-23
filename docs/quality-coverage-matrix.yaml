@@ -627,3 +627,44 @@ coverage:
     contract_ref: frontend/src/styles.scss
     stato: COPERTO
     note: larghezza misurata in browser a 1366/1600/1920/2560 (contenitore 1320/1480/1720/2040, griglia 4/4/5/6 colonne); resta da verificare le altre schermate (T109)
+
+  # --- Rilievi dal collaudo interfaccia (2026-09-23) ---
+  - id: COV-074
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-030
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: COPERTO
+    note: home popolata dalle API reali; test verificano che SIGLA e "Appalti e contratti" non compaiano e che l'elenco vuoto sia esplicito
+
+  - id: COV-075
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-031
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: COPERTO
+    note: modello-crea legge le policy; due test verificano che l'opzione compaia solo quando il generico e' ammesso
+
+  - id: COV-076
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-032
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: DA_COPRIRE
+    note: configurazione integrazione esistente indistinta dalla creazione contesto; T112 aperta
+
+  - id: COV-077
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-033
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: DA_COPRIRE
+    note: ambito della policy non dichiarato nella schermata; T113 aperta
+
+  - id: COV-078
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-034
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: DA_COPRIRE
+    note: profilo senza ruoli ne' descrizioni; separazione per ruolo mai verificata end-to-end; T114-T115 aperte

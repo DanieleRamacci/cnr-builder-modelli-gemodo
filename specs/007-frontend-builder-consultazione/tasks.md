@@ -827,3 +827,35 @@ sistema integrato diventa inutilizzabile.
       configurazione e anteprima. Alcune hanno vincoli propri (`720px` in
       `dimensioni.component.scss`) che vanno distinti fra misura di lettura,
       da lasciare, e contenitore, da liberare
+
+## Phase: Rilievi dal collaudo dell'interfaccia (2026-09-23)
+
+**Origine**: sessione di collaudo sull'ambiente deployato. Ordine di lavoro
+concordato con l'utente.
+
+- [x] T110 [FR-030] (`home.component.ts`; test in `home-profile.spec.ts`:
+      "shows the integrations that really exist" e "says the list is empty
+      instead of inventing entries") Home con dati reali: sostituire le schede inventate con le
+      integrazioni (`GET /configurazione/integrazioni`) e i contesti
+      (`GET /builder/contesti`) veri, con stati di caricamento ed errore
+      espliciti. Rimuovere ogni contenuto residuo scritto a mano, data fissa
+      compresa
+- [x] T111 [FR-031] (`caricaPolicy` in `modello-crea.component.ts`; due test
+      sul contenuto del menu livelli) `modello-crea` legge le policy del tipo documento e nasconde
+      "Tutti i livelli" quando la dimensione richiede un valore esplicito
+- [ ] T112 [FR-032] Pagina di configurazione dell'integrazione esistente:
+      endpoint, stato di verifica ed esempio JSON conforme al contratto reale,
+      scaricabile. Ripuntare i collegamenti "Struttura API" e "Policy dati",
+      che oggi vanno alla creazione contesto
+- [ ] T113 [FR-033] Avviso di ambito sulla schermata policy: dichiarare che la
+      scelta vale per l'intero tipo documento e quante foglie tocca, prima del
+      salvataggio. Spiegare il motivo quando una dimensione non ammette il
+      generico
+- [ ] T114 [FR-034] Pagina profilo: contesti, ruoli per contesto e descrizione
+      di cosa ciascun ruolo consente, derivata dalla mappatura reale
+- [ ] T115 [FR-034] Verifica della separazione per ruolo: confrontare cosa
+      l'interfaccia mostra con cosa il backend autorizza davvero, ruolo per
+      ruolo. Le guard lato UI sono dichiaratamente cosmetiche
+      (`roles.ts`, `admin.guard.ts`); serve accertare che coincidano con
+      `require_configurazione_admin` e `verify_scrittura_su_contesto` e che
+      nessuna azione mostrata finisca in 403

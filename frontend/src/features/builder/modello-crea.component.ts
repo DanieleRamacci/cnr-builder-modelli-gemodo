@@ -129,7 +129,11 @@ const TITOLI_LIVELLO: Record<string, string> = { tipologia: 'Tipologia', profilo
                   [(ngModel)]="livelloProfessionale"
                   [disabled]="saving() || !!modelId"
                 >
-                  <option value="">Tutti i livelli</option>
+                  @if (genericoAmmesso('livello')) {
+                    <option value="">Tutti i livelli</option>
+                  } @else {
+                    <option value="" disabled>Scegli un livello</option>
+                  }
                   @for (level of selected.livelli_possibili ?? []; track level) {
                     <option [value]="level">{{ level }}</option>
                   }
@@ -230,6 +234,15 @@ export class ModelloCreaComponent {
   protected readonly path = signal<string[]>([]);
   protected readonly leaf = signal<Nodo | null>(null);
   protected readonly error = signal<string | null>(null);
+  /**
+   * Policy del tipo documento: quali dimensioni ammettono un valore generico.
+   * Senza questa lettura il form offriva sempre "Tutti i livelli" e il backend
+   * rifiutava l'invio con DIMENSIONE_RICHIEDE_VALORE (007 FR-031).
+   */
+  private readonly policy = signal<Record<string, boolean>>({});
+  protected genericoAmmesso(dimensione: string): boolean {
+    return this.policy()[dimensione] ?? false;
+  }
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly success = signal<string | null>(null);
@@ -330,9 +343,27 @@ export class ModelloCreaComponent {
         next: (tree) => {
           this.tree.set(tree.nodi);
           this.loading.set(false);
+          this.caricaPolicy(tipo);
           if (tipo === this.presetTipo && this.presetPath.length) this.applyPresetPath();
         },
         error: (error: ApiError) => this.failed(error),
+      });
+  }
+  /** Una policy non leggibile non deve impedire la creazione: il backend resta
+   * l'autorita' e rifiutera' comunque una scelta non ammessa. */
+  private caricaPolicy(tipo: string): void {
+    this.api
+      .get<{ policy: { nome_dimensione: string; consente_valore_generico: boolean }[] }>(
+        `/api/v1/builder/tipi-documento/${encodeURIComponent(tipo)}/policy-dimensioni`,
+      )
+      .subscribe({
+        next: (risposta) =>
+          this.policy.set(
+            Object.fromEntries(
+              risposta.policy.map((p) => [p.nome_dimensione, p.consente_valore_generico]),
+            ),
+          ),
+        error: () => this.policy.set({}),
       });
   }
   protected choose(node: Nodo): void {

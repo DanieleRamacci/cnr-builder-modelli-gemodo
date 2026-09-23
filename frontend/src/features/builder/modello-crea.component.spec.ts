@@ -3,6 +3,21 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { ModelloCreaComponent } from './modello-crea.component';
+/**
+ * La lettura delle policy parte insieme alla struttura (007 FR-031): serve a
+ * sapere se "Tutti i livelli" e' un'opzione valida per quel tipo documento.
+ */
+function flushPolicy(
+  http: HttpTestingController,
+  policy: { nome_dimensione: string; consente_valore_generico: boolean }[] = [
+    { nome_dimensione: 'lingua', consente_valore_generico: false },
+    { nome_dimensione: 'livello', consente_valore_generico: true },
+  ],
+) {
+  http
+    .match((r) => r.url.includes('/policy-dimensioni'))
+    .forEach((r) => r.flush({ codice_tipo_documento: 'BANDO', policy, dimensioni_non_configurate: [] }));
+}
 describe('manager creation flow', () => {
   it('sends the complete leaf path and confirms BOZZA only after version creation', () => {
     TestBed.configureTestingModule({
@@ -44,6 +59,7 @@ describe('manager creation flow', () => {
     http
       .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
       .flush({ nodi: [root] });
+    flushPolicy(http);
     component.choose(root);
     component.choose(leaf);
     component.lingua = 'EN';
@@ -104,7 +120,9 @@ describe('2a categorization cascade', () => {
     { codice: 'TI', descrizione: 'Tempo indeterminato', tipo_livello: 'tipologia', figli: [leafB] },
   ];
 
-  function setup() {
+  function setup(
+    policy: { nome_dimensione: string; consente_valore_generico: boolean }[] | undefined = undefined,
+  ) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -127,6 +145,7 @@ describe('2a categorization cascade', () => {
     http
       .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
       .flush({ nodi });
+    flushPolicy(http, policy);
     fixture.detectChanges();
     return { fixture, http, component };
   }
@@ -220,5 +239,32 @@ describe('2a categorization cascade', () => {
     expect(root.querySelector('[role=alert]')).not.toBeNull();
     expect(root.querySelector('#livello-0')).toBeNull();
     http.verify();
+  });
+
+  // 007 FR-031: il form non deve proporre una scelta che il backend rifiutera'.
+  it('offers "Tutti i livelli" only when the policy allows a generic value', () => {
+    const { fixture, component } = setup([
+      { nome_dimensione: 'lingua', consente_valore_generico: false },
+      { nome_dimensione: 'livello', consente_valore_generico: true },
+    ]);
+    component.chooseAt(0, 'TD');
+    component.chooseAt(1, 'RICERCATORE');
+    fixture.detectChanges();
+    const livelli = fixture.nativeElement.querySelector('#livello') as HTMLSelectElement;
+    const opzioni = Array.from(livelli.options).map((o) => o.textContent?.trim());
+    expect(opzioni).toContain('Tutti i livelli');
+  });
+  it('hides "Tutti i livelli" when the dimension requires an explicit value', () => {
+    const { fixture, component } = setup([
+      { nome_dimensione: 'lingua', consente_valore_generico: false },
+      { nome_dimensione: 'livello', consente_valore_generico: false },
+    ]);
+    component.chooseAt(0, 'TD');
+    component.chooseAt(1, 'RICERCATORE');
+    fixture.detectChanges();
+    const livelli = fixture.nativeElement.querySelector('#livello') as HTMLSelectElement;
+    const opzioni = Array.from(livelli.options).map((o) => o.textContent?.trim());
+    expect(opzioni).not.toContain('Tutti i livelli');
+    expect(opzioni).toContain('Scegli un livello');
   });
 });
