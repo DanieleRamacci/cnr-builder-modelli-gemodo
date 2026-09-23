@@ -806,3 +806,24 @@ sistema integrato diventa inutilizzabile.
 - [ ] T102 [FR-019 di `002`] Nell'elenco, raggruppare le varianti sotto il
       modello di base della loro categorizzazione, mostrando per ciascuna la
       descrizione scritta dal gestore
+
+## Phase: Larghezza adattiva del contenitore (2026-09-23)
+
+- [x] T106 [FR-029] (`--mm-shell-larghezza` in `styles.scss`, usata dalle tre
+      regole di `shell.component.scss`) Larghezza del contenitore definita una
+      volta sola e crescente per soglie: 1320px sotto 1600, poi 1480, 1720 e
+      2040. Sotto 1600px nulla cambia. Misurato in browser: viewport 1366 ->
+      1320px, 1600 -> 1480px, 1920 -> 1720px, 2560 -> 2040px
+- [x] T107 [FR-029] (`.griglia-modelli`) Colonne per costruzione con
+      `repeat(auto-fill, minmax(280px, 1fr))` invece di tre soglie fisse: a
+      1366px restano 4 colonne come prima, a 1920px diventano 5, a 2560px 6,
+      con la scheda sempre intorno ai 300-340px invece di dilatarsi
+- [x] T108 [FR-029] (`.toolbar-1b`) Barra dei filtri: ricerca flessibile e
+      `min-width` sulle tendine, che con tipologia, profilo e livello possono
+      ora essere sei e altrimenti si comprimerebbero fino a nascondere le
+      etichette
+- [ ] T109 [FR-029] Verificare le altre schermate su monitor ampio: la
+      misurazione ha coperto shell e griglia modelli, non le pagine di
+      configurazione e anteprima. Alcune hanno vincoli propri (`720px` in
+      `dimensioni.component.scss`) che vanno distinti fra misura di lettura,
+      da lasciare, e contenitore, da liberare

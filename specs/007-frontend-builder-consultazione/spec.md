@@ -576,6 +576,18 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   nessun filtro richiede di interrogare il discovery. Il discovery serve
   soltanto a popolare le voci dei filtri.
 
+- **FR-029** (2026-09-23, richiesta d'uso): il contenitore applicativo MUST
+  adattarsi alla larghezza dello schermo invece di restare fisso. Era limitato
+  a 1320px a ogni risoluzione: su un monitor ampio le tabelle dei modelli, che
+  hanno molte colonne, restavano compresse fra due margini vuoti enormi. La
+  larghezza MUST essere definita in un unico punto e crescere per soglie sui
+  formati reali, lasciando invariato il comportamento sotto 1600px per non
+  regredire sui portatili. Le misure di lettura dei paragrafi MUST restare
+  indipendenti: una riga di testo troppo lunga si legge peggio, non meglio,
+  quindi non seguono la larghezza del contenitore. Le griglie di schede MUST
+  guadagnare colonne invece di dilatare le schede esistenti.
+
+
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
 selezionata nella navigazione. Tipo documentale e discovery sono risolti per

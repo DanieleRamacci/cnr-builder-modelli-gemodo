@@ -77,9 +77,17 @@
   border-bottom: 1px solid var(--td-border-200);
 
   .ricerca {
-    max-width: 320px;
+    flex: 1 1 260px;
+    max-width: 420px;
     height: 38px;
     min-width: 0;
+  }
+
+  /* Con tipologia, profilo e livello i controlli possono diventare sei: senza
+     una base flessibile si comprimerebbero fino a nascondere le etichette. */
+  .form-select {
+    flex: 0 1 auto;
+    min-width: 150px;
   }
 
   .form-select {
@@ -116,16 +124,12 @@
 
 .griglia-modelli {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Colonne per costruzione invece che per soglia: ne entrano quante lo
+     spazio ne consente, mantenendo la scheda leggibile. Su 1320px restano le
+     quattro di prima, su un monitor ampio diventano cinque o sei invece di
+     quattro schede dilatate. */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-
-  @media (max-width: 1199px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 575px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .card-modello {

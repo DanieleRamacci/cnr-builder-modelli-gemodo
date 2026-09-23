@@ -619,3 +619,11 @@ coverage:
     contract_ref: backend/tests/builder/test_filtri_modelli.py
     stato: COPERTO
     note: filtri, voci selezionabili e ricerca tutti lato server, 13 test in test_filtri_modelli.py piu' 4 in integrazioni-manager.component.spec.ts; resta aperta solo la nota sulla scala della ricerca (T105)
+
+  - id: COV-073
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-029
+    scenario_id: SCENARIO-11
+    contract_ref: frontend/src/styles.scss
+    stato: COPERTO
+    note: larghezza misurata in browser a 1366/1600/1920/2560 (contenitore 1320/1480/1720/2040, griglia 4/4/5/6 colonne); resta da verificare le altre schermate (T109)

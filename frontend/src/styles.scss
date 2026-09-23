@@ -18,6 +18,36 @@
   --mm-success-ink: #1b7a34;
   --mm-error-bg: #fdeaea;
   --mm-error-ink: #a3242c;
+
+  /* Larghezza del contenitore applicativo, definita una volta sola e usata
+     dall'intestazione, dal corpo e dal pie' di pagina dello shell.
+     Cresce sugli schermi grandi: le tabelle dei modelli hanno molte colonne e
+     su un monitor ampio restavano compresse in 1320px con margini enormi ai
+     lati. Le misure di lettura dei paragrafi (660px, 720px) NON seguono questa
+     variabile: una riga di testo troppo lunga si legge peggio, non meglio. */
+  --mm-shell-larghezza: 1320px;
+}
+
+/* Soglie scelte sui formati reali: 1600 copre i 27 pollici, 1920 i monitor
+   Full HD in verticale affiancati, 2400 i 4K e gli ultrawide. Sotto 1600 il
+   comportamento resta identico a prima, quindi nessuna regressione sui
+   portatili. */
+@media (min-width: 1600px) {
+  :root {
+    --mm-shell-larghezza: 1480px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --mm-shell-larghezza: 1720px;
+  }
+}
+
+@media (min-width: 2400px) {
+  :root {
+    --mm-shell-larghezza: 2040px;
+  }
 }
 
 .home-hero {

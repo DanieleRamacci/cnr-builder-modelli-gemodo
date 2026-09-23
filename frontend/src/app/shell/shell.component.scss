@@ -14,7 +14,7 @@
   align-items: center;
   gap: 24px;
   min-height: 60px;
-  max-width: 1320px;
+  max-width: var(--mm-shell-larghezza);
   margin: 0 auto;
   padding: 0 28px;
 }
@@ -98,7 +98,7 @@
 .app-main {
   flex: 1;
   width: 100%;
-  max-width: 1320px;
+  max-width: var(--mm-shell-larghezza);
   margin: 0 auto;
   padding: 24px 28px 48px;
 }
@@ -111,7 +111,7 @@
 }
 
 .app-footer-row {
-  max-width: 1320px;
+  max-width: var(--mm-shell-larghezza);
   margin: 0 auto;
   padding: 18px 28px;
 }
