@@ -746,3 +746,34 @@ coverage:
     stato: DA_COPRIRE
     note: "una dimensione scomparsa dall'albero non rende illeggibili i modelli che la valorizzano; edge case"
 
+  - id: COV-088
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-010
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "fallback del catalogo governato dalla policy invece che dal nome livello; generalizza DEC-007, che resta vera nel merito"
+
+  - id: COV-089
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-011
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "default di una dimensione da regola dichiarata e non dall'ordine dell'albero; assorbe DEC-002-DEFAULT-VALORE-DIMENSIONE"
+
+  - id: COV-090
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-012
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "variante e valori di dimensione restano due assi distinti nell'identita'; vedi DEC-002-VARIANTE-NOTA-IDENTITA"
+
+  - id: COV-091
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-013
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "edizione derivata resta definita sulla lingua: deroga dichiarata al principio generale, non svista"

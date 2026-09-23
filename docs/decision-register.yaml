@@ -927,7 +927,7 @@ decisions:
 
   - id: DEC-002-DEFAULT-VALORE-DIMENSIONE
     titolo: Quale valore proporre di default per una dimensione della categorizzazione
-    owner_spec: specs/002-builder-modelli
+    owner_spec: specs/011-dimensioni-generiche-modello
     spec_interessate:
       - specs/007-frontend-builder-consultazione
       - specs/010-configurazione-cataloghi-integrazioni

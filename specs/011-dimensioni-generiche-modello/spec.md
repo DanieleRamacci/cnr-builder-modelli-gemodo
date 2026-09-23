@@ -24,6 +24,66 @@ punti gia' scritti, che finora non avevano una spec proprietaria.
 - `010/spec.md` FR-019 (User Story 5): la policy per dimensione nasce per non
   avere «bisogno di nuovo codice per ogni dimensione futura».
 
+## Clarifications
+
+### Session 2026-09-23: conflitti con decisioni gia' confermate
+
+L'analisi di coerenza ha trovato quattro punti in cui `011` incrocia decisioni
+gia' chiuse. Risolti con l'utente lo stesso giorno.
+
+**Fallback del catalogo — segue la policy, per ogni dimensione.**
+`DEC-007-FALLBACK-LIVELLO-CATALOGO` (CONFERMATA, bloccante in fase TASKS)
+stabilisce che `GET /catalogo/modelli`, davanti a un livello privo di modello
+dedicato, ripiega sul modello generico, e che questo vale *unicamente* per
+`livello_professionale`. La regola diventa generale: il fallback scatta su
+qualunque dimensione la cui policy ammette il generico, e non scatta dove la
+policy richiede un valore esplicito. Cosi' smette di essere un elenco nel
+codice e diventa una conseguenza della configurazione.
+La motivazione originale per escludere la lingua resta valida e va conservata
+nella forma nuova: «tornare un'edizione diversa da quella esplicitamente
+richiesta sarebbe scorretto, non solo una scorciatoia». Con la regola generale
+quella protezione e' automatica, perche' la lingua ha
+`consente_valore_generico=false`; ma se un domani quella policy cambiasse, il
+fallback sulla lingua si attiverebbe come effetto collaterale. E' un rischio da
+tenere presente, non un difetto del disegno.
+
+**Edizione derivata — resta legata alla lingua.**
+`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO` (CONFERMATA) definisce l'edizione
+derivata sul vincolo `(derivato_da_modello_id, lingua)`. Non si generalizza.
+**Eccezione consapevole**: significa che la lingua resta speciale in un punto
+anche dopo US4. Va scritto cosi' invece di lasciarlo emergere come
+incoerenza - il criterio di successo «nessuna dimensione resta scritta a mano
+nel codice» ammette quindi una deroga esplicita e circoscritta al meccanismo
+delle edizioni derivate. Se in futuro servira' derivare rispetto a un'altra
+dimensione, sara' una decisione nuova, non un'estensione silenziosa di questa.
+
+**Variante — asse separato dalle dimensioni.**
+`DEC-002-VARIANTE-NOTA-IDENTITA` (CONFERMATA lo stesso giorno) rende la
+variante parte dell'identita'. Le due cose non si fondono: le dimensioni le
+**dichiara l'integrazione**, la variante la **decide l'admin**. L'identita'
+diventa quindi `(tipo documento, percorso, variante, valori di tutte le
+dimensioni)`. Tenerle distinte conserva la differenza fra un vincolo che
+arriva da fuori e una scelta organizzativa nostra.
+
+**Valore di default — assorbito da `011`.**
+`DEC-002-DEFAULT-VALORE-DIMENSIONE` era APERTA dal 2026-09-22 senza
+proprietario. Passa a questa spec: il default e' una proprieta' della
+dimensione, quindi appartiene a chi le rende generiche. L'osservazione che la
+motiva resta il punto di partenza: oggi il form preseleziona il primo valore
+dell'elenco, e «per la lingua esce `IT` solo perche' l'integrazione GEBAN la
+elenca per prima, non per una regola».
+
+### Osservazione emersa dall'analisi, non ancora una decisione
+
+`DEC-001-CAMPI-COMUNI-GEBAN` elenca il payload di generazione: «titolo e
+descrizione ridotta IT/EN, sedi e strutture IT/EN, medaglione IT/EN».
+**GEBAN invia gia' entrambe le lingue nella stessa richiesta**, ed e'
+confermato dal payload demo (`titolo_it` e `titolo_en` insieme). La
+separazione per lingua vive quindi nel modello, non nella sorgente dei dati.
+Non cambia nulla di per se', ma e' l'elemento di fatto piu' rilevante per US4 e
+va tenuto sul tavolo quando la si discutera' con GEBAN.
+
+
 ## Stato di partenza misurato (2026-09-23)
 
 Il meccanismo e' **generico a meta'**, e la meta' mancante e' quella che serve.
@@ -159,6 +219,23 @@ contro un endpoint discovery che dichiara quel tipo.
   `lingua` come campo obbligatorio e ci fa affidamento.
 - **FR-009**: Una dimensione scomparsa dall'albero live MUST NOT rendere
   illeggibili i modelli che la valorizzano.
+- **FR-010**: Il fallback del catalogo MUST essere governato dalla policy della
+  dimensione, non da un nome scritto nel codice: scatta dove
+  `consente_valore_generico` e' vero, non scatta altrove. Generalizza
+  `DEC-007-FALLBACK-LIVELLO-CATALOGO`, che resta valida nel merito per il
+  livello e la cui motivazione sulla lingua va conservata.
+- **FR-011**: Il valore proposto di default per una dimensione MUST seguire una
+  regola dichiarata, non l'ordine con cui l'integrazione elenca i valori.
+  Assorbe `DEC-002-DEFAULT-VALORE-DIMENSIONE`. L'ordine dell'albero discovery
+  non e' garantito stabile dal contratto, quindi non puo' essere la regola.
+- **FR-012**: L'identita' del modello MUST tenere distinti i due assi: la
+  variante, scelta dall'admin, e i valori di dimensione, dichiarati
+  dall'integrazione. Entrambi concorrono a identita' e unicita' della
+  pubblicazione, ma non si fondono in un unico meccanismo.
+- **FR-013**: L'edizione derivata MUST restare definita sulla lingua. E' una
+  deroga dichiarata al principio generale di questa spec, non una svista: vedi
+  Clarifications. Generalizzarla a un'altra dimensione MUST essere una
+  decisione nuova.
 
 ### Key Entities
 
@@ -181,7 +258,8 @@ contro un endpoint discovery che dichiara quel tipo.
   collegati attraverso la migrazione.
 - Nessuna dimensione resta scritta a mano nel codice: la ricerca di `"lingua"`
   e `"livello"` come costanti in `backend/app/builder/` non trova piu'
-  occorrenze che governino comportamento.
+  occorrenze che governino comportamento, **con l'unica deroga dichiarata delle
+  edizioni derivate** (FR-013).
 
 ## Assumptions
 
