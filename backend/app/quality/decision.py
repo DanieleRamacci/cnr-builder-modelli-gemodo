@@ -15,7 +15,8 @@ TRANSIZIONI_AMMESSE: dict[StatoDecisione, set[StatoDecisione]] = {
     StatoDecisione.APERTA: {StatoDecisione.ASSUNTA_PROVVISORIA, StatoDecisione.CONFERMATA},
     StatoDecisione.ASSUNTA_PROVVISORIA: {StatoDecisione.CONFERMATA, StatoDecisione.SOSPESA},
     StatoDecisione.SOSPESA: {StatoDecisione.ASSUNTA_PROVVISORIA, StatoDecisione.CONFERMATA},
-    StatoDecisione.CONFERMATA: set(),
+    StatoDecisione.CONFERMATA: {StatoDecisione.SUPERSEDUTA_PARZIALMENTE},
+    StatoDecisione.SUPERSEDUTA_PARZIALMENTE: {StatoDecisione.CONFERMATA},
 }
 
 # Ordine delle fasi Spec Kit usato per confrontare una fase bloccante con la fase che si
@@ -54,7 +55,8 @@ def validate_decisione(decisione: DecisioneAperta) -> None:
     violazioni: list[str] = []
     if not decisione.owner_spec:
         violazioni.append("owner_spec mancante")
-    if decisione.stato != StatoDecisione.CONFERMATA and not decisione.assunzione_provvisoria:
+    stati_risolti = {StatoDecisione.CONFERMATA, StatoDecisione.SUPERSEDUTA_PARZIALMENTE}
+    if decisione.stato not in stati_risolti and not decisione.assunzione_provvisoria:
         violazioni.append(
             f"decisione non CONFERMATA (stato {decisione.stato.value}) richiede 'assunzione_provvisoria' esplicita"
         )
@@ -77,7 +79,7 @@ def blocca_fase(decisione: DecisioneAperta, fase_richiesta: FaseBloccante) -> bo
 
     if decisione.fase_bloccante == FaseBloccante.NESSUNA:
         return False
-    if decisione.stato == StatoDecisione.CONFERMATA:
+    if decisione.stato in (StatoDecisione.CONFERMATA, StatoDecisione.SUPERSEDUTA_PARZIALMENTE):
         return False
     if decisione.stato == StatoDecisione.SOSPESA and decisione.impatto:
         return False

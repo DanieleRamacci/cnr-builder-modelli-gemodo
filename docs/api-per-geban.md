@@ -60,8 +60,9 @@ Regole che contano:
 - **La profondità è libera.** GEMODO cammina l'albero seguendo `figli`; una foglia
   è un nodo con `campi`. Non assumiamo un numero fisso di livelli.
 - **`tipo_livello` è informativo.** Non lo usiamo per decidere come camminare.
-- **`lingue_possibili` è obbligatorio sulle foglie.** Sono le lingue per cui si
-  possono creare modelli su quel nodo.
+- **`lingue_possibili` è opzionale sulle foglie** dal contratto discovery
+  `0.6.0`. Quando presente elenca le lingue disponibili; un tipo documento che
+  non ha una dimensione linguistica può ometterlo.
 - **Alias accettati per compatibilità:** `lingue` al posto di `lingue_possibili` e
   `ENG` al posto di `EN`. Se però inviate sia l'alias sia il nome canonico con
   valori diversi, la risposta viene rifiutata.
@@ -96,6 +97,7 @@ Ruolo: `DOCUMENTI_VIEWER`. Contratto: **`/docs/geban-catalog`**
   "tipo_documento": "BANDO_CONCORSO",
   "profilo": "COLLABORATORE_TECNICO_ER",
   "fallback_applicato": true,
+  "dimensioni_rilassate": ["livello_professionale"],
   "livello_richiesto": "V",
   "livello_risolto": null,
   "modelli": [
@@ -104,6 +106,7 @@ Ruolo: `DOCUMENTI_VIEWER`. Contratto: **`/docs/geban-catalog`**
       "modello_versione_id": 201,
       "lingua": "IT",
       "livello_professionale": null,
+      "dimensioni": {"lingua": "IT"},
       "stato": "PUBBLICATO",
       "edizioni_derivate": [
         { "modello_id": 102, "modello_versione_id": 202, "lingua": "EN", "edizioni_derivate": [] }
@@ -118,11 +121,25 @@ Tre cose da sapere, perché cambiano il vostro codice:
 - **`modello_versione_id` è l'identificativo che userete dopo.** Non `modello_id`.
 - **Le edizioni in altra lingua sono annidate**, non righe separate. Filtrando per
   `lingua=EN` ottenete invece l'edizione inglese al primo livello, senza il padre.
-- **Il fallback vale solo per il livello.** Se chiedete il livello V e non esiste un
-  modello dedicato, ricevete quello generico e la risposta ve lo dichiara con
-  `fallback_applicato: true`. **Sulla lingua non c'è fallback**: se chiedete EN e
-  l'edizione inglese non esiste, non vi diamo l'italiano, vi diamo un risultato
-  vuoto. Consegnare un documento nella lingua sbagliata è peggio che non consegnarlo.
+- **Il fallback è governato dalla policy della dimensione.** Le dimensioni con
+  `consente_valore_generico=true` possono essere rilassate una alla volta; la
+  risposta indica quali in `dimensioni_rilassate`. Per il bando le policy di
+  default mantengono il comportamento storico: fallback sul livello, match
+  esatto sulla lingua.
+
+Per filtrare una dimensione arbitraria usate la forma deep-object, per esempio
+`?dimensione[area_geografica]=NORD`. `lingua` e `livello_professionale` restano
+accettati come parametri compatibili.
+
+## Policy delle dimensioni
+
+Ogni nome di dimensione dichiarato dall'albero live ha una policy per tipo
+documento. `consente_valore_generico=false` richiede sempre un valore esplicito;
+`true` permette un modello senza quella chiave e abilita il relativo fallback
+nel catalogo. `valore_default` controlla soltanto la preselezione nel builder:
+non rende il campo obbligatorio e non sostituisce un valore mancante nelle API.
+Un default non più presente nell'albero viene segnalato e conservato finché un
+amministratore non lo modifica.
 
 ## 4. Sapere quali dati servono
 
@@ -197,6 +214,11 @@ Il download è possibile solo quando la generazione è `COMPLETATO`.
 | `MODELLO_VERSIONE_NON_PUBBLICATO` | La versione esiste ma è ancora bozza |
 | `INTEGRAZIONE_NON_CONNESSA` | L'integrazione non ha superato la verifica dell'endpoint |
 | `DISCOVERY_NON_DISPONIBILE` | Il vostro endpoint non ha risposto, o ha risposto fuori forma |
+| `DIMENSIONE_NON_DICHIARATA` | Il payload indica una dimensione non dichiarata dalla foglia scelta |
+
+Il precedente codice `GENERICO_NON_SUPPORTATO` è stato rimosso: anche la lingua
+può ammettere il generico quando l'amministratore modifica deliberatamente la
+relativa policy.
 
 Una versione fuori dal vostro contesto e una inesistente danno la stessa
 risposta: non riveliamo l'esistenza di risorse che non potete vedere.

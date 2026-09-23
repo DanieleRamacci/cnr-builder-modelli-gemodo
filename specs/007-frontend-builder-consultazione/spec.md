@@ -125,6 +125,9 @@ registrate in `docs/decision-register.yaml`:
   le referenzia, non piu' righe piatte slegate. Il meccanismo, oggi limitato a
   `lingua`, si generalizza a qualunque dimensione con
   `consente_valore_generico=false` una volta introdotta la policy sopra.
+  **Implementato da `011` FR-013/FR-014**: disponibilita', dimensione e valore
+  dell'edizione collegata derivano dall'albero live e dalla policy, senza nomi
+  di dimensione cablati nell'interfaccia.
 
 **Aggiornamento 2026-09-21 (bis)**: il design handoff e' stato esteso con la
 schermata 4a (`configure-dimensions`), che colloca questa configurazione

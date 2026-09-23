@@ -102,6 +102,47 @@ def test_search_modelli_historical_passes_date_filters(monkeypatch):
     assert fake_service.calls[0]["pubblicato_a"].isoformat() == "2026-12-31"
 
 
+def test_search_modelli_passes_generic_dimension_filters(monkeypatch):
+    fake_service = FakeCatalogService()
+    monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
+    app.dependency_overrides[get_catalog_service] = lambda: fake_service
+    try:
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/v1/catalogo/modelli",
+                params={
+                    "tipo_documento": "BANDO_CONCORSO",
+                    "dimensione[area_geografica]": "NORD",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert fake_service.calls[0]["dimensioni"] == {"area_geografica": "NORD"}
+
+
+def test_search_modelli_rejects_conflicting_generic_dimension_values(monkeypatch):
+    fake_service = FakeCatalogService()
+    monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
+    app.dependency_overrides[get_catalog_service] = lambda: fake_service
+    try:
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/v1/catalogo/modelli",
+                params=[
+                    ("tipo_documento", "BANDO_CONCORSO"),
+                    ("dimensione[area_geografica]", "NORD"),
+                    ("dimensione[area_geografica]", "SUD"),
+                ],
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    assert fake_service.calls == []
+
+
 def test_search_modelli_invalid_context_returns_error_envelope(monkeypatch):
     monkeypatch.setenv("GEMODO_USE_MOCK_PRINCIPAL", "true")
 

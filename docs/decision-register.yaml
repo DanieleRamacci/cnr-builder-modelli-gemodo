@@ -598,7 +598,7 @@ decisions:
     spec_interessate:
       - specs/003-sezioni-placeholder-versionamento
       - specs/004-generazione-documenti-pdf
-    stato: CONFERMATA
+    stato: SUPERSEDUTA_PARZIALMENTE
     assunzione_provvisoria: null
     impatto: >
       aggiornato 2026-09-21: italiano e inglese sono modelli distinti, pubblicati e
@@ -608,8 +608,13 @@ decisions:
       per chiamata indicando il relativo modello_versione_id. `bando_inglese` e'
       ritirato: la versione modello selezionata determina lingua e contratto campi.
       Non viene introdotto un famiglia_modello_id.
+      Aggiornato 2026-09-23 da `011`: resta valido che le edizioni sono modelli
+      distinti e che GEBAN seleziona `modello_versione_id`; il vincolo sui
+      valori ammessi e sull'obbligatorieta' della lingua passa dallo schema alla
+      policy della dimensione ed e' deliberatamente disattivabile. L'impatto e'
+      mitigato dall'avviso sui modelli pubblicati e dai test del fallback.
     fase_bloccante: TASKS
-    data_ultima_revisione: 2026-09-21
+    data_ultima_revisione: 2026-09-23
 
   - id: DEC-001-CAMPI-COMUNI-GEBAN
     titolo: Campi comuni GEBAN per generazione
@@ -906,22 +911,12 @@ decisions:
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
-      Supera PARZIALMENTE la regola "nessun fallback automatico" della sessione
-      007 2026-09-18 (mai stata una voce di questo registro, solo prosa in
-      spec.md): il fallback vale unicamente per `livello_professionale`, non
-      per `lingua` ne' per `percorso_categorizzazione`, che restano a match
-      esatto senza fallback. `GET /catalogo/modelli` con un livello specifico
-      privo di modello dedicato deve cercare, in un secondo passo esplicito, il
-      modello con `livello_professionale IS NULL` (il generico che copre tutti
-      i livelli di quel profilo) invece di restituire lista vuota - mai "il
-      primo livello trovato", solo quello esplicitamente generico. Motivato dal
-      vincolo gia' confermato "tutti i livelli dell'ultima foglia usano lo
-      stesso contratto campi" (Clarification 007 sessione 2026-09-21), che
-      garantisce compatibilita' anche quando il fallback scatta. Lingua non ha
-      fallback perche' ogni edizione linguistica ha un ciclo di vita di
-      pubblicazione indipendente (FR-034..038, DEC-001-LINGUA-IT-EN) - tornare
-      un'edizione diversa da quella esplicitamente richiesta sarebbe scorretto,
-      non solo una scorciatoia.
+      Generalizzata da `011` il 2026-09-23: il fallback non dipende dal nome
+      `livello_professionale`, ma dalla policy
+      `consente_valore_generico=true`. Le dimensioni richieste vengono
+      rilassate una alla volta in ordine deterministico e la risposta le indica
+      in `dimensioni_rilassate`. Le policy di default conservano il merito della
+      decisione originaria: livello generico ammesso, lingua a match esatto.
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-21
 
@@ -931,23 +926,13 @@ decisions:
     spec_interessate:
       - specs/007-frontend-builder-consultazione
       - specs/010-configurazione-cataloghi-integrazioni
-    stato: APERTA
-    assunzione_provvisoria: >
-      Oggi il form di creazione modello preseleziona semplicemente il primo
-      valore dell'elenco che la foglia discovery dichiara (per la lingua esce
-      'IT' solo perche' l'integrazione GEBAN la elenca per prima, non per una
-      regola). Nessuna regola e' scritta da nessuna parte.
+    stato: CONFERMATA
+    assunzione_provvisoria: null
     impatto: >
-      Ipotesi indicata dall'utente il 2026-09-22: il default e' il primo valore
-      nell'ordine dichiarato dall'integrazione, e vale come default soltanto
-      quando la dimensione e' obbligatoria, cioe' quando la sua
-      PolicyDimensione ha consente_valore_generico=false. Quando la dimensione
-      ammette il generico, l'assenza di valore resta la scelta di default.
-      Da confermare guardando i dati reali: dipende dal fatto che l'ordine
-      restituito dall'integrazione sia significativo e stabile, cosa che il
-      contratto di discovery oggi non garantisce. Tocca il form di creazione
-      (frontend/src/features/builder/modello-crea.component.ts) e la
-      documentazione del contratto discovery.
+      Assorbita il 2026-09-23 da DEC-011-DEFAULT-DIMENSIONE: il default e' un
+      valore esplicito della policy, mai il primo elemento dell'albero. NULL
+      significa nessuna preselezione. Un default non piu' disponibile viene
+      segnalato e conservato fino a una modifica amministrativa.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-22
 
@@ -1124,13 +1109,8 @@ decisions:
       - specs/002-builder-modelli
       - specs/010-configurazione-cataloghi-integrazioni
       - specs/007-frontend-builder-consultazione
-    stato: ASSUNTA_PROVVISORIA
-    assunzione_provvisoria: >
-      Si assume che i valori di dimensione vadano in una struttura per nome,
-      al posto delle colonne `lingua` e `livello_professionale` su
-      `modello_documento`. L'assunzione regge finche' non si accerta cosa GEBAN
-      puo' ricevere: FR-008 e' il punto che richiede una decisione condivisa
-      con loro, e senza quella US4 e US5 non si chiudono.
+    stato: CONFERMATA
+    assunzione_provvisoria: null
     impatto: >
       Aperta il 2026-09-23 dopo il collaudo dell'interfaccia. Il meccanismo
       delle dimensioni e' generico a meta': riconoscimento e policy lo sono
@@ -1147,5 +1127,119 @@ decisions:
       da'. Riapre `DEC-001-LINGUA-IT-EN`, che aveva fissato italiano e inglese
       come modelli distinti quando il bando era l'unico documento e GEBAN
       l'unico consumatore.
+      Confermata il 2026-09-23: il contratto verso GEBAN evolve in modo
+      additivo e behavior-safe per i tipi attuali; la presa d'atto precede il
+      rilascio ma non blocca l'implementazione.
     fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-PERSISTENZA-DIMENSIONI
+    titolo: Persistenza generica dei valori di dimensione
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/001-catalogo-contratto-geban, specs/002-builder-modelli]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      I valori vivono nel JSONB `modello_documento.dimensioni`; chiave assente
+      significa non valorizzata. Lingua e livello professionale restano solo
+      proiezioni compatibili nei contratti.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-CONTRATTO-GEBAN-ADDITIVO
+    titolo: Evoluzione additiva del catalogo verso GEBAN
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/001-catalogo-contratto-geban]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Il catalogo aggiunge `dimensioni` e rende `lingua` nullable. Per i tipi
+      consumati oggi la lingua resta valorizzata; serve presa d'atto prima del
+      rilascio, non approvazione preventiva dell'implementazione.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-POLICY-LINGUA-ALL-ADMIN
+    titolo: La policy della lingua e' modificabile dall'amministratore
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/010-configurazione-cataloghi-integrazioni]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Nessun nome di dimensione e' escluso dalla policy generica. Il cambio che
+      abilita fallback espone prima il conteggio dei modelli pubblicati coinvolti.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-DEFAULT-DIMENSIONE
+    titolo: Default esplicito nella policy della dimensione
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/007-frontend-builder-consultazione, specs/010-configurazione-cataloghi-integrazioni]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      `valore_default` controlla la preselezione nel builder; NULL non seleziona
+      nulla. L'ordine dei valori discovery non ha significato di default.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-FALLBACK-GOVERNATO-DA-POLICY
+    titolo: Fallback generico governato dalla policy
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/001-catalogo-contratto-geban, specs/007-frontend-builder-consultazione]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Il catalogo rilassa solo dimensioni con `consente_valore_generico=true`,
+      una alla volta in ordine alfabetico, e le dichiara nella risposta.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-IDENTITA-SENZA-NOMI-CABLATI
+    titolo: Identita' del modello composta dalle dimensioni
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/002-builder-modelli]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Codice e nome usano i valori grezzi delle dimensioni in ordine alfabetico,
+      senza etichette speciali per lingua o livello.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-MIGRAZIONE-IN-UN-PASSO
+    titolo: Migrazione atomica delle dimensioni esistenti
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/002-builder-modelli]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      La migration 0020 popola il JSONB, rinomina la policy del livello e
+      conserva i default nello stesso passaggio, con downgrade dichiaratamente
+      lossy per le dimensioni nuove.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-DERIVAZIONE-GOVERNATA-DA-POLICY
+    titolo: Edizioni collegate derivate da dimensioni obbligatorie
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/002-builder-modelli, specs/007-frontend-builder-consultazione]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      L'azione e' disponibile solo per dimensioni obbligatorie e multivalore;
+      dimensione e valore vengono scelti dai dati live, non dal nome `lingua`.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-LINGUA-OPZIONALE-SULLA-FOGLIA
+    titolo: La lingua e' opzionale nella discovery di una foglia
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/010-configurazione-cataloghi-integrazioni]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Dal contratto discovery 0.6.0 una foglia senza dimensione linguistica e'
+      valida. E' un rilassamento retrocompatibile; GEBAN deve esserne informato.
+    fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-23

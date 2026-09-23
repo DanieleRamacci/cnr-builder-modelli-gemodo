@@ -121,7 +121,7 @@ def test_admin_configures_policy_for_a_type_discovered_live(admin_client, discov
     policies = client.get(base + "/BANDO_CONCORSO/policy-dimensioni")
     assert policies.status_code == 200, policies.text
     assert {item["nome_dimensione"] for item in policies.json()["policy"]} == {
-        "lingua", "livello",
+        "lingua", "livello_professionale",
     }
     assert {item["nome_dimensione"] for item in policies.json()["dimensioni_non_configurate"]} == {
         "canale",
@@ -288,8 +288,8 @@ def test_disattivazione_bloccata_se_esistono_modelli(admin_client):
     with engine.begin() as db:
         db.execute(sa.text("""
             INSERT INTO modello_documento
-                (id, tipo_documento_id, codice_categoria, codice_tipologia, percorso_categorizzazione, codice, nome, stato, lingua)
-            VALUES (gen_random_uuid(), :tipo_id, 'RIC', 'TD', '["TD","RIC"]'::jsonb, :mod_code, 'Modello test', 'BOZZA', 'IT')
+                (id, tipo_documento_id, codice_categoria, codice_tipologia, percorso_categorizzazione, codice, nome, stato, dimensioni)
+            VALUES (gen_random_uuid(), :tipo_id, 'RIC', 'TD', '["TD","RIC"]'::jsonb, :mod_code, 'Modello test', 'BOZZA', '{"lingua": "IT"}'::jsonb)
         """), {"tipo_id": created["id"], "mod_code": "MOD_" + code})
 
     blocked = client.delete(f"/api/v1/configurazione/tipi-documento/id/{created['id']}")

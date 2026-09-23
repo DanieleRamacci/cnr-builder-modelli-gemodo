@@ -11,10 +11,27 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, PolicyDimensione, TipoDocumento
 
-# Valore del filtro livello che seleziona i modelli generici, dove la colonna
-# e' NULL. Serve un token esplicito perche' "assente" in un filtro significa
-# gia' "non filtrare".
+# Valore del filtro livello che seleziona i modelli generici, cioe' quelli che
+# non valorizzano la dimensione. Serve un token esplicito perche' "assente" in
+# un filtro significa gia' "non filtrare".
 LIVELLO_GENERICO = "TUTTI"
+
+# 011 T054: il nome della dimensione del livello e' uniformato a quello della
+# colonna che sostituisce e del campo di contratto. Tenere due nomi avrebbe
+# cablato la traduzione fra loro.
+NOME_LIVELLO = "livello_professionale"
+
+
+def _filtro_dimensione(nome: str, valore: str):
+    """Condizione sul valore di una dimensione dentro il documento `dimensioni`.
+
+    `LIVELLO_GENERICO` seleziona i modelli che **non** valorizzano la dimensione:
+    con le colonne era `IS NULL`, con il documento e' l'assenza della chiave, che
+    e' il modo in cui 011 FR-006 esprime "dimensione non valorizzata".
+    """
+    if valore == LIVELLO_GENERICO:
+        return ~ModelloDocumento.dimensioni.has_key(nome)  # noqa: W601 - operatore JSONB, non dict.has_key
+    return ModelloDocumento.dimensioni[nome].astext == valore
 
 
 def lista_modelli(
@@ -53,15 +70,9 @@ def lista_modelli(
     if codice_categoria is not None:
         query = query.where(ModelloDocumento.codice_categoria == codice_categoria)
     if lingua is not None:
-        query = query.where(ModelloDocumento.lingua == lingua)
+        query = query.where(_filtro_dimensione("lingua", lingua))
     if livello_professionale is not None:
-        # "TUTTI" seleziona i modelli generici, dove la colonna e' NULL: senza
-        # questo, un livello non valorizzato non sarebbe filtrabile affatto.
-        query = query.where(
-            ModelloDocumento.livello_professionale.is_(None)
-            if livello_professionale == LIVELLO_GENERICO
-            else ModelloDocumento.livello_professionale == livello_professionale
-        )
+        query = query.where(_filtro_dimensione(NOME_LIVELLO, livello_professionale))
     if variante is not None:
         query = query.where(ModelloDocumento.variante == variante)
     if stato_versione is not None:
@@ -117,23 +128,45 @@ def voci_filtro(db: Session, codice_contesto: str) -> dict[str, list[str]]:
         )
         return sorted(valore for valore in db.scalars(query) if valore is not None)
 
-    livelli = distinti(ModelloDocumento.livello_professionale)
-    ha_generici = db.scalar(
-        select(ModelloDocumento.id)
-        .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
-        .where(
-            TipoDocumento.codice_contesto == codice_contesto,
-            ModelloDocumento.stato != "ELIMINATO",
-            ModelloDocumento.livello_professionale.is_(None),
+    def distinti_dimensione(nome: str) -> list[str]:
+        """Valori distinti di una dimensione, letti dentro il documento JSONB.
+
+        Sostituisce il `DISTINCT` su colonna: e' il costo accettato di
+        DEC-011-PERSISTENZA-DIMENSIONI, ed e' circoscritto a questa funzione.
+        """
+        query = (
+            select(ModelloDocumento.dimensioni[nome].astext)
+            .select_from(ModelloDocumento)
+            .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
+            .where(
+                TipoDocumento.codice_contesto == codice_contesto,
+                ModelloDocumento.stato != "ELIMINATO",
+            )
+            .distinct()
         )
-        .limit(1)
-    ) is not None
+        return sorted(valore for valore in db.scalars(query) if valore is not None)
+
+    def esiste_senza_dimensione(nome: str) -> bool:
+        return db.scalar(
+            select(ModelloDocumento.id)
+            .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
+            .where(
+                TipoDocumento.codice_contesto == codice_contesto,
+                ModelloDocumento.stato != "ELIMINATO",
+                ~ModelloDocumento.dimensioni.has_key(nome),  # noqa: W601 - operatore JSONB
+            )
+            .limit(1)
+        ) is not None
+
+    livelli = distinti_dimensione(NOME_LIVELLO)
     return {
         "codici_tipo_documento": distinti(TipoDocumento.codice),
         "codici_tipologia": distinti(ModelloDocumento.codice_tipologia),
         "codici_categoria": distinti(ModelloDocumento.codice_categoria),
-        "lingue": distinti(ModelloDocumento.lingua),
-        "livelli_professionali": ([LIVELLO_GENERICO] + livelli) if ha_generici else livelli,
+        "lingue": distinti_dimensione("lingua"),
+        "livelli_professionali": (
+            [LIVELLO_GENERICO] + livelli if esiste_senza_dimensione(NOME_LIVELLO) else livelli
+        ),
         "varianti": distinti(ModelloDocumento.variante),
     }
 
@@ -154,8 +187,28 @@ def policy_dimensioni(db: Session, tipo_documento_id) -> list[PolicyDimensione]:
         .order_by(PolicyDimensione.nome_dimensione)))
 
 
+def conta_modelli_pubblicati_con_dimensione(
+    db: Session, tipo_documento_id, nome_dimensione: str
+) -> int:
+    """Conta i modelli pubblicati che valorizzano la dimensione richiesta."""
+    return int(db.scalar(
+        select(func.count(func.distinct(ModelloDocumento.id)))
+        .join(
+            ModelloDocumentoVersione,
+            ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id,
+        )
+        .where(
+            ModelloDocumento.tipo_documento_id == tipo_documento_id,
+            ModelloDocumento.stato != "ELIMINATO",
+            ModelloDocumentoVersione.stato == "PUBBLICATO",
+            ModelloDocumento.dimensioni.has_key(nome_dimensione),  # noqa: W601 - operatore JSONB
+        )
+    ) or 0)
+
+
 def salva_policy_dimensione(
-    db: Session, *, tipo_documento_id, nome_dimensione: str, consente_valore_generico: bool, soggetto: str | None,
+    db: Session, *, tipo_documento_id, nome_dimensione: str, consente_valore_generico: bool,
+    soggetto: str | None, valore_default: str | None = None,
 ) -> tuple[PolicyDimensione, bool]:
     """Aggiorna la policy se esiste, altrimenti la crea. Mai due righe per lo stesso nome."""
     esistente = db.scalar(select(PolicyDimensione).where(
@@ -164,13 +217,15 @@ def salva_policy_dimensione(
     ).with_for_update())
     if esistente is not None:
         esistente.consente_valore_generico = consente_valore_generico
+        esistente.valore_default = valore_default
         esistente.updated_at = datetime.now(timezone.utc)
         esistente.updated_by = soggetto
         db.flush()
         return esistente, False
     creata = PolicyDimensione(
         tipo_documento_id=tipo_documento_id, nome_dimensione=nome_dimensione,
-        consente_valore_generico=consente_valore_generico, updated_by=soggetto,
+        consente_valore_generico=consente_valore_generico,
+        valore_default=valore_default, updated_by=soggetto,
     )
     db.add(creata)
     db.flush()
@@ -193,8 +248,7 @@ def crea_modello(
     codice_tipologia: str | None,
     percorso_categorizzazione: list[str],
     variante: str,
-    lingua: str,
-    livello_professionale: str | None,
+    dimensioni: dict[str, str],
     derivato_da_modello_id: uuid.UUID | None = None,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
@@ -207,8 +261,7 @@ def crea_modello(
         codice=codice,
         nome=nome,
         variante=variante,
-        lingua=lingua,
-        livello_professionale=livello_professionale,
+        dimensioni=dict(dimensioni),
         derivato_da_modello_id=derivato_da_modello_id,
         stato="ATTIVA",
     )
@@ -276,11 +329,18 @@ def get_ultima_versione_con_campi(
 
 
 def get_edizione_derivata(
-    db: Session, modello_origine_id: uuid.UUID, lingua: str,
+    db: Session, modello_origine_id: uuid.UUID, nome_dimensione: str, valore: str,
 ) -> ModelloDocumento | None:
+    """L'edizione gia' derivata dall'origine per quel valore di dimensione.
+
+    011 FR-013: la derivazione non e' piu' definita sulla lingua ma sulla
+    dimensione. Il criterio che rende disponibile la funzione e' la policy -
+    si deriva su una dimensione obbligatoria, perche' e' li' che il modello di
+    origine ha certamente il valore di partenza - non il nome `lingua`.
+    """
     return db.scalar(select(ModelloDocumento).where(
         ModelloDocumento.derivato_da_modello_id == modello_origine_id,
-        ModelloDocumento.lingua == lingua,
+        ModelloDocumento.dimensioni[nome_dimensione].astext == valore,
         ModelloDocumento.stato != "ELIMINATO",
     ))
 
@@ -317,10 +377,20 @@ def get_versione_pubblicata_corrente(
     tipo_documento_id: uuid.UUID,
     percorso_categorizzazione: list[str],
     variante: str,
-    lingua: str,
-    livello_professionale: str | None,
+    dimensioni: dict[str, str],
     escludi_versione_id: uuid.UUID,
 ) -> ModelloDocumentoVersione | None:
+    """La versione pubblicata che occupa gia' lo stesso slot (011 FR-004).
+
+    Lo slot passa da cinque colonne a quattro termini, di cui uno composito.
+    `dimensioni` si confronta per **uguaglianza JSONB**, che PostgreSQL valuta
+    per contenuto e non per ordine di inserimento delle chiavi: due modelli che
+    differiscono anche per una sola dimensione occupano slot diversi e restano
+    entrambi pubblicati, invece di archiviarsi a vicenda.
+
+    `variante` resta un termine distinto e non entra in `dimensioni` (FR-012):
+    la decide l'admin, mentre le dimensioni le dichiara l'integrazione.
+    """
     stmt = (
         select(ModelloDocumentoVersione)
         .join(ModelloDocumento, ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id)
@@ -328,8 +398,7 @@ def get_versione_pubblicata_corrente(
             ModelloDocumento.tipo_documento_id == tipo_documento_id,
             ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
             ModelloDocumento.variante == variante,
-            ModelloDocumento.lingua == lingua,
-            ModelloDocumento.livello_professionale == livello_professionale,
+            ModelloDocumento.dimensioni == dimensioni,
             ModelloDocumentoVersione.stato == "PUBBLICATO",
             ModelloDocumentoVersione.id != escludi_versione_id,
         )

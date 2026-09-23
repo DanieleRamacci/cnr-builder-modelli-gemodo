@@ -348,7 +348,10 @@ class IntegrazioniService:
             if nodo.lingue_possibili:
                 dimensioni.add("lingua")
             if nodo.livelli_possibili:
-                dimensioni.add("livello")
+                # 011 T054: il nome della dimensione e' uniformato a quello della
+                # colonna che ha sostituito e del campo di contratto. Tenerne due
+                # avrebbe cablato la traduzione fra loro in ModelloCatalogoSchema.
+                dimensioni.add("livello_professionale")
             for nome, valori in (nodo.model_extra or {}).items():
                 if isinstance(valori, (list, tuple)) and valori:
                     dimensioni.add(nome)
@@ -407,7 +410,17 @@ class IntegrazioniService:
         tipo = self._tipo_live_locale(source, codice, associa=False)
         policy = builder_repository.policy_dimensioni(self.db, tipo.id) if tipo else []
         configurate = {item.nome_dimensione for item in policy}
-        return policy, sorted(self._dimensioni_catalogo(catalogo) - configurate)
+        non_configurate = sorted(self._dimensioni_catalogo(catalogo) - configurate)
+        conteggi = {
+            nome: (
+                builder_repository.conta_modelli_pubblicati_con_dimensione(
+                    self.db, tipo.id, nome
+                )
+                if tipo else 0
+            )
+            for nome in configurate | set(non_configurate)
+        }
+        return policy, non_configurate, conteggi
 
     def imposta_policy_dimensione_live(
         self, integrazione_id: uuid.UUID, codice: str, request, principal: PrincipalGEMODO
@@ -426,18 +439,13 @@ class IntegrazioniService:
                 "La dimensione non e' dichiarata nell'albero live",
                 status_code=409,
             )
-        if request.nome_dimensione == "lingua" and request.consente_valore_generico:
-            raise DomainError(
-                "GENERICO_NON_SUPPORTATO",
-                "La dimensione 'lingua' richiede sempre una scelta esplicita",
-                status_code=409,
-            )
         tipo = self._tipo_live_locale(source, codice, associa=True)
         policy, _ = builder_repository.salva_policy_dimensione(
             self.db,
             tipo_documento_id=tipo.id,
             nome_dimensione=request.nome_dimensione,
             consente_valore_generico=request.consente_valore_generico,
+            valore_default=request.valore_default,
             soggetto=principal.subject,
         )
         self._audit(
@@ -448,6 +456,7 @@ class IntegrazioniService:
                 "codice_tipo_documento": codice,
                 "nome_dimensione": request.nome_dimensione,
                 "consente_valore_generico": request.consente_valore_generico,
+                "valore_default": request.valore_default,
             },
         )
         self.db.commit()

@@ -20,5 +20,32 @@
         }]
       }]
     }]
+  },
+  "CONTRATTI": {
+    "validita": "2026-09-23T00:00:00Z",
+    "nodi": [{
+      "codice": "COLLABORAZIONE",
+      "descrizione": "DEMO - Contratto di collaborazione",
+      "figli": [{
+        "codice": "PRESTAZIONE_OCCASIONALE",
+        "descrizione": "DEMO - Prestazione occasionale",
+        "area_geografica": ["NORD", "CENTRO", "SUD"],
+        "campi": [{
+          "codice": "oggetto_contratto",
+          "etichetta": "Oggetto del contratto",
+          "tipo": "string",
+          "lingua": "IT",
+          "ordine": 1,
+          "obbligatorio": true
+        }, {
+          "codice": "compenso",
+          "etichetta": "Compenso lordo",
+          "tipo": "number",
+          "lingua": "IT",
+          "ordine": 2,
+          "obbligatorio": true
+        }]
+      }]
+    }]
   }
 }

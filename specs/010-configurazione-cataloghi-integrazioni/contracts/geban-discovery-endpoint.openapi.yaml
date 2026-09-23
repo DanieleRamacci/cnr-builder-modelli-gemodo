@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.5.0
+  version: 0.6.0
   description: >
     Questo file descrive la modalita ad albero completo. La proposta alternativa
     a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
@@ -383,8 +383,14 @@ components:
           minItems: 1
           uniqueItems: true
           description: >
-            Lingue dei modelli creabili sulla foglia. Obbligatorio sui nodi
-            con `campi`, assente sui nodi intermedi. Non filtra i campi: ogni
+            Lingue dei modelli creabili sulla foglia. **Opzionale** (0.6.0,
+            spec 011): un tipo documento che non distingue i modelli per lingua
+            semplicemente non dichiara questa chiave, e GEMODO non gliene
+            attribuisce una implicita. Fino alla 0.5.0 era obbligatoria sui
+            nodi con `campi`, e una foglia priva di lingua rendeva non
+            conforme l'intera risposta. E' un rilassamento: ogni albero valido
+            con la 0.5.0 resta valido, nessuna integrazione deve cambiare
+            nulla. Resta assente sui nodi intermedi. Non filtra i campi: ogni
             modello conserva l'intero contratto della foglia.
           items:
             type: string

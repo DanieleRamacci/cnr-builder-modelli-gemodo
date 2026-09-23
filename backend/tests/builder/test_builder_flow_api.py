@@ -496,8 +496,15 @@ def test_creation_generates_identity_and_validates_language_and_level(builder_cl
     assert level_it["livello_professionale"] == "VI"
     assert len({generic_it["codice"], generic_en["codice"], level_it["codice"]}) == 3
     assert generic_it["codice"].endswith(generic_it["id"].replace("-", ""))
-    assert "Tutti i livelli" in generic_it["nome"] and "Italiano" in generic_it["nome"]
-    assert "Livello VI" in level_it["nome"]
+    # 011 DEC-011-IDENTITA-SENZA-NOMI-CABLATI: i nomi umani "Italiano" e
+    # "Tutti i livelli" esistevano solo per lingua e livello, e per una
+    # dimensione nuova non ci sarebbe stato nulla di simile. Il nome ora porta i
+    # valori grezzi, in ordine alfabetico di nome dimensione, e una dimensione
+    # non valorizzata semplicemente non compare: l'assenza e' l'informazione.
+    assert "IT" in generic_it["nome"] and "Tutti i livelli" not in generic_it["nome"]
+    assert generic_it["dimensioni"] == {"lingua": "IT"}
+    assert level_it["dimensioni"] == {"lingua": "IT", "livello_professionale": "VI"}
+    assert level_it["nome"].endswith("IT - VI - " + level_it["nome"].rsplit(" - ", 1)[-1])
 
     invalid_level = _richiesta_percorso("ignored", ["TD", "RICERCATORE"])
     invalid_level["livello_professionale"] = "VII"
@@ -512,7 +519,9 @@ def test_generated_identity_is_unique_for_concurrent_creations():
 
     def generate(_: int) -> tuple[str, str]:
         return _identita_modello(
-            tipo="BANDO_CONCORSO", nodi=nodes, lingua="IT", livello="VI", modello_id=uuid.uuid4(),
+            tipo="BANDO_CONCORSO", nodi=nodes,
+            dimensioni={"lingua": "IT", "livello_professionale": "VI"},
+            modello_id=uuid.uuid4(),
         )
 
     with ThreadPoolExecutor(max_workers=8) as executor:

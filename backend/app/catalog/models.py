@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -44,7 +44,21 @@ class ModelloDocumento(Base):
     __tablename__ = "modello_documento"
     __table_args__ = (
         UniqueConstraint("tipo_documento_id", "codice", name="uq_modello_documento_tipo_codice"),
-        CheckConstraint("lingua IN ('IT', 'EN')", name="ck_modello_documento_lingua"),
+        # L'indice serve due letture: l'uguaglianza esatta su cui poggia
+        # l'unicita' della versione pubblicata (011 FR-004) e il contenimento
+        # `dimensioni @> '{"lingua": "IT"}'` che ha sostituito i filtri per
+        # colonna di `lista_modelli`.
+        Index("ix_modello_documento_dimensioni", "dimensioni", postgresql_using="gin"),
+        # Due edizioni derivate dalla stessa origine non possono avere le stesse
+        # dimensioni. E' la forma generalizzata dell'indice che 0019 teneva su
+        # `(derivato_da_modello_id, lingua)`: protegge dalle creazioni simultanee,
+        # dove il controllo applicativo da solo non basta (002 FR-018).
+        Index(
+            "uq_modello_derivato_padre_lingua",
+            "derivato_da_modello_id", "dimensioni",
+            unique=True,
+            postgresql_where=text("stato <> 'ELIMINATO'"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -58,8 +72,15 @@ class ModelloDocumento(Base):
     codice: Mapped[str] = mapped_column(String(128), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     variante: Mapped[str] = mapped_column(String(64), nullable=False, default="STANDARD")
-    lingua: Mapped[str] = mapped_column(String(2), nullable=False, default="IT")
-    livello_professionale: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # 011 DEC-011-PERSISTENZA-DIMENSIONI: la categorizzazione non e' piu' due
+    # colonne dedicate ma un documento per nome di dimensione. Una chiave
+    # assente significa dimensione non valorizzata, ed e' l'unico modo per
+    # esprimerlo (FR-006): nessun valore `null` dentro il documento, cosi' non
+    # c'e' ambiguita' fra "non valorizzata" e "valorizzata a nulla".
+    # `variante` resta una colonna propria: la decide l'admin, mentre le
+    # dimensioni le dichiara l'integrazione (FR-012), e i due assi non si
+    # fondono.
+    dimensioni: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
     derivato_da_modello_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("modello_documento.id", ondelete="SET NULL"), nullable=True
     )
@@ -124,6 +145,12 @@ class PolicyDimensione(Base):
     )
     nome_dimensione: Mapped[str] = mapped_column(String(64), nullable=False)
     consente_valore_generico: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # 011 DEC-011-DEFAULT-DIMENSIONE: il valore che il form preseleziona.
+    # NULL significa "nessuna preselezione", ed e' anche il modo di dire "per
+    # questa dimensione il default e' il generico". Non e' vincolato ai valori
+    # dell'albero live: un valore che sparisce va segnalato, non cancellato
+    # (stesso principio di FR-009).
+    valore_default: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)

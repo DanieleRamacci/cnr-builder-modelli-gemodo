@@ -30,7 +30,7 @@ POLICY_URL = "/api/v1/builder/tipi-documento/BANDO_CONCORSO/policy-dimensioni"
 
 # Le policy sono persistite e il database di test e' condiviso: senza ripristino
 # un test lascerebbe `livello` obbligatorio e farebbe fallire gli altri.
-DEFAULT = {"lingua": False, "livello": True}
+DEFAULT = {"lingua": False, "livello_professionale": True}
 
 
 @pytest.fixture(autouse=True)
@@ -71,10 +71,10 @@ def _crea(client, *, lingua="IT", livello=...):
 def test_policy_is_unique_per_type_and_dimension_name(builder_client, db_engine, catalogo_esterno):
     """Una riga sola per nome, anche se il nome ricompare su piu' foglie."""
     client = builder_client
-    prima = client.put(POLICY_URL, json={"nome_dimensione": "livello", "consente_valore_generico": False})
+    prima = client.put(POLICY_URL, json={"nome_dimensione": "livello_professionale", "consente_valore_generico": False})
     assert prima.status_code in {200, 201}, prima.text
 
-    seconda = client.put(POLICY_URL, json={"nome_dimensione": "livello", "consente_valore_generico": True})
+    seconda = client.put(POLICY_URL, json={"nome_dimensione": "livello_professionale", "consente_valore_generico": True})
     assert seconda.status_code == 200, seconda.text
     assert seconda.json()["consente_valore_generico"] is True
 
@@ -82,7 +82,7 @@ def test_policy_is_unique_per_type_and_dimension_name(builder_client, db_engine,
         righe = db.scalar(
             sa.text(
                 "SELECT count(*) FROM policy_dimensione "
-                "WHERE tipo_documento_id = :id AND nome_dimensione = 'livello'"
+                "WHERE tipo_documento_id = :id AND nome_dimensione = 'livello_professionale'"
             ),
             {"id": _tipo_id(db_engine)},
         )
@@ -106,21 +106,26 @@ def test_policy_drives_the_language_rule_and_refuses_an_unsupported_generic(
     assert rifiutato.status_code == 400, rifiutato.text
     assert rifiutato.json()["codice"] == "DIMENSIONE_RICHIEDE_VALORE"
 
+    # 011 DEC-011-POLICY-LINGUA-ALL-ADMIN: dichiarare la lingua generica non e'
+    # piu' rifiutato. Il divieto esisteva perche' la colonna era NOT NULL e il
+    # contratto la esponeva obbligatoria, quindi accettare e poi salvare 'IT'
+    # sarebbe stata una bugia silenziosa; ora la colonna non c'e' e il contratto
+    # ammette il null. La protezione e' passata all'avviso in schermata.
     generico = client.put(
         POLICY_URL, json={"nome_dimensione": "lingua", "consente_valore_generico": True}
     )
-    assert generico.status_code == 409, generico.text
-    assert generico.json()["codice"] == "GENERICO_NON_SUPPORTATO"
+    assert generico.status_code == 200, generico.text
+    assert _crea(client, lingua=None).status_code == 201
 
 
 @pytest.mark.integration
 def test_policy_can_make_the_level_mandatory_too(builder_client, catalogo_esterno):
     """La stessa regola vale per il livello: oggi generico, per policy esplicito."""
     client = builder_client
-    client.put(POLICY_URL, json={"nome_dimensione": "livello", "consente_valore_generico": True})
+    client.put(POLICY_URL, json={"nome_dimensione": "livello_professionale", "consente_valore_generico": True})
     assert _crea(client, livello=None).status_code == 201
 
-    client.put(POLICY_URL, json={"nome_dimensione": "livello", "consente_valore_generico": False})
+    client.put(POLICY_URL, json={"nome_dimensione": "livello_professionale", "consente_valore_generico": False})
     rifiutato = _crea(client, livello=None)
     assert rifiutato.status_code == 400, rifiutato.text
     assert rifiutato.json()["codice"] == "DIMENSIONE_RICHIEDE_VALORE"
@@ -144,15 +149,15 @@ def test_an_unconfigured_dimension_is_signalled_not_silently_ignored(
     assert risposta.status_code == 200, risposta.text
     corpo = risposta.json()
     non_configurate = {d["nome_dimensione"] for d in corpo["dimensioni_non_configurate"]}
-    assert {"lingua", "livello"} <= non_configurate, corpo
+    assert {"lingua", "livello_professionale"} <= non_configurate, corpo
 
 
 @pytest.mark.integration
 def test_policies_are_readable_by_the_manager_and_listed_per_type(builder_client, catalogo_esterno):
     client = builder_client
     client.put(POLICY_URL, json={"nome_dimensione": "lingua", "consente_valore_generico": False})
-    client.put(POLICY_URL, json={"nome_dimensione": "livello", "consente_valore_generico": True})
+    client.put(POLICY_URL, json={"nome_dimensione": "livello_professionale", "consente_valore_generico": True})
     corpo = client.get(POLICY_URL).json()
     per_nome = {p["nome_dimensione"]: p["consente_valore_generico"] for p in corpo["policy"]}
     assert per_nome["lingua"] is False
-    assert per_nome["livello"] is True
+    assert per_nome["livello_professionale"] is True

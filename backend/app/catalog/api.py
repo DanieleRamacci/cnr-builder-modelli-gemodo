@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.catalog.schemas import (
     CampiRichiestiResponse,
@@ -18,8 +18,25 @@ from app.common.security import PrincipalGEMODO, require_documenti_viewer
 router = APIRouter(prefix="/api/v1/catalogo", tags=["catalogo"])
 
 
+def _dimensioni_da_query(request: Request) -> dict[str, str]:
+    dimensioni: dict[str, str] = {}
+    for chiave, valore in request.query_params.multi_items():
+        if not (chiave.startswith("dimensione[") and chiave.endswith("]")):
+            continue
+        nome = chiave[len("dimensione["):-1].strip()
+        valore = valore.strip()
+        if not nome or not valore:
+            raise HTTPException(status_code=422, detail="Nome e valore della dimensione sono obbligatori")
+        precedente = dimensioni.get(nome)
+        if precedente is not None and precedente != valore:
+            raise HTTPException(status_code=422, detail=f"Valori in conflitto per la dimensione '{nome}'")
+        dimensioni[nome] = valore
+    return dimensioni
+
+
 @router.get("/modelli", response_model=ModelloSearchResponse)
 def search_modelli(
+    request: Request,
     tipo_documento: str,
     profilo: str | None = None,
     codice_tipologia: str | None = None,
@@ -33,6 +50,7 @@ def search_modelli(
     principal: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
 ) -> ModelloSearchResponse:
+    dimensioni = _dimensioni_da_query(request)
     return service.search_modelli(
         principal=principal,
         tipo_documento=tipo_documento,
@@ -40,6 +58,7 @@ def search_modelli(
         codice_tipologia=codice_tipologia,
         lingua=lingua,
         livello_professionale=livello_professionale,
+        dimensioni=dimensioni,
         modalita=modalita,
         data_riferimento=data_riferimento,
         pubblicato_da=pubblicato_da,

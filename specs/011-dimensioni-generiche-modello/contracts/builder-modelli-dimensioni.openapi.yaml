@@ -1,0 +1,217 @@
+openapi: 3.1.0
+info:
+  title: Builder - creazione modello con dimensioni generiche
+  version: 0.1.0
+  description: >-
+    Delta contrattuale di 011 sull'API interna del builder. La creazione di un
+    modello smette di dichiarare lingua e livello come campi propri e dichiara
+    una mappa di dimensioni. Contratto interno GEMODO, consumato dal frontend
+    builder: la sua evoluzione non richiede accordo con GEBAN, a differenza di
+    catalogo-modelli-dimensioni.openapi.yaml.
+
+    Compatibilita': i campi lingua e livello_professionale della richiesta
+    restano accettati per una finestra di transizione e sono equivalenti alle
+    chiavi corrispondenti della mappa. Indicare lo stesso nome due volte con
+    valori diversi e' un errore, non una precedenza.
+
+security:
+  - KeycloakBearer: []
+  - KeycloakSSO: []
+
+paths:
+  /api/v1/builder/modelli:
+    post:
+      x-required-role: GEMODO_MODELLI_GESTORE
+      summary: Crea un modello valorizzando le dimensioni dichiarate dall'integrazione
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreaModelloRequest'
+            examples:
+              bando_con_lingua_e_livello:
+                summary: Il caso odierno, espresso nella forma nuova
+                value:
+                  codice_tipo_documento: BANDO
+                  percorso_categorizzazione: [TD, RICERCATORE]
+                  dimensioni:
+                    lingua: IT
+                    livello: VI
+              contratti_senza_lingua:
+                summary: Il caso portante di 011 (US5) - nessuna lingua, una dimensione propria
+                value:
+                  codice_tipo_documento: CONTRATTI
+                  percorso_categorizzazione: [SERVIZI, FORNITURA]
+                  dimensioni:
+                    area_geografica: NORD
+              tutte_generiche:
+                summary: Tutte le dimensioni ammettono il generico e restano non valorizzate
+                value:
+                  codice_tipo_documento: BANDO
+                  percorso_categorizzazione: [TD, RICERCATORE]
+                  dimensioni: {}
+      responses:
+        '201':
+          description: Modello creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelloResponse'
+        '400':
+          description: >-
+            Dimensione richiesta e non valorizzata (DIMENSIONE_RICHIEDE_VALORE),
+            valore non ammesso dalla foglia (CONTESTO_NON_VALIDO), oppure
+            dimensione non dichiarata dalla foglia scelta
+            (DIMENSIONE_NON_DICHIARATA).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreFunzionale'
+              examples:
+                richiede_valore:
+                  summary: FR-002 - la policy della dimensione richiede un valore esplicito
+                  value:
+                    codice: DIMENSIONE_RICHIEDE_VALORE
+                    messaggio: >-
+                      La dimensione 'area_geografica' richiede un valore
+                      esplicito per questo tipo documento
+                non_dichiarata:
+                  summary: FR-006 - nessun valore implicito, ma nemmeno valori inventati
+                  value:
+                    codice: DIMENSIONE_NON_DICHIARATA
+                    messaggio: >-
+                      La dimensione 'lingua' non e' dichiarata per la
+                      categorizzazione scelta
+        '404':
+          description: Percorso non disponibile o non foglia
+
+  /api/v1/builder/tipi-documento/{codiceTipoDocumento}/policy-dimensioni:
+    get:
+      x-required-role: GEMODO_MODELLI_GESTORE
+      summary: Policy registrate e dimensioni live ancora prive di policy
+      description: >-
+        Invariato nella forma. Cambia la provenienza di dimensioni_senza_policy:
+        deriva dall'albero live e dalle policy registrate, mai da un elenco
+        scritto nel codice (FR-005). L'attuale _dimensioni_note, che restituisce
+        letteralmente {"lingua", "livello"}, sparisce.
+      parameters:
+        - name: codiceTipoDocumento
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Policy e dimensioni scoperte
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [policy, dimensioni_non_configurate]
+                properties:
+                  policy:
+                    type: array
+                    items:
+                      type: object
+                      required: [nome_dimensione, consente_valore_generico, valore_default, modelli_pubblicati_che_la_valorizzano]
+                      properties:
+                        nome_dimensione: {type: string}
+                        consente_valore_generico: {type: boolean}
+                        valore_default: {type: string, nullable: true}
+                        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
+                  dimensioni_non_configurate:
+                    type: array
+                    description: Dimensioni viste sull'albero live e non ancora configurate.
+                    items:
+                      type: object
+                      required: [nome_dimensione, modelli_pubblicati_che_la_valorizzano]
+                      properties:
+                        nome_dimensione: {type: string}
+                        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
+              example:
+                policy:
+                  - {nome_dimensione: lingua, consente_valore_generico: false, valore_default: IT, modelli_pubblicati_che_la_valorizzano: 2}
+                  - {nome_dimensione: livello_professionale, consente_valore_generico: true, valore_default: null, modelli_pubblicati_che_la_valorizzano: 1}
+                dimensioni_non_configurate:
+                  - {nome_dimensione: area_geografica, modelli_pubblicati_che_la_valorizzano: 3}
+
+components:
+  schemas:
+    CreaModelloRequest:
+      type: object
+      additionalProperties: false
+      required: [codice_tipo_documento]
+      properties:
+        codice_tipo_documento: {type: string, minLength: 1}
+        integrazione_id: {type: string, format: uuid, nullable: true}
+        percorso_categorizzazione:
+          type: array
+          items: {type: string, minLength: 1}
+          minItems: 1
+          maxItems: 64
+          nullable: true
+        codice_categoria: {type: string, nullable: true}
+        codice_tipologia: {type: string, nullable: true}
+        dimensioni:
+          $ref: '#/components/schemas/Dimensioni'
+        lingua:
+          type: string
+          enum: [IT, EN]
+          nullable: true
+          deprecated: true
+          description: >-
+            Transizione. Equivale a dimensioni.lingua. Da rimuovere quando il
+            frontend builder ha adottato la mappa.
+        livello_professionale:
+          type: string
+          minLength: 1
+          maxLength: 64
+          nullable: true
+          deprecated: true
+          description: Transizione. Equivale a dimensioni.livello_professionale.
+
+    Dimensioni:
+      type: object
+      description: >-
+        Mappa piatta {nome dimensione: valore}. Una chiave assente significa
+        dimensione non valorizzata, ed e' l'unico modo per esprimerlo (FR-006).
+        Valori null vietati. Documento vuoto legittimo.
+      additionalProperties:
+        type: string
+        minLength: 1
+      default: {}
+      examples:
+        - {lingua: IT, livello: VI}
+        - {area_geografica: NORD}
+        - {}
+
+    ModelloResponse:
+      type: object
+      required: [id, codice, nome, variante, dimensioni]
+      properties:
+        id: {type: string, format: uuid}
+        codice: {type: string}
+        nome: {type: string}
+        variante:
+          type: string
+          description: >-
+            Asse distinto dalle dimensioni, deciso dall'admin (FR-012). Non
+            compare dentro dimensioni e non ci entrera'.
+        dimensioni:
+          $ref: '#/components/schemas/Dimensioni'
+
+    ErroreFunzionale:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+
+  securitySchemes:
+    KeycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    KeycloakSSO:
+      type: openIdConnect
+      openIdConnectUrl: /.well-known/openid-configuration

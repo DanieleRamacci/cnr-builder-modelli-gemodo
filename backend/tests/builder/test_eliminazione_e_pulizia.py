@@ -130,7 +130,7 @@ def _inserisci_modello(db_engine, tipo_id, *, stato: str, lingua: str = "IT") ->
             id=modello_id, tipo_documento_id=tipo_id, codice_categoria="RICERCATORE",
             codice_tipologia="TD", percorso_categorizzazione=["TD", "RICERCATORE"],
             codice=f"modello-{modello_id.hex[:12]}", nome="Modello di prova",
-            variante="STANDARD", lingua=lingua, stato=stato,
+            variante="STANDARD", dimensioni={"lingua": lingua}, stato=stato,
         ))
         db.commit()
     return modello_id

@@ -16,6 +16,7 @@ interface DimensioneFoglia {
   nome: string;
   valori: string[];
   policy: PolicyDimensione | null;
+  modelliPubblicati: number;
 }
 
 const PROPRIETA_NODO = new Set([
@@ -53,6 +54,7 @@ export class DimensioniComponent {
   protected readonly erroreSalvataggio = signal<string | null>(null);
   protected readonly inModifica = signal<string[]>([]);
   protected readonly scelte = signal<Record<string, boolean | null>>({});
+  protected readonly defaultScelti = signal<Record<string, string | null>>({});
 
   protected readonly foglia = computed(() => {
     const ultimo = this.percorso().at(-1);
@@ -75,7 +77,9 @@ export class DimensioniComponent {
     if (!foglia) return [];
     const valori = new Map<string, string[]>();
     if (foglia.lingue_possibili?.length) valori.set('lingua', [...foglia.lingue_possibili]);
-    if (foglia.livelli_possibili?.length) valori.set('livello', [...foglia.livelli_possibili]);
+    if (foglia.livelli_possibili?.length) {
+      valori.set('livello_professionale', [...foglia.livelli_possibili]);
+    }
     for (const [nome, value] of Object.entries(foglia as unknown as Record<string, unknown>)) {
       if (!PROPRIETA_NODO.has(nome) && Array.isArray(value) && value.length) {
         valori.set(nome, value.map(String));
@@ -84,10 +88,17 @@ export class DimensioniComponent {
     const configurate = new Map(
       (this.policy()?.policy ?? []).map((item) => [item.nome_dimensione, item]),
     );
+    const nonConfigurate = new Map(
+      (this.policy()?.dimensioni_non_configurate ?? []).map((item) => [item.nome_dimensione, item]),
+    );
     return [...valori.entries()].map(([nome, opzioni]) => ({
       nome,
       valori: opzioni,
       policy: configurate.get(nome) ?? null,
+      modelliPubblicati:
+        configurate.get(nome)?.modelli_pubblicati_che_la_valorizzano ??
+        nonConfigurate.get(nome)?.modelli_pubblicati_che_la_valorizzano ??
+        0,
     }));
   });
 
@@ -150,11 +161,20 @@ export class DimensioniComponent {
     return dimensione.policy !== null;
   }
 
+  protected defaultNonDisponibile(dimensione: DimensioneFoglia): boolean {
+    const valore = dimensione.policy?.valore_default;
+    return !!valore && !dimensione.valori.includes(valore);
+  }
+
   protected modifica(nome: string): void {
     const corrente = this.policy()?.policy.find((item) => item.nome_dimensione === nome);
     this.scelte.update((scelte) => ({
       ...scelte,
       [nome]: corrente?.consente_valore_generico ?? null,
+    }));
+    this.defaultScelti.update((defaults) => ({
+      ...defaults,
+      [nome]: corrente?.valore_default ?? null,
     }));
     this.inModifica.update((nomi) => (nomi.includes(nome) ? nomi : [...nomi, nome]));
   }
@@ -171,9 +191,18 @@ export class DimensioniComponent {
     this.scelte.update((scelte) => ({ ...scelte, [nome]: generico }));
   }
 
+  protected defaultScelto(nome: string): string | null {
+    return this.defaultScelti()[nome] ?? null;
+  }
+
+  protected scegliDefault(nome: string, valore: string): void {
+    this.defaultScelti.update((defaults) => ({ ...defaults, [nome]: valore || null }));
+  }
+
   protected annulla(nome: string): void {
     this.inModifica.update((nomi) => nomi.filter((item) => item !== nome));
     this.scelte.update((scelte) => ({ ...scelte, [nome]: null }));
+    this.defaultScelti.update((defaults) => ({ ...defaults, [nome]: null }));
   }
 
   protected salva(nome: string): void {
@@ -185,6 +214,7 @@ export class DimensioniComponent {
       .salvaPolicy(this.integrazioneId, this.codice, {
         nome_dimensione: nome,
         consente_valore_generico: consenteValoreGenerico,
+        valore_default: this.defaultScelto(nome),
       })
       .subscribe({
         next: (salvata) => {

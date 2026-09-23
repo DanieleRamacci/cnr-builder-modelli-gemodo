@@ -47,15 +47,37 @@ quella protezione e' automatica, perche' la lingua ha
 fallback sulla lingua si attiverebbe come effetto collaterale. E' un rischio da
 tenere presente, non un difetto del disegno.
 
-**Edizione derivata — resta legata alla lingua.**
-`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO` (CONFERMATA) definisce l'edizione
-derivata sul vincolo `(derivato_da_modello_id, lingua)`. Non si generalizza.
-**Eccezione consapevole**: significa che la lingua resta speciale in un punto
-anche dopo US4. Va scritto cosi' invece di lasciarlo emergere come
-incoerenza - il criterio di successo «nessuna dimensione resta scritta a mano
-nel codice» ammette quindi una deroga esplicita e circoscritta al meccanismo
-delle edizioni derivate. Se in futuro servira' derivare rispetto a un'altra
-dimensione, sara' una decisione nuova, non un'estensione silenziosa di questa.
+**Edizione derivata — generalizzata alla dimensione obbligatoria.**
+*(Questo punto e' stato risolto due volte. La prima stesura, sotto, teneva la
+derivazione legata alla lingua come deroga consapevole e rinviava la
+generalizzazione a «una decisione nuova». Quella decisione e' arrivata lo
+stesso giorno, dall'utente, ed e' registrata come
+`DEC-011-DERIVAZIONE-GOVERNATA-DA-POLICY`.)*
+
+`DEC-002-ASSOCIAZIONE-MODELLO-DERIVATO` (CONFERMATA) definiva l'edizione
+derivata sul vincolo `(derivato_da_modello_id, lingua)`. Si generalizza a
+`(derivato_da_modello_id, nome_dimensione, valore)`.
+
+Il criterio che rende disponibile la funzione non e' il nome `lingua` ma la
+policy: **si deriva su una dimensione obbligatoria**, perche' e' li' che il
+modello di origine ha certamente il valore di partenza. Dove la dimensione
+ammette il generico, un modello puo' non valorizzarla, e «derivane un'altra
+versione» non significherebbe nulla.
+
+Conseguenze pratiche:
+
+- **Per il bando, oggi, non cambia niente**: la sola dimensione obbligatoria e'
+  `lingua`, con due valori; da un modello `IT` l'unica alternativa e' `EN`,
+  quindi nessuna domanda viene posta e il comportamento e' quello attuale.
+- **Con piu' di due lingue**, il sistema chiede quale versione derivata creare
+  invece di assumerla. E' il caso che l'utente ha chiesto di prevedere.
+- **Con piu' dimensioni obbligatorie**, chiede anche su quale dimensione
+  derivare.
+
+Questo allinea `011` a quanto `007/spec.md` gia' affermava — «il meccanismo,
+oggi limitato a `lingua`, si generalizza a qualunque dimensione con
+`consente_valore_generico=false`» — che era in conflitto con la prima stesura di
+FR-013. Il conflitto si chiude correggendo `011`, non `007`.
 
 **Variante — asse separato dalle dimensioni.**
 `DEC-002-VARIANTE-NOTA-IDENTITA` (CONFERMATA lo stesso giorno) rende la
@@ -266,10 +288,23 @@ contro un endpoint discovery che dichiara quel tipo.
   variante, scelta dall'admin, e i valori di dimensione, dichiarati
   dall'integrazione. Entrambi concorrono a identita' e unicita' della
   pubblicazione, ma non si fondono in un unico meccanismo.
-- **FR-013**: L'edizione derivata MUST restare definita sulla lingua. E' una
-  deroga dichiarata al principio generale di questa spec, non una svista: vedi
-  Clarifications. Generalizzarla a un'altra dimensione MUST essere una
-  decisione nuova.
+- **FR-013**: L'edizione derivata MUST essere definita sulla dimensione, non
+  sulla lingua. La funzione «crea edizione collegata» MUST essere disponibile
+  per una dimensione che, su quel tipo documento, ha
+  `consente_valore_generico = false` e di cui la foglia dichiara almeno due
+  valori. Quando piu' di una dimensione o piu' di un valore alternativo sono
+  candidati, il sistema MUST chiedere quale, invece di sceglierne uno.
+  *(Riscritto il 2026-09-23. La stesura precedente diceva «MUST restare
+  definita sulla lingua» e la dichiarava una deroga consapevole, riservando la
+  generalizzazione a «una decisione nuova». Quella decisione e' stata presa
+  dall'utente nella stessa sessione: vedi `DEC-011-DERIVAZIONE-GOVERNATA-DA-POLICY`.
+  La deroga sparisce, e con essa l'eccezione al criterio di successo.)*
+- **FR-014**: La disponibilita' della derivazione MUST discendere dalla policy,
+  non da un elenco di dimensioni nel codice: e' disponibile dove la dimensione
+  e' obbligatoria, perche' e' esattamente li' che il modello di origine ha
+  certamente un valore da cui derivare. Dove la dimensione ammette il generico,
+  un modello puo' non avere quel valore e «derivane un'altra versione» non
+  significa nulla.
 
 ### Key Entities
 
@@ -292,13 +327,22 @@ contro un endpoint discovery che dichiara quel tipo.
   collegati attraverso la migrazione.
 - Nessuna dimensione resta scritta a mano nel codice: la ricerca di `"lingua"`
   e `"livello"` come costanti in `backend/app/builder/` non trova piu'
-  occorrenze che governino comportamento, **con l'unica deroga dichiarata delle
-  edizioni derivate** (FR-013).
+  occorrenze che governino comportamento. **Senza deroghe.** *(La stesura
+  precedente ammetteva un'eccezione per le edizioni derivate; la riscrittura di
+  FR-013 l'ha eliminata. Resta fuori dal criterio il solo `POLICY_DI_RIPIEGO`,
+  che non governa comportamento ma fornisce il valore iniziale di una
+  configurazione a un tipo documento che non ne ha ancora.)*
 
 ## Assumptions
 
-- GEBAN resta il consumatore del catalogo e va coinvolto su FR-008: questa spec
-  non puo' chiudersi senza una decisione condivisa sul contratto.
+- GEBAN resta il consumatore del catalogo e va coinvolto su FR-008.
+  *(Aggiornata il 2026-09-23 in fase PLAN. La stesura precedente diceva che la
+  spec «non puo' chiudersi senza una decisione condivisa sul contratto»:
+  presupponeva una modifica rompente. `DEC-011-CONTRATTO-GEBAN-ADDITIVO` ha
+  accertato che non lo e' — `search_modelli` impone `tipo_documento`, quindi
+  GEBAN non riceve mai risposte miste e `lingua` resta valorizzata in ogni
+  richiesta che fa oggi. Serve quindi una **presa d'atto prima del rilascio**,
+  non un'approvazione preventiva che blocchi l'implementazione.)*
 - La forma della risposta discovery non cambia: le dimensioni continuano ad
   arrivare come chiavi con liste di valori sulle foglie.
 - `DEC-001-LINGUA-IT-EN` va riaperta da US4, non aggirata.

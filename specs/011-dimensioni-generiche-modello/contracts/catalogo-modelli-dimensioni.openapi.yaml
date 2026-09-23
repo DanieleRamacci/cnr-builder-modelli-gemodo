@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: Catalogo verso GEBAN - dimensioni generiche
+  version: 0.1.0
+  description: >-
+    Delta contrattuale di 011 sull'API pubblica del catalogo, consumata da
+    GEBAN. Per DEC-011-CONTRATTO-GEBAN-ADDITIVO: nessun campo rimosso, un campo
+    aggiunto (dimensioni) e un campo che da obbligatorio diventa nullable
+    (lingua).
+
+    SCHEMA-BREAKING MA BEHAVIOR-SAFE. search_modelli impone tipo_documento come
+    parametro obbligatorio, quindi GEBAN non riceve mai una risposta mista: ogni
+    chiamata nomina un tipo documento. Tutti i tipi che GEBAN consuma oggi
+    dichiarano la lingua, e la policy del bando la rende obbligatoria, percio'
+    il campo resta presente e popolato in ogni richiesta che GEBAN fa oggi. Il
+    null compare solo per tipi documento che ancora non esistono.
+
+    FR-008: richiede una PRESA D'ATTO di GEBAN prima del rilascio - nessun
+    lavoro richiesto, eventuale ricompilazione del client generato - non
+    un'approvazione preventiva che blocchi l'implementazione.
+
+security:
+  - KeycloakBearer: []
+
+paths:
+  /api/v1/catalogo/modelli:
+    get:
+      summary: Cerca modelli pubblicati per categorizzazione e dimensioni
+      parameters:
+        - name: lingua
+          in: query
+          required: false
+          deprecated: true
+          schema: {type: string, enum: [IT, EN]}
+          description: Conservato. Equivale a dimensione[lingua].
+        - name: livello_professionale
+          in: query
+          required: false
+          deprecated: true
+          schema: {type: string}
+          description: Conservato. Equivale a dimensione[livello_professionale].
+        - name: dimensione
+          in: query
+          required: false
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties: {type: string}
+          description: >-
+            Filtro per dimensione arbitraria, es. ?dimensione[area_geografica]=NORD.
+            E' la forma generale di cui lingua e livello_professionale sono i due
+            casi storici.
+      responses:
+        '200':
+          description: Modelli pubblicati corrispondenti
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelloSearchResponse'
+              examples:
+                fallback_su_livello:
+                  summary: Comportamento invariato per il livello, ora governato dalla policy
+                  description: >-
+                    DEC-007-FALLBACK-LIVELLO-CATALOGO resta valida nel merito.
+                    Cambia solo il motivo per cui scatta - vedi FR-010.
+                  value:
+                    fallback_applicato: true
+                    dimensioni_rilassate: [livello_professionale]
+                    livello_richiesto: VI
+                    livello_risolto: null
+                    modelli:
+                      - codice: bando-td-ricercatore-tutti-it-abc
+                        lingua: IT
+                        livello_professionale: null
+                        dimensioni: {lingua: IT}
+
+components:
+  schemas:
+    ModelloSearchResponse:
+      type: object
+      required: [modelli, fallback_applicato]
+      properties:
+        modelli:
+          type: array
+          items: {$ref: '#/components/schemas/ModelloCatalogoSchema'}
+        fallback_applicato:
+          type: boolean
+          description: Conservato. Vero se almeno una dimensione e' stata rilassata.
+        dimensioni_rilassate:
+          type: array
+          items: {type: string}
+          description: >-
+            NUOVO. Quali dimensioni sono state rilassate, in ordine di
+            applicazione. Con piu' dimensioni che ammettono il generico,
+            fallback_applicato da solo non dice piu' cosa e' successo
+            (DEC-011-FALLBACK-GOVERNATO-DA-POLICY).
+          example: [livello_professionale]
+        livello_richiesto:
+          type: string
+          nullable: true
+          deprecated: true
+          description: Conservato. Caso particolare di dimensioni_rilassate.
+        livello_risolto:
+          type: string
+          nullable: true
+          deprecated: true
+
+    ModelloCatalogoSchema:
+      type: object
+      required: [codice, dimensioni]
+      properties:
+        codice: {type: string}
+        lingua:
+          type: string
+          enum: [IT, EN]
+          nullable: true
+          description: >-
+            CONSERVATO, ora nullable. Derivato da dimensioni.lingua. Presente e
+            valorizzato per ogni tipo documento che dichiara la lingua - cioe'
+            per tutti quelli che GEBAN consuma oggi, dove la policy del bando
+            la rende obbligatoria. Null solo per tipi documento la cui
+            categorizzazione non prevede la lingua, che GEBAN interroga solo
+            dopo averli integrati sapendo che non ce l'hanno.
+          x-gemodo-nota: >-
+            Un valore sentinella tipo "N/A" e' stato scartato: conserverebbe
+            l'obbligatorieta' formale al prezzo di un dato falso nella risposta,
+            che e' cio' che FR-006 esiste per impedire.
+        livello_professionale:
+          type: string
+          nullable: true
+          description: Conservato. Derivato da dimensioni.livello_professionale.
+        dimensioni:
+          type: object
+          additionalProperties: {type: string}
+          description: >-
+            NUOVO. L'insieme completo delle dimensioni valorizzate. Contiene
+            anche lingua e livello quando presenti: i due campi dedicati sopra
+            sono una proiezione di questo, non un'informazione diversa. GEBAN
+            puo' migrare a questo campo quando vuole.
+          examples:
+            - {lingua: IT, livello_professionale: VI}
+            - {area_geografica: NORD}
+        edizioni_derivate:
+          type: array
+          description: >-
+            Invariato come struttura. Cambia il significato: dopo la riscrittura
+            di FR-013 un'edizione puo' essere derivata su una dimensione diversa
+            dalla lingua, dove la policy la rende obbligatoria. Di conseguenza
+            EdizioneDerivataCatalogo (in 001/contracts/geban-catalog-api.openapi.yaml)
+            riceve lo stesso trattamento di questo schema: lingua nullable piu'
+            dimensioni. Vedi T043.
+          items:
+            type: object
+
+  securitySchemes:
+    KeycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

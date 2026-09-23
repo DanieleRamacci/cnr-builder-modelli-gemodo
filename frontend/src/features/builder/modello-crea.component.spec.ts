@@ -9,14 +9,24 @@ import { ModelloCreaComponent } from './modello-crea.component';
  */
 function flushPolicy(
   http: HttpTestingController,
-  policy: { nome_dimensione: string; consente_valore_generico: boolean }[] = [
-    { nome_dimensione: 'lingua', consente_valore_generico: false },
-    { nome_dimensione: 'livello', consente_valore_generico: true },
+  policy: {
+    nome_dimensione: string;
+    consente_valore_generico: boolean;
+    valore_default?: string | null;
+  }[] = [
+    { nome_dimensione: 'lingua', consente_valore_generico: false, valore_default: 'IT' },
+    {
+      nome_dimensione: 'livello_professionale',
+      consente_valore_generico: true,
+      valore_default: null,
+    },
   ],
 ) {
   http
     .match((r) => r.url.includes('/policy-dimensioni'))
-    .forEach((r) => r.flush({ codice_tipo_documento: 'BANDO', policy, dimensioni_non_configurate: [] }));
+    .forEach((r) =>
+      r.flush({ codice_tipo_documento: 'BANDO', policy, dimensioni_non_configurate: [] }),
+    );
 }
 describe('manager creation flow', () => {
   it('sends the complete leaf path and confirms BOZZA only after version creation', () => {
@@ -35,8 +45,7 @@ describe('manager creation flow', () => {
       loadTree: (code: string) => void;
       choose: (node: unknown) => void;
       create: () => void;
-      lingua: string;
-      livelloProfessionale: string;
+      scegliDimensione: (nome: string, valore: string) => void;
     };
     const leaf = {
       codice: 'RICERCATORE',
@@ -62,14 +71,18 @@ describe('manager creation flow', () => {
     flushPolicy(http);
     component.choose(root);
     component.choose(leaf);
-    component.lingua = 'EN';
-    component.livelloProfessionale = 'VI';
+    component.scegliDimensione('lingua', 'EN');
+    component.scegliDimensione('livello_professionale', 'VI');
     component.create();
     const model = http.expectOne('/api/v1/builder/modelli');
     expect(model.request.body.integrazione_id).toBe('source');
     expect(model.request.body.percorso_categorizzazione).toEqual(['TD', 'RICERCATORE']);
-    expect(model.request.body.lingua).toBe('EN');
-    expect(model.request.body.livello_professionale).toBe('VI');
+    expect(model.request.body.dimensioni).toEqual({
+      lingua: 'EN',
+      livello_professionale: 'VI',
+    });
+    expect(model.request.body.lingua).toBeUndefined();
+    expect(model.request.body.livello_professionale).toBeUndefined();
     expect(model.request.body.codice).toBeUndefined();
     expect(model.request.body.nome).toBeUndefined();
     expect(model.request.body.variante).toBeUndefined();
@@ -101,6 +114,7 @@ describe('2a categorization cascade', () => {
     descrizione: 'Ricercatore',
     tipo_livello: 'profilo',
     lingue_possibili: ['IT'],
+    livelli_possibili: ['VI', 'VII'],
     campi: [campo],
   };
   const leafB = {
@@ -108,6 +122,7 @@ describe('2a categorization cascade', () => {
     descrizione: 'Tecnologo',
     tipo_livello: 'profilo',
     lingue_possibili: ['IT'],
+    livelli_possibili: ['VI', 'VII'],
     campi: [campo],
   };
   const nodi = [
@@ -121,7 +136,13 @@ describe('2a categorization cascade', () => {
   ];
 
   function setup(
-    policy: { nome_dimensione: string; consente_valore_generico: boolean }[] | undefined = undefined,
+    policy:
+      | {
+          nome_dimensione: string;
+          consente_valore_generico: boolean;
+          valore_default?: string | null;
+        }[]
+      | undefined = undefined,
   ) {
     TestBed.configureTestingModule({
       providers: [
@@ -138,7 +159,6 @@ describe('2a categorization cascade', () => {
       loadTree: (code: string) => void;
       chooseAt: (indice: number, code: string) => void;
       create: () => void;
-      lingua: string;
       path: () => string[];
     };
     component.loadTree('BANDO');
@@ -179,7 +199,7 @@ describe('2a categorization cascade', () => {
     component.chooseAt(0, 'TI');
     fixture.detectChanges();
     expect(component.path()).toEqual(['TI']);
-    expect(root.querySelector('#lingua')).toBeNull();
+    expect(root.querySelector('#dimensione-lingua')).toBeNull();
     expect(root.textContent).toContain('2 di 3 livelli selezionati');
     component.chooseAt(0, '');
     fixture.detectChanges();
@@ -192,7 +212,7 @@ describe('2a categorization cascade', () => {
     component.chooseAt(0, 'TD');
     component.chooseAt(1, 'RICERCATORE');
     const setLingua = async (value: string) => {
-      const select = root.querySelector<HTMLSelectElement>('#lingua')!;
+      const select = root.querySelector<HTMLSelectElement>('#dimensione-lingua')!;
       select.value = value;
       select.dispatchEvent(new Event('change'));
       fixture.detectChanges();
@@ -242,29 +262,56 @@ describe('2a categorization cascade', () => {
   });
 
   // 007 FR-031: il form non deve proporre una scelta che il backend rifiutera'.
-  it('offers "Tutti i livelli" only when the policy allows a generic value', () => {
+  it('offers an empty value only when the policy allows a generic value', () => {
     const { fixture, component } = setup([
       { nome_dimensione: 'lingua', consente_valore_generico: false },
-      { nome_dimensione: 'livello', consente_valore_generico: true },
+      { nome_dimensione: 'livello_professionale', consente_valore_generico: true },
     ]);
     component.chooseAt(0, 'TD');
     component.chooseAt(1, 'RICERCATORE');
     fixture.detectChanges();
-    const livelli = fixture.nativeElement.querySelector('#livello') as HTMLSelectElement;
+    const livelli = fixture.nativeElement.querySelector(
+      '#dimensione-livello_professionale',
+    ) as HTMLSelectElement;
     const opzioni = Array.from(livelli.options).map((o) => o.textContent?.trim());
-    expect(opzioni).toContain('Tutti i livelli');
+    expect(opzioni).toContain('Nessun valore specifico');
   });
-  it('hides "Tutti i livelli" when the dimension requires an explicit value', () => {
+  it('requires a value when the dimension does not allow a generic model', () => {
     const { fixture, component } = setup([
       { nome_dimensione: 'lingua', consente_valore_generico: false },
-      { nome_dimensione: 'livello', consente_valore_generico: false },
+      { nome_dimensione: 'livello_professionale', consente_valore_generico: false },
     ]);
     component.chooseAt(0, 'TD');
     component.chooseAt(1, 'RICERCATORE');
     fixture.detectChanges();
-    const livelli = fixture.nativeElement.querySelector('#livello') as HTMLSelectElement;
+    const livelli = fixture.nativeElement.querySelector(
+      '#dimensione-livello_professionale',
+    ) as HTMLSelectElement;
     const opzioni = Array.from(livelli.options).map((o) => o.textContent?.trim());
-    expect(opzioni).not.toContain('Tutti i livelli');
-    expect(opzioni).toContain('Scegli un livello');
+    expect(opzioni).not.toContain('Nessun valore specifico');
+    expect(opzioni).toContain('Seleziona un valore');
+  });
+
+  it('uses valore_default instead of the first value returned by discovery', async () => {
+    const original = [...leafA.lingue_possibili];
+    leafA.lingue_possibili.splice(0, leafA.lingue_possibili.length, 'EN', 'IT');
+    try {
+      const { fixture, component } = setup([
+        {
+          nome_dimensione: 'lingua',
+          consente_valore_generico: false,
+          valore_default: 'IT',
+        },
+      ]);
+      component.chooseAt(0, 'TD');
+      component.chooseAt(1, 'RICERCATORE');
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const lingua = fixture.nativeElement.querySelector('#dimensione-lingua') as HTMLSelectElement;
+      expect(lingua.value).toBe('IT');
+    } finally {
+      leafA.lingue_possibili.splice(0, leafA.lingue_possibili.length, ...original);
+    }
   });
 });

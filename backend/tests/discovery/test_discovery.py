@@ -86,7 +86,7 @@ def test_codes_may_repeat_in_different_branches(payload):
     "both", "neither", "duplicate_roots", "duplicate_children", "duplicate_fields",
     "default_conflict", "unknown_default", "string_bool", "string_order",
     "missing_field", "invalid_type", "invalid_date", "epoch_date",
-    "missing_languages", "duplicate_languages", "duplicate_levels", "metadata_on_branch",
+    "duplicate_languages", "duplicate_levels", "metadata_on_branch",
 ])
 def test_invalid_structure_is_functional_error(payload, change):
     root = payload["BANDO_CONCORSO"]["nodi"][0]
@@ -118,8 +118,6 @@ def test_invalid_structure_is_functional_error(payload, change):
         payload["BANDO_CONCORSO"]["validita"] = "2026-09-17T00:00:00"
     elif change == "epoch_date":
         payload["BANDO_CONCORSO"]["validita"] = 1789600000
-    elif change == "missing_languages":
-        leaf.pop("lingue_possibili")
     elif change == "duplicate_languages":
         leaf["lingue_possibili"] = ["IT", "IT"]
     elif change == "duplicate_levels":
@@ -130,6 +128,25 @@ def test_invalid_structure_is_functional_error(payload, change):
         adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
     assert exc.value.codice == "DISCOVERY_NON_CONFORME"
     assert exc.value.status_code == 502
+
+
+def test_una_foglia_senza_lingua_e_conforme(payload):
+    """011 FR-005/FR-006: la lingua non e' piu' obbligatoria sulla foglia.
+
+    Era il caso `missing_languages` dell'elenco qui sopra, cioe' una risposta
+    **non conforme**: una foglia priva di `lingue_possibili` faceva fallire
+    l'intera discovery con `DISCOVERY_NON_CONFORME`. Un tipo documento che non
+    distingue i modelli per lingua - il caso portante di 011 - non poteva
+    quindi nemmeno entrare nel sistema. Contratto discovery 0.6.0: la chiave
+    diventa opzionale, e questo test presidia il verso nuovo della regola.
+    """
+    payload["BANDO_CONCORSO"]["nodi"][0]["figli"][0].pop("lingue_possibili")
+
+    catalogo = adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
+
+    foglia = catalogo.nodi[0].figli[0]
+    assert foglia.lingue_possibili is None
+    assert foglia.campi, "i campi della foglia restano leggibili"
 
 
 def test_missing_document_type_is_not_an_empty_catalog(payload):

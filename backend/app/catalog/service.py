@@ -19,6 +19,8 @@ from app.catalog.schemas import (
     ModelloSearchResponse,
     TipoCampo,
 )
+from app.builder import repository as builder_repository
+from app.catalog.repository import NOME_LIVELLO
 from app.common.errors import AuthorizationError, CatalogError, ErrorCode
 from app.common.security import PrincipalGEMODO, ROLE_DOCUMENTI_VIEWER, verifica_permesso_contesto
 from app.db.session import get_db
@@ -37,6 +39,7 @@ class CatalogService:
         codice_tipologia: str | None = None,
         lingua: LinguaModello | None = None,
         livello_professionale: str | None = None,
+        dimensioni: dict[str, str] | None = None,
         modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA,
         data_riferimento: date | None = None,
         pubblicato_da: date | None = None,
@@ -58,37 +61,116 @@ class CatalogService:
             # not the same 400 as a nonexistent/inactive tipo documento.
             raise AuthorizationError()
 
+        dimensioni_query = dict(dimensioni or {})
+        lingua_richiesta = lingua.value if lingua else None
+        for nome, valore_legacy in (
+            ("lingua", lingua_richiesta),
+            (NOME_LIVELLO, livello_professionale),
+        ):
+            valore_dimensione = dimensioni_query.pop(nome, None)
+            if valore_dimensione is not None and valore_legacy is not None and valore_dimensione != valore_legacy:
+                raise CatalogError(
+                    "RICHIESTA_NON_VALIDA",
+                    f"Valori in conflitto per la dimensione '{nome}'",
+                    status_code=400,
+                )
+            if valore_legacy is None and valore_dimensione is not None:
+                if nome == "lingua":
+                    lingua_richiesta = valore_dimensione
+                else:
+                    livello_professionale = valore_dimensione
+
         query = dict(
             codice_tipo_documento=tipo_documento,
             tipo_documento_ids=[tipo.id for tipo in tipi_autorizzati],
             codice_categoria=categoria,
             codice_tipologia=codice_tipologia,
-            lingua=lingua.value if lingua else None,
+            lingua=lingua_richiesta,
             livello_professionale=livello_professionale,
+            dimensioni=dimensioni_query,
             historical=modalita == ModalitaCatalogo.STORICO,
             data_riferimento=data_riferimento,
             pubblicato_da=pubblicato_da,
             pubblicato_a=pubblicato_a,
         )
         versions = repository.list_published_model_versions(self.db, **query)
-        fallback_applicato = False
-        if livello_professionale is not None and not versions:
-            query["livello_professionale"] = None
-            query["solo_livello_generico"] = True
+        dimensioni_rilassate = self._fallback_per_policy(query, versions, tipi_autorizzati)
+        if dimensioni_rilassate:
             versions = repository.list_published_model_versions(self.db, **query)
-            fallback_applicato = bool(versions)
+        fallback_applicato = bool(dimensioni_rilassate)
         return ModelloSearchResponse(
             tipo_documento=tipo_documento,
             profilo=categoria,
             codice_tipologia=codice_tipologia,
             modalita=modalita,
             fallback_applicato=fallback_applicato,
+            dimensioni_rilassate=dimensioni_rilassate,
             livello_richiesto=livello_professionale,
             livello_risolto=(
                 None if fallback_applicato or not versions else livello_professionale
             ),
             modelli=_raggruppa_edizioni(versions),
         )
+
+    def _fallback_per_policy(self, query: dict, versions: list, tipi) -> list[str]:
+        """Rilassa le dimensioni che la policy dichiara generiche (011 FR-010).
+
+        Generalizza DEC-007-FALLBACK-LIVELLO-CATALOGO, che resta valida nel
+        merito per il livello ma smette di essere un nome nel codice: il
+        fallback scatta dove `consente_valore_generico` e' vero, e non scatta
+        altrove. La protezione della lingua - «tornare un'edizione diversa da
+        quella esplicitamente richiesta sarebbe scorretto, non solo una
+        scorciatoia» - diventa automatica, perche' la sua policy la dichiara
+        obbligatoria.
+
+        Rilassa **una dimensione alla volta, in ordine alfabetico**, e si ferma
+        al primo risultato non vuoto: l'ordine dev'essere deterministico e non
+        dipendere da come l'integrazione elenca le dimensioni.
+        """
+        if versions:
+            return []
+        richieste = {
+            nome: valore
+            for nome, valore in {
+                "lingua": query.get("lingua"),
+                NOME_LIVELLO: query.get("livello_professionale"),
+                **(query.get("dimensioni") or {}),
+            }.items()
+            if valore is not None
+        }
+        if not richieste:
+            return []
+        generiche = {
+            p.nome_dimensione
+            for tipo in tipi
+            for p in builder_repository.policy_dimensioni(self.db, tipo.id)
+            if p.consente_valore_generico
+        }
+        rilassate: list[str] = []
+        for nome in sorted(richieste):
+            if nome not in generiche:
+                continue
+            tentativo = dict(query)
+            if nome == "lingua":
+                tentativo["lingua"] = None
+                tentativo["dimensioni_generiche"] = [
+                    *(tentativo.get("dimensioni_generiche") or ()),
+                    nome,
+                ]
+            elif nome == NOME_LIVELLO:
+                tentativo["livello_professionale"] = None
+                tentativo["solo_livello_generico"] = True
+            else:
+                tentativo["dimensioni"] = {
+                    k: v for k, v in (tentativo.get("dimensioni") or {}).items() if k != nome
+                }
+                tentativo["dimensioni_generiche"] = [*(tentativo.get("dimensioni_generiche") or ()), nome]
+            if repository.list_published_model_versions(self.db, **tentativo):
+                query.clear()
+                query.update(tentativo)
+                rilassate.append(nome)
+                break
+        return rilassate
 
     def get_campi_richiesti(self, modello_versione_id: int, principal: PrincipalGEMODO) -> CampiRichiestiResponse:
         version = repository.get_model_version_by_public_id(self.db, modello_versione_id)
@@ -142,8 +224,9 @@ def _modello_catalogo_schema(version: ModelloDocumentoVersione) -> ModelloCatalo
         codice=modello.codice,
         descrizione=modello.nome,
         variante=modello.variante,
-        lingua=LinguaModello(modello.lingua),
-        livello_professionale=modello.livello_professionale,
+        lingua=LinguaModello(modello.dimensioni["lingua"]) if modello.dimensioni.get("lingua") else None,
+        livello_professionale=modello.dimensioni.get(NOME_LIVELLO),
+        dimensioni=dict(modello.dimensioni),
         versione=version.versione,
         stato=version.stato,
         data_inizio_validita=_date_only(version.data_inizio_validita),

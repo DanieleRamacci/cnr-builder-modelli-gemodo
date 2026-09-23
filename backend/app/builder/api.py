@@ -33,6 +33,7 @@ from app.builder.schemas import (
     StrutturaTipoDocumentoResponse,
     VersioneResponse,
 )
+from app.builder.repository import NOME_LIVELLO
 from app.builder.service import BuilderService, get_builder_service
 from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione
 from app.common.security import PrincipalGEMODO, require_principal
@@ -99,6 +100,7 @@ def dettaglio_modello(
         codice_contesto=modello.tipo_documento.codice_contesto,
         integrazione_id=modello.tipo_documento.integrazione_id,
         created_at=modello.created_at,
+        dimensioni_non_disponibili=service.dimensioni_non_disponibili(modello),
         versioni=[
             VersioneDettaglioResponse(
                 **_versione_response(v).model_dump(),
@@ -131,8 +133,9 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         codice_tipologia=modello.codice_tipologia,
         percorso_categorizzazione=modello.percorso_categorizzazione,
         variante=modello.variante,
-        lingua=modello.lingua,
-        livello_professionale=modello.livello_professionale,
+        dimensioni=modello.dimensioni,
+        lingua=modello.dimensioni.get("lingua"),
+        livello_professionale=modello.dimensioni.get(NOME_LIVELLO),
         derivato_da_modello_id=str(modello.derivato_da_modello_id) if modello.derivato_da_modello_id else None,
     )
 
@@ -167,17 +170,27 @@ def leggi_policy_dimensioni(
     service: BuilderService = Depends(get_builder_service),
 ):
     """Policy registrate e dimensioni ancora prive di policy (DEC-002-POLICY)."""
-    tipo, policy, non_configurate = service.policy_dimensioni(principal, codiceTipoDocumento)
+    tipo, policy, non_configurate, conteggi = service.policy_dimensioni(
+        principal, codiceTipoDocumento
+    )
     return PolicyDimensioniResponse(
         codice_tipo_documento=tipo.codice,
         policy=[
             PolicyDimensioneResponse(
                 nome_dimensione=p.nome_dimensione,
                 consente_valore_generico=p.consente_valore_generico,
+                valore_default=p.valore_default,
+                modelli_pubblicati_che_la_valorizzano=conteggi[p.nome_dimensione],
             )
             for p in policy
         ],
-        dimensioni_non_configurate=[{"nome_dimensione": nome} for nome in non_configurate],
+        dimensioni_non_configurate=[
+            {
+                "nome_dimensione": nome,
+                "modelli_pubblicati_che_la_valorizzano": conteggi[nome],
+            }
+            for nome in non_configurate
+        ],
     )
 
 
@@ -192,6 +205,7 @@ def imposta_policy_dimensione(
     return PolicyDimensioneResponse(
         nome_dimensione=policy.nome_dimensione,
         consente_valore_generico=policy.consente_valore_generico,
+        valore_default=policy.valore_default,
     )
 
 

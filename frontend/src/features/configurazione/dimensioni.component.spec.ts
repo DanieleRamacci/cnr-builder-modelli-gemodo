@@ -24,7 +24,7 @@ const STRUTTURA = {
           livelli_possibili: ['I', 'II'],
           livello_base: 'II',
           lingue_possibili: ['IT', 'EN'],
-          canale: ['PEC', 'Portale'],
+          area_geografica: ['NORD', 'CENTRO', 'SUD'],
           campi: [
             {
               codice: 'titolo',
@@ -56,15 +56,36 @@ describe('DimensioniComponent', () => {
         of({
           codice_tipo_documento: 'BANDO_CONCORSO',
           policy: [
-            { nome_dimensione: 'lingua', consente_valore_generico: false },
-            { nome_dimensione: 'livello', consente_valore_generico: true },
+            {
+              nome_dimensione: 'lingua',
+              consente_valore_generico: false,
+              valore_default: 'IT',
+              modelli_pubblicati_che_la_valorizzano: 2,
+            },
+            {
+              nome_dimensione: 'livello_professionale',
+              consente_valore_generico: true,
+              valore_default: null,
+              modelli_pubblicati_che_la_valorizzano: 1,
+            },
           ],
-          dimensioni_non_configurate: [{ nome_dimensione: 'canale' }],
+          dimensioni_non_configurate: [
+            {
+              nome_dimensione: 'area_geografica',
+              motivo: 'Nessuna policy registrata per questa dimensione',
+              modelli_pubblicati_che_la_valorizzano: 3,
+            },
+          ],
         }),
       ),
-      salvaPolicy: vi
-        .fn()
-        .mockReturnValue(of({ nome_dimensione: 'canale', consente_valore_generico: false })),
+      salvaPolicy: vi.fn().mockReturnValue(
+        of({
+          nome_dimensione: 'area_geografica',
+          consente_valore_generico: false,
+          valore_default: null,
+          modelli_pubblicati_che_la_valorizzano: 3,
+        }),
+      ),
     };
     TestBed.configureTestingModule({
       imports: [DimensioniComponent],
@@ -115,7 +136,7 @@ describe('DimensioniComponent', () => {
     expect(text).toContain('Ricercatore');
     expect(text).toContain('lingua');
     expect(text).toContain('configurata');
-    expect(text).toContain('canale');
+    expect(text).toContain('area_geografica');
     expect(text).toContain('nuova, non ancora configurata');
     expect(text).toContain('Titolo');
   });
@@ -128,16 +149,87 @@ describe('DimensioniComponent', () => {
     (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    (fixture.nativeElement.querySelector('#canale-distinto') as HTMLInputElement).click();
+    (fixture.nativeElement.querySelector('#area_geografica-distinto') as HTMLInputElement).click();
     fixture.detectChanges();
     (
-      fixture.nativeElement.querySelector('[data-save-policy="canale"]') as HTMLButtonElement
+      fixture.nativeElement.querySelector(
+        '[data-save-policy="area_geografica"]',
+      ) as HTMLButtonElement
     ).click();
 
     expect(policyService.salvaPolicy).toHaveBeenCalledWith('integration-1', 'BANDO_CONCORSO', {
-      nome_dimensione: 'canale',
+      nome_dimensione: 'area_geografica',
       consente_valore_generico: false,
+      valore_default: null,
     });
+  });
+
+  it('allows a generic language policy and warns using live model counts', () => {
+    fixture = TestBed.createComponent(DimensioniComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="TD"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const modifica = Array.from<HTMLButtonElement>(
+      fixture.nativeElement.querySelectorAll(
+        '.dimension-card button',
+      ) as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.closest('.dimension-card')?.textContent?.includes('lingua')) as
+      HTMLButtonElement | undefined;
+    modifica?.click();
+    fixture.detectChanges();
+    const generico = fixture.nativeElement.querySelector('#lingua-generico') as HTMLInputElement;
+    expect(generico.disabled).toBe(false);
+    generico.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-policy-impact]').textContent).toContain(
+      '2 modelli pubblicati',
+    );
+  });
+
+  it('warns for an arbitrary dimension using that dimension model count', () => {
+    fixture = TestBed.createComponent(DimensioniComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="TD"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('#area_geografica-generico') as HTMLInputElement).click();
+    fixture.detectChanges();
+
+    const warning = fixture.nativeElement.querySelector('[data-policy-impact]');
+    expect(warning.textContent).toContain('3 modelli pubblicati');
+    expect(warning.closest('.dimension-card')?.textContent).toContain('area_geografica');
+  });
+
+  it('signals a configured default that disappeared from the live tree', () => {
+    policyService.policy.mockReturnValue(
+      of({
+        codice_tipo_documento: 'BANDO_CONCORSO',
+        policy: [
+          {
+            nome_dimensione: 'lingua',
+            consente_valore_generico: false,
+            valore_default: 'FR',
+            modelli_pubblicati_che_la_valorizzano: 2,
+          },
+        ],
+        dimensioni_non_configurate: [],
+      }),
+    );
+    fixture = TestBed.createComponent(DimensioniComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="TD"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const warning = fixture.nativeElement.querySelector('[data-stale-default]');
+    expect(warning.textContent).toContain('FR');
+    expect(warning.textContent).toContain('non è più presente');
   });
 
   it('shows the exact live JSON next to the tree', () => {

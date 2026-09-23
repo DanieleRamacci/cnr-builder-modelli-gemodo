@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path
 
+from app.builder import repository as builder_repository
 from app.builder.schemas import (
     PolicyDimensioneRequest,
     PolicyDimensioneResponse,
@@ -115,18 +116,26 @@ def struttura_tipo_documento_live(
 def policy_dimensioni_live(
     integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni
 ):
-    policy, non_configurate = service.policy_dimensioni_live(integrazione_id, codice, principal)
+    policy, non_configurate, conteggi = service.policy_dimensioni_live(
+        integrazione_id, codice, principal
+    )
     return PolicyDimensioniResponse(
         codice_tipo_documento=codice,
         policy=[
             PolicyDimensioneResponse(
                 nome_dimensione=item.nome_dimensione,
                 consente_valore_generico=item.consente_valore_generico,
+                valore_default=item.valore_default,
+                modelli_pubblicati_che_la_valorizzano=conteggi[item.nome_dimensione],
             )
             for item in policy
         ],
         dimensioni_non_configurate=[
-            {"nome_dimensione": nome} for nome in non_configurate
+            {
+                "nome_dimensione": nome,
+                "modelli_pubblicati_che_la_valorizzano": conteggi[nome],
+            }
+            for nome in non_configurate
         ],
     )
 
@@ -148,4 +157,8 @@ def imposta_policy_dimensione_live(
     return PolicyDimensioneResponse(
         nome_dimensione=policy.nome_dimensione,
         consente_valore_generico=policy.consente_valore_generico,
+        valore_default=policy.valore_default,
+        modelli_pubblicati_che_la_valorizzano=builder_repository.conta_modelli_pubblicati_con_dimensione(
+            service.db, policy.tipo_documento_id, policy.nome_dimensione
+        ),
     )

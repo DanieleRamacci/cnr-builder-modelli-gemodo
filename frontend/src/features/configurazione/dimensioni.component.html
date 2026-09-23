@@ -123,6 +123,13 @@
                   <code>{{ valore }}</code>
                 }
               </div>
+              @if (defaultNonDisponibile(dimensione)) {
+                <div class="alert alert-warning" role="alert" data-stale-default>
+                  Il default configurato <code>{{ dimensione.policy!.valore_default }}</code> non è
+                  più presente nell'albero live. La configurazione è stata conservata: scegli un
+                  nuovo valore oppure rimuovi la preselezione.
+                </div>
+              }
 
               @if (!modificabile(dimensione)) {
                 <div class="saved-policy">
@@ -133,7 +140,11 @@
                         : 'Ogni valore richiede una scelta esplicita'
                     }}
                   </strong>
-                  <p>Si applica a tutte le foglie di questo tipo documento.</p>
+                  <p>
+                    Default:
+                    <code>{{ dimensione.policy!.valore_default ?? 'nessuna preselezione' }}</code>
+                    · si applica a tutte le foglie.
+                  </p>
                   <button type="button" (click)="modifica(dimensione.nome)">Modifica</button>
                 </div>
               } @else {
@@ -154,16 +165,12 @@
                       ><small>Nessun fallback a un valore generico.</small></span
                     >
                   </label>
-                  <label
-                    [class.selected]="scelta(dimensione.nome) === true"
-                    [class.disabled]="dimensione.nome === 'lingua'"
-                  >
+                  <label [class.selected]="scelta(dimensione.nome) === true">
                     <input
                       type="radio"
                       [id]="dimensione.nome + '-generico'"
                       [name]="dimensione.nome"
                       [checked]="scelta(dimensione.nome) === true"
-                      [disabled]="dimensione.nome === 'lingua'"
                       (change)="scegli(dimensione.nome, true)"
                     />
                     <span
@@ -172,6 +179,28 @@
                     >
                   </label>
                 </fieldset>
+                <label [for]="dimensione.nome + '-default'" class="form-label mt-3">
+                  Valore preselezionato nel builder
+                </label>
+                <select
+                  [id]="dimensione.nome + '-default'"
+                  class="form-select"
+                  [value]="defaultScelto(dimensione.nome) ?? ''"
+                  (change)="scegliDefault(dimensione.nome, $any($event.target).value)"
+                >
+                  <option value="">Nessuna preselezione</option>
+                  @for (valore of dimensione.valori; track valore) {
+                    <option [value]="valore">{{ valore }}</option>
+                  }
+                </select>
+                @if (scelta(dimensione.nome) === true && dimensione.modelliPubblicati > 0) {
+                  <div class="alert alert-warning mt-3" role="alert" data-policy-impact>
+                    <strong>{{ dimensione.modelliPubblicati }} modelli pubblicati</strong>
+                    valorizzano questa dimensione. Consentendo il generico, il catalogo potrà
+                    restituire un modello senza questo valore anche quando la richiesta ne indica
+                    uno preciso.
+                  </div>
+                }
                 <footer>
                   <button
                     type="button"
@@ -238,6 +267,10 @@
                 ? 'È ammesso un modello senza valore specifico.'
                 : 'Il valore deve essere scelto esplicitamente.'
             }}
+          </p>
+          <p>
+            Default: <code>{{ item.valore_default ?? 'nessuna preselezione' }}</code> ·
+            {{ item.modelli_pubblicati_che_la_valorizzano }} modelli pubblicati valorizzati
           </p>
           <button type="button" (click)="modifica(item.nome_dimensione)">Modifica</button>
         </article>

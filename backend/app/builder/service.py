@@ -44,6 +44,48 @@ TRANSIZIONI_VALIDE: dict[str, set[str]] = {
 }
 
 
+# 011 T054: il nome della dimensione del livello e' uniformato a quello della
+# colonna che ha sostituito e del campo di contratto.
+NOME_LIVELLO = "livello_professionale"
+
+# Le due chiavi storiche dell'albero discovery e la dimensione che ne deriva.
+# Sono un dettaglio del *formato* della risposta, non un elenco di dimensioni
+# governate: ogni altra chiave con una lista diventa una dimensione senza che
+# nessuno debba aggiungerla qui.
+_CHIAVI_DIMENSIONE_STORICHE = {"lingue_possibili": "lingua", "livelli_possibili": NOME_LIVELLO}
+
+
+def _dimensioni_dichiarate(nodo) -> dict[str, tuple[str, ...]]:
+    """Dimensioni e valori ammessi che una foglia dichiara.
+
+    Legge le due chiavi storiche piu' qualunque altra chiave che porti una lista
+    non vuota, perche' `NodoDiscovery` ha `extra="allow"`. E' lo stesso criterio
+    di `IntegrazioniService._dimensioni_catalogo`, che era gia' generico: qui
+    serve anche il valore, non solo il nome.
+    """
+    dichiarate: dict[str, tuple[str, ...]] = {}
+    for chiave, nome in _CHIAVI_DIMENSIONE_STORICHE.items():
+        valori = getattr(nodo, chiave, None)
+        if valori:
+            dichiarate[nome] = tuple(valori)
+    for nome, valori in (nodo.model_extra or {}).items():
+        if isinstance(valori, (list, tuple)) and valori and all(isinstance(v, str) for v in valori):
+            dichiarate[nome] = tuple(valori)
+    return dichiarate
+
+
+def _dimensioni_dichiarate_ovunque(catalogo) -> set[str]:
+    """Nomi di dimensione visti su almeno una foglia dell'albero."""
+    nomi: set[str] = set()
+    stack = list(catalogo.nodi)
+    while stack:
+        nodo = stack.pop()
+        stack.extend(nodo.figli or ())
+        if nodo.campi is not None:
+            nomi.update(_dimensioni_dichiarate(nodo))
+    return nomi
+
+
 def _slug(value: str) -> str:
     ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-") or "modello"
@@ -53,22 +95,31 @@ def _identita_modello(
     *,
     tipo: str,
     nodi,
-    lingua: str | None,
-    livello: str | None,
+    dimensioni: dict[str, str],
     modello_id: uuid.UUID,
 ) -> tuple[str, str]:
-    # Una dimensione assente compare nel nome come "tutte/tutti": e' ammessa solo
-    # quando la policy dichiara che la dimensione consente un valore generico.
-    scope = livello or "tutti"
-    lingua_slug = lingua or "tutte"
+    """Codice e nome generati, distinti per ogni combinazione di dimensioni (011 FR-003).
+
+    I valori entrano **in ordine alfabetico di nome dimensione**, non nell'ordine
+    in cui l'integrazione li elenca: quell'ordine non e' garantito stabile dal
+    contratto di discovery, quindi due creazioni identiche potrebbero altrimenti
+    produrre codici diversi.
+
+    I nomi umani di lingua e livello - "Italiano", "Livello VI", "Tutti i
+    livelli" - sono spariti: esistevano solo per quelle due dimensioni, e per
+    `area_geografica` non ci sarebbe stato nulla di simile. Tenerli avrebbe
+    significato che due dimensioni hanno nomi belli e tutte le altre no, che e'
+    il privilegio che 011 toglie.
+    """
+    valori = [dimensioni[nome] for nome in sorted(dimensioni)]
     suffix = modello_id.hex
-    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), scope, lingua_slug]))
+    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), *valori]))
     codice = f"{prefix[:128 - len(suffix) - 1]}-{suffix}"
-    language_name = (
-        "Tutte le lingue" if lingua is None else ("Italiano" if lingua == "IT" else "Inglese")
-    )
-    scope_name = f"Livello {livello}" if livello else "Tutti i livelli"
-    name_suffix = f" - {scope_name} - {language_name} - {datetime.now(timezone.utc):%Y-%m-%d}"
+    # Una dimensione non valorizzata semplicemente non compare nel nome:
+    # l'assenza e' l'informazione (FR-006), e non serve renderla con "tutti".
+    etichetta_dimensioni = " - ".join(valori)
+    parti_suffix = [p for p in (etichetta_dimensioni, f"{datetime.now(timezone.utc):%Y-%m-%d}") if p]
+    name_suffix = " - " + " - ".join(parti_suffix)
     descriptions = " - ".join(n.descrizione for n in nodi)
     return codice, f"{descriptions[:255 - len(name_suffix)]}{name_suffix}"
 
@@ -105,10 +156,10 @@ class BuilderService:
     # ha ancora una policy registrata: e' lo stesso che la migration 0018 scrive
     # per i tipi esistenti, quindi nulla cambia di nascosto. Una dimensione che
     # non compare qui resta richiesta, e la lettura delle policy la segnala.
-    POLICY_DI_RIPIEGO = {"lingua": False, "livello": True}
+    POLICY_DI_RIPIEGO = {"lingua": False, NOME_LIVELLO: True}
 
     @classmethod
-    def _verifica_dimensione(cls, nome, valore, ammessi, policy, messaggio_valore_non_ammesso):
+    def _verifica_dimensione(cls, nome, valore, ammessi, policy):
         """Un valore assente e' ammesso solo se la policy consente il generico."""
         if valore is None:
             if policy.get(nome, cls.POLICY_DI_RIPIEGO.get(nome, False)):
@@ -119,43 +170,92 @@ class BuilderService:
                 status_code=400,
             )
         if valore not in (ammessi or ()):
-            raise BuilderDomainError(ErrorCode.CONTESTO_NON_VALIDO, messaggio_valore_non_ammesso, status_code=400)
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                f"Valore '{valore}' non disponibile per la dimensione '{nome}' nella categorizzazione scelta",
+                status_code=400,
+            )
+
+    @classmethod
+    def _verifica_dimensioni(cls, dimensioni: dict[str, str], dichiarate: dict[str, tuple[str, ...]], policy) -> None:
+        """Enforcement su **tutte** le dimensioni dichiarate, non su due nomi (011 FR-002).
+
+        Prima questo metodo veniva invocato esattamente due volte, con "lingua" e
+        "livello" scritti a mano: una policy registrata su qualunque altra
+        dimensione veniva salvata e poi ignorata, dando all'admin la falsa
+        impressione di aver configurato qualcosa. Ora il ciclo copre tutte le
+        dimensioni che la foglia dichiara.
+
+        Il ciclo e' sulle dimensioni **dichiarate dalla foglia**, non sull'unione
+        con le policy registrate. La policy vive sul tipo documento, ma l'albero
+        puo' dichiarare dimensioni diverse su foglie diverse: pretendere un
+        valore per una dimensione che questa foglia non ha renderebbe la
+        creazione impossibile, perche' fornirlo violerebbe FR-006 e non fornirlo
+        violerebbe la policy. Una policy non applicabile a questa foglia
+        semplicemente non si applica.
+        """
+        for nome in sorted(dichiarate):
+            cls._verifica_dimensione(nome, dimensioni.get(nome), dichiarate.get(nome), policy)
+        # FR-006: nessun valore implicito, ma nemmeno valori inventati. Una
+        # chiave che la foglia non dichiara non puo' essere registrata, altrimenti
+        # il modello direbbe qualcosa che l'integrazione non ha mai dichiarato.
+        for nome in sorted(set(dimensioni) - set(dichiarate)):
+            raise BuilderDomainError(
+                "DIMENSIONE_NON_DICHIARATA",
+                f"La dimensione '{nome}' non e' dichiarata per la categorizzazione scelta",
+                status_code=400,
+            )
 
     def policy_dimensioni(self, principal: PrincipalGEMODO, codice_tipo_documento: str):
         tipo = self._resolve_tipo_documento(codice_tipo_documento)
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
         registrate = builder_repository.policy_dimensioni(self.db, tipo.id)
         nomi = {p.nome_dimensione for p in registrate}
-        return tipo, registrate, sorted(self._dimensioni_note(tipo) - nomi)
+        non_configurate = sorted(self._dimensioni_live(codice_tipo_documento, tipo) - nomi)
+        conteggi = {
+            nome: builder_repository.conta_modelli_pubblicati_con_dimensione(
+                self.db, tipo.id, nome
+            )
+            for nome in nomi | set(non_configurate)
+        }
+        return tipo, registrate, non_configurate, conteggi
 
-    def _dimensioni_note(self, tipo) -> set[str]:
-        """Le dimensioni che il sistema sa gia' leggere dall'albero discovery.
+    def _dimensioni_live(self, codice_tipo_documento: str, tipo) -> set[str]:
+        """Le dimensioni che l'albero live dichiara, qualunque siano (011 FR-005).
 
-        Quando ne verranno aggiunte altre lato integrazione andranno raccolte da
-        qui, cosi' la schermata 4a le segnala invece di ignorarle.
+        Sostituisce un `return {"lingua", "livello"}` scritto a mano, che era il
+        motivo per cui una dimensione nuova non veniva nemmeno segnalata come
+        priva di policy. L'albero e' gia' letto in modo generico: `NodoDiscovery`
+        ha `extra="allow"`, quindi qualunque chiave con una lista di valori
+        arriva fin qui senza che nessuno l'abbia prevista.
         """
-        return {"lingua", "livello"}
-
-    # La persistenza di un valore generico esiste solo dove la colonna lo ammette.
-    # `modello_documento.lingua` e' NOT NULL con vincolo IT/EN (DEC-001-LINGUA-IT-EN)
-    # ed e' esposta non nullabile anche nel catalogo verso GEBAN: dichiarare qui
-    # `lingua` generica e poi salvare 'IT' sarebbe una bugia silenziosa, quindi la
-    # policy viene rifiutata finche' schema e contratto di `001` non cambiano.
-    DIMENSIONI_SENZA_GENERICO = {"lingua"}
+        catalogo = self._catalogo(codice_tipo_documento, aggiornato=False, tipo=tipo)
+        return set(_dimensioni_dichiarate_ovunque(catalogo))
 
     def imposta_policy_dimensione(self, principal: PrincipalGEMODO, codice_tipo_documento: str, request):
+        """Registra la policy di una dimensione. Nessuna dimensione e' esclusa.
+
+        Prima esisteva `DIMENSIONI_SENZA_GENERICO = {"lingua"}`, che rifiutava con
+        `GENERICO_NON_SUPPORTATO` il tentativo di dichiarare la lingua generica:
+        serviva perche' la colonna era NOT NULL e il contratto la esponeva
+        obbligatoria, quindi accettare e poi salvare 'IT' sarebbe stata una bugia
+        silenziosa. Con 011 la colonna non esiste piu' e il contratto ammette il
+        null, quindi il divieto non ha piu' una ragione tecnica - ed era, alla
+        lettera, un nome di dimensione scritto nel codice.
+
+        La protezione non sparisce, cambia natura: la schermata mostra la
+        conseguenza calcolata dai dati prima di salvare. Il rischio residuo e'
+        dichiarato in DEC-011-POLICY-LINGUA-ALL-ADMIN - portare la lingua del
+        bando a generico riaprirebbe l'ambiguita' che DEC-001-LINGUA-IT-EN aveva
+        chiuso - ma e' ora una scelta deliberata dell'admin, non un'impossibilita'
+        strutturale.
+        """
         tipo = self._resolve_tipo_documento(codice_tipo_documento)
         verify_scrittura_su_contesto(principal, tipo.codice_contesto)
-        if request.consente_valore_generico and request.nome_dimensione in self.DIMENSIONI_SENZA_GENERICO:
-            raise BuilderDomainError(
-                "GENERICO_NON_SUPPORTATO",
-                f"La dimensione '{request.nome_dimensione}' non puo' ammettere un valore generico: "
-                "la persistenza e il contratto del catalogo la richiedono valorizzata",
-                status_code=409,
-            )
         policy, creata = builder_repository.salva_policy_dimensione(
             self.db, tipo_documento_id=tipo.id, nome_dimensione=request.nome_dimensione,
-            consente_valore_generico=request.consente_valore_generico, soggetto=principal.subject,
+            consente_valore_generico=request.consente_valore_generico,
+            valore_default=request.valore_default, soggetto=principal.subject,
         )
         self.db.commit()
         return policy, creata
@@ -166,6 +266,17 @@ class BuilderService:
             raise DomainError("RISORSA_NON_TROVATA", "Risorsa non disponibile", status_code=404)
         verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
         return modello
+
+    def dimensioni_non_disponibili(self, modello: ModelloDocumento) -> list[str]:
+        """Segnala dimensioni storiche non piu' dichiarate dalla foglia live."""
+        catalogo = self._catalogo(
+            modello.tipo_documento.codice,
+            aggiornato=True,
+            tipo=modello.tipo_documento,
+        )
+        foglia = catalogo.indice_percorsi().get(tuple(modello.percorso_categorizzazione))
+        dichiarate = set(_dimensioni_dichiarate(foglia)) if foglia is not None else set()
+        return sorted(set(modello.dimensioni) - dichiarate)
 
     def _catalogo(self, codice: str, *, aggiornato: bool = False, tipo: TipoDocumento | None = None) -> CatalogoDiscovery:
         tipo = tipo if tipo is not None else self._resolve_tipo_documento(codice)
@@ -215,7 +326,9 @@ class BuilderService:
         for nome, generico in self.POLICY_DI_RIPIEGO.items():
             builder_repository.salva_policy_dimensione(
                 self.db, tipo_documento_id=tipo.id, nome_dimensione=nome,
-                consente_valore_generico=generico, soggetto=None,
+                consente_valore_generico=generico,
+                valore_default="IT" if nome == "lingua" else None,
+                soggetto=None,
             )
         return tipo
 
@@ -265,21 +378,14 @@ class BuilderService:
         # ma dichiarato per nome di dimensione sul tipo documento.
         policy = {p.nome_dimensione: p.consente_valore_generico
                   for p in builder_repository.policy_dimensioni(self.db, tipo.id)}
-        self._verifica_dimensione(
-            "lingua", request.lingua, foglia.lingue_possibili, policy,
-            "Lingua non disponibile per la categorizzazione scelta",
-        )
-        self._verifica_dimensione(
-            "livello", request.livello_professionale, foglia.livelli_possibili, policy,
-            "Livello professionale non disponibile per la categorizzazione scelta",
-        )
+        dimensioni = request.dimensioni_effettive()
+        self._verifica_dimensioni(dimensioni, _dimensioni_dichiarate(foglia), policy)
         nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
         modello_id = uuid.uuid4()
         codice, nome = _identita_modello(
             tipo=request.codice_tipo_documento,
             nodi=nodi,
-            lingua=request.lingua,
-            livello=request.livello_professionale,
+            dimensioni=dimensioni,
             modello_id=modello_id,
         )
 
@@ -293,8 +399,7 @@ class BuilderService:
             codice_tipologia=tipologia,
             percorso_categorizzazione=list(percorso),
             variante="STANDARD",
-            lingua=request.lingua,
-            livello_professionale=request.livello_professionale,
+            dimensioni=dimensioni,
         )
         registra_evento(
             self.db,
@@ -302,7 +407,14 @@ class BuilderService:
             principal=principal,
             modello_documento_id=modello.id,
             modello_versione_id=None,
-            payload_minimo={"codice": modello.codice, "codice_tipo_documento": request.codice_tipo_documento},
+            # Le dimensioni entrano nell'audit: erano ricavabili dalle due
+            # colonne, che non esistono piu'. Senza, l'evento perderebbe la
+            # categorizzazione del modello creato (Constitution V).
+            payload_minimo={
+                "codice": modello.codice,
+                "codice_tipo_documento": request.codice_tipo_documento,
+                "dimensioni": dimensioni,
+            },
         )
         self.db.commit()
         return modello
@@ -321,16 +433,24 @@ class BuilderService:
             TipoDocumento.id == origine.tipo_documento_id,
         ).with_for_update())
         self.db.refresh(origine)
-        if request.lingua == origine.lingua:
+        nome_dimensione, valore = request.dimensione_derivata()
+        if origine.dimensioni.get(nome_dimensione) is None:
             raise BuilderDomainError(
                 ErrorCode.CONTESTO_NON_VALIDO,
-                "La lingua derivata deve essere diversa da quella del modello origine",
+                f"Il modello di origine non valorizza la dimensione '{nome_dimensione}': "
+                "non c'e' un valore da cui derivare",
                 status_code=400,
             )
-        if builder_repository.get_edizione_derivata(self.db, origine.id, request.lingua) is not None:
+        if valore == origine.dimensioni.get(nome_dimensione):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                f"Il valore derivato di '{nome_dimensione}' deve essere diverso da quello del modello origine",
+                status_code=400,
+            )
+        if builder_repository.get_edizione_derivata(self.db, origine.id, nome_dimensione, valore) is not None:
             raise BuilderDomainError(
                 "EDIZIONE_DERIVATA_DUPLICATA",
-                "Esiste gia' un'edizione derivata nella lingua richiesta",
+                f"Esiste gia' un'edizione derivata con '{nome_dimensione}' = '{valore}'",
                 status_code=409,
             )
 
@@ -345,10 +465,25 @@ class BuilderService:
                 "Il ramo del modello non e' piu' disponibile",
                 status_code=404,
             )
-        if request.lingua not in (foglia.lingue_possibili or ()):
+        dichiarate = _dimensioni_dichiarate(foglia)
+        # 011 FR-014: si deriva solo su una dimensione **obbligatoria**, perche'
+        # e' li' che il modello di origine ha certamente il valore di partenza.
+        # Dove la dimensione ammette il generico un modello puo' non valorizzarla,
+        # e "derivane un'altra versione" non significherebbe nulla.
+        policy = {p.nome_dimensione: p.consente_valore_generico
+                  for p in builder_repository.policy_dimensioni(self.db, origine.tipo_documento_id)}
+        if policy.get(nome_dimensione, self.POLICY_DI_RIPIEGO.get(nome_dimensione, False)):
             raise BuilderDomainError(
                 ErrorCode.CONTESTO_NON_VALIDO,
-                "Lingua non disponibile per la categorizzazione scelta",
+                f"La dimensione '{nome_dimensione}' ammette un valore generico per questo tipo documento: "
+                "non e' una dimensione su cui derivare edizioni",
+                status_code=400,
+            )
+        if valore not in (dichiarate.get(nome_dimensione) or ()):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                f"Valore '{valore}' non disponibile per la dimensione '{nome_dimensione}' "
+                "nella categorizzazione scelta",
                 status_code=400,
             )
         sorgente = builder_repository.get_ultima_versione_con_campi(self.db, origine.id)
@@ -361,11 +496,13 @@ class BuilderService:
 
         nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
         derivato_id = uuid.uuid4()
+        # L'edizione derivata conserva tutte le dimensioni dell'origine e cambia
+        # solo quella su cui si deriva.
+        dimensioni_derivate = {**origine.dimensioni, nome_dimensione: valore}
         codice, nome = _identita_modello(
             tipo=origine.tipo_documento.codice,
             nodi=nodi,
-            lingua=request.lingua,
-            livello=origine.livello_professionale,
+            dimensioni=dimensioni_derivate,
             modello_id=derivato_id,
         )
         derivato = builder_repository.crea_modello(
@@ -378,8 +515,7 @@ class BuilderService:
             codice_tipologia=origine.codice_tipologia,
             percorso_categorizzazione=list(origine.percorso_categorizzazione),
             variante=origine.variante,
-            lingua=request.lingua,
-            livello_professionale=origine.livello_professionale,
+            dimensioni=dimensioni_derivate,
             derivato_da_modello_id=origine.id,
         )
         versione = builder_repository.crea_versione(
@@ -395,19 +531,23 @@ class BuilderService:
             principal=principal,
             modello_documento_id=derivato.id,
             modello_versione_id=versione.id,
-            payload_minimo={"modello_origine_id": str(origine.id), "lingua": request.lingua},
+            payload_minimo={
+                "modello_origine_id": str(origine.id),
+                "dimensione": nome_dimensione,
+                "valore": valore,
+            },
         )
         try:
             self.db.commit()
         except IntegrityError as exc:
-            # Due richieste simultanee per la stessa coppia (origine, lingua):
+            # Due richieste simultanee per la stessa terna (origine, dimensione, valore):
             # l'indice parziale di 0019 le separa, il controllo applicativo sopra
             # non basta. Conflitto funzionale, mai un 500 (002 FR-018).
             self.db.rollback()
             if getattr(exc.orig, "sqlstate", None) == "23505":
                 raise BuilderDomainError(
                     "EDIZIONE_DERIVATA_DUPLICATA",
-                    "Esiste gia' un'edizione derivata nella lingua richiesta",
+                    f"Esiste gia' un'edizione derivata con '{nome_dimensione}' = '{valore}'",
                     status_code=409,
                 ) from exc
             raise
@@ -508,8 +648,7 @@ class BuilderService:
                 tipo_documento_id=modello.tipo_documento_id,
                 percorso_categorizzazione=modello.percorso_categorizzazione,
                 variante=modello.variante,
-                lingua=modello.lingua,
-                livello_professionale=modello.livello_professionale,
+                dimensioni=modello.dimensioni,
                 escludi_versione_id=versione.id,
             )
             if precedente is not None:

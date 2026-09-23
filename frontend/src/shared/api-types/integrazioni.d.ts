@@ -4,783 +4,787 @@
  */
 
 export interface paths {
-  '/configurazione/integrazioni': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/configurazione/integrazioni": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elenco integrazioni registrate */
+        get: operations["listIntegrazioniAdmin"];
+        put?: never;
+        /** Registra software senza connessione automatica */
+        post: operations["createIntegrazione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Elenco integrazioni registrate */
-    get: operations['listIntegrazioniAdmin'];
-    put?: never;
-    /** Registra software senza connessione automatica */
-    post: operations['createIntegrazione'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/integrazioni/{integrazioneId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
+    "/configurazione/integrazioni/{integrazioneId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getIntegrazioneAdmin"];
+        /**
+         * Configura URL e nome; controllo ottimistico revisione
+         * @description Codice e contesto sono immutabili in questo incremento. Cambio URL o timeout incrementa revisione e richiede verifica; cambio solo nome incrementa revisione ma conserva la verifica della configurazione HTTP.
+         */
+        put: operations["configureIntegrazione"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['getIntegrazioneAdmin'];
-    /**
-     * Configura URL e nome; controllo ottimistico revisione
-     * @description Codice e contesto sono immutabili in questo incremento. Cambio URL o timeout incrementa revisione e richiede verifica; cambio solo nome incrementa revisione ma conserva la verifica della configurazione HTTP.
-     */
-    put: operations['configureIntegrazione'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/integrazioni/{integrazioneId}/verifica': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
+    "/configurazione/integrazioni/{integrazioneId}/verifica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verifica sincrona dell'intera mappa discovery */
+        post: operations["verifyIntegrazione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Verifica sincrona dell'intera mappa discovery */
-    post: operations['verifyIntegrazione'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/integrazioni/{integrazioneId}/tipi-documento': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
+    "/configurazione/integrazioni/{integrazioneId}/tipi-documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        /** Elenca le radici correnti della discovery per la configurazione policy */
+        get: operations["listTipiDocumentoLiveAdmin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Elenca le radici correnti della discovery per la configurazione policy */
-    get: operations['listTipiDocumentoLiveAdmin'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
+    "/configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        /** Legge l'albero live usato dalla schermata delle policy */
+        get: operations["getStrutturaLiveAdmin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Legge l'albero live usato dalla schermata delle policy */
-    get: operations['getStrutturaLiveAdmin'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/policy-dimensioni': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
+    "/configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/policy-dimensioni": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
+        };
+        /** Legge policy salvate e dimensioni live ancora da configurare */
+        get: operations["getPolicyDimensioniLiveAdmin"];
+        /** Registra la policy di una dimensione dichiarata dall'albero live */
+        put: operations["setPolicyDimensioneLiveAdmin"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Legge policy salvate e dimensioni live ancora da configurare */
-    get: operations['getPolicyDimensioniLiveAdmin'];
-    /** Registra la policy di una dimensione dichiarata dall'albero live */
-    put: operations['setPolicyDimensioneLiveAdmin'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/builder/integrazioni': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/builder/integrazioni": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Solo CONNESSE autorizzate per lettura nel singolo contesto. Nessun URL, errore tecnico o configurazione admin. Permessi secondo spec 006. */
+        get: operations["listIntegrazioniManager"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Solo CONNESSE autorizzate per lettura nel singolo contesto. Nessun URL, errore tecnico o configurazione admin. Permessi secondo spec 006. */
-    get: operations['listIntegrazioniManager'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/builder/integrazioni/{integrazioneId}/tipi-documento': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
+    "/builder/integrazioni/{integrazioneId}/tipi-documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        /** @description Autorizzazione nel contesto prima di HTTP; nessun import DB. */
+        get: operations["listTipiDocumentoLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Autorizzazione nel contesto prima di HTTP; nessun import DB. */
-    get: operations['listTipiDocumentoLive'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: string;
-      };
-      cookie?: never;
+    "/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: string;
+            };
+            cookie?: never;
+        };
+        /** @description Albero ricorsivo del tipo richiesto. Il frontend naviga figli fino ai campi senza endpoint per livello. Nessun URL sorgente esposto. */
+        get: operations["getStrutturaLivePerIntegrazione"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Albero ricorsivo del tipo richiesto. Il frontend naviga figli fino ai campi senza endpoint per livello. Nessun URL sorgente esposto. */
-    get: operations['getStrutturaLivePerIntegrazione'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    PolicyDimensioneRequest: {
-      nome_dimensione: string;
-      consente_valore_generico: boolean;
-    };
-    PolicyDimensione: {
-      nome_dimensione: string;
-      consente_valore_generico: boolean;
-    };
-    DimensioneNonConfigurata: {
-      nome_dimensione: string;
-      motivo: string;
-    };
-    PolicyDimensioni: {
-      codice_tipo_documento: string;
-      policy: components['schemas']['PolicyDimensione'][];
-      dimensioni_non_configurate: components['schemas']['DimensioneNonConfigurata'][];
-    };
-    IntegrazioneCreate: {
-      codice: string;
-      nome: string;
-      /** @description Chiave esatta contexts del JWT, senza normalizzazione implicita */
-      codice_contesto: string;
-    };
-    IntegrazioneUpdate: {
-      revisione_attesa: number;
-      nome: string;
-      /**
-       * Format: uri
-       * @description HTTPS approvato, senza credenziali o fragment; null rimuove endpoint
-       */
-      url: string | null;
-      /** @default 5000 */
-      timeout_ms: number;
-    };
-    /**
-     * @example {
-     *       "id": "00000000-0000-4000-8000-000000000001",
-     *       "codice": "SOFTWARE_DEMO",
-     *       "nome": "Software demo",
-     *       "codice_contesto": "demo"
-     *     }
-     */
-    IntegrazioneVisibile: {
-      /** Format: uuid */
-      id: string;
-      codice: string;
-      nome: string;
-      codice_contesto: string;
-    };
-    /**
-     * @example {
-     *       "id": "00000000-0000-4000-8000-000000000001",
-     *       "codice": "SOFTWARE_DEMO",
-     *       "nome": "Software demo",
-     *       "codice_contesto": "demo",
-     *       "modalita": "SINGOLO_ENDPOINT",
-     *       "revisione": 1,
-     *       "url": null,
-     *       "timeout_ms": 5000,
-     *       "stato": "DEFINITO",
-     *       "ultima_verifica": null
-     *     }
-     */
-    IntegrazioneAdmin: {
-      /** Format: uuid */
-      id: string;
-      codice: string;
-      nome: string;
-      codice_contesto: string;
-      /** @enum {string} */
-      modalita: 'SINGOLO_ENDPOINT';
-      revisione: number;
-      /** Format: uri */
-      url: string | null;
-      timeout_ms: number;
-      /** @enum {string} */
-      stato: 'DEFINITO' | 'CONNESSO' | 'ERRORE';
-      ultima_verifica: {
-        /** Format: date-time */
-        data: string;
-        revisione: number;
-        versione_contratto: string;
-        /** @enum {string} */
-        esito: 'CONFORME' | 'NON_CONFORME' | 'NON_RAGGIUNGIBILE';
-        errori: {
-          codice: string;
-          messaggio: string;
-          percorso?: string;
-        }[];
-      } | null;
-    };
-    Errore: {
-      codice: string;
-      messaggio: string;
-    };
-    /** @description Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e `descrizione`; ha POI o `figli` (per scendere di un altro livello, stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai entrambi, mai nessuno dei due. Il numero di livelli non e' fissato dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi profilo), un altro tipo documento potrebbe averne uno solo, tre o piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre livelli) qui sopra. `figli`/`campi` restano le uniche chiavi strutturali fisse (necessarie per un parsing ricorsivo deterministico lato GEMODO, indipendentemente da quanti livelli ci sono); il nome concettuale di ciascun livello (tipologia, profilo, o qualunque cosa abbia senso per il vostro dominio) e' invece libero e va nel campo `tipo_livello` sotto - puramente informativo, non usato per il parsing. */
-    NodoCategorizzazione: {
-      /** @example TD */
-      codice: string;
-      /** @example Tempo Determinato */
-      descrizione: string;
-      /** @description Nome del livello di categorizzazione a cui appartiene questo nodo (es. `"tipologia"`, `"profilo"`, o un nome del vostro dominio). Puramente informativo/leggibile per chi consulta la risposta - GEMODO non lo usa per decidere come camminare l'albero (quello dipende solo da `figli`/`campi`). Opzionale. */
-      tipo_livello?: string | null;
-      /**
-       * @description Attributo profilo-dipendente (generalizza il caso "livello", vedi `Attributo Profilo` in `specs/010-configurazione-cataloghi-integrazioni/spec.md`). Opzionale, ha senso solo su un nodo foglia (con `campi`).
-       * @example [
-       *       "I",
-       *       "II",
-       *       "III"
-       *     ]
-       */
-      livelli_possibili?: string[];
-      /**
-       * @description Valore di default fra `livelli_possibili` per questo nodo, se presente.
-       * @example III
-       */
-      livello_base?: string;
-      /**
-       * @description Lingue dei modelli creabili sulla foglia. Obbligatorio sui nodi con `campi`, assente sui nodi intermedi. Non filtra i campi: ogni modello conserva l'intero contratto della foglia.
-       * @example [
-       *       "IT",
-       *       "EN"
-       *     ]
-       */
-      lingue_possibili?: ('IT' | 'EN')[];
-      /** @description Sotto-nodi, se questo non e' un livello foglia. Un array vuoto e' valido (nodo senza sotto-categorizzazione ancora definita) ma MUST essere compilato prima dell'uso in produzione, non lasciato vuoto silenziosamente. */
-      figli?: components['schemas']['NodoCategorizzazione'][];
-      /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
-      campi?: components['schemas']['CampoContrattoDati'][];
-    };
-    /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
-    CampoContrattoDati: {
-      /** @example numero_posti */
-      codice: string;
-      /** @example Numero posti */
-      etichetta: string;
-      /**
-       * @description Stesso vocabolario di `ModelloCampoRichiesto.tipo_dato` (`001`/`002`): `string`, `number`, `date`, `boolean`, `array`, `object`. Nessun tipo `enum` dedicato - un campo con opzioni vincolate (fisse o dipendenti dal profilo) resta `string`/ `number` con il vincolo espresso in `validazione`.
-       * @enum {string}
-       */
-      tipo: 'string' | 'number' | 'date' | 'boolean' | 'array' | 'object';
-      /** @enum {string} */
-      lingua: 'IT' | 'EN';
-      obbligatorio: boolean;
-      ordine: number;
-      descrizione?: string | null;
-      /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
-      validazione?: Record<string, never> | null;
-    };
-    StrutturaTipoDocumento: {
-      /**
-       * Format: date-time
-       * @description Data/ora fornita dal sistema esterno, mostrabile come metadato. Nel servizio attuale varia a ogni richiesta: non e' una versione affidabile del catalogo ed e' esclusa dalle firme di compatibilita'.
-       */
-      validita: string;
-      /** @description Primo livello dell'albero di categorizzazione di questo tipo documento. */
-      nodi: components['schemas']['NodoCategorizzazione'][];
-    };
-  };
-  responses: {
-    /** @description JWT assente o non valido */
-    Unauthorized: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+    schemas: {
+        PolicyDimensioneRequest: {
+            nome_dimensione: string;
+            consente_valore_generico: boolean;
+            valore_default?: string | null;
+        };
+        PolicyDimensione: {
+            nome_dimensione: string;
+            consente_valore_generico: boolean;
+            valore_default: string | null;
+            modelli_pubblicati_che_la_valorizzano: number;
+        };
+        DimensioneNonConfigurata: {
+            nome_dimensione: string;
+            motivo: string;
+            modelli_pubblicati_che_la_valorizzano: number;
+        };
+        PolicyDimensioni: {
+            codice_tipo_documento: string;
+            policy: components["schemas"]["PolicyDimensione"][];
+            dimensioni_non_configurate: components["schemas"]["DimensioneNonConfigurata"][];
+        };
+        IntegrazioneCreate: {
+            codice: string;
+            nome: string;
+            /** @description Chiave esatta contexts del JWT, senza normalizzazione implicita */
+            codice_contesto: string;
+        };
+        IntegrazioneUpdate: {
+            revisione_attesa: number;
+            nome: string;
+            /**
+             * Format: uri
+             * @description HTTPS approvato, senza credenziali o fragment; null rimuove endpoint
+             */
+            url: string | null;
+            /** @default 5000 */
+            timeout_ms: number;
+        };
         /**
          * @example {
-         *       "codice": "ACCESSO_NON_AUTENTICATO",
-         *       "messaggio": "Autenticazione richiesta"
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "codice": "SOFTWARE_DEMO",
+         *       "nome": "Software demo",
+         *       "codice_contesto": "demo"
          *     }
          */
-        'application/json': components['schemas']['Errore'];
-      };
-    };
-    /** @description Operazione non autorizzata */
-    Forbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        IntegrazioneVisibile: {
+            /** Format: uuid */
+            id: string;
+            codice: string;
+            nome: string;
+            codice_contesto: string;
+        };
         /**
          * @example {
-         *       "codice": "ACCESSO_NON_AUTORIZZATO",
-         *       "messaggio": "Operazione non autorizzata"
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "codice": "SOFTWARE_DEMO",
+         *       "nome": "Software demo",
+         *       "codice_contesto": "demo",
+         *       "modalita": "SINGOLO_ENDPOINT",
+         *       "revisione": 1,
+         *       "url": null,
+         *       "timeout_ms": 5000,
+         *       "stato": "DEFINITO",
+         *       "ultima_verifica": null
          *     }
          */
-        'application/json': components['schemas']['Errore'];
-      };
+        IntegrazioneAdmin: {
+            /** Format: uuid */
+            id: string;
+            codice: string;
+            nome: string;
+            codice_contesto: string;
+            /** @enum {string} */
+            modalita: "SINGOLO_ENDPOINT";
+            revisione: number;
+            /** Format: uri */
+            url: string | null;
+            timeout_ms: number;
+            /** @enum {string} */
+            stato: "DEFINITO" | "CONNESSO" | "ERRORE";
+            ultima_verifica: {
+                /** Format: date-time */
+                data: string;
+                revisione: number;
+                versione_contratto: string;
+                /** @enum {string} */
+                esito: "CONFORME" | "NON_CONFORME" | "NON_RAGGIUNGIBILE";
+                errori: {
+                    codice: string;
+                    messaggio: string;
+                    percorso?: string;
+                }[];
+            } | null;
+        };
+        Errore: {
+            codice: string;
+            messaggio: string;
+        };
+        /** @description Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e `descrizione`; ha POI o `figli` (per scendere di un altro livello, stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai entrambi, mai nessuno dei due. Il numero di livelli non e' fissato dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi profilo), un altro tipo documento potrebbe averne uno solo, tre o piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre livelli) qui sopra. `figli`/`campi` restano le uniche chiavi strutturali fisse (necessarie per un parsing ricorsivo deterministico lato GEMODO, indipendentemente da quanti livelli ci sono); il nome concettuale di ciascun livello (tipologia, profilo, o qualunque cosa abbia senso per il vostro dominio) e' invece libero e va nel campo `tipo_livello` sotto - puramente informativo, non usato per il parsing. */
+        NodoCategorizzazione: {
+            /** @example TD */
+            codice: string;
+            /** @example Tempo Determinato */
+            descrizione: string;
+            /** @description Nome del livello di categorizzazione a cui appartiene questo nodo (es. `"tipologia"`, `"profilo"`, o un nome del vostro dominio). Puramente informativo/leggibile per chi consulta la risposta - GEMODO non lo usa per decidere come camminare l'albero (quello dipende solo da `figli`/`campi`). Opzionale. */
+            tipo_livello?: string | null;
+            /**
+             * @description Attributo profilo-dipendente (generalizza il caso "livello", vedi `Attributo Profilo` in `specs/010-configurazione-cataloghi-integrazioni/spec.md`). Opzionale, ha senso solo su un nodo foglia (con `campi`).
+             * @example [
+             *       "I",
+             *       "II",
+             *       "III"
+             *     ]
+             */
+            livelli_possibili?: string[];
+            /**
+             * @description Valore di default fra `livelli_possibili` per questo nodo, se presente.
+             * @example III
+             */
+            livello_base?: string;
+            /**
+             * @description Lingue dei modelli creabili sulla foglia. **Opzionale** (0.6.0, spec 011): un tipo documento che non distingue i modelli per lingua semplicemente non dichiara questa chiave, e GEMODO non gliene attribuisce una implicita. Fino alla 0.5.0 era obbligatoria sui nodi con `campi`, e una foglia priva di lingua rendeva non conforme l'intera risposta. E' un rilassamento: ogni albero valido con la 0.5.0 resta valido, nessuna integrazione deve cambiare nulla. Resta assente sui nodi intermedi. Non filtra i campi: ogni modello conserva l'intero contratto della foglia.
+             * @example [
+             *       "IT",
+             *       "EN"
+             *     ]
+             */
+            lingue_possibili?: ("IT" | "EN")[];
+            /** @description Sotto-nodi, se questo non e' un livello foglia. Un array vuoto e' valido (nodo senza sotto-categorizzazione ancora definita) ma MUST essere compilato prima dell'uso in produzione, non lasciato vuoto silenziosamente. */
+            figli?: components["schemas"]["NodoCategorizzazione"][];
+            /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
+            campi?: components["schemas"]["CampoContrattoDati"][];
+        };
+        /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
+        CampoContrattoDati: {
+            /** @example numero_posti */
+            codice: string;
+            /** @example Numero posti */
+            etichetta: string;
+            /**
+             * @description Stesso vocabolario di `ModelloCampoRichiesto.tipo_dato` (`001`/`002`): `string`, `number`, `date`, `boolean`, `array`, `object`. Nessun tipo `enum` dedicato - un campo con opzioni vincolate (fisse o dipendenti dal profilo) resta `string`/ `number` con il vincolo espresso in `validazione`.
+             * @enum {string}
+             */
+            tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
+            /** @enum {string} */
+            lingua: "IT" | "EN";
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+            /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
+            validazione?: Record<string, never> | null;
+        };
+        StrutturaTipoDocumento: {
+            /**
+             * Format: date-time
+             * @description Data/ora fornita dal sistema esterno, mostrabile come metadato. Nel servizio attuale varia a ogni richiesta: non e' una versione affidabile del catalogo ed e' esclusa dalle firme di compatibilita'.
+             */
+            validita: string;
+            /** @description Primo livello dell'albero di categorizzazione di questo tipo documento. */
+            nodi: components["schemas"]["NodoCategorizzazione"][];
+        };
     };
-    /** @description Risorsa inesistente o non visibile; risposta indistinguibile */
-    NotFound: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "RISORSA_NON_TROVATA",
-         *       "messaggio": "Risorsa non disponibile"
-         *     }
-         */
-        'application/json': components['schemas']['Errore'];
-      };
+    responses: {
+        /** @description JWT assente o non valido */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTENTICATO",
+                 *       "messaggio": "Autenticazione richiesta"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Operazione non autorizzata */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "ACCESSO_NON_AUTORIZZATO",
+                 *       "messaggio": "Operazione non autorizzata"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Risorsa inesistente o non visibile; risposta indistinguibile */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "RISORSA_NON_TROVATA",
+                 *       "messaggio": "Risorsa non disponibile"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Revisione superata, codice duplicato, test in corso o integrazione non connessa */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Input invalido, URL non approvato o endpoint assente per verifica */
+        InvalidInput: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Discovery non raggiungibile o non conforme; non restituisce elenco vuoto */
+        SourceError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
+        /** @description Budget discovery scaduto */
+        SourceTimeout: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "DISCOVERY_TIMEOUT",
+                 *       "messaggio": "Tempo disponibile per discovery scaduto"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
     };
-    /** @description Revisione superata, codice duplicato, test in corso o integrazione non connessa */
-    Conflict: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/json': components['schemas']['Errore'];
-      };
+    parameters: {
+        IntegrazioneId: string;
+        CodiceTipoDocumento: string;
     };
-    /** @description Input invalido, URL non approvato o endpoint assente per verifica */
-    InvalidInput: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/json': components['schemas']['Errore'];
-      };
-    };
-    /** @description Discovery non raggiungibile o non conforme; non restituisce elenco vuoto */
-    SourceError: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/json': components['schemas']['Errore'];
-      };
-    };
-    /** @description Budget discovery scaduto */
-    SourceTimeout: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        /**
-         * @example {
-         *       "codice": "DISCOVERY_TIMEOUT",
-         *       "messaggio": "Tempo disponibile per discovery scaduto"
-         *     }
-         */
-        'application/json': components['schemas']['Errore'];
-      };
-    };
-  };
-  parameters: {
-    IntegrazioneId: string;
-    CodiceTipoDocumento: string;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listIntegrazioniAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Array vuoto se nessuna integrazione registrata */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listIntegrazioniAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneAdmin'][];
+        requestBody?: never;
+        responses: {
+            /** @description Array vuoto se nessuna integrazione registrata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneAdmin"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
     };
-  };
-  createIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "codice": "GEBAN",
-         *       "nome": "GEBAN",
-         *       "codice_contesto": "geban"
-         *     }
-         */
-        'application/json': components['schemas']['IntegrazioneCreate'];
-      };
-    };
-    responses: {
-      /** @description Creata in DEFINITO, revisione 1 */
-      201: {
-        headers: {
-          [name: string]: unknown;
+    createIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneAdmin'];
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "codice": "GEBAN",
+                 *       "nome": "GEBAN",
+                 *       "codice_contesto": "geban"
+                 *     }
+                 */
+                "application/json": components["schemas"]["IntegrazioneCreate"];
+            };
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      409: components['responses']['Conflict'];
-      422: components['responses']['InvalidInput'];
-    };
-  };
-  getIntegrazioneAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Configurazione ed esito corrente */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Creata in DEFINITO, revisione 1 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneAdmin"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["InvalidInput"];
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneAdmin'];
+    };
+    getIntegrazioneAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  configureIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['IntegrazioneUpdate'];
-      };
-    };
-    responses: {
-      /** @description Configurazione salvata con audit atomico */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        requestBody?: never;
+        responses: {
+            /** @description Configurazione ed esito corrente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneAdmin"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneAdmin'];
+    };
+    configureIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      422: components['responses']['InvalidInput'];
-    };
-  };
-  verifyIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          revisione_attesa: number;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrazioneUpdate"];
+            };
         };
-      };
-    };
-    responses: {
-      /** @description Test terminato e registrato; verificare stato CONNESSO oppure ERRORE. HTTP 200 non significa automaticamente discovery conforme. */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Configurazione salvata con audit atomico */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneAdmin"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["InvalidInput"];
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneAdmin'];
+    };
+    verifyIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      422: components['responses']['InvalidInput'];
-    };
-  };
-  listTipiDocumentoLiveAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Codici dei tipi documento restituiti in questo momento dall'integrazione */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        requestBody: {
+            content: {
+                "application/json": {
+                    revisione_attesa: number;
+                };
+            };
         };
-        content: {
-          'application/json': string[];
+        responses: {
+            /** @description Test terminato e registrato; verificare stato CONNESSO oppure ERRORE. HTTP 200 non significa automaticamente discovery conforme. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneAdmin"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["InvalidInput"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
-  getStrutturaLiveAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Albero live completo, inclusi campi e dimensioni aggiuntive */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listTipiDocumentoLiveAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['StrutturaTipoDocumento'];
+        requestBody?: never;
+        responses: {
+            /** @description Codici dei tipi documento restituiti in questo momento dall'integrazione */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
-  getPolicyDimensioniLiveAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Policy valide per tutto il tipo documento */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getStrutturaLiveAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PolicyDimensioni'];
+        requestBody?: never;
+        responses: {
+            /** @description Albero live completo, inclusi campi e dimensioni aggiuntive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrutturaTipoDocumento"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
-  setPolicyDimensioneLiveAdmin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: components['parameters']['CodiceTipoDocumento'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PolicyDimensioneRequest'];
-      };
-    };
-    responses: {
-      /** @description Policy salvata e identita' locale minima associata all'integrazione */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getPolicyDimensioniLiveAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PolicyDimensione'];
+        requestBody?: never;
+        responses: {
+            /** @description Policy valide per tutto il tipo documento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyDimensioni"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
-  listIntegrazioniManager: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Integrazioni visibili, eventualmente array vuoto */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    setPolicyDimensioneLiveAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: components["parameters"]["CodiceTipoDocumento"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['IntegrazioneVisibile'][];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyDimensioneRequest"];
+            };
         };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  listTipiDocumentoLive: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Codici delle radici della mappa discovery corrente */
-      200: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Policy salvata e identita' locale minima associata all'integrazione */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyDimensione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
         };
-        content: {
-          'application/json': string[];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
-  getStrutturaLivePerIntegrazione: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        integrazioneId: components['parameters']['IntegrazioneId'];
-        codice: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Struttura del tipo nel contesto autorizzato */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listIntegrazioniManager: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['StrutturaTipoDocumento'];
+        requestBody?: never;
+        responses: {
+            /** @description Integrazioni visibili, eventualmente array vuoto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrazioneVisibile"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
-      };
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      502: components['responses']['SourceError'];
-      504: components['responses']['SourceTimeout'];
     };
-  };
+    listTipiDocumentoLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Codici delle radici della mappa discovery corrente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
+        };
+    };
+    getStrutturaLivePerIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Struttura del tipo nel contesto autorizzato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrutturaTipoDocumento"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            502: components["responses"]["SourceError"];
+            504: components["responses"]["SourceTimeout"];
+        };
+    };
 }

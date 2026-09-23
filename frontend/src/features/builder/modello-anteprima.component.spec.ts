@@ -16,6 +16,7 @@ const dettaglio = {
   variante: 'STANDARD',
   lingua: 'IT',
   livello_professionale: null,
+  dimensioni: { lingua: 'IT' },
   derivato_da_modello_id: null,
   codice_contesto: 'geban',
   integrazione_id: 'source',
@@ -52,6 +53,23 @@ const dettaglio = {
   ],
 };
 
+const struttura = {
+  codice_tipo_documento: 'BANDO_CONCORSO',
+  validita: '2026-09-22T10:00:00Z',
+  nodi: [
+    {
+      codice: 'TI',
+      figli: [{ codice: 'CTER', lingue_possibili: ['IT', 'EN'], campi: [] }],
+    },
+  ],
+};
+
+const policy = {
+  codice_tipo_documento: 'BANDO_CONCORSO',
+  policy: [{ nome_dimensione: 'lingua', consente_valore_generico: false }],
+  dimensioni_non_configurate: [],
+};
+
 describe('2b ridotta: anteprima modello', () => {
   function setup(id = 'model') {
     TestBed.configureTestingModule({
@@ -67,9 +85,23 @@ describe('2b ridotta: anteprima modello', () => {
     return { fixture, http, root: fixture.nativeElement as HTMLElement };
   }
 
+  function flushDerivationConfig(
+    http: HttpTestingController,
+    strutturaResponse = struttura,
+    policyResponse = policy,
+  ): void {
+    http
+      .expectOne('/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile')
+      .flush(strutturaResponse);
+    http
+      .expectOne('/api/v1/builder/tipi-documento/BANDO_CONCORSO/policy-dimensioni')
+      .flush(policyResponse);
+  }
+
   it('shows the contract fields returned by the API, with type and obligation', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushDerivationConfig(http);
     fixture.detectChanges();
     const campi = root.querySelectorAll('.campo');
     expect(campi.length).toBe(2);
@@ -84,9 +116,10 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  it('offers the English edition here, not in the list, and only for an IT original', () => {
+  it('keeps the IT/EN flow automatic while sending the generic contract', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushDerivationConfig(http);
     fixture.detectChanges();
     const dialog = root.querySelector('dialog')!;
     // jsdom non implementa showModal/close: stubbati come gia' fatto per la lista.
@@ -94,19 +127,58 @@ describe('2b ridotta: anteprima modello', () => {
     dialog.close = vi.fn();
     const bottone = Array.from(
       root.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-    ).find((b) => b.textContent?.includes('Crea versione inglese'))!;
+    ).find((b) => b.textContent?.includes('Crea edizione collegata'))!;
     expect(bottone).toBeTruthy();
     bottone.click();
     expect(dialog.showModal).toHaveBeenCalled();
     fixture.detectChanges();
+    expect(root.querySelector('#dimensione-derivazione')).toBeNull();
+    expect(root.querySelector('#valore-derivazione')).toBeNull();
     const conferma = Array.from(
       root.querySelectorAll('dialog button') as NodeListOf<HTMLButtonElement>,
     ).find((b) => b.textContent?.trim() === 'Crea')!;
     conferma.click();
     const richiesta = http.expectOne('/api/v1/builder/modelli/model/edizioni-derivate');
-    expect(richiesta.request.body).toEqual({ lingua: 'EN' });
+    expect(richiesta.request.body).toEqual({ nome_dimensione: 'lingua', valore: 'EN' });
     richiesta.flush({ ...dettaglio, id: 'derivato', lingua: 'EN' });
+    http
+      .expectOne('/api/v1/builder/modelli/model')
+      .flush({ ...dettaglio, derivato_da_modello_id: 'padre' });
+    http.verify();
+  });
+
+  it('asks which value to derive when the dimension has more than one alternative', () => {
+    const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushDerivationConfig(http, {
+      ...struttura,
+      nodi: [
+        {
+          codice: 'TI',
+          figli: [{ codice: 'CTER', lingue_possibili: ['IT', 'EN', 'FR'], campi: [] }],
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(root.querySelector('#valore-derivazione')).toBeTruthy();
+    const valori = Array.from(root.querySelectorAll('#valore-derivazione option')).map(
+      (option) => option.textContent,
+    );
+    expect(valori).toEqual(['EN', 'FR']);
+    http.verify();
+  });
+
+  it('does not offer derivation when no multivalue dimension is mandatory', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushDerivationConfig(http, struttura, {
+      ...policy,
+      policy: [{ nome_dimensione: 'lingua', consente_valore_generico: true }],
+    });
+    fixture.detectChanges();
+
+    expect(root.textContent).not.toContain('Crea edizione collegata');
     http.verify();
   });
 
@@ -118,7 +190,7 @@ describe('2b ridotta: anteprima modello', () => {
     fixture.detectChanges();
     expect(
       Array.from(root.querySelectorAll('button')).find((b) =>
-        b.textContent?.includes('Crea versione inglese'),
+        b.textContent?.includes('Crea edizione collegata'),
       ),
     ).toBeUndefined();
     http.verify();
@@ -127,6 +199,7 @@ describe('2b ridotta: anteprima modello', () => {
   it('states plainly that sections and placeholders do not exist yet, without faking them', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushDerivationConfig(http);
     fixture.detectChanges();
     expect(root.querySelector('.vuoto-sezioni')?.textContent).toContain('003');
     http.verify();

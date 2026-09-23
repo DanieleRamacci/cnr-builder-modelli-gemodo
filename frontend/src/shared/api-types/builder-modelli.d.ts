@@ -93,6 +93,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/filtri": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Valori selezionabili nei filtri dell'elenco modelli
+         * @description Ricavati dai modelli esistenti nel contesto, non dall'albero discovery: l'elenco modelli non richiede discovery online e non deve iniziare a dipenderne per riempire delle tendine. Ogni voce restituita produce almeno un risultato. Il livello generico compare come TUTTI.
+         */
+        get: operations["vociFiltriModelli"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}": {
         parameters: {
             query?: never;
@@ -227,6 +247,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        VociFiltriModelli: {
+            codici_tipo_documento: string[];
+            codici_tipologia: string[];
+            codici_categoria: string[];
+            lingue: string[];
+            livelli_professionali: string[];
+            varianti: string[];
+        };
         ModelloGestione: {
             /** Format: uuid */
             id: string;
@@ -238,8 +266,11 @@ export interface components {
             codice_tipologia: string | null;
             percorso_categorizzazione: string[];
             variante: string;
-            /** @enum {string} */
-            lingua: "IT" | "EN";
+            dimensioni: {
+                [key: string]: string;
+            };
+            /** @enum {string|null} */
+            lingua: "IT" | "EN" | null;
             livello_professionale: string | null;
             /** Format: uuid */
             derivato_da_modello_id?: string | null;
@@ -253,14 +284,18 @@ export interface components {
         PolicyDimensioneRequest: {
             nome_dimensione: string;
             consente_valore_generico: boolean;
+            valore_default?: string | null;
         };
         PolicyDimensione: {
             nome_dimensione: string;
             consente_valore_generico: boolean;
+            valore_default: string | null;
+            modelli_pubblicati_che_la_valorizzano: number;
         };
         DimensioneNonConfigurata: {
             nome_dimensione: string;
             motivo: string;
+            modelli_pubblicati_che_la_valorizzano: number;
         };
         PolicyDimensioni: {
             codice_tipo_documento: string;
@@ -292,8 +327,11 @@ export interface components {
             codice_tipologia: string | null;
             percorso_categorizzazione: string[];
             variante: string;
-            /** @enum {string} */
-            lingua: "IT" | "EN";
+            dimensioni: {
+                [key: string]: string;
+            };
+            /** @enum {string|null} */
+            lingua: "IT" | "EN" | null;
             livello_professionale: string | null;
             /** Format: uuid */
             derivato_da_modello_id?: string | null;
@@ -302,6 +340,8 @@ export interface components {
             integrazione_id: string | null;
             /** Format: date-time */
             created_at: string;
+            /** @description Dimensioni salvate sul modello ma non piu' dichiarate dalla foglia live. */
+            dimensioni_non_disponibili: string[];
             versioni: components["schemas"]["VersioneDettaglio"][];
         };
         /** @description percorso_categorizzazione XOR codice_categoria (+ codice_tipologia opzionale se il percorso e' altrimenti ambiguo) - vedi verifica_selezione in backend/app/builder/schemas.py. */
@@ -315,8 +355,12 @@ export interface components {
             percorso_categorizzazione?: string[] | null;
             codice_categoria?: string | null;
             codice_tipologia?: string | null;
+            /** @default {} */
+            dimensioni: {
+                [key: string]: string;
+            };
             /** @enum {string} */
-            lingua: "IT" | "EN";
+            lingua?: "IT" | "EN";
             /** @description Valore dichiarato in livelli_possibili; null significa tutti i livelli della foglia. */
             livello_professionale?: string | null;
         };
@@ -388,7 +432,7 @@ export interface components {
              */
             livello_base?: string;
             /**
-             * @description Lingue dei modelli creabili sulla foglia. Obbligatorio sui nodi con `campi`, assente sui nodi intermedi. Non filtra i campi: ogni modello conserva l'intero contratto della foglia.
+             * @description Lingue dei modelli creabili sulla foglia. **Opzionale** (0.6.0, spec 011): un tipo documento che non distingue i modelli per lingua semplicemente non dichiara questa chiave, e GEMODO non gliene attribuisce una implicita. Fino alla 0.5.0 era obbligatoria sui nodi con `campi`, e una foglia priva di lingua rendeva non conforme l'intera risposta. E' un rilassamento: ogni albero valido con la 0.5.0 resta valido, nessuna integrazione deve cambiare nulla. Resta assente sui nodi intermedi. Non filtra i campi: ogni modello conserva l'intero contratto della foglia.
              * @example [
              *       "IT",
              *       "EN"
@@ -583,6 +627,18 @@ export interface operations {
                 codice_contesto: string;
                 offset?: number;
                 limit?: number;
+                codice_tipo_documento?: string;
+                integrazione_id?: string;
+                codice_tipologia?: string;
+                codice_categoria?: string;
+                lingua?: "IT" | "EN";
+                /** @description Il token TUTTI seleziona i modelli senza livello, dove la colonna e' nulla. */
+                livello_professionale?: string;
+                variante?: string;
+                /** @description Seleziona i modelli che hanno almeno una versione in questo stato. */
+                stato_versione?: "BOZZA" | "IN_REVISIONE" | "APPROVATO" | "PUBBLICATO" | "ARCHIVIATO" | "SOSPESO";
+                /** @description Sottostringa su nome e codice, applicata prima della paginazione. Usa ILIKE e non un indice: adeguata a modelli nell'ordine delle centinaia, da rivedere se crescessero di ordini di grandezza. */
+                ricerca?: string;
             };
             header?: never;
             path?: never;
@@ -590,7 +646,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Pagina modelli, vuota se non ne esistono nel contesto autorizzato */
+            /** @description Pagina modelli filtrata, vuota se nessun modello corrisponde */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -713,6 +769,31 @@ export interface operations {
                     "application/json": components["schemas"]["Errore"];
                 };
             };
+        };
+    };
+    vociFiltriModelli: {
+        parameters: {
+            query: {
+                codice_contesto: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Voci selezionabili, liste vuote se il contesto non ha modelli */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VociFiltriModelli"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getModelloDettaglio: {

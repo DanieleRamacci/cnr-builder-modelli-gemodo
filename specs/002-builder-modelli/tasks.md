@@ -386,7 +386,10 @@ distinti, esattamente come accade oggi per la lingua.
   valore arbitrario. Renderla davvero generica richiede una modifica di schema e
   contratto in `001`: decisione non presa, non e' un residuo di questo task.
   *(2026-09-23: la decisione e' ora tracciata come `DEC-011-DIMENSIONI-GENERICHE`
-  e la riapertura di `DEC-001-LINGUA-IT-EN` e' User Story 4 di `011`.)*
+  e la riapertura di `DEC-001-LINGUA-IT-EN` e' User Story 4 di `011`.
+  **Superata da `011` il 2026-09-23**: `lingua` e' una proiezione nullable della
+  mappa `dimensioni`; la policy puo' ammettere il generico e il codice
+  `GENERICO_NON_SUPPORTATO` e' stato rimosso.)*
 - **Nessun cambio di comportamento al primo deploy**: la migration `0018`
   registra `lingua=false` e `livello=true` per i tipi esistenti, e il builder
   registra le stesse due policy quando crea un tipo nuovo. Il ripiego in codice

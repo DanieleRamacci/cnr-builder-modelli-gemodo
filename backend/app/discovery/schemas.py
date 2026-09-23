@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
 
 # specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml (info.version)
-VERSIONE_CONTRATTO_DISCOVERY = "0.5.0"
+VERSIONE_CONTRATTO_DISCOVERY = "0.6.0"
 
 
 class CampoDiscovery(BaseModel):
@@ -75,8 +75,16 @@ class NodoDiscovery(BaseModel):
             for value in (self.livelli_possibili, self.livello_base, self.lingue_possibili)
         ):
             raise ValueError("Livelli e lingue sono ammessi solo sui nodi foglia")
-        if self.campi is not None and not self.lingue_possibili:
-            raise ValueError("La foglia deve dichiarare almeno una lingua possibile")
+        # 011 FR-005/FR-006: una foglia **puo'** non dichiarare la lingua.
+        # Qui viveva `if self.campi is not None and not self.lingue_possibili:
+        # raise ValueError("La foglia deve dichiarare almeno una lingua
+        # possibile")`, che rifiutava come non conforme l'intera risposta
+        # discovery di un tipo documento senza lingua - il caso portante di 011.
+        # Era l'ultimo privilegio della lingua, e stava fuori da `builder/`,
+        # dove il criterio di successo della spec cerca con il grep.
+        # `extra="allow"` rendeva generica la *lettura* delle dimensioni nuove,
+        # non la loro validazione. Toglierlo e' un rilassamento: ogni albero
+        # valido prima resta valido, nessuna integrazione deve cambiare nulla.
         if self.livelli_possibili is not None and len(set(self.livelli_possibili)) != len(self.livelli_possibili):
             raise ValueError("Livelli possibili duplicati")
         if self.lingue_possibili is not None and len(set(self.lingue_possibili)) != len(self.lingue_possibili):

@@ -185,7 +185,7 @@ def test_verify_end_to_end_connects_against_a_real_server(admin_client, monkeypa
     assert body["ultima_verifica"]["esito"] == "CONFORME"
     assert body["ultima_verifica"]["errori"] == []
     assert body["ultima_verifica"]["revisione"] == 2
-    assert body["ultima_verifica"]["versione_contratto"] == "0.5.0"
+    assert body["ultima_verifica"]["versione_contratto"] == "0.6.0"
     assert requests == ["/discovery"]
     with engine.connect() as db:
         assert db.execute(sa.text(

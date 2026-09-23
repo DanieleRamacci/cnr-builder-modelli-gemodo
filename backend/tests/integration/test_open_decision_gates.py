@@ -58,6 +58,18 @@ def test_confirmed_decision_never_blocks_any_phase():
         assert esito.pronto is True
 
 
+def test_partially_superseded_decision_is_resolved_and_does_not_block():
+    decisione = _decisione(
+        stato=StatoDecisione.SUPERSEDUTA_PARZIALMENTE,
+        fase_bloccante=FaseBloccante.PLAN,
+        assunzione_provvisoria=None,
+    )
+
+    esito = valuta_readiness([decisione], fase_richiesta=FaseBloccante.IMPLEMENTAZIONE)
+
+    assert esito.pronto is True
+
+
 def test_explicitly_suspended_decision_with_documented_impact_does_not_block():
     decisione = _decisione(stato=StatoDecisione.SOSPESA, impatto="rischio residuo tracciato esplicitamente")
 

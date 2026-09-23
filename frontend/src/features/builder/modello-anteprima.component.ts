@@ -1,12 +1,34 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
+import { forkJoin } from 'rxjs';
 
 type Dettaglio = components['schemas']['ModelloDettaglio'];
 type Versione = Dettaglio['versioni'][number];
+type Nodo = {
+  codice: string;
+  figli?: Nodo[];
+  lingue_possibili?: string[];
+  livelli_possibili?: string[];
+  [nome: string]: unknown;
+};
+type CandidatoDerivazione = { nome: string; valori: string[] };
+type PolicyResponse = {
+  policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
+};
+const PROPRIETA_NODO = new Set([
+  'codice',
+  'descrizione',
+  'tipo_livello',
+  'figli',
+  'campi',
+  'lingue_possibili',
+  'livelli_possibili',
+  'livello_base',
+]);
 
 /**
  * Schermata 2b (builder-editor) in versione ridotta, decisa il 2026-09-22.
@@ -39,7 +61,7 @@ type Versione = Dettaglio['versioni'][number];
             [disabled]="salvando()"
             (click)="derivazione.showModal()"
           >
-            Crea versione inglese
+            Crea edizione collegata
           </button>
         }
       </div>
@@ -108,14 +130,46 @@ type Versione = Dettaglio['versioni'][number];
     }
 
     <dialog #derivazione aria-labelledby="derivazione-titolo">
-      <h2 id="derivazione-titolo" class="h4">Creare la versione inglese?</h2>
+      <h2 id="derivazione-titolo" class="h4">Creare un'edizione collegata?</h2>
       <p>
         Viene creato un modello collegato con una nuova versione in bozza. Struttura e campi sono
-        copiati dalla versione piu' recente; il modello italiano non viene modificato.
+        copiati dalla versione piu' recente; il modello di origine non viene modificato.
       </p>
+      @if (candidatiDerivazione().length > 1) {
+        <label for="dimensione-derivazione">Dimensione</label>
+        <select
+          id="dimensione-derivazione"
+          class="form-select mb-3"
+          [value]="dimensioneScelta()"
+          (change)="scegliDimensione($any($event.target).value)"
+        >
+          @for (candidato of candidatiDerivazione(); track candidato.nome) {
+            <option [value]="candidato.nome">{{ etichetta(candidato.nome) }}</option>
+          }
+        </select>
+      }
+      @if (candidatoScelto(); as candidato) {
+        @if (candidato.valori.length > 1) {
+          <label for="valore-derivazione">Nuovo valore</label>
+          <select
+            id="valore-derivazione"
+            class="form-select mb-3"
+            [value]="valoreScelto()"
+            (change)="valoreScelto.set($any($event.target).value)"
+          >
+            @for (valore of candidato.valori; track valore) {
+              <option [value]="valore">{{ valore }}</option>
+            }
+          </select>
+        } @else {
+          <p>
+            <strong>{{ etichetta(candidato.nome) }}:</strong> {{ candidato.valori[0] }}
+          </p>
+        }
+      }
       <div class="d-flex justify-content-end gap-2">
         <button class="btn btn-outline-secondary" (click)="derivazione.close()">Annulla</button>
-        <button class="btn btn-primary" (click)="creaEdizioneInglese(derivazione)">Crea</button>
+        <button class="btn btn-primary" (click)="creaEdizione(derivazione)">Crea</button>
       </div>
     </dialog>
   `,
@@ -128,6 +182,12 @@ export class ModelloAnteprimaComponent {
   protected readonly caricamento = signal(false);
   protected readonly salvando = signal(false);
   protected readonly errore = signal<string | null>(null);
+  protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
+  protected readonly dimensioneScelta = signal('');
+  protected readonly valoreScelto = signal('');
+  protected readonly candidatoScelto = computed(() =>
+    this.candidatiDerivazione().find((item) => item.nome === this.dimensioneScelta()),
+  );
 
   constructor() {
     this.carica();
@@ -142,11 +202,9 @@ export class ModelloAnteprimaComponent {
     return this.modello()?.versioni?.[0];
   }
 
-  // Un'edizione inglese si crea solo da un originale italiano non derivato.
-  // Il backend resta l'autorita': risponde EDIZIONE_DERIVATA_DUPLICATA.
   protected puoDerivare(): boolean {
     const m = this.modello();
-    return !!m && m.lingua === 'IT' && !m.derivato_da_modello_id;
+    return !!m && !m.derivato_da_modello_id && this.candidatiDerivazione().length > 0;
   }
 
   protected carica(): void {
@@ -159,6 +217,7 @@ export class ModelloAnteprimaComponent {
         next: (dettaglio) => {
           this.modello.set(dettaglio);
           this.caricamento.set(false);
+          this.caricaCandidati(dettaglio);
         },
         error: (e: ApiError) => {
           this.errore.set(e.messaggio);
@@ -167,13 +226,25 @@ export class ModelloAnteprimaComponent {
       });
   }
 
-  protected creaEdizioneInglese(dialog: HTMLDialogElement): void {
-    if (this.salvando()) return;
+  protected scegliDimensione(nome: string): void {
+    this.dimensioneScelta.set(nome);
+    this.valoreScelto.set(this.candidatoScelto()?.valori[0] ?? '');
+  }
+
+  protected etichetta(nome: string): string {
+    return nome.replaceAll('_', ' ').replace(/^./, (iniziale) => iniziale.toUpperCase());
+  }
+
+  protected creaEdizione(dialog: HTMLDialogElement): void {
+    if (this.salvando() || !this.dimensioneScelta() || !this.valoreScelto()) return;
     dialog.close();
     this.salvando.set(true);
     this.errore.set(null);
     this.api
-      .post<Dettaglio>(`/api/v1/builder/modelli/${this.id}/edizioni-derivate`, { lingua: 'EN' })
+      .post<Dettaglio>(`/api/v1/builder/modelli/${this.id}/edizioni-derivate`, {
+        nome_dimensione: this.dimensioneScelta(),
+        valore: this.valoreScelto(),
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -184,6 +255,59 @@ export class ModelloAnteprimaComponent {
           this.salvando.set(false);
           this.errore.set(e.messaggio);
         },
+      });
+  }
+
+  private caricaCandidati(dettaglio: Dettaglio): void {
+    if (dettaglio.derivato_da_modello_id) return;
+    forkJoin({
+      struttura: this.api.get<{ nodi: Nodo[] }>(
+        `/api/v1/builder/tipi-documento/${encodeURIComponent(dettaglio.codice_tipo_documento)}/struttura-disponibile`,
+      ),
+      policy: this.api.get<PolicyResponse>(
+        `/api/v1/builder/tipi-documento/${encodeURIComponent(dettaglio.codice_tipo_documento)}/policy-dimensioni`,
+      ),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ struttura, policy }) => {
+          let nodi = struttura.nodi;
+          let foglia: Nodo | undefined;
+          for (const codice of dettaglio.percorso_categorizzazione) {
+            foglia = nodi.find((nodo) => nodo.codice === codice);
+            if (!foglia) break;
+            nodi = foglia.figli ?? [];
+          }
+          if (!foglia) return;
+          const valori = new Map<string, string[]>();
+          if (foglia.lingue_possibili?.length) valori.set('lingua', foglia.lingue_possibili);
+          if (foglia.livelli_possibili?.length) {
+            valori.set('livello_professionale', foglia.livelli_possibili);
+          }
+          for (const [nome, possibili] of Object.entries(foglia)) {
+            if (!PROPRIETA_NODO.has(nome) && Array.isArray(possibili)) {
+              valori.set(
+                nome,
+                possibili.filter((valore): valore is string => typeof valore === 'string'),
+              );
+            }
+          }
+          const obbligatorie = new Set(
+            policy.policy
+              .filter((item) => !item.consente_valore_generico)
+              .map((item) => item.nome_dimensione),
+          );
+          const candidati = [...valori]
+            .filter(([nome, possibili]) => obbligatorie.has(nome) && possibili.length >= 2)
+            .map(([nome, possibili]) => ({
+              nome,
+              valori: possibili.filter((valore) => valore !== dettaglio.dimensioni[nome]),
+            }))
+            .filter((item) => item.valori.length > 0);
+          this.candidatiDerivazione.set(candidati);
+          this.scegliDimensione(candidati[0]?.nome ?? '');
+        },
+        error: () => this.candidatiDerivazione.set([]),
       });
   }
 }

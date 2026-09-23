@@ -13,7 +13,26 @@ interface Livello {
   readonly scelto: string;
   readonly abilitato: boolean;
 }
+interface PolicyDimensione {
+  readonly nome_dimensione: string;
+  readonly consente_valore_generico: boolean;
+  readonly valore_default: string | null;
+}
+interface DimensioneFoglia {
+  readonly nome: string;
+  readonly valori: readonly string[];
+}
 const TITOLI_LIVELLO: Record<string, string> = { tipologia: 'Tipologia', profilo: 'Profilo' };
+const PROPRIETA_NODO = new Set([
+  'codice',
+  'descrizione',
+  'tipo_livello',
+  'figli',
+  'campi',
+  'livelli_possibili',
+  'livello_base',
+  'lingue_possibili',
+]);
 @Component({
   standalone: true,
   imports: [FormsModule, RouterLink],
@@ -103,41 +122,33 @@ const TITOLI_LIVELLO: Record<string, string> = { tipologia: 'Tipologia', profilo
                 <div class="livello-testa">
                   <span class="badge-livello">+</span>
                   <span class="titolo-attributi">Attributi del modello</span>
-                  <span class="hint">lingua obbligatoria</span>
+                  <span class="hint">dimensioni dichiarate dalla foglia</span>
                 </div>
-                <label for="lingua" class="form-label">Lingua</label>
-                <select
-                  id="lingua"
-                  name="lingua"
-                  class="form-select mb-3"
-                  [(ngModel)]="lingua"
-                  required
-                  [disabled]="saving() || !!modelId"
-                >
-                  <option value="">Seleziona lingua</option>
-                  @for (language of selected.lingue_possibili ?? []; track language) {
-                    <option [value]="language">
-                      {{ language === 'IT' ? 'Italiano' : 'Inglese' }}
+                @for (dimensione of dimensioniFoglia(); track dimensione.nome) {
+                  <label [for]="'dimensione-' + dimensione.nome" class="form-label">
+                    {{ etichettaDimensione(dimensione.nome) }}
+                  </label>
+                  <select
+                    [id]="'dimensione-' + dimensione.nome"
+                    [name]="'dimensione-' + dimensione.nome"
+                    class="form-select mb-3"
+                    [ngModel]="valoreDimensione(dimensione.nome)"
+                    (ngModelChange)="scegliDimensione(dimensione.nome, $event)"
+                    [required]="!genericoAmmesso(dimensione.nome)"
+                    [disabled]="saving() || !!modelId"
+                  >
+                    <option value="" [disabled]="!genericoAmmesso(dimensione.nome)">
+                      {{
+                        genericoAmmesso(dimensione.nome)
+                          ? 'Nessun valore specifico'
+                          : 'Seleziona un valore'
+                      }}
                     </option>
-                  }
-                </select>
-                <label for="livello" class="form-label">Livello professionale</label>
-                <select
-                  id="livello"
-                  name="livello"
-                  class="form-select"
-                  [(ngModel)]="livelloProfessionale"
-                  [disabled]="saving() || !!modelId"
-                >
-                  @if (genericoAmmesso('livello')) {
-                    <option value="">Tutti i livelli</option>
-                  } @else {
-                    <option value="" disabled>Scegli un livello</option>
-                  }
-                  @for (level of selected.livelli_possibili ?? []; track level) {
-                    <option [value]="level">{{ level }}</option>
-                  }
-                </select>
+                    @for (valore of dimensione.valori; track valore) {
+                      <option [value]="valore">{{ valore }}</option>
+                    }
+                  </select>
+                }
                 <div class="azioni-2a">
                   <button
                     type="submit"
@@ -226,8 +237,14 @@ export class ModelloCreaComponent {
   private readonly presetTipo = this.route.snapshot.queryParamMap?.get('tipo') ?? '';
   private readonly presetPath =
     this.route.snapshot.queryParamMap?.get('percorso')?.split('|') ?? [];
-  private readonly presetLingua = this.route.snapshot.queryParamMap?.get('lingua') ?? '';
-  private readonly presetLivello = this.route.snapshot.queryParamMap?.get('livello') ?? '';
+  private readonly presetDimensioni = Object.fromEntries(
+    (this.route.snapshot.queryParamMap?.keys ?? [])
+      .filter((key: string) => key.startsWith('dimensione.'))
+      .map((key: string) => [
+        key.slice('dimensione.'.length),
+        this.route.snapshot.queryParamMap?.get(key) ?? '',
+      ]),
+  );
   protected readonly contesto = this.route.snapshot.queryParamMap?.get('contesto') ?? '';
   protected readonly types = signal<string[]>([]);
   private readonly tree = signal<Nodo[]>([]);
@@ -239,16 +256,30 @@ export class ModelloCreaComponent {
    * Senza questa lettura il form offriva sempre "Tutti i livelli" e il backend
    * rifiutava l'invio con DIMENSIONE_RICHIEDE_VALORE (007 FR-031).
    */
-  private readonly policy = signal<Record<string, boolean>>({});
+  private readonly policy = signal<Record<string, PolicyDimensione>>({});
+  protected readonly dimensioni = signal<Record<string, string>>({});
   protected genericoAmmesso(dimensione: string): boolean {
-    return this.policy()[dimensione] ?? false;
+    return this.policy()[dimensione]?.consente_valore_generico ?? false;
   }
+  protected readonly dimensioniFoglia = computed<DimensioneFoglia[]>(() => {
+    const foglia = this.leaf();
+    if (!foglia) return [];
+    const valori = new Map<string, readonly string[]>();
+    if (foglia.lingue_possibili?.length) valori.set('lingua', foglia.lingue_possibili);
+    if (foglia.livelli_possibili?.length) {
+      valori.set('livello_professionale', foglia.livelli_possibili);
+    }
+    for (const [nome, value] of Object.entries(foglia as unknown as Record<string, unknown>)) {
+      if (!PROPRIETA_NODO.has(nome) && Array.isArray(value) && value.length) {
+        valori.set(nome, value.map(String));
+      }
+    }
+    return [...valori].map(([nome, opzioni]) => ({ nome, valori: opzioni }));
+  });
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly success = signal<string | null>(null);
   protected tipo = '';
-  protected lingua = '';
-  protected livelloProfessionale = '';
   protected modelId: string | null = null;
   protected createdModel: { codice: string; nome: string } | null = null;
   constructor() {
@@ -353,31 +384,37 @@ export class ModelloCreaComponent {
    * l'autorita' e rifiutera' comunque una scelta non ammessa. */
   private caricaPolicy(tipo: string): void {
     this.api
-      .get<{ policy: { nome_dimensione: string; consente_valore_generico: boolean }[] }>(
+      .get<{ policy: PolicyDimensione[] }>(
         `/api/v1/builder/tipi-documento/${encodeURIComponent(tipo)}/policy-dimensioni`,
       )
       .subscribe({
-        next: (risposta) =>
-          this.policy.set(
-            Object.fromEntries(
-              risposta.policy.map((p) => [p.nome_dimensione, p.consente_valore_generico]),
-            ),
-          ),
+        next: (risposta) => {
+          this.policy.set(Object.fromEntries(risposta.policy.map((p) => [p.nome_dimensione, p])));
+          if (this.leaf()) this.inizializzaDimensioni();
+        },
         error: () => this.policy.set({}),
       });
   }
   protected choose(node: Nodo): void {
     this.path.update((path) => [...path, node.codice]);
     this.leaf.set(node.campi ? node : null);
-    if (node.campi) {
-      const languages = node.lingue_possibili ?? [];
-      this.lingua = languages.includes(this.presetLingua as 'IT' | 'EN')
-        ? this.presetLingua
-        : (languages[0] ?? '');
-      const levels = node.livelli_possibili ?? [];
-      this.livelloProfessionale = levels.includes(this.presetLivello) ? this.presetLivello : '';
-    }
+    if (node.campi) this.inizializzaDimensioni();
     this.modelId = null;
+  }
+  private inizializzaDimensioni(): void {
+    const valori = Object.fromEntries(
+      this.dimensioniFoglia().flatMap((dimensione) => {
+        const preset = this.presetDimensioni[dimensione.nome];
+        const valoreDefault = this.policy()[dimensione.nome]?.valore_default;
+        const scelto = dimensione.valori.includes(preset)
+          ? preset
+          : dimensione.valori.includes(valoreDefault ?? '')
+            ? valoreDefault
+            : '';
+        return scelto ? [[dimensione.nome, scelto]] : [];
+      }),
+    );
+    this.dimensioni.set(valori);
   }
   private applyPresetPath(): void {
     for (const code of this.presetPath) {
@@ -395,8 +432,30 @@ export class ModelloCreaComponent {
         : error.messaggio,
     );
   }
+  protected valoreDimensione(nome: string): string {
+    return this.dimensioni()[nome] ?? '';
+  }
+  protected scegliDimensione(nome: string, valore: string): void {
+    this.dimensioni.update((dimensioni) => {
+      const aggiornate = { ...dimensioni };
+      if (valore) aggiornate[nome] = valore;
+      else delete aggiornate[nome];
+      return aggiornate;
+    });
+  }
+  protected etichettaDimensione(nome: string): string {
+    return nome.replaceAll('_', ' ').replace(/^./, (iniziale) => iniziale.toUpperCase());
+  }
   protected create(): void {
-    if (this.saving() || !this.leaf() || !this.lingua) return;
+    if (
+      this.saving() ||
+      !this.leaf() ||
+      this.dimensioniFoglia().some(
+        (dimensione) =>
+          !this.genericoAmmesso(dimensione.nome) && !this.dimensioni()[dimensione.nome],
+      )
+    )
+      return;
     this.saving.set(true);
     this.error.set(null);
     if (this.modelId) {
@@ -408,8 +467,7 @@ export class ModelloCreaComponent {
         codice_tipo_documento: this.tipo,
         integrazione_id: this.id,
         percorso_categorizzazione: this.path(),
-        lingua: this.lingua,
-        livello_professionale: this.livelloProfessionale || null,
+        dimensioni: this.dimensioni(),
       })
       .subscribe({
         next: (model) => {

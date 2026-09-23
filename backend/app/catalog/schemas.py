@@ -39,8 +39,18 @@ class ModelloCatalogoSchema(BaseModel):
     codice: str
     descrizione: str
     variante: str = "STANDARD"
-    lingua: LinguaModello
+    # 011 DEC-011-CONTRATTO-GEBAN-ADDITIVO. `lingua` diventa nullable: e' una
+    # modifica schema-breaking ma behavior-safe, perche' `search_modelli` impone
+    # `tipo_documento`, quindi GEBAN non riceve mai una risposta mista, e tutti
+    # i tipi documento che consuma oggi dichiarano la lingua con policy
+    # obbligatoria. Il null compare solo per tipi che ancora non esistono.
+    # Un valore sentinella tipo "N/A" e' stato scartato: conserverebbe
+    # l'obbligatorieta' formale al prezzo di un dato falso nella risposta.
+    lingua: LinguaModello | None = None
     livello_professionale: str | None = None
+    # L'insieme completo. `lingua` e `livello_professionale` sopra ne sono una
+    # proiezione, non un'informazione diversa: GEBAN puo' migrare quando vuole.
+    dimensioni: dict[str, str] = Field(default_factory=dict)
     versione: int
     stato: str = "PUBBLICATO"
     data_inizio_validita: date | None = None
@@ -85,6 +95,10 @@ class ModelloSearchResponse(BaseModel):
     codice_tipologia: str | None = None
     modalita: ModalitaCatalogo = ModalitaCatalogo.OPERATIVA
     fallback_applicato: bool = False
+    # 011 FR-010: con piu' dimensioni che ammettono il generico, il booleano da
+    # solo non dice piu' cosa e' successo. `livello_richiesto`/`livello_risolto`
+    # restano come caso particolare, per non rompere GEBAN.
+    dimensioni_rilassate: list[str] = Field(default_factory=list)
     livello_richiesto: str | None = None
     livello_risolto: str | None = None
     modelli: list[ModelloCatalogoSchema]

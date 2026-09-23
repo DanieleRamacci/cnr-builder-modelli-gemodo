@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session, joinedload
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.common.errors import DomainError
 
+# 011 T054: uniformato al nome della colonna sostituita e del campo di contratto.
+NOME_LIVELLO = "livello_professionale"
+
 STATO_ATTIVO = "ATTIVA"
 STATO_PUBBLICATO = "PUBBLICATO"
 
@@ -60,6 +63,11 @@ def list_published_model_versions(
     lingua: str | None = None,
     livello_professionale: str | None = None,
     solo_livello_generico: bool = False,
+    # 011 FR-010: filtri per dimensione arbitraria. `dimensioni` richiede un
+    # valore preciso, `dimensioni_generiche` richiede che la dimensione NON sia
+    # valorizzata - e' cosi' che il fallback rilassa una dimensione alla volta.
+    dimensioni: dict[str, str] | None = None,
+    dimensioni_generiche: Collection[str] | None = None,
     historical: bool = False,
     data_riferimento: date | None = None,
     pubblicato_da: date | None = None,
@@ -98,11 +106,17 @@ def list_published_model_versions(
     if codice_tipologia:
         stmt = stmt.where(ModelloDocumento.codice_tipologia == codice_tipologia)
     if lingua:
-        stmt = stmt.where(ModelloDocumento.lingua == lingua)
+        stmt = stmt.where(ModelloDocumento.dimensioni["lingua"].astext == lingua)
     if solo_livello_generico:
-        stmt = stmt.where(ModelloDocumento.livello_professionale.is_(None))
+        # "generico" per una dimensione e' l'assenza della chiave: con le colonne
+        # era `IS NULL` (011 FR-006).
+        stmt = stmt.where(~ModelloDocumento.dimensioni.has_key(NOME_LIVELLO))  # noqa: W601 - operatore JSONB
     elif livello_professionale:
-        stmt = stmt.where(ModelloDocumento.livello_professionale == livello_professionale)
+        stmt = stmt.where(ModelloDocumento.dimensioni[NOME_LIVELLO].astext == livello_professionale)
+    for nome, valore in (dimensioni or {}).items():
+        stmt = stmt.where(ModelloDocumento.dimensioni[nome].astext == valore)
+    for nome in (dimensioni_generiche or ()):
+        stmt = stmt.where(~ModelloDocumento.dimensioni.has_key(nome))  # noqa: W601 - operatore JSONB
     return list(db.scalars(stmt))
 
 

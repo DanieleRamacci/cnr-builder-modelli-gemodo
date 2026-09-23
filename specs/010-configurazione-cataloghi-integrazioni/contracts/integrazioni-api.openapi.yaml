@@ -287,20 +287,24 @@ components:
       properties:
         nome_dimensione: {type: string, minLength: 1, maxLength: 64}
         consente_valore_generico: {type: boolean}
+        valore_default: {type: string, minLength: 1, maxLength: 64, nullable: true}
     PolicyDimensione:
       type: object
       additionalProperties: false
-      required: [nome_dimensione, consente_valore_generico]
+      required: [nome_dimensione, consente_valore_generico, valore_default, modelli_pubblicati_che_la_valorizzano]
       properties:
         nome_dimensione: {type: string}
         consente_valore_generico: {type: boolean}
+        valore_default: {type: string, nullable: true}
+        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
     DimensioneNonConfigurata:
       type: object
       additionalProperties: false
-      required: [nome_dimensione, motivo]
+      required: [nome_dimensione, motivo, modelli_pubblicati_che_la_valorizzano]
       properties:
         nome_dimensione: {type: string}
         motivo: {type: string}
+        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
     PolicyDimensioni:
       type: object
       additionalProperties: false

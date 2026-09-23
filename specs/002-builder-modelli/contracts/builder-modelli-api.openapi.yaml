@@ -410,7 +410,7 @@ components:
     ModelloGestione:
       type: object
       additionalProperties: false
-      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante, lingua, livello_professionale, codice_contesto, integrazione_id, created_at, versioni]
+      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante, dimensioni, lingua, livello_professionale, codice_contesto, integrazione_id, created_at, versioni]
       properties:
         id: {type: string, format: uuid}
         public_id: {type: integer, nullable: true}
@@ -421,7 +421,10 @@ components:
         codice_tipologia: {type: string, nullable: true}
         percorso_categorizzazione: {type: array, items: {type: string}}
         variante: {type: string}
-        lingua: {type: string, enum: [IT, EN]}
+        dimensioni:
+          type: object
+          additionalProperties: {type: string, minLength: 1}
+        lingua: {type: string, enum: [IT, EN], nullable: true}
         livello_professionale: {type: string, nullable: true}
         derivato_da_modello_id: {type: string, format: uuid, nullable: true}
         codice_contesto: {type: string}
@@ -435,20 +438,24 @@ components:
       properties:
         nome_dimensione: {type: string, minLength: 1, maxLength: 64}
         consente_valore_generico: {type: boolean}
+        valore_default: {type: string, minLength: 1, maxLength: 64, nullable: true}
     PolicyDimensione:
       type: object
       additionalProperties: false
-      required: [nome_dimensione, consente_valore_generico]
+      required: [nome_dimensione, consente_valore_generico, valore_default, modelli_pubblicati_che_la_valorizzano]
       properties:
         nome_dimensione: {type: string}
         consente_valore_generico: {type: boolean}
+        valore_default: {type: string, nullable: true}
+        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
     DimensioneNonConfigurata:
       type: object
       additionalProperties: false
-      required: [nome_dimensione, motivo]
+      required: [nome_dimensione, motivo, modelli_pubblicati_che_la_valorizzano]
       properties:
         nome_dimensione: {type: string}
         motivo: {type: string}
+        modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
     PolicyDimensioni:
       type: object
       additionalProperties: false
@@ -484,7 +491,7 @@ components:
     ModelloDettaglio:
       type: object
       additionalProperties: false
-      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante, lingua, livello_professionale, codice_contesto, integrazione_id, created_at, versioni]
+      required: [id, public_id, codice, nome, codice_tipo_documento, codice_categoria, codice_tipologia, percorso_categorizzazione, variante, dimensioni, lingua, livello_professionale, codice_contesto, integrazione_id, created_at, dimensioni_non_disponibili, versioni]
       properties:
         id: {type: string, format: uuid}
         public_id: {type: integer, nullable: true}
@@ -495,17 +502,24 @@ components:
         codice_tipologia: {type: string, nullable: true}
         percorso_categorizzazione: {type: array, items: {type: string}}
         variante: {type: string}
-        lingua: {type: string, enum: [IT, EN]}
+        dimensioni:
+          type: object
+          additionalProperties: {type: string, minLength: 1}
+        lingua: {type: string, enum: [IT, EN], nullable: true}
         livello_professionale: {type: string, nullable: true}
         derivato_da_modello_id: {type: string, format: uuid, nullable: true}
         codice_contesto: {type: string}
         integrazione_id: {type: string, format: uuid, nullable: true}
         created_at: {type: string, format: date-time}
+        dimensioni_non_disponibili:
+          type: array
+          description: Dimensioni salvate sul modello ma non piu' dichiarate dalla foglia live.
+          items: {type: string}
         versioni: {type: array, items: {$ref: '#/components/schemas/VersioneDettaglio'}}
     CreaModelloRequest:
       type: object
       additionalProperties: false
-      required: [codice_tipo_documento, lingua]
+      required: [codice_tipo_documento]
       description: >
         percorso_categorizzazione XOR codice_categoria (+ codice_tipologia
         opzionale se il percorso e' altrimenti ambiguo) - vedi verifica_selezione
@@ -524,6 +538,10 @@ components:
           items: {type: string, minLength: 1}
         codice_categoria: {type: string, nullable: true}
         codice_tipologia: {type: string, nullable: true}
+        dimensioni:
+          type: object
+          default: {}
+          additionalProperties: {type: string, minLength: 1}
         lingua: {type: string, enum: [IT, EN]}
         livello_professionale:
           type: string
