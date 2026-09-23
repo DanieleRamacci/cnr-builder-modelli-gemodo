@@ -13,6 +13,33 @@ StrutturaDisponibileResponse = CatalogoDiscovery
 StrutturaTipoDocumentoResponse = CatalogoDiscovery
 
 
+LinguaFiltro = Literal["IT", "EN"]
+StatoVersioneFiltro = Literal[
+    "BOZZA", "IN_REVISIONE", "APPROVATO", "PUBBLICATO", "ARCHIVIATO", "SOSPESO"
+]
+
+
+class FiltriModelli(BaseModel):
+    """Filtri dell'elenco modelli, applicati lato server (007 FR-028).
+
+    Vivono qui e non nel client perche' la lista e' paginata: filtrare dopo
+    `limit` restituirebbe la pagina in mano invece dell'insieme. Un campo
+    assente significa "non filtrare"; per selezionare i modelli senza livello
+    si usa il token esplicito `TUTTI`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    codice_tipo_documento: str | None = Field(default=None, min_length=1, max_length=128)
+    integrazione_id: uuid.UUID | None = None
+    codice_tipologia: str | None = Field(default=None, min_length=1, max_length=128)
+    codice_categoria: str | None = Field(default=None, min_length=1, max_length=128)
+    lingua: LinguaFiltro | None = None
+    livello_professionale: str | None = Field(default=None, min_length=1, max_length=64)
+    variante: str | None = Field(default=None, min_length=1, max_length=64)
+    stato_versione: StatoVersioneFiltro | None = None
+
+
 class IntegrazioneVisibile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

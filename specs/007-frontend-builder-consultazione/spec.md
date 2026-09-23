@@ -562,6 +562,19 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   MUST mostrare un elenco vuoto esplicito, mai un errore ne' l'elenco non
   filtrato. Lo stato dei filtri MUST essere riflesso nell'URL, cosi' che una
   selezione sia condivisibile e sopravviva al ricaricamento.
+  **Decisione 2026-09-23: il filtro e' lato server.** `GET /builder/modelli`
+  e' paginata (`offset`/`limit`, default 50, massimo 100) e il frontend
+  pagina davvero, sostituendo l'elenco a ogni pagina: filtrare solo nel
+  client filtrerebbe la pagina in mano, non l'insieme, con risultati
+  silenziosamente sbagliati dalla seconda pagina in poi. L'API MUST quindi
+  accettare i filtri come parametri e comporli con la paginazione. Non e' un
+  costo aggiuntivo: ogni dimensione filtrabile e' gia' una colonna
+  (`codice_categoria`, `codice_tipologia`, `percorso_categorizzazione`,
+  `lingua`, `livello_professionale`, `variante` su `modello_documento`;
+  `stato` su `modello_versione`; `codice_contesto` e `integrazione_id` su
+  `tipo_documento`), quindi sono condizioni su una query che esiste gia' e
+  nessun filtro richiede di interrogare il discovery. Il discovery serve
+  soltanto a popolare le voci dei filtri.
 
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione

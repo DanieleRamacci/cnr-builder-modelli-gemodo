@@ -162,7 +162,7 @@ describe('context models and lifecycle', () => {
     ]);
     http.verify();
   });
-  it('filters the loaded models by search text and by state', () => {
+  it('filters the loaded page by search text, which stays client-side', () => {
     const { fixture, http } = setup(['geban'], 'geban');
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
     fixture.detectChanges();
@@ -173,14 +173,54 @@ describe('context models and lifecycle', () => {
     fixture.detectChanges();
     expect(root.textContent).toContain('Bando tecnologi');
     expect(root.textContent).not.toContain('Modello CTER');
-    search.value = '';
-    search.dispatchEvent(new Event('input'));
+    http.verify();
+  });
+  // 007 FR-028: i filtri di dimensione sono del server, non del client. L'elenco
+  // e' paginato, quindi filtrare la pagina ricevuta darebbe risultati sbagliati
+  // dalla seconda pagina in poi. Questi test verificano che la selezione parta
+  // come richiesta, non come filtro locale.
+  it('sends the state filter to the server and resets to the first page', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
     const stato = root.querySelector<HTMLSelectElement>('select[aria-label="Filtra per stato"]')!;
     stato.value = 'BOZZA';
     stato.dispatchEvent(new Event('change'));
     fixture.detectChanges();
+    const richiesta = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(richiesta.request.params.get('stato_versione')).toBe('BOZZA');
+    expect(richiesta.request.params.get('offset')).toBe('0');
+    richiesta.flush([model]);
+    fixture.detectChanges();
     expect(root.textContent).toContain('Modello CTER');
     expect(root.textContent).not.toContain('Bando tecnologi');
+    http.verify();
+  });
+  it('sends the language filter and clears every filter on reset', () => {
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const lingua = root.querySelector<HTMLSelectElement>('select[aria-label="Filtra per lingua"]')!;
+    lingua.value = 'EN';
+    lingua.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    const filtrata = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(filtrata.request.params.get('lingua')).toBe('EN');
+    filtrata.flush([]);
+    fixture.detectChanges();
+
+    root.querySelector<HTMLButtonElement>('button')!;
+    const azzera = Array.from(root.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Azzera filtri',
+    )!;
+    azzera.click();
+    fixture.detectChanges();
+    const pulita = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(pulita.request.params.has('lingua')).toBe(false);
+    expect(pulita.request.params.has('stato_versione')).toBe(false);
+    pulita.flush([model, altro]);
     http.verify();
   });
   it('shows the grid variant for ?view=grid with the same workflow actions', () => {

@@ -764,18 +764,35 @@ stack dedicato.
 categorizzazione live l'elenco unico e' gia' poco pratico, e con un secondo
 sistema integrato diventa inutilizzabile.
 
-- [ ] T097 [FR-028] Filtri su contesto, integrazione, tipo documento,
-      tipologia, profilo, lingua, livello e stato versione nell'elenco
-      modelli, con le voci derivate dall'albero live e dai modelli presenti,
-      mai da elenchi statici
-- [ ] T098 [FR-028] Stato dei filtri riflesso nell'URL (query param), cosi'
-      che una selezione sia condivisibile e sopravviva al ricaricamento
-- [ ] T099 [FR-028] Verificare se l'API `GET /builder/modelli` regge i filtri
-      lato server o se oggi impone di filtrare nel client: con la paginazione
-      gia' presente (`offset`/`limit`), filtrare solo nel client darebbe
-      risultati sbagliati sulle pagine successive
-- [ ] T100 [P] [FR-028] Test: filtro senza corrispondenze mostra un elenco
-      vuoto esplicito, mai un errore ne' l'elenco non filtrato
+- [x] T097 (parziale: stato e lingua) [FR-028] I due filtri gia' presenti
+      nell'elenco modelli erano applicati **nel client** su `models()`, cioe'
+      sulla sola pagina caricata - proprio il difetto che FR-028 vieta. Ora
+      partono come richiesta al server e riportano alla prima pagina
+- [ ] T103 [FR-028] Filtri per tipologia, profilo e livello nell'interfaccia.
+      L'API li accetta gia' (T099); manca la **sorgente delle voci**: sono
+      valori dell'albero live, e questo componente non lo carica. Ricavarli
+      dai modelli della pagina corrente sarebbe lo stesso errore che T097 ha
+      appena corretto. Decidere se caricare la struttura live o esporre un
+      endpoint dedicato per le voci dei filtri
+- [ ] T104 [FR-028] La ricerca testuale libera resta client-side e ha lo
+      stesso limite: cerca solo nella pagina caricata. Serve un parametro di
+      ricerca lato API, oppure va rimossa per non dare l'impressione di
+      cercare su tutto
+- [x] T098 [FR-028] (`sincronizzaUrl`/`ripristinaFiltriDaUrl` in
+      `integrazioni-manager.component.ts`) Stato dei filtri riflesso nell'URL
+      e ripristinato al caricamento
+- [x] T099 [FR-028] (`builder/repository.py:lista_modelli`, `builder/api.py`,
+      `FiltriModelli` in `builder/schemas.py`; contratto OpenAPI allineato;
+      test in `backend/tests/builder/test_filtri_modelli.py`) Parametri di
+      filtro su `GET /builder/modelli`, composti con `offset`/`limit`:
+      `codice_tipo_documento`, `integrazione_id`, `codice_tipologia`,
+      `codice_categoria`, `lingua`, `livello_professionale` (token `TUTTI`
+      per i modelli senza livello), `variante`, `stato_versione`
+- [x] T100 [P] [FR-028] (`test_filtri_modelli.py::test_filtro_senza_corrispondenze_e_elenco_vuoto_non_errore`
+      e `::test_il_filtro_precede_la_paginazione`, piu' due test in
+      `integrazioni-manager.component.spec.ts`) Test: filtro senza
+      corrispondenze restituisce un elenco vuoto e non un errore; il filtro
+      precede la paginazione
 - [ ] T101 [FR-019 di `002`] Flusso varianti in interfaccia: alla creazione,
       se la categorizzazione e' gia' occupata, mostrare quale modello esiste e
       proporre la creazione di una variante chiedendo la descrizione; non

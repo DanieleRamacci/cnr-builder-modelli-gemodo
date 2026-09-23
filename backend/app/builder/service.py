@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
 from app.builder.audit import registra_evento
-from app.builder.schemas import CampoVersioneRequest, CreaEdizioneDerivataRequest, CreaModelloRequest
+from app.builder.schemas import CampoVersioneRequest, CreaEdizioneDerivataRequest, CreaModelloRequest, FiltriModelli
 from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
@@ -82,9 +82,20 @@ class BuilderService:
         return sorted(contesti_con_permesso(principal, ROLE_GEMODO_MODELLI_GESTORE,
                                            dict(principal.ruoli_contesto)))
 
-    def lista(self, principal: PrincipalGEMODO, codice_contesto: str, *, offset: int, limit: int):
+    def lista(
+        self,
+        principal: PrincipalGEMODO,
+        codice_contesto: str,
+        *,
+        offset: int,
+        limit: int,
+        filtri: FiltriModelli | None = None,
+    ):
         verify_scrittura_su_contesto(principal, codice_contesto)
-        return builder_repository.lista_modelli(self.db, codice_contesto, offset=offset, limit=limit)
+        return builder_repository.lista_modelli(
+            self.db, codice_contesto, offset=offset, limit=limit,
+            **(filtri.model_dump(exclude_none=True) if filtri is not None else {}),
+        )
 
     # Comportamento storico, usato solo come ripiego quando un tipo documento non
     # ha ancora una policy registrata: e' lo stesso che la migration 0018 scrive

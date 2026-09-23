@@ -616,6 +616,6 @@ coverage:
     spec_owner: specs/007-frontend-builder-consultazione
     requirement_id: FR-028
     scenario_id: SCENARIO-11
-    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    contract_ref: backend/tests/builder/test_filtri_modelli.py
     stato: DA_COPRIRE
-    note: filtri sull'elenco modelli per tutti i livelli della categorizzazione live; T097-T100 aperti
+    note: filtro lato server implementato e testato (7 test, incluso test_il_filtro_precede_la_paginazione); restano le voci dei filtri dall'albero live (T103) e la ricerca testuale su piu' pagine (T104)

@@ -81,17 +81,23 @@ export class IntegrazioniManagerComponent {
       )?.stato ?? 'BOZZA'
     );
   }
+  /**
+   * Solo la ricerca testuale resta nel client. I filtri di dimensione sono gia'
+   * stati applicati dal server, quindi rifiltrarli qui sarebbe ridondante e
+   * darebbe l'impressione sbagliata che il client sia la fonte del filtro.
+   *
+   * Nota: la ricerca testuale ha lo stesso limite che i filtri avevano prima -
+   * cerca solo nella pagina caricata. Serve un parametro di ricerca lato API
+   * per renderla corretta su piu' pagine.
+   */
   protected readonly visibili = computed(() => {
     const query = this.testo().trim().toLowerCase();
-    return this.models().filter(
-      (m) =>
-        (!this.statoFiltro() || this.stato(m) === this.statoFiltro()) &&
-        (!this.linguaFiltro() || m.lingua === this.linguaFiltro()) &&
-        (!query ||
-          [m.nome, m.codice, m.codice_tipo_documento, m.percorso_categorizzazione.join(' ')]
-            .join(' ')
-            .toLowerCase()
-            .includes(query)),
+    if (!query) return this.models();
+    return this.models().filter((m) =>
+      [m.nome, m.codice, m.codice_tipo_documento, m.percorso_categorizzazione.join(' ')]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
     );
   });
   /** Solo conteggi sui modelli della pagina caricata: nessun totale o metrica inventata. */
@@ -164,6 +170,7 @@ export class IntegrazioniManagerComponent {
             this.loading.set(false);
             return;
           }
+          this.ripristinaFiltriDaUrl();
           const context = requested ?? contexts[0];
           if (context) this.select(context);
           else this.loading.set(false);
@@ -188,6 +195,47 @@ export class IntegrazioniManagerComponent {
     if (this.contexts().length && this.selected()) this.load();
     else this.initialize();
   }
+  /**
+   * I filtri di dimensione vanno al server, non applicati sulla pagina ricevuta.
+   * L'elenco e' paginato: filtrare dopo `limit` restituirebbe la pagina in mano
+   * invece dell'insieme, con risultati sbagliati dalla seconda pagina in poi
+   * (007 FR-028).
+   */
+  protected filtriAttivi(): Record<string, string> {
+    const filtri: Record<string, string> = {};
+    if (this.statoFiltro()) filtri['stato_versione'] = this.statoFiltro();
+    if (this.linguaFiltro()) filtri['lingua'] = this.linguaFiltro();
+    return filtri;
+  }
+
+  /** Un filtro cambiato riporta alla prima pagina: restare sull'offset corrente
+   * mostrerebbe una pagina vuota di un insieme piu' piccolo. */
+  protected applicaFiltri(): void {
+    this.offset.set(0);
+    this.sincronizzaUrl();
+    this.load();
+  }
+
+  protected azzeraFiltri(): void {
+    this.statoFiltro.set('');
+    this.linguaFiltro.set('');
+    this.applicaFiltri();
+  }
+
+  private sincronizzaUrl(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { ...this.filtriAttivi(), contesto: this.selected() },
+      replaceUrl: true,
+    });
+  }
+
+  private ripristinaFiltriDaUrl(): void {
+    const params = this.route.snapshot.queryParamMap;
+    this.statoFiltro.set(params.get('stato_versione') ?? '');
+    this.linguaFiltro.set(params.get('lingua') ?? '');
+  }
+
   private load(clearError = true): void {
     this.listing?.unsubscribe();
     this.loading.set(true);
@@ -198,6 +246,7 @@ export class IntegrazioniManagerComponent {
         codice_contesto: this.selected(),
         offset: this.offset(),
         limit: this.pageSize,
+        ...this.filtriAttivi(),
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

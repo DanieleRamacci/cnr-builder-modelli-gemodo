@@ -11,14 +11,73 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, PolicyDimensione, TipoDocumento
 
+# Valore del filtro livello che seleziona i modelli generici, dove la colonna
+# e' NULL. Serve un token esplicito perche' "assente" in un filtro significa
+# gia' "non filtrare".
+LIVELLO_GENERICO = "TUTTI"
 
-def lista_modelli(db: Session, codice_contesto: str, *, offset: int, limit: int):
-    return list(db.scalars(select(ModelloDocumento)
+
+def lista_modelli(
+    db: Session,
+    codice_contesto: str,
+    *,
+    offset: int,
+    limit: int,
+    codice_tipo_documento: str | None = None,
+    integrazione_id: uuid.UUID | None = None,
+    codice_tipologia: str | None = None,
+    codice_categoria: str | None = None,
+    lingua: str | None = None,
+    livello_professionale: str | None = None,
+    variante: str | None = None,
+    stato_versione: str | None = None,
+):
+    """Modelli del contesto, filtrati lato server (007 FR-028).
+
+    I filtri sono condizioni su colonne gia' esistenti, non richiedono il
+    discovery. Devono stare qui e non nel client perche' la query e' paginata:
+    filtrare dopo `limit` restituirebbe la pagina in mano invece dell'insieme.
+    """
+    query = (
+        select(ModelloDocumento)
         .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
         .where(TipoDocumento.codice_contesto == codice_contesto, ModelloDocumento.stato != "ELIMINATO")
+    )
+    if codice_tipo_documento is not None:
+        query = query.where(TipoDocumento.codice == codice_tipo_documento)
+    if integrazione_id is not None:
+        query = query.where(TipoDocumento.integrazione_id == integrazione_id)
+    if codice_tipologia is not None:
+        query = query.where(ModelloDocumento.codice_tipologia == codice_tipologia)
+    if codice_categoria is not None:
+        query = query.where(ModelloDocumento.codice_categoria == codice_categoria)
+    if lingua is not None:
+        query = query.where(ModelloDocumento.lingua == lingua)
+    if livello_professionale is not None:
+        # "TUTTI" seleziona i modelli generici, dove la colonna e' NULL: senza
+        # questo, un livello non valorizzato non sarebbe filtrabile affatto.
+        query = query.where(
+            ModelloDocumento.livello_professionale.is_(None)
+            if livello_professionale == LIVELLO_GENERICO
+            else ModelloDocumento.livello_professionale == livello_professionale
+        )
+    if variante is not None:
+        query = query.where(ModelloDocumento.variante == variante)
+    if stato_versione is not None:
+        query = query.where(
+            select(ModelloDocumentoVersione.id)
+            .where(
+                ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id,
+                ModelloDocumentoVersione.stato == stato_versione,
+            )
+            .exists()
+        )
+    return list(db.scalars(
+        query
         .options(joinedload(ModelloDocumento.tipo_documento), selectinload(ModelloDocumento.versioni))
         .order_by(ModelloDocumento.created_at.desc(), ModelloDocumento.id)
-        .offset(offset).limit(limit)))
+        .offset(offset).limit(limit)
+    ))
 
 
 def modello_con_campi(db: Session, modello_id):

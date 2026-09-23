@@ -14,6 +14,9 @@ from fastapi import APIRouter, Depends, Query
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    FiltriModelli,
+    LinguaFiltro,
+    StatoVersioneFiltro,
     CreaModelloRequest,
     CreaEdizioneDerivataRequest,
     CreaVersioneRequest,
@@ -46,11 +49,27 @@ def lista_contesti(principal: PrincipalGEMODO = Depends(require_principal),
 def lista_modelli(
     codice_contesto: str = Query(min_length=1, max_length=64),
     offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100),
+    # Filtri espliciti invece di un modello annidato: compaiono uno per uno
+    # nell'OpenAPI, che e' il contratto che il frontend consuma (007 FR-028).
+    codice_tipo_documento: str | None = Query(default=None, min_length=1, max_length=128),
+    integrazione_id: uuid.UUID | None = Query(default=None),
+    codice_tipologia: str | None = Query(default=None, min_length=1, max_length=128),
+    codice_categoria: str | None = Query(default=None, min_length=1, max_length=128),
+    lingua: LinguaFiltro | None = Query(default=None),
+    livello_professionale: str | None = Query(default=None, min_length=1, max_length=64),
+    variante: str | None = Query(default=None, min_length=1, max_length=64),
+    stato_versione: StatoVersioneFiltro | None = Query(default=None),
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ):
+    filtri = FiltriModelli(
+        codice_tipo_documento=codice_tipo_documento, integrazione_id=integrazione_id,
+        codice_tipologia=codice_tipologia, codice_categoria=codice_categoria,
+        lingua=lingua, livello_professionale=livello_professionale,
+        variante=variante, stato_versione=stato_versione,
+    )
     return [_modello_gestione_response(model) for model in service.lista(
-        principal, codice_contesto, offset=offset, limit=limit
+        principal, codice_contesto, offset=offset, limit=limit, filtri=filtri
     )]
 
 

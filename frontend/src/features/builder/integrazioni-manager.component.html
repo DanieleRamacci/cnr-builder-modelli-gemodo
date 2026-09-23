@@ -96,24 +96,31 @@
       class="form-select"
       aria-label="Filtra per stato"
       [value]="statoFiltro()"
-      (change)="statoFiltro.set($any($event.target).value)"
+      (change)="statoFiltro.set($any($event.target).value); applicaFiltri()"
     >
       <option value="">Tutti gli stati</option>
       <option value="PUBBLICATO">Pubblicato</option>
       <option value="IN_REVISIONE">In revisione</option>
       <option value="APPROVATO">Approvato</option>
       <option value="BOZZA">Bozza</option>
+      <option value="ARCHIVIATO">Archiviato</option>
+      <option value="SOSPESO">Sospeso</option>
     </select>
     <select
       class="form-select"
       aria-label="Filtra per lingua"
       [value]="linguaFiltro()"
-      (change)="linguaFiltro.set($any($event.target).value)"
+      (change)="linguaFiltro.set($any($event.target).value); applicaFiltri()"
     >
       <option value="">Tutte le lingue</option>
       <option value="IT">Italiano</option>
       <option value="EN">Inglese</option>
     </select>
+    @if (statoFiltro() || linguaFiltro()) {
+      <button type="button" class="btn btn-outline-secondary" (click)="azzeraFiltri()">
+        Azzera filtri
+      </button>
+    }
     <div class="btn-group" role="group" aria-label="Vista">
       <button
         type="button"

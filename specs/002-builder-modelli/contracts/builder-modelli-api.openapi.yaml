@@ -70,9 +70,40 @@ paths:
         - name: limit
           in: query
           schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+        # Filtri lato server (007 FR-028). Stanno qui e non nel client perche'
+        # la lista e' paginata: filtrare dopo `limit` restituirebbe la pagina in
+        # mano invece dell'insieme. Un parametro assente significa "non filtrare".
+        - name: codice_tipo_documento
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 128}
+        - name: integrazione_id
+          in: query
+          schema: {type: string, format: uuid}
+        - name: codice_tipologia
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 128}
+        - name: codice_categoria
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 128}
+        - name: lingua
+          in: query
+          schema: {type: string, enum: [IT, EN]}
+        - name: livello_professionale
+          in: query
+          description: Il token TUTTI seleziona i modelli senza livello, dove la colonna e' nulla.
+          schema: {type: string, minLength: 1, maxLength: 64}
+        - name: variante
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 64}
+        - name: stato_versione
+          in: query
+          description: Seleziona i modelli che hanno almeno una versione in questo stato.
+          schema:
+            type: string
+            enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]
       responses:
         '200':
-          description: Pagina modelli, vuota se non ne esistono nel contesto autorizzato
+          description: Pagina modelli filtrata, vuota se nessun modello corrisponde
           content:
             application/json:
               schema: {type: array, items: {$ref: '#/components/schemas/ModelloGestione'}}
