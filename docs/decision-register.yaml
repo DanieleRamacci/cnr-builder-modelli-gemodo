@@ -1115,3 +1115,37 @@ decisions:
       derivato eredita la variante del padre.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-23
+
+  - id: DEC-011-DIMENSIONI-GENERICHE
+    titolo: I valori di dimensione escono dalle colonne dedicate e diventano generici
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+      - specs/010-configurazione-cataloghi-integrazioni
+      - specs/007-frontend-builder-consultazione
+    stato: ASSUNTA_PROVVISORIA
+    assunzione_provvisoria: >
+      Si assume che i valori di dimensione vadano in una struttura per nome,
+      al posto delle colonne `lingua` e `livello_professionale` su
+      `modello_documento`. L'assunzione regge finche' non si accerta cosa GEBAN
+      puo' ricevere: FR-008 e' il punto che richiede una decisione condivisa
+      con loro, e senza quella US4 e US5 non si chiudono.
+    impatto: >
+      Aperta il 2026-09-23 dopo il collaudo dell'interfaccia. Il meccanismo
+      delle dimensioni e' generico a meta': riconoscimento e policy lo sono
+      gia' - `_dimensioni_catalogo` legge qualunque chiave con lista grazie a
+      `extra="allow"`, e `PolicyDimensione` ha chiave per nome - mentre
+      enforcement, persistenza, identita' e unicita' della pubblicazione sono
+      cablati su `lingua` e `livello`. Verificato end-to-end servendo una
+      dimensione inventata: la policy si salva e poi viene ignorata.
+      Non e' scope nuovo: e' il seguito che `002/tasks.md` dichiara due volte
+      fuori dal proprio perimetro ("refactor dei valori di dimensione, non
+      previsto qui"; "decisione non presa") e che `010` FR-019 presuppone
+      quando promette nessun "nuovo codice per ogni dimensione futura".
+      Finora quelle tre frasi non avevano una spec proprietaria: `011` gliela
+      da'. Riapre `DEC-001-LINGUA-IT-EN`, che aveva fissato italiano e inglese
+      come modelli distinti quando il bando era l'unico documento e GEBAN
+      l'unico consumatore.
+    fase_bloccante: PLAN
+    data_ultima_revisione: 2026-09-23

@@ -668,3 +668,81 @@ coverage:
     contract_ref: specs/007-frontend-builder-consultazione/tasks.md
     stato: DA_COPRIRE
     note: profilo senza ruoli ne' descrizioni; separazione per ruolo mai verificata end-to-end; T114-T115 aperte
+
+  # --- Dimensioni generiche del modello (spec 011, fase specify 2026-09-23) ---
+  # Nessuna riga COPERTO: la spec non ha ancora plan ne' tasks. Sono qui perche'
+  # il cancello di copertura le pretende, ed e' giusto: un requisito nuovo nasce
+  # tracciato, non nella baseline dei buchi storici.
+
+  - id: COV-079
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-001
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "valori di dimensione in struttura per nome invece che in colonne dedicate; US1, fase specify"
+
+  - id: COV-080
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-002
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "enforcement che itera sulle policy registrate invece delle due chiamate cablate in crea_modello; US2"
+
+  - id: COV-081
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-003
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "identita' del modello che include le dimensioni distintive; oggi _identita_modello usa solo lingua e livello; US1"
+
+  - id: COV-082
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-004
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "unicita' della pubblicazione su tutte le dimensioni valorizzate; oggi get_versione_pubblicata_corrente ne considera due; US3"
+
+  - id: COV-083
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-005
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "dimensioni note derivate da policy e albero live; oggi _dimensioni_note e' un insieme scritto a mano; US2"
+
+  - id: COV-084
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-006
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "nessun valore implicito di ripiego per una dimensione non dichiarata; oggi modello_documento.lingua e' NOT NULL con default IT; US5"
+
+  - id: COV-085
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-007
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "migrazione che preserva identita', pubblicazioni e documenti generati; vincolo ON DELETE RESTRICT da rispettare; US4"
+
+  - id: COV-086
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-008
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "contratto verso GEBAN: richiede decisione condivisa, e' il punto che blocca US4 e US5; vedi DEC-011-DIMENSIONI-GENERICHE"
+
+  - id: COV-087
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-009
+    scenario_id: SCENARIO-11
+    contract_ref: specs/011-dimensioni-generiche-modello/spec.md
+    stato: DA_COPRIRE
+    note: "una dimensione scomparsa dall'albero non rende illeggibili i modelli che la valorizzano; edge case"
+

@@ -464,6 +464,10 @@ un'integrazione connessa e dichiarare, per ciascuna dimensione incontrata
 (es. livello, lingua), se ammette un valore generico o richiede sempre una
 scelta esplicita, cosi' che il builder sappia quando un valore diverso crea
 un modello distinto senza bisogno di nuovo codice per ogni dimensione futura.
+*(2026-09-23: questa promessa e' mantenuta a meta'. Il riconoscimento di una
+dimensione nuova e la registrazione della sua policy funzionano senza codice;
+l'enforcement e la persistenza del valore scelto no. Il completamento e'
+`011-dimensioni-generiche-modello`.)*
 
 **Why this priority**: senza questa configurazione esplicita, il
 comportamento di fork resta hardcoded nel codice per ogni dimensione

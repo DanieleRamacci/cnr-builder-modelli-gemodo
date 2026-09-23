@@ -385,6 +385,8 @@ distinti, esattamente come accade oggi per la lingua.
   con `GENERICO_NON_SUPPORTATO` invece di essere accettato e poi salvato con un
   valore arbitrario. Renderla davvero generica richiede una modifica di schema e
   contratto in `001`: decisione non presa, non e' un residuo di questo task.
+  *(2026-09-23: la decisione e' ora tracciata come `DEC-011-DIMENSIONI-GENERICHE`
+  e la riapertura di `DEC-001-LINGUA-IT-EN` e' User Story 4 di `011`.)*
 - **Nessun cambio di comportamento al primo deploy**: la migration `0018`
   registra `lingua=false` e `livello=true` per i tipi esistenti, e il builder
   registra le stesse due policy quando crea un tipo nuovo. Il ripiego in codice
@@ -392,7 +394,9 @@ distinti, esattamente come accade oggi per la lingua.
 - **Scope di unicita' della pubblicazione**: gia' comprendeva lingua e livello
   (`get_versione_pubblicata_corrente`). Generalizzarlo a dimensioni che non
   siano colonne dedicate richiede il refactor dei valori di dimensione, non
-  previsto qui.
+  previsto qui. *(2026-09-23: quel refactor ha ora una spec propria,
+  `011-dimensioni-generiche-modello`, FR-004. Fino ad allora questa frase era
+  l'unico posto in cui il limite fosse scritto.)*
 
 ## Phase: Correzione difetti di eliminazione (2026-09-22)
 
