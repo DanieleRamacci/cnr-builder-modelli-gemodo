@@ -768,16 +768,21 @@ sistema integrato diventa inutilizzabile.
       nell'elenco modelli erano applicati **nel client** su `models()`, cioe'
       sulla sola pagina caricata - proprio il difetto che FR-028 vieta. Ora
       partono come richiesta al server e riportano alla prima pagina
-- [ ] T103 [FR-028] Filtri per tipologia, profilo e livello nell'interfaccia.
-      L'API li accetta gia' (T099); manca la **sorgente delle voci**: sono
-      valori dell'albero live, e questo componente non lo carica. Ricavarli
-      dai modelli della pagina corrente sarebbe lo stesso errore che T097 ha
-      appena corretto. Decidere se caricare la struttura live o esporre un
-      endpoint dedicato per le voci dei filtri
-- [ ] T104 [FR-028] La ricerca testuale libera resta client-side e ha lo
-      stesso limite: cerca solo nella pagina caricata. Serve un parametro di
-      ricerca lato API, oppure va rimossa per non dare l'impressione di
-      cercare su tutto
+- [x] T103 [FR-028] (`GET /builder/modelli/filtri`, `repository.voci_filtro`;
+      tendine in `integrazioni-manager.component.html`) Filtri per tipologia,
+      profilo e livello. Le voci vengono dai **modelli esistenti** nel
+      contesto, non dall'albero live: l'elenco modelli non richiede discovery
+      online e legarlo a GEBAN per riempire due tendine sarebbe una
+      regressione di robustezza; inoltre l'albero offrirebbe combinazioni
+      senza alcun modello. Una tendina compare solo se ha piu' di una voce
+- [x] T104 [FR-028] (parametro `ricerca` su `GET /builder/modelli`) La
+      ricerca testuale passa dal server e compone con gli altri filtri
+- [ ] T105 [FR-028] **Nota sulla scala, da rivedere in futuro**: la ricerca usa
+      `ILIKE '%testo%'` su nome e codice, che non puo' usare un indice. Con
+      modelli nell'ordine delle centinaia e' irrilevante; se crescessero di
+      ordini di grandezza servirebbe una ricerca vera (indice trigram
+      `pg_trgm`, oppure una colonna `tsvector` con indice GIN). Non
+      anticiparlo: va fatto quando il volume lo richiede, non prima
 - [x] T098 [FR-028] (`sincronizzaUrl`/`ripristinaFiltriDaUrl` in
       `integrazioni-manager.component.ts`) Stato dei filtri riflesso nell'URL
       e ripristinato al caricamento

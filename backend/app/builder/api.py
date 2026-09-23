@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, Query
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
     FiltriModelli,
+    VociFiltriModelli,
     LinguaFiltro,
     StatoVersioneFiltro,
     CreaModelloRequest,
@@ -59,6 +60,7 @@ def lista_modelli(
     livello_professionale: str | None = Query(default=None, min_length=1, max_length=64),
     variante: str | None = Query(default=None, min_length=1, max_length=64),
     stato_versione: StatoVersioneFiltro | None = Query(default=None),
+    ricerca: str | None = Query(default=None, min_length=1, max_length=200),
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ):
@@ -66,11 +68,22 @@ def lista_modelli(
         codice_tipo_documento=codice_tipo_documento, integrazione_id=integrazione_id,
         codice_tipologia=codice_tipologia, codice_categoria=codice_categoria,
         lingua=lingua, livello_professionale=livello_professionale,
-        variante=variante, stato_versione=stato_versione,
+        variante=variante, stato_versione=stato_versione, ricerca=ricerca,
     )
     return [_modello_gestione_response(model) for model in service.lista(
         principal, codice_contesto, offset=offset, limit=limit, filtri=filtri
     )]
+
+
+# Dichiarata prima di /modelli/{modelloId}: altrimenti "filtri" verrebbe
+# interpretato come un id e la rotta risponderebbe 422.
+@router.get("/modelli/filtri", response_model=VociFiltriModelli)
+def voci_filtro_modelli(
+    codice_contesto: str = Query(min_length=1, max_length=64),
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> VociFiltriModelli:
+    return VociFiltriModelli(**service.voci_filtro(principal, codice_contesto))
 
 
 @router.get("/modelli/{modelloId}", response_model=ModelloDettaglioResponse)

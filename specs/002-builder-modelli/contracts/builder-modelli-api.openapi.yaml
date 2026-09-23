@@ -101,6 +101,13 @@ paths:
           schema:
             type: string
             enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]
+        - name: ricerca
+          in: query
+          description: >
+            Sottostringa su nome e codice, applicata prima della paginazione.
+            Usa ILIKE e non un indice: adeguata a modelli nell'ordine delle
+            centinaia, da rivedere se crescessero di ordini di grandezza.
+          schema: {type: string, minLength: 1, maxLength: 200}
       responses:
         '200':
           description: Pagina modelli filtrata, vuota se nessun modello corrisponde
@@ -195,6 +202,30 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Errore'}
               example: {codice: GENERICO_NON_SUPPORTATO, messaggio: "La dimensione 'lingua' non puo' ammettere un valore generico"}
+  /modelli/filtri:
+    get:
+      operationId: vociFiltriModelli
+      summary: Valori selezionabili nei filtri dell'elenco modelli
+      description: >
+        Ricavati dai modelli esistenti nel contesto, non dall'albero discovery:
+        l'elenco modelli non richiede discovery online e non deve iniziare a
+        dipenderne per riempire delle tendine. Ogni voce restituita produce
+        almeno un risultato. Il livello generico compare come TUTTI.
+      parameters:
+        - name: codice_contesto
+          in: query
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 64}
+      responses:
+        '200':
+          description: Voci selezionabili, liste vuote se il contesto non ha modelli
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VociFiltriModelli'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+
   /modelli/{modelloId}:
     parameters:
       - {$ref: '#/components/parameters/ModelloId'}
@@ -366,6 +397,16 @@ components:
       required: true
       schema: {type: string, format: uuid}
   schemas:
+    VociFiltriModelli:
+      type: object
+      required: [codici_tipo_documento, codici_tipologia, codici_categoria, lingue, livelli_professionali, varianti]
+      properties:
+        codici_tipo_documento: {type: array, items: {type: string}}
+        codici_tipologia: {type: array, items: {type: string}}
+        codici_categoria: {type: array, items: {type: string}}
+        lingue: {type: array, items: {type: string}}
+        livelli_professionali: {type: array, items: {type: string}}
+        varianti: {type: array, items: {type: string}}
     ModelloGestione:
       type: object
       additionalProperties: false

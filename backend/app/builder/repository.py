@@ -31,6 +31,7 @@ def lista_modelli(
     livello_professionale: str | None = None,
     variante: str | None = None,
     stato_versione: str | None = None,
+    ricerca: str | None = None,
 ):
     """Modelli del contesto, filtrati lato server (007 FR-028).
 
@@ -72,12 +73,69 @@ def lista_modelli(
             )
             .exists()
         )
+    if ricerca:
+        # Sottostringa su nome e codice. `ilike` non usa indice: accettabile con
+        # modelli nell'ordine delle centinaia, da rivedere se crescessero di
+        # ordini di grandezza (007 FR-028, nota sulla scala).
+        schema = f"%{ricerca.strip()}%"
+        query = query.where(
+            ModelloDocumento.nome.ilike(schema) | ModelloDocumento.codice.ilike(schema)
+        )
     return list(db.scalars(
         query
         .options(joinedload(ModelloDocumento.tipo_documento), selectinload(ModelloDocumento.versioni))
         .order_by(ModelloDocumento.created_at.desc(), ModelloDocumento.id)
         .offset(offset).limit(limit)
     ))
+
+
+def voci_filtro(db: Session, codice_contesto: str) -> dict[str, list[str]]:
+    """Valori selezionabili nei filtri, ricavati dai modelli esistenti (007 FR-028).
+
+    Non dall'albero discovery, per due ragioni. L'elenco modelli funziona anche
+    quando l'integrazione e' irraggiungibile - il contratto lo dichiara, "non
+    richiede discovery online" - e prendere le voci di la' legherebbe la pagina
+    alla disponibilita' di GEBAN per riempire due tendine. Inoltre l'albero
+    offre ogni combinazione possibile, comprese quelle senza alcun modello:
+    tendine piene di voci che danno sempre elenco vuoto.
+
+    Il livello generico e' esposto come `LIVELLO_GENERICO`, perche' nel filtro
+    "assente" significa gia' "non filtrare".
+    """
+    def distinti(colonna) -> list[str]:
+        query = (
+            select(colonna)
+            # Lato sinistro esplicito: selezionando una colonna di TipoDocumento
+            # SQLAlchemy non saprebbe da dove partire per il join.
+            .select_from(ModelloDocumento)
+            .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
+            .where(
+                TipoDocumento.codice_contesto == codice_contesto,
+                ModelloDocumento.stato != "ELIMINATO",
+            )
+            .distinct()
+        )
+        return sorted(valore for valore in db.scalars(query) if valore is not None)
+
+    livelli = distinti(ModelloDocumento.livello_professionale)
+    ha_generici = db.scalar(
+        select(ModelloDocumento.id)
+        .join(TipoDocumento, ModelloDocumento.tipo_documento_id == TipoDocumento.id)
+        .where(
+            TipoDocumento.codice_contesto == codice_contesto,
+            ModelloDocumento.stato != "ELIMINATO",
+            ModelloDocumento.livello_professionale.is_(None),
+        )
+        .limit(1)
+    ) is not None
+    return {
+        "codici_tipo_documento": distinti(TipoDocumento.codice),
+        "codici_tipologia": distinti(ModelloDocumento.codice_tipologia),
+        "codici_categoria": distinti(ModelloDocumento.codice_categoria),
+        "lingue": distinti(ModelloDocumento.lingua),
+        "livelli_professionali": ([LIVELLO_GENERICO] + livelli) if ha_generici else livelli,
+        "varianti": distinti(ModelloDocumento.variante),
+    }
 
 
 def modello_con_campi(db: Session, modello_id):

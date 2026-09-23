@@ -103,7 +103,22 @@ describe('context models and lifecycle', () => {
     http
       .expectOne('/api/v1/builder/integrazioni')
       .flush([{ id: 'source', codice: 'GEBAN', nome: 'Software', codice_contesto: 'geban' }]);
+    flushVoci(http);
     return { fixture, http };
+  }
+  /** Le voci dei filtri sono lette a ogni cambio contesto (007 FR-028). */
+  function flushVoci(http: HttpTestingController, voci: Partial<Record<string, string[]>> = {}) {
+    http.match((r) => r.url === '/api/v1/builder/modelli/filtri').forEach((r) =>
+      r.flush({
+        codici_tipo_documento: [],
+        codici_tipologia: [],
+        codici_categoria: [],
+        lingue: [],
+        livelli_professionali: [],
+        varianti: [],
+        ...voci,
+      }),
+    );
   }
   it('lists the models of the context taken from the /contesti/:ctxId/modelli route', () => {
     const { fixture, http } = setup(['geban', 'altro'], 'altro');
@@ -162,7 +177,7 @@ describe('context models and lifecycle', () => {
     ]);
     http.verify();
   });
-  it('filters the loaded page by search text, which stays client-side', () => {
+  it('sends the search text to the server instead of filtering the page', () => {
     const { fixture, http } = setup(['geban'], 'geban');
     http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
     fixture.detectChanges();
@@ -170,9 +185,26 @@ describe('context models and lifecycle', () => {
     const search = root.querySelector<HTMLInputElement>('input[type=search]')!;
     search.value = 'tecnologi';
     search.dispatchEvent(new Event('input'));
+    search.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter' }));
+    fixture.detectChanges();
+    const richiesta = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
+    expect(richiesta.request.params.get('ricerca')).toBe('tecnologi');
+    expect(richiesta.request.params.get('offset')).toBe('0');
+    richiesta.flush([altro]);
     fixture.detectChanges();
     expect(root.textContent).toContain('Bando tecnologi');
     expect(root.textContent).not.toContain('Modello CTER');
+    http.verify();
+  });
+  it('only offers filter options that the context actually has', () => {
+    TestBed.resetTestingModule();
+    const { fixture, http } = setup(['geban'], 'geban');
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model, altro]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    // Con voci vuote nessuna tendina derivata compare: meglio nessun filtro
+    // che una tendina che restituisce sempre un elenco vuoto.
+    expect(root.querySelector('select[aria-label="Filtra per tipologia"]')).toBeNull();
     http.verify();
   });
   // 007 FR-028: i filtri di dimensione sono del server, non del client. L'elenco

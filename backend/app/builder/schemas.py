@@ -38,6 +38,24 @@ class FiltriModelli(BaseModel):
     livello_professionale: str | None = Field(default=None, min_length=1, max_length=64)
     variante: str | None = Field(default=None, min_length=1, max_length=64)
     stato_versione: StatoVersioneFiltro | None = None
+    ricerca: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class VociFiltriModelli(BaseModel):
+    """Valori selezionabili nei filtri dell'elenco modelli (007 FR-028).
+
+    Ricavati dai modelli esistenti nel contesto, non dall'albero discovery:
+    l'elenco modelli non dipende dal discovery e non deve iniziare a dipenderne
+    per riempire delle tendine. Una voce presente qui produce sempre almeno un
+    risultato.
+    """
+
+    codici_tipo_documento: list[str]
+    codici_tipologia: list[str]
+    codici_categoria: list[str]
+    lingue: list[str]
+    livelli_professionali: list[str]
+    varianti: list[str]
 
 
 class IntegrazioneVisibile(BaseModel):

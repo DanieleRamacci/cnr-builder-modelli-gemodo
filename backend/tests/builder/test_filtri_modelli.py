@@ -153,3 +153,78 @@ def test_filtro_sconosciuto_viene_rifiutato(builder_client):
 
     assert response.status_code == 400, response.text
     assert response.json()["codice"] == "CONTESTO_NON_VALIDO"
+
+
+@pytest.mark.integration
+def test_voci_filtro_dai_modelli_esistenti(builder_client, modelli_di_prova):
+    """Le voci vengono dai modelli presenti, non dall'albero discovery."""
+    response = builder_client.get("/api/v1/builder/modelli/filtri", params={"codice_contesto": "geban"})
+
+    assert response.status_code == 200, response.text
+    voci = response.json()
+    assert "TD" in voci["codici_tipologia"]
+    assert "RICERCATORE" in voci["codici_categoria"]
+    assert set(voci["lingue"]) >= {"IT", "EN"}
+    # L'albero di prova dichiara molte foglie: se le voci venissero di la',
+    # comparirebbero tipologie senza alcun modello.
+    assert "SDIP" not in voci["codici_tipologia"]
+
+
+@pytest.mark.integration
+def test_voci_filtro_espone_il_livello_generico(builder_client, modelli_di_prova):
+    voci = builder_client.get(
+        "/api/v1/builder/modelli/filtri", params={"codice_contesto": "geban"}
+    ).json()
+
+    assert "TUTTI" in voci["livelli_professionali"], (
+        "senza il token i modelli a livello nullo non sarebbero selezionabili"
+    )
+    assert "IV" in voci["livelli_professionali"]
+
+
+@pytest.mark.integration
+def test_ogni_voce_produce_almeno_un_risultato(builder_client, modelli_di_prova):
+    """La promessa dell'endpoint: nessuna tendina che dia sempre elenco vuoto."""
+    voci = builder_client.get(
+        "/api/v1/builder/modelli/filtri", params={"codice_contesto": "geban"}
+    ).json()
+
+    for tipologia in voci["codici_tipologia"]:
+        assert _codici(builder_client, codice_tipologia=tipologia), tipologia
+    for livello in voci["livelli_professionali"]:
+        assert _codici(builder_client, livello_professionale=livello), livello
+
+
+@pytest.mark.integration
+def test_ricerca_testuale_lato_server(builder_client, modelli_di_prova):
+    it_iv, en_iv, _ = modelli_di_prova
+
+    per_codice = _codici(builder_client, ricerca=it_iv["codice"][:30])
+    assert it_iv["codice"] in per_codice
+
+    # La ricerca compone con gli altri filtri invece di sostituirli.
+    combinata = _codici(builder_client, ricerca="ricercatore", lingua="EN")
+    assert en_iv["codice"] in combinata
+    assert it_iv["codice"] not in combinata
+
+
+@pytest.mark.integration
+def test_la_ricerca_precede_la_paginazione(builder_client, modelli_di_prova):
+    """Stesso motivo dei filtri: cercare nella pagina ricevuta e' un difetto."""
+    _, en, _ = modelli_di_prova
+
+    response = builder_client.get(URL, params={
+        "codice_contesto": "geban", "ricerca": en["codice"], "limit": 1, "offset": 0,
+    })
+
+    assert response.status_code == 200, response.text
+    assert {m["codice"] for m in response.json()} == {en["codice"]}
+
+
+@pytest.mark.integration
+def test_voci_filtro_richiede_autorizzazione_sul_contesto(builder_client):
+    response = builder_client.get(
+        "/api/v1/builder/modelli/filtri", params={"codice_contesto": "altro-contesto"}
+    )
+
+    assert response.status_code == 403, response.text

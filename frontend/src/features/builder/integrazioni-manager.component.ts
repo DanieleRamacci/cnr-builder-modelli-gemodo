@@ -12,6 +12,14 @@ import type { components } from '../../shared/api-types/builder-modelli';
 type Model = components['schemas']['ModelloGestione'];
 type Version = components['schemas']['Versione'];
 type Action = { route: string; label: string };
+type VociFiltri = {
+  codici_tipo_documento: string[];
+  codici_tipologia: string[];
+  codici_categoria: string[];
+  lingue: string[];
+  livelli_professionali: string[];
+  varianti: string[];
+};
 const ACTIONS: Record<string, Action> = {
   BOZZA: { route: 'invia-revisione', label: 'Invia in revisione' },
   IN_REVISIONE: { route: 'approva', label: 'Approva' },
@@ -52,6 +60,18 @@ export class IntegrazioniManagerComponent {
   protected readonly testo = signal('');
   protected readonly statoFiltro = signal('');
   protected readonly linguaFiltro = signal('');
+  protected readonly tipologiaFiltro = signal('');
+  protected readonly profiloFiltro = signal('');
+  protected readonly livelloFiltro = signal('');
+  /** Voci selezionabili, dai modelli esistenti nel contesto (007 FR-028). */
+  protected readonly voci = signal<VociFiltri>({
+    codici_tipo_documento: [],
+    codici_tipologia: [],
+    codici_categoria: [],
+    lingue: [],
+    livelli_professionali: [],
+    varianti: [],
+  });
   protected readonly view = signal<'table' | 'grid'>(
     this.route.snapshot.queryParamMap.get('view') === 'grid' ? 'grid' : 'table',
   );
@@ -82,24 +102,11 @@ export class IntegrazioniManagerComponent {
     );
   }
   /**
-   * Solo la ricerca testuale resta nel client. I filtri di dimensione sono gia'
-   * stati applicati dal server, quindi rifiltrarli qui sarebbe ridondante e
-   * darebbe l'impressione sbagliata che il client sia la fonte del filtro.
-   *
-   * Nota: la ricerca testuale ha lo stesso limite che i filtri avevano prima -
-   * cerca solo nella pagina caricata. Serve un parametro di ricerca lato API
-   * per renderla corretta su piu' pagine.
+   * Filtri e ricerca sono applicati dal server: qui non si rifiltra nulla.
+   * Rifiltrare la pagina ricevuta darebbe risultati sbagliati dalla seconda
+   * pagina in poi ed e' esattamente il difetto che 007 FR-028 vieta.
    */
-  protected readonly visibili = computed(() => {
-    const query = this.testo().trim().toLowerCase();
-    if (!query) return this.models();
-    return this.models().filter((m) =>
-      [m.nome, m.codice, m.codice_tipo_documento, m.percorso_categorizzazione.join(' ')]
-        .join(' ')
-        .toLowerCase()
-        .includes(query),
-    );
-  });
+  protected readonly visibili = computed(() => this.models());
   /** Solo conteggi sui modelli della pagina caricata: nessun totale o metrica inventata. */
   protected readonly metriche = computed(() => {
     const stati = this.models().map((m) => this.stato(m));
@@ -185,6 +192,7 @@ export class IntegrazioniManagerComponent {
     if (this.saving() || !this.contexts().includes(context)) return;
     this.selected.set(context);
     this.offset.set(0);
+    this.caricaVoci();
     this.load();
   }
   protected page(delta: number): void {
@@ -205,6 +213,10 @@ export class IntegrazioniManagerComponent {
     const filtri: Record<string, string> = {};
     if (this.statoFiltro()) filtri['stato_versione'] = this.statoFiltro();
     if (this.linguaFiltro()) filtri['lingua'] = this.linguaFiltro();
+    if (this.tipologiaFiltro()) filtri['codice_tipologia'] = this.tipologiaFiltro();
+    if (this.profiloFiltro()) filtri['codice_categoria'] = this.profiloFiltro();
+    if (this.livelloFiltro()) filtri['livello_professionale'] = this.livelloFiltro();
+    if (this.testo().trim()) filtri['ricerca'] = this.testo().trim();
     return filtri;
   }
 
@@ -219,6 +231,10 @@ export class IntegrazioniManagerComponent {
   protected azzeraFiltri(): void {
     this.statoFiltro.set('');
     this.linguaFiltro.set('');
+    this.tipologiaFiltro.set('');
+    this.profiloFiltro.set('');
+    this.livelloFiltro.set('');
+    this.testo.set('');
     this.applicaFiltri();
   }
 
@@ -234,6 +250,18 @@ export class IntegrazioniManagerComponent {
     const params = this.route.snapshot.queryParamMap;
     this.statoFiltro.set(params.get('stato_versione') ?? '');
     this.linguaFiltro.set(params.get('lingua') ?? '');
+    this.tipologiaFiltro.set(params.get('codice_tipologia') ?? '');
+    this.profiloFiltro.set(params.get('codice_categoria') ?? '');
+    this.livelloFiltro.set(params.get('livello_professionale') ?? '');
+    this.testo.set(params.get('ricerca') ?? '');
+  }
+
+  /** Le voci dipendono dai modelli del contesto: si rileggono al cambio contesto. */
+  private caricaVoci(): void {
+    this.api
+      .get<VociFiltri>('/api/v1/builder/modelli/filtri', { codice_contesto: this.selected() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (voci) => this.voci.set(voci) });
   }
 
   private load(clearError = true): void {

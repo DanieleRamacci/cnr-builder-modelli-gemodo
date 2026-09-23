@@ -97,6 +97,10 @@ class BuilderService:
             **(filtri.model_dump(exclude_none=True) if filtri is not None else {}),
         )
 
+    def voci_filtro(self, principal: PrincipalGEMODO, codice_contesto: str) -> dict[str, list[str]]:
+        verify_scrittura_su_contesto(principal, codice_contesto)
+        return builder_repository.voci_filtro(self.db, codice_contesto)
+
     # Comportamento storico, usato solo come ripiego quando un tipo documento non
     # ha ancora una policy registrata: e' lo stesso che la migration 0018 scrive
     # per i tipi esistenti, quindi nulla cambia di nascosto. Una dimensione che

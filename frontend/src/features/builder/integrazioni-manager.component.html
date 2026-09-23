@@ -87,10 +87,12 @@
     <input
       type="search"
       class="form-control ricerca"
-      placeholder="Cerca per nome, codice o categoria"
+      placeholder="Cerca per nome o codice"
       aria-label="Cerca modelli"
       [value]="testo()"
       (input)="testo.set($any($event.target).value)"
+      (search)="applicaFiltri()"
+      (keyup.enter)="applicaFiltri()"
     />
     <select
       class="form-select"
@@ -116,7 +118,53 @@
       <option value="IT">Italiano</option>
       <option value="EN">Inglese</option>
     </select>
-    @if (statoFiltro() || linguaFiltro()) {
+    @if (voci().codici_tipologia.length > 1) {
+      <select
+        class="form-select"
+        aria-label="Filtra per tipologia"
+        [value]="tipologiaFiltro()"
+        (change)="tipologiaFiltro.set($any($event.target).value); applicaFiltri()"
+      >
+        <option value="">Tutte le tipologie</option>
+        @for (voce of voci().codici_tipologia; track voce) {
+          <option [value]="voce">{{ voce }}</option>
+        }
+      </select>
+    }
+    @if (voci().codici_categoria.length > 1) {
+      <select
+        class="form-select"
+        aria-label="Filtra per profilo"
+        [value]="profiloFiltro()"
+        (change)="profiloFiltro.set($any($event.target).value); applicaFiltri()"
+      >
+        <option value="">Tutti i profili</option>
+        @for (voce of voci().codici_categoria; track voce) {
+          <option [value]="voce">{{ voce }}</option>
+        }
+      </select>
+    }
+    @if (voci().livelli_professionali.length > 1) {
+      <select
+        class="form-select"
+        aria-label="Filtra per livello"
+        [value]="livelloFiltro()"
+        (change)="livelloFiltro.set($any($event.target).value); applicaFiltri()"
+      >
+        <option value="">Tutti i livelli</option>
+        @for (voce of voci().livelli_professionali; track voce) {
+          <option [value]="voce">{{ voce === 'TUTTI' ? 'Senza livello' : voce }}</option>
+        }
+      </select>
+    }
+    @if (
+      statoFiltro() ||
+      linguaFiltro() ||
+      tipologiaFiltro() ||
+      profiloFiltro() ||
+      livelloFiltro() ||
+      testo()
+    ) {
       <button type="button" class="btn btn-outline-secondary" (click)="azzeraFiltri()">
         Azzera filtri
       </button>
