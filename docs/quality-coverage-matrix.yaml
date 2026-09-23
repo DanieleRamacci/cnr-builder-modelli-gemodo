@@ -602,3 +602,20 @@ coverage:
     contract_ref: backend/tests/builder/test_eliminazione_e_pulizia.py
     stato: COPERTO
     note: test_edizione_derivata_ricreabile_dopo_eliminazione copre crea/duplica-409/elimina/ricrea; migration 0019 rende parziale l'indice
+
+  # --- Identita' modelli e filtri elenco (2026-09-23) ---
+  - id: COV-071
+    spec_owner: specs/002-builder-modelli
+    requirement_id: FR-019
+    scenario_id: SCENARIO-11
+    contract_ref: specs/002-builder-modelli/tasks.md
+    stato: DA_COPRIRE
+    note: variante non esposta in CreaModelloRequest e assente dal nome generato; T042-T046 aperti
+
+  - id: COV-072
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-028
+    scenario_id: SCENARIO-11
+    contract_ref: specs/007-frontend-builder-consultazione/tasks.md
+    stato: DA_COPRIRE
+    note: filtri sull'elenco modelli per tutti i livelli della categorizzazione live; T097-T100 aperti

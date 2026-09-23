@@ -307,6 +307,88 @@ versione pubblicata valida appare nel catalogo.
   (`EDIZIONE_DERIVATA_DUPLICATA`, 409), mai in un errore 500 - come gia'
   avviene per i duplicati di tipo documento.
 
+- **FR-019** (2026-09-23, gap fra intenzione e implementazione, trovato
+  chiedendosi come distinguere due modelli sulla stessa categorizzazione):
+  il gestore MUST poter distinguere due modelli che condividono tipo,
+  percorso, lingua e livello. Oggi non puo', e il meccanismo previsto esiste
+  a meta':
+  (a) `variante` e' la chiave che il sistema gia' usa per decidere quale
+  modello e' "quello corrente" - `get_versione_pubblicata_corrente` filtra su
+  `(tipo, percorso, variante, lingua, livello)` e alla pubblicazione archivia
+  automaticamente il precedente con la stessa chiave. Due modelli con la
+  stessa categorizzazione e la stessa variante **non possono quindi essere
+  pubblicati insieme**: il secondo archivia il primo;
+  (b) FR-003a prevede che il gestore possa indicarla ("se il gestore non ne
+  indica una, il sistema MUST usare `STANDARD`"), ma `CreaModelloRequest` non
+  espone il campo e `service.crea_modello` scrive `variante="STANDARD"`
+  cablato. La variante non e' mai valorizzabile, quindi ogni modello finisce
+  nello stesso slot;
+  (c) il nome leggibile e' generato da `_identita_modello` come
+  `descrizioni nodi - livello - lingua - data odierna` e **non contiene la
+  variante**: due modelli creati lo stesso giorno sulla stessa
+  categorizzazione ricevono un nome **identico**, distinguibili solo per id.
+  **Flusso deciso con l'utente il 2026-09-23.** Il codice di variante e'
+  **generato dal sistema**, la descrizione e' **scritta dal gestore**: la
+  macchina possiede l'identita', l'umano possiede il significato.
+  1. Alla creazione, se per quella categorizzazione (tipo, percorso, lingua,
+     livello) **non esiste** gia' un modello, non si chiede nulla: nessuna
+     sezione variante compare, e il modello nasce con la variante di base.
+  2. Se invece **esiste**, il sistema MUST segnalarlo esplicitamente al
+     gestore - non rifiutare e basta - e proporre di creare una variante,
+     chiedendo una descrizione. La descrizione e' obbligatoria in questo caso:
+     e' l'unica cosa che distinguera' i due modelli per un umano.
+  3. Creare un modello con la stessa categorizzazione **senza** fornire la
+     descrizione di variante MUST essere rifiutato con un errore funzionale.
+     Mai una sostituzione silenziosa.
+  4. Piu' varianti per la stessa categorizzazione MUST poter coesistere,
+     anche pubblicate insieme: varianti diverse occupano slot diversi.
+  5. Il gestore MUST poter creare una variante **partendo da un modello
+     esistente**, dalla sua pagina di modifica, ripercorrendo lo stesso
+     flusso: il sistema chiede la descrizione e crea un nuovo modello con la
+     stessa categorizzazione e una variante nuova.
+  6. Nell'elenco, scegliendo una categorizzazione, il gestore MUST vedere il
+     modello di base e sotto di esso le sue varianti, ciascuna con la propria
+     descrizione.
+  Il nome generato MUST includere la variante, cosi' che due modelli sulla
+  stessa categorizzazione non ricevano mai lo stesso nome.
+  **Due campi distinti, presentati insieme** (confermato 2026-09-23). `nome`
+  resta generato dal sistema e non modificabile; si aggiunge `nota`, testo
+  libero e opzionale scritto dal gestore. L'interfaccia li mostra adiacenti -
+  il nome gia' valorizzato, sotto lo spazio per la nota - cosi' che il gestore
+  percepisca un blocco unico, ma i dati restano separati. Un campo unico
+  pre-riempito col nome e poi modificabile MUST essere evitato: il nome
+  contiene la data di creazione, la copia divergerebbe dall'originale senza
+  che si sappia quale sia valido, e ogni futura modifica alla regola di
+  generazione lascerebbe le descrizioni gia' salvate nel formato vecchio.
+  **Regola dei codici di variante**: la base e' `STANDARD`; le varianti
+  successive sono `VARIANTE_1`, `VARIANTE_2`, dove il numero indica *la
+  posizione fra le varianti aggiunte*, non fra i modelli - la prima variante
+  aggiunta allo standard e' `VARIANTE_1`. I codici viaggiano verso GEBAN e
+  finiscono nei log, quindi maiuscoli e senza spazi; l'interfaccia li mostra
+  come "Standard", "Variante 1".
+  **Composizione verso GEBAN**: il campo `descrizione` di
+  `ModelloCatalogoSchema` MUST valere `nome` quando la nota e' assente, e
+  `nome - nota` quando c'e'. Chi non scrive nulla non peggiora la situazione
+  attuale; chi scrive rende il campo finalmente descrittivo. Il codice
+  variante resta esposto a parte, gia' presente nello schema: GEBAN sceglie
+  leggendo la descrizione e si riferisce poi al codice, che e' stabile anche
+  se la nota cambia.
+  Nota sul contratto verso GEBAN: nessuna modifica di contratto e' necessaria.
+  `GET /catalogo/modelli` restituisce gia' un **elenco** filtrato per tipo,
+  profilo, tipologia, lingua e livello, e `ModelloCatalogoSchema` espone gia'
+  `variante` come campo di primo livello: il catalogo era gia' progettato per
+  piu' modelli sulla stessa categorizzazione. Oggi pero' il campo
+  `descrizione` del catalogo e' valorizzato con `modello.nome`, cioe' il nome
+  generato dalla macchina: quando esistera' la descrizione scritta dal
+  gestore, MUST essere quella a viaggiare verso GEBAN, perche' e' l'unica che
+  spiega a un umano perche' scegliere una variante invece di un'altra.
+  Nota di progetto: variante e versione rispondono a domande diverse e non
+  vanno confuse. La **versione** e' la storia dello stesso modello nel tempo
+  (numerata per modello, al piu' una `PUBBLICATO` per volta). La **variante**
+  e' la coesistenza di modelli diversi per la stessa categorizzazione. Senza
+  (a)+(b) il gestore che vuole due modelli distinti ottiene invece una
+  sostituzione silenziosa.
+
 ### Key Entities
 
 - **Tipo Documento**: famiglia generale del documento; consultabile ma non creabile

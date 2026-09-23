@@ -406,3 +406,39 @@ distinti, esattamente come accade oggi per la lingua.
 - [x] T041 [FR-018] (`backend/tests/builder/test_eliminazione_e_pulizia.py`) Test del ciclo: crea derivata -> elimina -> ricrea la stessa
       lingua -> deve riuscire; e test che due creazioni concorrenti diano 409,
       mai 500
+
+## Phase: Identita' e distinguibilita' dei modelli (2026-09-23)
+
+- [ ] T042 [FR-019] Esporre `variante` in `CreaModelloRequest` e smettere di
+      cablare `STANDARD` in `service.crea_modello:280`. Default `STANDARD`
+      quando assente, come gia' prevede FR-003a
+- [ ] T043 [FR-019] Rifiutare la creazione di un modello sulla stessa
+      categorizzazione (tipo, percorso, lingua, livello) quando manca la
+      descrizione di variante, con errore funzionale dedicato che dica
+      **quale** modello esiste gia': e' il messaggio su cui il frontend
+      costruisce la proposta di creare una variante. Rifiutare anche una
+      descrizione di variante duplicata sulla stessa categorizzazione. Mai
+      lasciare che la pubblicazione archivi in silenzio il modello precedente
+- [ ] T044 [FR-019] Includere la variante nel nome generato da
+      `_identita_modello`, cosi' che due modelli sulla stessa
+      categorizzazione non ricevano lo stesso nome
+- [ ] T045 [FR-019] Campo `nota` sul modello: testo libero, opzionale,
+      scritto dal gestore, **distinto** da `nome` che resta generato e non
+      modificabile. Obbligatorio solo quando il modello nasce come variante.
+      Migration piu' campo in creazione e aggiornamento. In
+      `_modello_catalogo_schema` il campo `descrizione` diventa `nome` senza
+      nota, `nome - nota` con nota: non sostituire `nome` con `nota`
+- [ ] T047 [FR-019] Generare il codice di variante lato sistema: il gestore
+      fornisce solo la nota, mai il codice. Base `STANDARD`, poi `VARIANTE_1`,
+      `VARIANTE_2` progressivi **fra le varianti aggiunte** (la prima variante
+      dopo lo standard e' `VARIANTE_1`). Maiuscoli, senza spazi: viaggiano
+      verso GEBAN e nei log. La numerazione va calcolata sotto il lock gia'
+      preso per tipo documento, altrimenti due creazioni simultanee
+      ottengono lo stesso codice
+- [ ] T048 [FR-019] `POST /builder/modelli/{id}/varianti`: creare una variante
+      a partire da un modello esistente, ereditandone categorizzazione,
+      lingua e livello, chiedendo la sola descrizione. Distinta da
+      `edizioni-derivate`, che cambia lingua e non variante
+- [ ] T046 [P] [FR-019] Test: due modelli stessa categorizzazione varianti
+      diverse coesistono pubblicati; stessa variante viene rifiutata; i nomi
+      generati sono distinti

@@ -1082,3 +1082,36 @@ decisions:
       il loro posto naturale e' `006`, non un anticipo di questa spec.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-22
+
+  - id: DEC-002-VARIANTE-NOTA-IDENTITA
+    titolo: Variante generata dal sistema, nota scritta dal gestore, due campi distinti
+    owner_spec: specs/002-builder-modelli
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/007-frontend-builder-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Deciso con l'utente il 2026-09-23. Due modelli sulla stessa
+      categorizzazione (tipo, percorso, lingua, livello) oggi finiscono nello
+      stesso slot: `get_versione_pubblicata_corrente` filtra anche su
+      `variante`, che pero' e' cablata a STANDARD in `service.crea_modello`,
+      quindi pubblicare il secondo archivia il primo in silenzio. Il nome
+      generato non contiene la variante, percio' due modelli creati lo stesso
+      giorno hanno nome identico.
+      La macchina possiede l'identita', l'umano il significato: `variante` e
+      `nome` restano generati e non modificabili; si aggiunge `nota`, testo
+      libero opzionale. Sono due campi distinti presentati adiacenti, mai un
+      campo unico pre-riempito e poi editabile - il nome contiene la data di
+      creazione e ogni modifica alla regola di generazione lascerebbe le
+      descrizioni salvate nel formato vecchio.
+      Codici: `STANDARD` per la base, poi `VARIANTE_1`, `VARIANTE_2`
+      progressivi fra le varianti aggiunte. Verso GEBAN il campo
+      `descrizione` vale `nome` senza nota e `nome - nota` con nota; il
+      codice variante resta esposto a parte.
+      Nessuna modifica di contratto e' necessaria: `GET /catalogo/modelli`
+      restituisce gia' un elenco e `ModelloCatalogoSchema` espone gia'
+      `variante`. Varianti ed edizioni derivate restano assi indipendenti: un
+      derivato eredita la variante del padre.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-23

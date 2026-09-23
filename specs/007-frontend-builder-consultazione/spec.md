@@ -548,6 +548,22 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   quel caso restano validi solo i design token generali, non una struttura
   specifica da copiare, finche' non viene disegnata una schermata dedicata.
 
+- **FR-028** (2026-09-23, richiesta d'uso): l'elenco dei modelli MUST essere
+  filtrabile, non presentato come una lista unica. Con un solo tipo documento
+  e 65 foglie di categorizzazione la lista e' gia' scomoda; con un secondo
+  sistema integrato diventa inutilizzabile. I filtri MUST coprire **tutti i
+  livelli della categorizzazione live**, non un sottoinsieme deciso a priori:
+  contesto, integrazione, tipo documento, tipologia, profilo/categoria,
+  lingua, livello e stato della versione. Le voci dei filtri MUST essere
+  derivate dall'albero live e dai modelli effettivamente presenti, mai da
+  elenchi statici nel frontend - una tipologia aggiunta da GEBAN deve
+  comparire fra i filtri senza modifiche di codice, cosi' come gia' accade
+  per l'elenco dei tipi documento. Un filtro che non produce corrispondenze
+  MUST mostrare un elenco vuoto esplicito, mai un errore ne' l'elenco non
+  filtrato. Lo stato dei filtri MUST essere riflesso nell'URL, cosi' che una
+  selezione sia condivisibile e sopravviva al ricaricamento.
+
+
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
 selezionata nella navigazione. Tipo documentale e discovery sono risolti per
 integrazione/codice; la creazione di versioni usa l'ownership persistita del modello.

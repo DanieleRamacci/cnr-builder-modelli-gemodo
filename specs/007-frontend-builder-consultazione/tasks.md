@@ -757,3 +757,30 @@ e la creazione dell'edizione inglese stava nel posto sbagliato.
 
 Verifica: 72 test Vitest, lint e build passati; 3 Playwright reali verdi su
 stack dedicato.
+
+## Phase: Filtri sull'elenco modelli (2026-09-23)
+
+**Origine**: richiesta d'uso del 2026-09-23. Con 65 foglie di
+categorizzazione live l'elenco unico e' gia' poco pratico, e con un secondo
+sistema integrato diventa inutilizzabile.
+
+- [ ] T097 [FR-028] Filtri su contesto, integrazione, tipo documento,
+      tipologia, profilo, lingua, livello e stato versione nell'elenco
+      modelli, con le voci derivate dall'albero live e dai modelli presenti,
+      mai da elenchi statici
+- [ ] T098 [FR-028] Stato dei filtri riflesso nell'URL (query param), cosi'
+      che una selezione sia condivisibile e sopravviva al ricaricamento
+- [ ] T099 [FR-028] Verificare se l'API `GET /builder/modelli` regge i filtri
+      lato server o se oggi impone di filtrare nel client: con la paginazione
+      gia' presente (`offset`/`limit`), filtrare solo nel client darebbe
+      risultati sbagliati sulle pagine successive
+- [ ] T100 [P] [FR-028] Test: filtro senza corrispondenze mostra un elenco
+      vuoto esplicito, mai un errore ne' l'elenco non filtrato
+- [ ] T101 [FR-019 di `002`] Flusso varianti in interfaccia: alla creazione,
+      se la categorizzazione e' gia' occupata, mostrare quale modello esiste e
+      proporre la creazione di una variante chiedendo la descrizione; non
+      mostrare alcuna sezione variante quando la categorizzazione e' libera.
+      Stesso flusso raggiungibile dalla pagina di modifica di un modello
+- [ ] T102 [FR-019 di `002`] Nell'elenco, raggruppare le varianti sotto il
+      modello di base della loro categorizzazione, mostrando per ciascuna la
+      descrizione scritta dal gestore
