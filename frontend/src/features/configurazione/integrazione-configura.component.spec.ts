@@ -207,6 +207,27 @@ describe('IntegrazioneConfiguraComponent', () => {
     expect(text).toContain('Connesso');
   });
 
+  it('links the integration tabs to the existing JSON structure and scoped policy pages', () => {
+    const current = integrazione({
+      url: 'https://software.example.test/discovery',
+      stato: 'CONNESSO',
+    });
+    setup(current);
+
+    const tabs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.mm-tabs a'),
+    ) as HTMLAnchorElement[];
+    const struttura = tabs.find((link) => link.textContent?.includes('Struttura API'))!;
+    const policy = tabs.find((link) => link.textContent?.includes('Policy dati'))!;
+
+    expect(struttura.getAttribute('href')).toBe(
+      `/configurazione/contesti/${current.id}/struttura-json`,
+    );
+    expect(policy.getAttribute('href')).toBe(
+      `/configurazione/tipi-documento?integrazioneId=${current.id}`,
+    );
+  });
+
   it('shows sanitized ERRORE reasons after a failed verify, never a raw exception', () => {
     setup(integrazione({ url: 'https://unreachable.example.test/discovery' }));
     service.verifica.mockReturnValue(
@@ -250,7 +271,8 @@ describe('IntegrazioneConfiguraComponent', () => {
             errori: [
               {
                 codice: 'DISCOVERY_NON_CONFORME',
-                messaggio: "La risposta discovery non rispetta il contratto: 'lingua' field required",
+                messaggio:
+                  "La risposta discovery non rispetta il contratto: 'lingua' field required",
               },
               {
                 codice: 'DISCOVERY_NON_CONFORME',

@@ -48,8 +48,10 @@
 
   <nav class="mm-tabs" aria-label="Sezioni del contesto">
     <span class="active">Integrazione</span>
-    <a routerLink="/configurazione/tipi-documento/nuovo">Struttura API</a>
-    <a routerLink="/configurazione/tipi-documento/nuovo">Policy dati</a>
+    <a [routerLink]="['/configurazione/contesti', corrente.id, 'struttura-json']">Struttura API</a>
+    <a routerLink="/configurazione/tipi-documento" [queryParams]="{ integrazioneId: corrente.id }"
+      >Policy dati</a
+    >
     <span>Permessi</span>
   </nav>
 
@@ -159,8 +161,9 @@
         <div class="alert alert-danger mt-3">
           @if (corrente.ultima_verifica?.esito === 'NON_CONFORME') {
             <p class="mb-2">
-              L'endpoint ha risposto, ma l'albero discovery non rispetta il contratto
-              v{{ corrente.ultima_verifica?.versione_contratto }}. Punti difformi:
+              L'endpoint ha risposto, ma l'albero discovery non rispetta il contratto v{{
+                corrente.ultima_verifica?.versione_contratto
+              }}. Punti difformi:
             </p>
           }
           @for (errore of corrente.ultima_verifica?.errori; track $index) {

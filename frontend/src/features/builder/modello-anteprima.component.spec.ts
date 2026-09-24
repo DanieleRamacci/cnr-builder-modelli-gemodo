@@ -70,6 +70,79 @@ const policy = {
   dimensioni_non_configurate: [],
 };
 
+const sezioniResponse = {
+  modello_versione_id: 'v2',
+  stato_versione: 'BOZZA',
+  modificabile: true,
+  sezioni: [
+    {
+      codice: 'intro',
+      ordine: 0,
+      contenuto: [
+        {
+          id: 'intro-p1',
+          tipo: 'PARAGRAFO',
+          contenuto: 'Introduzione {{titolo_it}}',
+          posizionamento: 'BODY',
+          ordine: 0,
+          stile: null,
+          placeholder_usati: ['titolo_it'],
+          regole_layout: {},
+          asset_ref: null,
+          colonne: [],
+        },
+      ],
+    },
+    {
+      codice: 'dettagli',
+      ordine: 1,
+      contenuto: [
+        {
+          id: 'dettagli-p1',
+          tipo: 'PARAGRAFO',
+          contenuto: 'Posti disponibili {{numero_posti}}',
+          posizionamento: 'BODY',
+          ordine: 0,
+          stile: null,
+          placeholder_usati: ['numero_posti'],
+          regole_layout: {},
+          asset_ref: null,
+          colonne: [],
+        },
+      ],
+    },
+  ],
+  documento: {
+    blocchi: [
+      {
+        id: 'intro-p1',
+        tipo: 'PARAGRAFO',
+        contenuto: 'Introduzione {{titolo_it}}',
+        posizionamento: 'BODY',
+        ordine: 0,
+        stile: null,
+        placeholder_usati: ['titolo_it'],
+        regole_layout: {},
+        asset_ref: null,
+        colonne: [],
+      },
+      {
+        id: 'dettagli-p1',
+        tipo: 'PARAGRAFO',
+        contenuto: 'Posti disponibili {{numero_posti}}',
+        posizionamento: 'BODY',
+        ordine: 1,
+        stile: null,
+        placeholder_usati: ['numero_posti'],
+        regole_layout: {},
+        asset_ref: null,
+        colonne: [],
+      },
+    ],
+    placeholder_usati: ['titolo_it', 'numero_posti'],
+  },
+};
+
 describe('2b ridotta: anteprima modello', () => {
   function setup(id = 'model') {
     TestBed.configureTestingModule({
@@ -98,9 +171,21 @@ describe('2b ridotta: anteprima modello', () => {
       .flush(policyResponse);
   }
 
+  function flushSections(
+    http: HttpTestingController,
+    response = sezioniResponse,
+    modelId = 'model',
+    versionId = 'v2',
+  ): void {
+    http
+      .expectOne(`/api/v1/builder/modelli/${modelId}/versioni/${versionId}/sezioni`)
+      .flush(response);
+  }
+
   it('shows the contract fields returned by the API, with type and obligation', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
     flushDerivationConfig(http);
     fixture.detectChanges();
     const campi = root.querySelectorAll('.campo');
@@ -119,6 +204,7 @@ describe('2b ridotta: anteprima modello', () => {
   it('keeps the IT/EN flow automatic while sending the generic contract', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
     flushDerivationConfig(http);
     fixture.detectChanges();
     const dialog = root.querySelector('dialog')!;
@@ -144,12 +230,14 @@ describe('2b ridotta: anteprima modello', () => {
     http
       .expectOne('/api/v1/builder/modelli/model')
       .flush({ ...dettaglio, derivato_da_modello_id: 'padre' });
+    flushSections(http);
     http.verify();
   });
 
   it('asks which value to derive when the dimension has more than one alternative', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
     flushDerivationConfig(http, {
       ...struttura,
       nodi: [
@@ -172,6 +260,7 @@ describe('2b ridotta: anteprima modello', () => {
   it('does not offer derivation when no multivalue dimension is mandatory', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
     flushDerivationConfig(http, struttura, {
       ...policy,
       policy: [{ nome_dimensione: 'lingua', consente_valore_generico: true }],
@@ -187,6 +276,7 @@ describe('2b ridotta: anteprima modello', () => {
     http
       .expectOne('/api/v1/builder/modelli/model')
       .flush({ ...dettaglio, lingua: 'EN', derivato_da_modello_id: 'padre' });
+    flushSections(http);
     fixture.detectChanges();
     expect(
       Array.from(root.querySelectorAll('button')).find((b) =>
@@ -196,12 +286,136 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  it('states plainly that sections and placeholders do not exist yet, without faking them', () => {
+  it('shows the composed document returned by the sections API', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
     flushDerivationConfig(http);
     fixture.detectChanges();
-    expect(root.querySelector('.vuoto-sezioni')?.textContent).toContain('003');
+    expect(root.querySelector('[data-document-preview]')?.textContent).toContain(
+      'Introduzione {{titolo_it}}',
+    );
+    expect(root.querySelector('[data-document-preview]')?.textContent).toContain(
+      'Posti disponibili {{numero_posti}}',
+    );
+    expect(root.querySelectorAll('.outline-item').length).toBe(2);
+    http.verify();
+  });
+
+  it('saves the whole section set after reordering and removing sections', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    (
+      root.querySelector('[data-move-section="dettagli"][data-direction="up"]') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    (root.querySelector('[data-remove-section="intro"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.sezioni).toEqual([
+      {
+        codice: 'dettagli',
+        ordine: 0,
+        contenuto: [sezioniResponse.sezioni[1].contenuto[0]],
+      },
+    ]);
+    request.flush({
+      ...sezioniResponse,
+      sezioni: [{ ...sezioniResponse.sezioni[1], ordine: 0 }],
+      documento: { ...sezioniResponse.documento, blocchi: [sezioniResponse.documento.blocchi[1]] },
+    });
+    http.verify();
+  });
+
+  it('inserts placeholders from the version fields list before saving', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush({
+      ...dettaglio,
+      versioni: [{ ...dettaglio.versioni[0], campi: dettaglio.versioni[0].campi }],
+    });
+    flushSections(http, {
+      ...sezioniResponse,
+      sezioni: [],
+      documento: { blocchi: [], placeholder_usati: [] },
+    });
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    (root.querySelector('[data-add-section]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (
+      root.querySelector(
+        '[data-section-placeholder="sezione-1"][data-placeholder="titolo_it"]',
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(
+      (root.querySelector('[data-section-text="sezione-1"]') as HTMLTextAreaElement).value,
+    ).toBe('{{titolo_it}}');
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    expect(request.request.body.sezioni[0].contenuto[0].placeholder_usati).toEqual(['titolo_it']);
+    request.flush({
+      ...sezioniResponse,
+      sezioni: request.request.body.sezioni,
+      documento: {
+        blocchi: request.request.body.sezioni[0].contenuto,
+        placeholder_usati: ['titolo_it'],
+      },
+    });
+    http.verify();
+  });
+
+  it('keeps a published version readable without edit controls', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush({
+      ...dettaglio,
+      versioni: [{ ...dettaglio.versioni[0], stato: 'PUBBLICATO' }],
+    });
+    flushSections(http, { ...sezioniResponse, stato_versione: 'PUBBLICATO', modificabile: false });
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-document-preview]')?.textContent).toContain('Introduzione');
+    expect(root.querySelector('[data-add-section]')).toBeNull();
+    expect(root.querySelector('[data-save-sections]')).toBeNull();
+    expect(root.textContent).toContain('sola lettura');
+    http.verify();
+  });
+
+  it('shows backend placeholder violations when saving fails', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const textarea = root.querySelector('[data-section-text="intro"]') as HTMLTextAreaElement;
+    textarea.value = 'Testo con {{campo_non_dichiarato}}';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni').flush(
+      {
+        codice: 'PLACEHOLDER_NON_VALIDO',
+        messaggio: 'Il documento non e coerente',
+        dettagli: [{ violazione: "placeholder 'campo_non_dichiarato' non dichiarato" }],
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    fixture.detectChanges();
+
+    expect(root.querySelector('[role=alert]')?.textContent).toContain(
+      "placeholder 'campo_non_dichiarato'",
+    );
     http.verify();
   });
 

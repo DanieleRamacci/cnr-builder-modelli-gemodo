@@ -110,10 +110,14 @@
 
         @if (confermaRichiesta(); as conferma) {
           <div class="alert alert-warning" role="alert">
-            <p class="mb-2"><strong>{{ conferma.messaggio }}</strong></p>
+            <p class="mb-2">
+              <strong>{{ conferma.messaggio }}</strong>
+            </p>
             <ul class="mb-2">
               @for (modello of conferma.modelli; track modello.modello_id) {
-                <li>{{ modello.nome }} <code>{{ modello.codice }}</code></li>
+                <li>
+                  {{ modello.nome }} <code>{{ modello.codice }}</code>
+                </li>
               }
             </ul>
             <div class="d-flex gap-2">
@@ -176,6 +180,19 @@
                   <button type="button" (click)="modifica(dimensione.nome)">Modifica</button>
                 </div>
               } @else {
+                <div
+                  class="alert alert-info"
+                  role="status"
+                  [attr.data-policy-scope]="dimensione.nome"
+                >
+                  Questa scelta si applica a
+                  <strong>
+                    {{ foglieToccate(dimensione.nome) }}
+                    {{ foglieToccate(dimensione.nome) === 1 ? 'foglia' : 'foglie' }}
+                  </strong>
+                  del tipo documento <code>{{ codice }}</code
+                  >.
+                </div>
                 <fieldset>
                   <legend>
                     Questa dimensione genera un modello distinto quando cambia valore?

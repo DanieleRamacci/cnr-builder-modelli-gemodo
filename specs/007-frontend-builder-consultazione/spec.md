@@ -621,6 +621,11 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   l'integrazione corrente, il suo endpoint e stato di verifica, e l'esempio
   JSON conforme al contratto discovery reale per quel contesto, scaricabile e
   consegnabile.
+  *(Allineamento 2026-09-24: la pagina esistente
+  `integrazione-configura` mostra gia' endpoint e stato, e
+  `integrazione-struttura-json` mostra/copia/scarica l'esempio JSON. Restano
+  da correggere i tab "Struttura API" e "Policy dati", che nel template della
+  pagina configurazione puntano ancora a `/configurazione/tipi-documento/nuovo`.)*
 
 - **FR-033** (2026-09-23): la policy per dimensione vale per l'intero tipo
   documento, non per il ramo su cui l'admin si trova. E' il comportamento
@@ -629,9 +634,17 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   valore che riguarda tutte le altre, senza alcun avviso. L'avviso MUST
   indicare il tipo documento interessato e quante foglie ne sono toccate.
   MUST inoltre spiegare perche' una dimensione non ammette il generico invece
-  di limitarsi a rifiutare: per `lingua` la ragione e' che la colonna e'
-  NOT NULL con vincolo IT/EN ed e' esposta non nullabile nel contratto verso
-  GEBAN.
+  di limitarsi a rifiutare.
+  *(Motivazione riscritta il 2026-09-24. Diceva: "per `lingua` la ragione e'
+  che la colonna e' NOT NULL con vincolo IT/EN ed e' esposta non nullabile nel
+  contratto verso GEBAN". Non e' piu' vero: `011` ha eliminato quella colonna
+  - migration `0020` - e il contratto ammette il null, quindi la lingua **puo'**
+  essere dichiarata generica, come verificato sull'ambiente reale il
+  2026-09-24. La ragione da spiegare non e' piu' tecnica ma di policy: e' una
+  scelta dell'admin, registrata in `DEC-011-POLICY-LINGUA-ALL-ADMIN`, e la
+  schermata deve mostrare la conseguenza calcolata dai dati - quanti modelli
+  pubblicati restano senza un valore ammesso, `011` FR-010b - non un divieto
+  che non esiste piu'.)*
 
 - **FR-034** (2026-09-23): la pagina profilo MUST mostrare, per ogni contesto
   del token, i ruoli posseduti e cosa ciascuno consente di fare. Oggi mostra i
@@ -641,8 +654,23 @@ Editor completo, livello/lingua e naming automatico restano T041-T043.
   (`infra/local/integration-profiles.local.yaml`, `role_mappings`), non da un
   elenco scritto a mano che divergerebbe.
 
+- **FR-035** (2026-09-24): comporre il corpo del documento MUST essere
+  possibile dall'interfaccia. Il backend espone `GET`/`PUT` delle sezioni di
+  una versione (`003` T006/T007) e valida i segnaposti contro il contratto
+  dati, ma nessuna schermata li usa: oggi un bando si compone solo chiamando
+  le API con uno script, come fatto nel collaudo del 2026-09-24. L'editor MUST
+  permettere di aggiungere, riordinare e rimuovere sezioni, e di inserire i
+  segnaposti **da un elenco dei campi della versione**, non digitandoli a
+  mano: il backend rifiuta un segnaposto inesistente, e l'interfaccia deve
+  evitare che l'utente ci arrivi. MUST essere scrivibile solo su una versione
+  in `BOZZA`, leggendo `modificabile` dalla risposta invece di dedurlo.
 
-
+- **FR-036** (2026-09-24): l'anteprima di una versione MUST mostrare il
+  **documento composto**, non solo l'elenco dei campi. Oggi
+  `modello-anteprima` elenca codice, tipo e lingua di ogni campo: e' la scheda
+  dati, cioe' esattamente cio' che `003` ha smesso di essere. La risposta
+  delle sezioni porta gia' il documento assemblato con i blocchi in ordine,
+  quindi l'anteprima puo' mostrarlo senza chiamate aggiuntive.
 
 Correzione 2026-09-18 (T038): la creazione modello MUST conservare l'integrazione
 selezionata nella navigazione. Tipo documentale e discovery sono risolti per

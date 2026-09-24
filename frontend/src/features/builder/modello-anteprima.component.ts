@@ -8,6 +8,7 @@ import { forkJoin } from 'rxjs';
 
 type Dettaglio = components['schemas']['ModelloDettaglio'];
 type Versione = Dettaglio['versioni'][number];
+type CampoVersione = Versione['campi'][number];
 type Nodo = {
   codice: string;
   figli?: Nodo[];
@@ -18,6 +19,33 @@ type Nodo = {
 type CandidatoDerivazione = { nome: string; valori: string[] };
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
+};
+type BloccoDocumento = {
+  id: string;
+  tipo: 'PARAGRAFO';
+  contenuto: string | null;
+  posizionamento: 'BODY';
+  ordine: number;
+  stile?: string | null;
+  placeholder_usati: string[];
+  regole_layout?: Record<string, string>;
+  asset_ref?: string | null;
+  colonne?: string[];
+};
+type SezioneDocumento = {
+  codice: string;
+  ordine: number;
+  contenuto: BloccoDocumento[];
+};
+type SezioniResponse = {
+  modello_versione_id: string;
+  stato_versione: string;
+  modificabile: boolean;
+  sezioni: SezioneDocumento[];
+  documento: {
+    blocchi: BloccoDocumento[];
+    placeholder_usati: string[];
+  };
 };
 const PROPRIETA_NODO = new Set([
   'codice',
@@ -33,11 +61,8 @@ const PROPRIETA_NODO = new Set([
 /**
  * Schermata 2b (builder-editor) in versione ridotta, decisa il 2026-09-22.
  *
- * Oggi mostra solo cio' che l'API rende davvero disponibile: il contratto dati
- * della versione, gli stati e il percorso di categorizzazione. L'outline delle
- * sezioni e il foglio centrale restano dichiaratamente vuoti finche' `003` non
- * introduce sezioni e segnaposto: meglio uno stato esplicito che un contenuto
- * finto. La stessa pagina diventera' l'editor vero.
+ * La `003` ora espone sezioni versionate: questa pagina e' diventata l'editor
+ * minimo del documento, mantenendo il contratto dati accanto al foglio.
  */
 @Component({
   standalone: true,
@@ -78,18 +103,126 @@ const PROPRIETA_NODO = new Set([
       <div class="corpo">
         <aside class="outline">
           <h2>Sezioni</h2>
-          <p class="vuoto-sezioni">
-            Nessuna sezione: i contenuti del documento e i segnaposto arrivano con la spec 003, non
-            ancora implementata.
-          </p>
+          @if (sezioniLocali().length === 0) {
+            <p class="vuoto-sezioni">Nessuna sezione configurata.</p>
+          }
+          @for (sezione of sezioniLocali(); track sezione.codice; let i = $index) {
+            <div class="outline-item">
+              <strong>{{ sezione.codice }}</strong>
+              @if (sezioni()?.modificabile) {
+                <div class="section-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="i === 0 || salvandoSezioni()"
+                    [attr.data-move-section]="sezione.codice"
+                    data-direction="up"
+                    (click)="spostaSezione(i, -1)"
+                  >
+                    Su
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="i === sezioniLocali().length - 1 || salvandoSezioni()"
+                    [attr.data-move-section]="sezione.codice"
+                    data-direction="down"
+                    (click)="spostaSezione(i, 1)"
+                  >
+                    Giu
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    [disabled]="salvandoSezioni()"
+                    [attr.data-remove-section]="sezione.codice"
+                    (click)="rimuoviSezione(sezione.codice)"
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          @if (sezioni()?.modificabile) {
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary w-100 mt-2"
+              data-add-section
+              [disabled]="salvandoSezioni()"
+              (click)="aggiungiSezione()"
+            >
+              Aggiungi sezione
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary w-100 mt-2"
+              data-save-sections
+              [disabled]="salvandoSezioni()"
+              (click)="salvaSezioni()"
+            >
+              {{ salvandoSezioni() ? 'Salvataggio...' : 'Salva documento' }}
+            </button>
+          } @else if (sezioni()) {
+            <p class="vuoto-sezioni">
+              Versione in sola lettura: le sezioni pubblicate restano consultabili.
+            </p>
+          }
         </aside>
 
         <section class="foglio">
           <div class="pagina">
-            <p class="vuoto-sezioni">
-              L'anteprima del documento comparira' qui quando il modello avra' contenuti (spec 003).
-              Oggi il modello definisce solo il contratto dati qui a destra.
-            </p>
+            @if (erroreSezioni()) {
+              <div class="alert alert-danger" role="alert">
+                {{ erroreSezioni() }}
+                @if (violazioniSezioni().length) {
+                  <ul class="mb-0">
+                    @for (violazione of violazioniSezioni(); track violazione) {
+                      <li>{{ violazione }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            @if (sezioni()?.modificabile) {
+              @for (sezione of sezioniLocali(); track sezione.codice) {
+                <article class="section-editor">
+                  <h3>{{ sezione.codice }}</h3>
+                  <textarea
+                    [attr.data-section-text]="sezione.codice"
+                    [value]="testoSezione(sezione)"
+                    [disabled]="salvandoSezioni()"
+                    (input)="aggiornaTesto(sezione.codice, $any($event.target).value)"
+                  ></textarea>
+                  <div class="placeholder-toolbar" aria-label="Segnaposti disponibili">
+                    @for (campo of corrente()?.campi ?? []; track campo.codice + campo.lingua) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        [attr.data-placeholder]="campo.codice"
+                        [attr.data-section-placeholder]="sezione.codice"
+                        [disabled]="salvandoSezioni()"
+                        (click)="inserisciPlaceholder(sezione.codice, campo)"
+                      >
+                        {{ campo.codice }}
+                      </button>
+                    }
+                  </div>
+                </article>
+              }
+            }
+
+            <div class="document-preview" data-document-preview>
+              @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
+                <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
+              }
+              @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
+                <p [class.titolo-blocco]="blocco.tipo === 'PARAGRAFO' && blocco.ordine === 0">
+                  {{ blocco.contenuto || 'Blocco senza testo' }}
+                </p>
+              }
+            </div>
           </div>
         </section>
 
@@ -184,6 +317,11 @@ export class ModelloAnteprimaComponent {
   protected readonly caricamento = signal(false);
   protected readonly salvando = signal(false);
   protected readonly errore = signal<string | null>(null);
+  protected readonly sezioni = signal<SezioniResponse | null>(null);
+  protected readonly sezioniLocali = signal<SezioneDocumento[]>([]);
+  protected readonly salvandoSezioni = signal(false);
+  protected readonly erroreSezioni = signal<string | null>(null);
+  protected readonly violazioniSezioni = signal<string[]>([]);
   protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
   protected readonly dimensioneScelta = signal('');
   protected readonly valoreScelto = signal('');
@@ -219,11 +357,98 @@ export class ModelloAnteprimaComponent {
         next: (dettaglio) => {
           this.modello.set(dettaglio);
           this.caricamento.set(false);
+          this.caricaSezioni();
           this.caricaCandidati(dettaglio);
         },
         error: (e: ApiError) => {
           this.errore.set(e.messaggio);
           this.caricamento.set(false);
+        },
+      });
+  }
+
+  protected testoSezione(sezione: SezioneDocumento): string {
+    return sezione.contenuto[0]?.contenuto ?? '';
+  }
+
+  protected aggiungiSezione(): void {
+    const progressivo = this.sezioniLocali().length + 1;
+    let codice = `sezione-${progressivo}`;
+    const usati = new Set(this.sezioniLocali().map((sezione) => sezione.codice));
+    let tentativo = progressivo + 1;
+    while (usati.has(codice)) {
+      codice = `sezione-${tentativo}`;
+      tentativo += 1;
+    }
+    this.sezioniLocali.update((sezioni) => [
+      ...sezioni,
+      {
+        codice,
+        ordine: sezioni.length,
+        contenuto: [this.nuovoBlocco(codice, '')],
+      },
+    ]);
+  }
+
+  protected rimuoviSezione(codice: string): void {
+    this.sezioniLocali.update((sezioni) =>
+      this.riordina(sezioni.filter((sezione) => sezione.codice !== codice)),
+    );
+  }
+
+  protected spostaSezione(indice: number, direzione: -1 | 1): void {
+    this.sezioniLocali.update((sezioni) => {
+      const destinazione = indice + direzione;
+      if (destinazione < 0 || destinazione >= sezioni.length) return sezioni;
+      const aggiornate = [...sezioni];
+      [aggiornate[indice], aggiornate[destinazione]] = [
+        aggiornate[destinazione],
+        aggiornate[indice],
+      ];
+      return this.riordina(aggiornate);
+    });
+  }
+
+  protected aggiornaTesto(codice: string, testo: string): void {
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) =>
+        sezione.codice === codice ? this.sezioneConTesto(sezione, testo) : sezione,
+      ),
+    );
+  }
+
+  protected inserisciPlaceholder(codiceSezione: string, campo: CampoVersione): void {
+    const token = `{{${campo.codice}}}`;
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) => {
+        if (sezione.codice !== codiceSezione) return sezione;
+        const testo = this.testoSezione(sezione);
+        return this.sezioneConTesto(sezione, `${testo}${testo ? ' ' : ''}${token}`);
+      }),
+    );
+  }
+
+  protected salvaSezioni(): void {
+    const versione = this.corrente();
+    if (!versione || !this.sezioni()?.modificabile || this.salvandoSezioni()) return;
+    this.salvandoSezioni.set(true);
+    this.erroreSezioni.set(null);
+    this.violazioniSezioni.set([]);
+    const sezioni = this.riordina(this.sezioniLocali());
+    this.api
+      .put<SezioniResponse>(`/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/sezioni`, {
+        sezioni,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.salvandoSezioni.set(false);
+          this.applicaSezioni(response);
+        },
+        error: (e: ApiError) => {
+          this.salvandoSezioni.set(false);
+          this.erroreSezioni.set(e.messaggio);
+          this.violazioniSezioni.set((e.dettagli ?? []).flatMap((d) => d['violazione'] ?? []));
         },
       });
   }
@@ -311,5 +536,79 @@ export class ModelloAnteprimaComponent {
         },
         error: () => this.candidatiDerivazione.set([]),
       });
+  }
+
+  private caricaSezioni(): void {
+    const versione = this.corrente();
+    if (!versione) return;
+    this.erroreSezioni.set(null);
+    this.api
+      .get<SezioniResponse>(`/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/sezioni`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.applicaSezioni(response),
+        error: (e: ApiError) => this.erroreSezioni.set(e.messaggio),
+      });
+  }
+
+  private applicaSezioni(response: SezioniResponse): void {
+    this.sezioni.set(response);
+    this.sezioniLocali.set(
+      this.riordina(response.sezioni.map((sezione) => this.clonaSezione(sezione))),
+    );
+  }
+
+  private clonaSezione(sezione: SezioneDocumento): SezioneDocumento {
+    return {
+      codice: sezione.codice,
+      ordine: sezione.ordine,
+      contenuto: sezione.contenuto.map((blocco) => ({
+        ...blocco,
+        placeholder_usati: [...blocco.placeholder_usati],
+      })),
+    };
+  }
+
+  private riordina(sezioni: SezioneDocumento[]): SezioneDocumento[] {
+    return sezioni.map((sezione, ordine) => ({ ...this.clonaSezione(sezione), ordine }));
+  }
+
+  private sezioneConTesto(sezione: SezioneDocumento, testo: string): SezioneDocumento {
+    const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
+    return {
+      ...sezione,
+      contenuto: [
+        {
+          ...blocco,
+          contenuto: testo,
+          placeholder_usati: this.placeholderNelTesto(testo),
+        },
+        ...sezione.contenuto.slice(1),
+      ],
+    };
+  }
+
+  private nuovoBlocco(codiceSezione: string, contenuto: string): BloccoDocumento {
+    return {
+      id: `${codiceSezione}-paragrafo`,
+      tipo: 'PARAGRAFO',
+      contenuto,
+      posizionamento: 'BODY',
+      ordine: 0,
+      stile: null,
+      placeholder_usati: this.placeholderNelTesto(contenuto),
+      regole_layout: {},
+      asset_ref: null,
+      colonne: [],
+    };
+  }
+
+  private placeholderNelTesto(testo: string): string[] {
+    const trovati: string[] = [];
+    for (const match of testo.matchAll(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g)) {
+      const nome = match[1];
+      if (!trovati.includes(nome)) trovati.push(nome);
+    }
+    return trovati;
   }
 }

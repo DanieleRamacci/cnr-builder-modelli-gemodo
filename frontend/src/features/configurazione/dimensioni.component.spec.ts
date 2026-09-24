@@ -36,6 +36,25 @@ const STRUTTURA = {
             },
           ],
         },
+        {
+          codice: 'TECNOLOGO',
+          descrizione: 'Tecnologo',
+          tipo_livello: 'profilo',
+          livelli_possibili: ['I'],
+          livello_base: 'I',
+          lingue_possibili: ['IT'],
+          area_geografica: ['NORD'],
+          campi: [
+            {
+              codice: 'titolo_tecnologo',
+              etichetta: 'Titolo tecnologo',
+              tipo: 'string',
+              lingua: 'IT',
+              obbligatorio: true,
+              ordine: 1,
+            },
+          ],
+        },
       ],
     },
   ],
@@ -164,6 +183,21 @@ describe('DimensioniComponent', () => {
     });
   });
 
+  it('states how many leaves are affected before saving a policy', () => {
+    fixture = TestBed.createComponent(DimensioniComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="TD"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const scope = fixture.nativeElement.querySelector(
+      '[data-policy-scope="area_geografica"]',
+    ) as HTMLElement;
+    expect(scope.textContent).toContain('2 foglie');
+    expect(scope.textContent).toContain('BANDO_CONCORSO');
+  });
+
   it('chiede conferma invece di rompere in silenzio i modelli senza valore (FR-010b)', () => {
     // Chiudere il generico lascia senza un valore ammesso i modelli pubblicati
     // che non lo valorizzano: il backend si ferma con 409 ed elenca quali.
@@ -203,16 +237,12 @@ describe('DimensioniComponent', () => {
     ).find((b) => b.textContent?.includes('Confermo, procedi'))!;
     conferma.click();
 
-    expect(policyService.salvaPolicy).toHaveBeenLastCalledWith(
-      'integration-1',
-      'BANDO_CONCORSO',
-      {
-        nome_dimensione: 'area_geografica',
-        consente_valore_generico: false,
-        conferma_impatto: true,
-        valore_default: null,
-      },
-    );
+    expect(policyService.salvaPolicy).toHaveBeenLastCalledWith('integration-1', 'BANDO_CONCORSO', {
+      nome_dimensione: 'area_geografica',
+      consente_valore_generico: false,
+      conferma_impatto: true,
+      valore_default: null,
+    });
   });
 
   it('allows a generic language policy and warns using live model counts', () => {

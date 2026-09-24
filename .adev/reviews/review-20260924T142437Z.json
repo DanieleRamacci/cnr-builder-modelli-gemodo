@@ -1,0 +1,349 @@
+{
+  "schema": "adev.review_report.v1",
+  "created_at": "2026-09-24T14:24:40.145098+00:00",
+  "mode": "cross_model",
+  "verdict": "FAIL",
+  "reasons": [
+    "malformed reviewer report",
+    "failed regression command: commands:uv --directory backend run pytest -m \"not e2e\""
+  ],
+  "run_directory": ".adev/reviews/run-20260924T142437Z",
+  "active_feature": {
+    "status": "READY",
+    "path": ".specify/feature.json",
+    "feature_directory": "specs/011-dimensioni-generiche-modello",
+    "resolved_path": "specs/011-dimensioni-generiche-modello"
+  },
+  "feature_inventory": {
+    "ledger_path": ".adev/review-ledger.json",
+    "features": [
+      {
+        "path": "specs/001-catalogo-contratto-geban",
+        "active": false,
+        "document_hash": "e5dcf94f1eb17bcbdb258aad35cb728488bde2c3a7f00f3e4cf1430e405f1b72",
+        "documents": [
+          "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+          "specs/001-catalogo-contratto-geban/data-model.md",
+          "specs/001-catalogo-contratto-geban/plan.md",
+          "specs/001-catalogo-contratto-geban/quickstart.md",
+          "specs/001-catalogo-contratto-geban/research.md",
+          "specs/001-catalogo-contratto-geban/spec.md",
+          "specs/001-catalogo-contratto-geban/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/002-builder-modelli",
+        "active": false,
+        "document_hash": "8851d28a11a44631dc4d457cf2c9d2d26f50f9476d8f0b174a8d3c9a89f84881",
+        "documents": [
+          "specs/002-builder-modelli/checklists/requirements.md",
+          "specs/002-builder-modelli/data-model.md",
+          "specs/002-builder-modelli/plan.md",
+          "specs/002-builder-modelli/quickstart.md",
+          "specs/002-builder-modelli/research.md",
+          "specs/002-builder-modelli/spec.md",
+          "specs/002-builder-modelli/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/003-sezioni-placeholder-versionamento",
+        "active": false,
+        "document_hash": "76dce332e3b88799852f8eaa57e695f82f746230ace94ea3e9bc394114fdaddc",
+        "documents": [
+          "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
+          "specs/003-sezioni-placeholder-versionamento/data-model.md",
+          "specs/003-sezioni-placeholder-versionamento/plan.md",
+          "specs/003-sezioni-placeholder-versionamento/quickstart.md",
+          "specs/003-sezioni-placeholder-versionamento/research.md",
+          "specs/003-sezioni-placeholder-versionamento/spec.md",
+          "specs/003-sezioni-placeholder-versionamento/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/004-generazione-documenti-pdf",
+        "active": false,
+        "document_hash": "290da4d51a61da76c7d5db56484a1399fb5cd8d6063c6697d1fcb6f52df449f6",
+        "documents": [
+          "specs/004-generazione-documenti-pdf/checklists/requirements.md",
+          "specs/004-generazione-documenti-pdf/plan.md",
+          "specs/004-generazione-documenti-pdf/spec.md",
+          "specs/004-generazione-documenti-pdf/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/005-storage-idempotenza-consultazione",
+        "active": false,
+        "document_hash": "d01835b0e5f7ec2ab6a17e39fb32ec1a9eefa29d79918aaf595e181a421ebcd8",
+        "documents": [
+          "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
+          "specs/005-storage-idempotenza-consultazione/plan.md",
+          "specs/005-storage-idempotenza-consultazione/spec.md",
+          "specs/005-storage-idempotenza-consultazione/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/006-sicurezza-autorizzazioni-audit",
+        "active": false,
+        "document_hash": "f219e1f38f4d276592317041a4724b93ff18ce73c96d0a499aa76cadeb3654fb",
+        "documents": [
+          "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
+          "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
+          "specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md",
+          "specs/006-sicurezza-autorizzazioni-audit/plan.md",
+          "specs/006-sicurezza-autorizzazioni-audit/quickstart.md",
+          "specs/006-sicurezza-autorizzazioni-audit/research.md",
+          "specs/006-sicurezza-autorizzazioni-audit/spec.md",
+          "specs/006-sicurezza-autorizzazioni-audit/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/007-frontend-builder-consultazione",
+        "active": false,
+        "document_hash": "e7e7564bb9b948caede1cfb4eb9b1849c9f863aadaf2dd9421079eaeb1dea9b8",
+        "documents": [
+          "specs/007-frontend-builder-consultazione/checklists/requirements.md",
+          "specs/007-frontend-builder-consultazione/data-model.md",
+          "specs/007-frontend-builder-consultazione/plan.md",
+          "specs/007-frontend-builder-consultazione/quickstart.md",
+          "specs/007-frontend-builder-consultazione/research.md",
+          "specs/007-frontend-builder-consultazione/spec.md",
+          "specs/007-frontend-builder-consultazione/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/008-ai-mcp-readiness",
+        "active": false,
+        "document_hash": "2737385644f9349c1f39654af1f3f9ec2739091b7db3d8139f6bbd16f9f455c0",
+        "documents": [
+          "specs/008-ai-mcp-readiness/checklists/requirements.md",
+          "specs/008-ai-mcp-readiness/spec.md"
+        ],
+        "review_status": "REVIEWED",
+        "needs_review": false,
+        "last_reviewed_at": "2026-09-17T10:21:25.481362+00:00",
+        "last_verdict": "PASS",
+        "last_run_directory": ".adev/reviews/run-20260917T101357Z"
+      },
+      {
+        "path": "specs/009-fondamenta-mock-test-qualita",
+        "active": false,
+        "document_hash": "3cc124f7a7858b27addc210dafdcd9045851e02ba065daaad1ee5651fedf7dbd",
+        "documents": [
+          "specs/009-fondamenta-mock-test-qualita/checklists/requirements.md",
+          "specs/009-fondamenta-mock-test-qualita/data-model.md",
+          "specs/009-fondamenta-mock-test-qualita/plan.md",
+          "specs/009-fondamenta-mock-test-qualita/quickstart.md",
+          "specs/009-fondamenta-mock-test-qualita/research.md",
+          "specs/009-fondamenta-mock-test-qualita/spec.md",
+          "specs/009-fondamenta-mock-test-qualita/tasks.md"
+        ],
+        "review_status": "FAILED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/010-configurazione-cataloghi-integrazioni",
+        "active": false,
+        "document_hash": "7a92e9da1078f80a1ef707cbd6ea4593a5e7b69ac7f9ccfeda5f29038a1233a6",
+        "documents": [
+          "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+          "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+          "specs/010-configurazione-cataloghi-integrazioni/contracts/integrazioni-policy.md",
+          "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+          "specs/010-configurazione-cataloghi-integrazioni/definizione-export.md",
+          "specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md",
+          "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+          "specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md",
+          "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+          "specs/010-configurazione-cataloghi-integrazioni/quickstart.md",
+          "specs/010-configurazione-cataloghi-integrazioni/research.md",
+          "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+          "specs/010-configurazione-cataloghi-integrazioni/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      },
+      {
+        "path": "specs/011-dimensioni-generiche-modello",
+        "active": true,
+        "document_hash": "505bb44ef377b0de529b8099db88a8ac6113b22f76b62e5eb332d6f5ef27ee8a",
+        "documents": [
+          "specs/011-dimensioni-generiche-modello/data-model.md",
+          "specs/011-dimensioni-generiche-modello/plan.md",
+          "specs/011-dimensioni-generiche-modello/quickstart.md",
+          "specs/011-dimensioni-generiche-modello/research.md",
+          "specs/011-dimensioni-generiche-modello/spec.md",
+          "specs/011-dimensioni-generiche-modello/tasks.md"
+        ],
+        "review_status": "CHANGED",
+        "needs_review": true,
+        "last_reviewed_at": "2026-09-23T15:35:08.305059+00:00",
+        "last_verdict": "FAIL",
+        "last_run_directory": ".adev/reviews/run-20260923T153505Z"
+      }
+    ],
+    "features_needing_review": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/003-sezioni-placeholder-versionamento",
+      "specs/004-generazione-documenti-pdf",
+      "specs/005-storage-idempotenza-consultazione",
+      "specs/006-sicurezza-autorizzazioni-audit",
+      "specs/007-frontend-builder-consultazione",
+      "specs/009-fondamenta-mock-test-qualita",
+      "specs/010-configurazione-cataloghi-integrazioni",
+      "specs/011-dimensioni-generiche-modello"
+    ],
+    "reviewed_features": [
+      "specs/008-ai-mcp-readiness"
+    ]
+  },
+  "review_scope": {
+    "included_features": [
+      "specs/001-catalogo-contratto-geban",
+      "specs/002-builder-modelli",
+      "specs/003-sezioni-placeholder-versionamento",
+      "specs/004-generazione-documenti-pdf",
+      "specs/005-storage-idempotenza-consultazione",
+      "specs/006-sicurezza-autorizzazioni-audit",
+      "specs/007-frontend-builder-consultazione",
+      "specs/009-fondamenta-mock-test-qualita",
+      "specs/010-configurazione-cataloghi-integrazioni",
+      "specs/011-dimensioni-generiche-modello"
+    ],
+    "included_documents": [
+      "specs/001-catalogo-contratto-geban/checklists/requirements.md",
+      "specs/001-catalogo-contratto-geban/data-model.md",
+      "specs/001-catalogo-contratto-geban/plan.md",
+      "specs/001-catalogo-contratto-geban/quickstart.md",
+      "specs/001-catalogo-contratto-geban/research.md",
+      "specs/001-catalogo-contratto-geban/spec.md",
+      "specs/001-catalogo-contratto-geban/tasks.md",
+      "specs/002-builder-modelli/checklists/requirements.md",
+      "specs/002-builder-modelli/data-model.md",
+      "specs/002-builder-modelli/plan.md",
+      "specs/002-builder-modelli/quickstart.md",
+      "specs/002-builder-modelli/research.md",
+      "specs/002-builder-modelli/spec.md",
+      "specs/002-builder-modelli/tasks.md",
+      "specs/003-sezioni-placeholder-versionamento/checklists/requirements.md",
+      "specs/003-sezioni-placeholder-versionamento/data-model.md",
+      "specs/003-sezioni-placeholder-versionamento/plan.md",
+      "specs/003-sezioni-placeholder-versionamento/quickstart.md",
+      "specs/003-sezioni-placeholder-versionamento/research.md",
+      "specs/003-sezioni-placeholder-versionamento/spec.md",
+      "specs/003-sezioni-placeholder-versionamento/tasks.md",
+      "specs/004-generazione-documenti-pdf/checklists/requirements.md",
+      "specs/004-generazione-documenti-pdf/plan.md",
+      "specs/004-generazione-documenti-pdf/spec.md",
+      "specs/004-generazione-documenti-pdf/tasks.md",
+      "specs/005-storage-idempotenza-consultazione/checklists/requirements.md",
+      "specs/005-storage-idempotenza-consultazione/plan.md",
+      "specs/005-storage-idempotenza-consultazione/spec.md",
+      "specs/005-storage-idempotenza-consultazione/tasks.md",
+      "specs/006-sicurezza-autorizzazioni-audit/checklists/requirements.md",
+      "specs/006-sicurezza-autorizzazioni-audit/data-model.md",
+      "specs/006-sicurezza-autorizzazioni-audit/keycloak-jwt.md",
+      "specs/006-sicurezza-autorizzazioni-audit/plan.md",
+      "specs/006-sicurezza-autorizzazioni-audit/quickstart.md",
+      "specs/006-sicurezza-autorizzazioni-audit/research.md",
+      "specs/006-sicurezza-autorizzazioni-audit/spec.md",
+      "specs/006-sicurezza-autorizzazioni-audit/tasks.md",
+      "specs/007-frontend-builder-consultazione/checklists/requirements.md",
+      "specs/007-frontend-builder-consultazione/data-model.md",
+      "specs/007-frontend-builder-consultazione/plan.md",
+      "specs/007-frontend-builder-consultazione/quickstart.md",
+      "specs/007-frontend-builder-consultazione/research.md",
+      "specs/007-frontend-builder-consultazione/spec.md",
+      "specs/007-frontend-builder-consultazione/tasks.md",
+      "specs/009-fondamenta-mock-test-qualita/checklists/requirements.md",
+      "specs/009-fondamenta-mock-test-qualita/data-model.md",
+      "specs/009-fondamenta-mock-test-qualita/plan.md",
+      "specs/009-fondamenta-mock-test-qualita/quickstart.md",
+      "specs/009-fondamenta-mock-test-qualita/research.md",
+      "specs/009-fondamenta-mock-test-qualita/spec.md",
+      "specs/009-fondamenta-mock-test-qualita/tasks.md",
+      "specs/010-configurazione-cataloghi-integrazioni/checklists/requirements.md",
+      "specs/010-configurazione-cataloghi-integrazioni/contracts/esempio-discovery-per-nodi/README.md",
+      "specs/010-configurazione-cataloghi-integrazioni/contracts/integrazioni-policy.md",
+      "specs/010-configurazione-cataloghi-integrazioni/data-model.md",
+      "specs/010-configurazione-cataloghi-integrazioni/definizione-export.md",
+      "specs/010-configurazione-cataloghi-integrazioni/fondazioni-amministrative.md",
+      "specs/010-configurazione-cataloghi-integrazioni/incremento-discovery.md",
+      "specs/010-configurazione-cataloghi-integrazioni/mvp-integrazione-modello-pdf-test.md",
+      "specs/010-configurazione-cataloghi-integrazioni/plan.md",
+      "specs/010-configurazione-cataloghi-integrazioni/quickstart.md",
+      "specs/010-configurazione-cataloghi-integrazioni/research.md",
+      "specs/010-configurazione-cataloghi-integrazioni/spec.md",
+      "specs/010-configurazione-cataloghi-integrazioni/tasks.md",
+      "specs/011-dimensioni-generiche-modello/data-model.md",
+      "specs/011-dimensioni-generiche-modello/plan.md",
+      "specs/011-dimensioni-generiche-modello/quickstart.md",
+      "specs/011-dimensioni-generiche-modello/research.md",
+      "specs/011-dimensioni-generiche-modello/spec.md",
+      "specs/011-dimensioni-generiche-modello/tasks.md"
+    ]
+  },
+  "reviewers": [
+    {
+      "reviewer_id": "primary",
+      "provider": "claude_code",
+      "session_id": "e5a81943fea744468c8b49d775849cef",
+      "isolated": true,
+      "valid": false,
+      "message": "{\"duration_api_ms\":0,\"stop_reason\":\"stop_sequence\",\"session_id\":\"bba6db69-c501-4d1c-a586-79f800b1e99d\",\"total_cost_usd\":0,\"usage\":{\"output_tokens_details\":{\"thinking_tokens\":0},\"input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":0,\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"\",\"iterations\":[],\"speed\":\"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":null,\"result\":\"Not logged in \u00b7 Please run /login\",\"type\":\"result\",\"duration_ms\":828,\"uuid\":\"755e4b65-5792-402c-929a-15699c455df3\",\"queued_turn_count\":0}\n",
+      "finding_count": 0,
+      "artifact": ".adev/reviews/run-20260924T142437Z/review-primary.json"
+    }
+  ],
+  "regression_results": [
+    {
+      "category": "commands",
+      "command": "uv --directory backend run pytest -m \"not e2e\"",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "error: Failed to initialize cache at `/Users/danieleramacci/.cache/uv`\n  Caused by: failed to open file `/Users/danieleramacci/.cache/uv/sdists-v9/.git`: Operation not permitted (os error 1)\n"
+    }
+  ],
+  "findings": []
+}

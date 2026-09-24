@@ -86,19 +86,27 @@ export class DimensioniComponent {
     return path.at(-2)?.figli ?? [];
   });
 
+  protected readonly fogliePerDimensione = computed(() => {
+    const conteggi = new Map<string, number>();
+    const visita = (nodi: NodoLive[]) => {
+      for (const nodo of nodi) {
+        if (nodo.campi) {
+          for (const nome of this.dimensioniDaNodo(nodo).keys()) {
+            conteggi.set(nome, (conteggi.get(nome) ?? 0) + 1);
+          }
+          continue;
+        }
+        if (nodo.figli?.length) visita(nodo.figli);
+      }
+    };
+    visita(this.struttura()?.nodi ?? []);
+    return conteggi;
+  });
+
   protected readonly dimensioni = computed<DimensioneFoglia[]>(() => {
     const foglia = this.foglia();
     if (!foglia) return [];
-    const valori = new Map<string, string[]>();
-    if (foglia.lingue_possibili?.length) valori.set('lingua', [...foglia.lingue_possibili]);
-    if (foglia.livelli_possibili?.length) {
-      valori.set('livello_professionale', [...foglia.livelli_possibili]);
-    }
-    for (const [nome, value] of Object.entries(foglia as unknown as Record<string, unknown>)) {
-      if (!PROPRIETA_NODO.has(nome) && Array.isArray(value) && value.length) {
-        valori.set(nome, value.map(String));
-      }
-    }
+    const valori = this.dimensioniDaNodo(foglia);
     const configurate = new Map(
       (this.policy()?.policy ?? []).map((item) => [item.nome_dimensione, item]),
     );
@@ -173,6 +181,10 @@ export class DimensioniComponent {
 
   protected configurata(dimensione: DimensioneFoglia): boolean {
     return dimensione.policy !== null;
+  }
+
+  protected foglieToccate(nome: string): number {
+    return this.fogliePerDimensione().get(nome) ?? 0;
   }
 
   protected defaultNonDisponibile(dimensione: DimensioneFoglia): boolean {
@@ -272,5 +284,19 @@ export class DimensioniComponent {
           this.erroreSalvataggio.set(error.messaggio);
         },
       });
+  }
+
+  private dimensioniDaNodo(nodo: NodoLive): Map<string, string[]> {
+    const valori = new Map<string, string[]>();
+    if (nodo.lingue_possibili?.length) valori.set('lingua', [...nodo.lingue_possibili]);
+    if (nodo.livelli_possibili?.length) {
+      valori.set('livello_professionale', [...nodo.livelli_possibili]);
+    }
+    for (const [nome, value] of Object.entries(nodo as unknown as Record<string, unknown>)) {
+      if (!PROPRIETA_NODO.has(nome) && Array.isArray(value) && value.length) {
+        valori.set(nome, value.map(String));
+      }
+    }
+    return valori;
   }
 }

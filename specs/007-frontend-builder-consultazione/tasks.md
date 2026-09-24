@@ -843,14 +843,24 @@ concordato con l'utente.
 - [x] T111 [FR-031] (`caricaPolicy` in `modello-crea.component.ts`; due test
       sul contenuto del menu livelli) `modello-crea` legge le policy del tipo documento e nasconde
       "Tutti i livelli" quando la dimensione richiede un valore esplicito
-- [ ] T112 [FR-032] Pagina di configurazione dell'integrazione esistente:
-      endpoint, stato di verifica ed esempio JSON conforme al contratto reale,
-      scaricabile. Ripuntare i collegamenti "Struttura API" e "Policy dati",
-      che oggi vanno alla creazione contesto
-- [ ] T113 [FR-033] Avviso di ambito sulla schermata policy: dichiarare che la
-      scelta vale per l'intero tipo documento e quante foglie tocca, prima del
-      salvataggio. Spiegare il motivo quando una dimensione non ammette il
-      generico
+- [x] T112 [FR-032] Residuo dopo allineamento 2026-09-24: la pagina
+      `integrazione-configura` mostra gia' endpoint e stato, e
+      `integrazione-struttura-json` mostra/copia/scarica l'esempio JSON. Restano
+      da ripuntare i tab "Struttura API" e "Policy dati" in
+      `integrazione-configura.component.html`, che oggi vanno ancora a
+      `/configurazione/tipi-documento/nuovo`; devono aprire rispettivamente
+      l'esempio JSON del contesto e l'elenco tipi/policy filtrato
+      sull'integrazione corrente. Chiuso 2026-09-24:
+      `integrazione-configura.component.html` usa le route esistenti con
+      `integrazioneId`, coperto da
+      `integrazione-configura.component.spec.ts`.
+- [x] T113 [FR-033] Residuo dopo allineamento 2026-09-24: la schermata
+      `dimensioni.component` dichiara gia' che la policy vale per tutto il tipo
+      documento e mostra l'impatto sui modelli pubblicati prima del salvataggio.
+      Resta da mostrare esplicitamente quante foglie del tipo documento sono
+      toccate dalla scelta, prima del salvataggio. Chiuso 2026-09-24:
+      `dimensioni.component` conta le foglie dall'albero live anche per
+      dimensioni extra, coperto da `dimensioni.component.spec.ts`.
 - [ ] T114 [FR-034] Pagina profilo: contesti, ruoli per contesto e descrizione
       di cosa ciascun ruolo consente, derivata dalla mappatura reale
 - [ ] T115 [FR-034] Verifica della separazione per ruolo: confrontare cosa
@@ -859,3 +869,51 @@ concordato con l'utente.
       (`roles.ts`, `admin.guard.ts`); serve accertare che coincidano con
       `require_configurazione_admin` e `verify_scrittura_su_contesto` e che
       nessuna azione mostrata finisca in 403
+
+## Phase — Comporre il documento dall'interfaccia (2026-09-24)
+
+**Origine**: collaudo su `dev-gemodo` del 2026-09-24. Il backend della `003`
+e' completo e provato sul reale - sezioni, validazione dei segnaposti, cancello
+di pubblicazione, PDF composto - ma **nessuna schermata lo usa**: il bando di
+prova e' stato composto con uno script. E' l'unico pezzo che separa
+"funziona" da "si puo' usare".
+
+- [x] T116 [FR-035] Editor delle sezioni su una versione in `BOZZA`:
+      aggiungere, riordinare e rimuovere sezioni, con il testo di ciascun
+      blocco. Il salvataggio invia l'**insieme completo** (`PUT .../sezioni`),
+      non la singola sezione: e' la semantica del backend, e il riordino deve
+      restare un invio solo. Leggere `modificabile` dalla risposta invece di
+      dedurre lo stato dal nome. Chiuso 2026-09-24 in
+      `modello-anteprima.component`: add/riordino/rimozione e salvataggio
+      completo delle sezioni.
+- [x] T117 [FR-035] Inserimento dei segnaposti **da un elenco dei campi della
+      versione**, non digitati a mano. Il backend rifiuta un segnaposto che non
+      corrisponde a un campo (`PLACEHOLDER_NON_VALIDO`, con l'elenco completo
+      delle violazioni nei `dettagli`): l'interfaccia deve evitare che
+      l'utente ci arrivi, e mostrare quelle violazioni quando succede lo stesso.
+      Chiuso 2026-09-24: chip dei campi versione e messaggi di violazione
+      backend mostrati in pagina.
+- [x] T118 [FR-036] Anteprima del **documento composto** in
+      `modello-anteprima`, al posto del solo elenco dei campi. La risposta di
+      `GET .../sezioni` porta gia' `documento` con i blocchi in ordine, quindi
+      non servono chiamate aggiuntive. Chiuso 2026-09-24: la pagina renderizza
+      `documento.blocchi`.
+- [x] T119 [FR-035] Blocco della scrittura su una versione non in `BOZZA`,
+      coerente con il `409 MODELLO_VERSIONE_NON_MODIFICABILE` del backend: i
+      controlli di modifica non devono comparire affatto, e la lettura resta
+      sempre disponibile. Chiuso 2026-09-24: la UI usa `modificabile` della
+      risposta sezioni.
+- [x] T120 [P] [FR-035] Test dell'editor: composizione, riordino come invio
+      unico, segnaposto rifiutato con le violazioni mostrate, versione
+      pubblicata in sola lettura. Chiuso 2026-09-24 in
+      `modello-anteprima.component.spec.ts`.
+- [x] T121 [FR-033] **Prerequisito di T113**: la motivazione di FR-033 e'
+      stata riscritta il 2026-09-24 perche' quella originale - la colonna
+      `lingua` NOT NULL - non esiste piu' dopo `011`. L'avviso da mostrare non
+      e' un divieto tecnico ma la conseguenza calcolata: quanti modelli
+      pubblicati resterebbero senza un valore ammesso
+      (`modelli_pubblicati_senza_valore`, gia' nella risposta delle policy) e
+      la conferma esplicita richiesta dal backend (`011` FR-010b,
+      `CONFERMA_IMPATTO_RICHIESTA`). La parte di conferma e' **gia'
+      implementata** in `dimensioni.component`; resta l'avviso di ambito in
+      T113.
