@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.builder.repository import NOME_LIVELLO
 from app.discovery.schemas import CatalogoDiscovery
+from app.documentale.schemas import BloccoDocumento, ModelloDocumentaleControllato
 
 StrutturaDisponibileResponse = CatalogoDiscovery
 StrutturaTipoDocumentoResponse = CatalogoDiscovery
@@ -173,6 +174,54 @@ class CreaVersioneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     campi: list[CampoVersioneRequest]
+
+
+class SezioneRequest(BaseModel):
+    """Una sezione nella definizione completa inviata dal builder (003 T007)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    codice: str = Field(min_length=1, max_length=128)
+    ordine: int = Field(ge=0)
+    contenuto: list[BloccoDocumento] = Field(default_factory=list)
+
+
+class SostituisciSezioniRequest(BaseModel):
+    """L'insieme completo delle sezioni della versione.
+
+    Ogni invio e' una **definizione intera**, non una modifica incrementale:
+    stessa semantica della configurazione in `010`. Con l'aggiornamento per
+    singola sezione il riordino avrebbe richiesto una sequenza di chiamate,
+    ognuna transitoriamente incoerente con le altre; qui l'ordine finale
+    arriva in un colpo solo e il server non deve indovinare stati intermedi.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    sezioni: list[SezioneRequest] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def verifica_codici(self) -> SostituisciSezioniRequest:
+        codici = [s.codice for s in self.sezioni]
+        if len(set(codici)) != len(codici):
+            raise ValueError("Due sezioni non possono avere lo stesso codice")
+        return self
+
+
+class SezioneResponse(BaseModel):
+    codice: str
+    ordine: int
+    contenuto: list[BloccoDocumento]
+
+
+class SezioniResponse(BaseModel):
+    """Le sezioni, piu' il documento che compongono una volta concatenate."""
+
+    modello_versione_id: str
+    stato_versione: str
+    modificabile: bool
+    sezioni: list[SezioneResponse]
+    documento: ModelloDocumentaleControllato
 
 
 class VersioneResponse(BaseModel):

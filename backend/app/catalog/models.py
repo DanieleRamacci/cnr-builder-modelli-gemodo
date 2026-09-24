@@ -132,6 +132,46 @@ class ModelloDocumentoVersione(Base):
     esito_compatibilita: Mapped["EsitoCompatibilitaVersione | None"] = relationship(
         back_populates="versione", uselist=False, cascade="all, delete-orphan",
     )
+    # Ordinate per `ordine`: la sequenza e' parte del documento, non un
+    # dettaglio di presentazione, quindi non puo' dipendere da come il
+    # database restituisce le righe (003 T001).
+    sezioni: Mapped[list["SezioneModello"]] = relationship(
+        back_populates="versione",
+        order_by="SezioneModello.ordine",
+        cascade="all, delete-orphan",
+    )
+
+
+class SezioneModello(Base):
+    """Una sezione del documento composto, propria della versione (003 T001).
+
+    La tabella esiste dalla migration `0001` e finora non aveva un mapping:
+    nessuna migration di struttura serve qui. Le sezioni **appartengono alla
+    versione**, non al modello: si modificano solo finche' la versione e'
+    in `BOZZA`, e una versione nuova ne riceve una copia, come gia' accade
+    per i campi. Non hanno un versionamento proprio - decisione 2026-06-19.
+
+    `contenuto` serializza una lista di `BloccoDocumento` (003 T002). I
+    Pydantic non sono ridefiniti qui: vivono in `app/documentale/schemas.py`
+    e sono gli stessi che descrivono il modello documentale controllato.
+    """
+
+    __tablename__ = "sezione_modello"
+    __table_args__ = (
+        UniqueConstraint("modello_versione_id", "codice", name="uq_sezione_modello_versione_codice"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    modello_versione_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("modello_versione.id", ondelete="CASCADE"), nullable=False
+    )
+    codice: Mapped[str] = mapped_column(String(128), nullable=False)
+    ordine: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    contenuto: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    versione: Mapped[ModelloDocumentoVersione] = relationship(back_populates="sezioni")
 
 
 class EsitoCompatibilitaVersione(Base):

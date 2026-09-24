@@ -329,7 +329,14 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `NON_VERIFICABILE`, mai allineate per presunzione. Contratto
       amministrativo aggiornato **prima** di esporre esiti runtime, come il
       task richiede: lo schema c'e', l'endpoint che lo restituisce e' T058.
-- [ ] T056 [FR-014] Implementare firma SHA-256 e confronto con il contratto
+- [ ] T056 **[RINVIATO dopo la `003`, decisione dell'utente 2026-09-24.**
+      La catena T056-T058 e T096-T101 avvisa che un modello non rispecchia
+      piu' il ramo da cui e' nato. E' utile, ma finche' la `003` non e' chiusa
+      i modelli non producono documenti ufficiali - il renderer marca ogni PDF
+      come non ufficiale - quindi l'avviso arriverebbe su qualcosa che nessuno
+      sta ancora usando. La persistenza (T055, migration `0022`) e' gia' fatta
+      e attende. Riprendere dopo `003` T020.**
+      [FR-014] Implementare firma SHA-256 e confronto con il contratto
       della versione modello; testare ordinamenti, timestamp variabili,
       ramo scomparso, nuovi obbligatori, opzionali non usati e variazioni di
       tipo/vincoli. Dipende da T053-T055 e dal contratto allineato.

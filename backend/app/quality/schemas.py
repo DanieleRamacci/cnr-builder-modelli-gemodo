@@ -297,89 +297,27 @@ class SistemaRichiedente(QualityBaseModel):
 
 # ---------------------------------------------------------------------------
 # ModelloDocumentaleControllato / BloccoDocumento / AssetDocumento
+#
+# Definiti in `app/documentale/schemas.py` e ri-esportati qui: da quando le
+# sezioni di una versione modello ne serializzano una lista (003 T002) sono
+# dominio, non solo descrizione della readiness, e il dominio non puo'
+# dipendere dal modulo che lo ispeziona. Stessi nomi, una sola definizione.
 # ---------------------------------------------------------------------------
 
+from app.documentale.schemas import (  # noqa: E402  (ri-esportazione consapevole)
+    AssetDocumento,
+    BloccoDocumento,
+    ModelloDocumentaleControllato,
+    PaginaDocumento,
+    PosizionamentoBlocco,
+    TipoAsset,
+    TipoBloccoDocumento,
+)
 
-class TipoBloccoDocumento(str, Enum):
-    INTESTAZIONE = "INTESTAZIONE"
-    LOGO = "LOGO"
-    TITOLO = "TITOLO"
-    PARAGRAFO = "PARAGRAFO"
-    TABELLA = "TABELLA"
-    COLONNE = "COLONNE"
-    FIRMA = "FIRMA"
-    FOOTER = "FOOTER"
-    INTERRUZIONE_PAGINA = "INTERRUZIONE_PAGINA"
-
-
-class PosizionamentoBlocco(str, Enum):
-    TOP = "TOP"
-    BODY = "BODY"
-    BOTTOM_LEFT = "BOTTOM_LEFT"
-    BOTTOM_RIGHT = "BOTTOM_RIGHT"
-    BOTTOM_CENTER = "BOTTOM_CENTER"
-    INLINE = "INLINE"
-    COLUMN_LEFT = "COLUMN_LEFT"
-    COLUMN_RIGHT = "COLUMN_RIGHT"
-
-
-class BloccoDocumento(QualityBaseModel):
-    """Elemento visuale ammesso nel modello documentale controllato."""
-
-    id: str
-    tipo: TipoBloccoDocumento
-    contenuto: str | None = None
-    posizionamento: PosizionamentoBlocco
-    ordine: int = 0
-    stile: str | None = None
-    placeholder_usati: list[str] = Field(default_factory=list)
-    regole_layout: dict[str, str] = Field(default_factory=dict)
-    asset_ref: str | None = None
-    colonne: list[str] = Field(default_factory=list)
-
-
-class TipoAsset(str, Enum):
-    LOGO = "LOGO"
-    IMMAGINE = "IMMAGINE"
-    TIMBRO = "TIMBRO"
-    ALTRO = "ALTRO"
-
-
-class AssetDocumento(QualityBaseModel):
-    """Logo, immagine o risorsa grafica referenziata dal modello."""
-
-    id: str
-    tipo: TipoAsset
-    nome: str
-    versione: int
-    storage_ref: str | None = None
-    hash_file: str | None = None
-    dimensioni_consentite: str | None = None
-    spec_owner: str | None = None
-
-
-class PaginaDocumento(QualityBaseModel):
-    size: str = "A4"
-    orientamento: str = "PORTRAIT"
-    margini: str = "standard-cnr"
-
-
-class ModelloDocumentaleControllato(QualityBaseModel):
-    """Sorgente strutturata e versionata del layout/contenuto documentale."""
-
-    id: str
-    modello_versione_id: str
-    formato: str = "GEMODO_DOCUMENT_V1"
-    pagina: PaginaDocumento = Field(default_factory=PaginaDocumento)
-    regioni: list[str] = Field(default_factory=list)
-    blocchi: list[BloccoDocumento] = Field(default_factory=list)
-    asset: list[AssetDocumento] = Field(default_factory=list)
-    stili_ammessi: list[str] = Field(default_factory=list)
-    placeholder_usati: list[str] = Field(default_factory=list)
-    spec_owner: str
-    contiene_html_libero: bool = False
-    contiene_css_libero: bool = False
-    contiene_script: bool = False
+__all_documentale__ = (
+    "AssetDocumento", "BloccoDocumento", "ModelloDocumentaleControllato",
+    "PaginaDocumento", "PosizionamentoBlocco", "TipoAsset", "TipoBloccoDocumento",
+)
 
 
 # ---------------------------------------------------------------------------

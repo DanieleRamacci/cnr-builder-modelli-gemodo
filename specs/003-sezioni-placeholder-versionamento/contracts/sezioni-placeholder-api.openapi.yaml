@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Sezioni e Placeholder API
-  version: 0.2.0
+  version: 0.3.0
   description: >
     API interne builder protette da Keycloak JWT Bearer per sezioni della versione
     modello, template, modello documentale controllato, placeholder e schemi campi
@@ -13,8 +13,11 @@ security:
 paths:
   /modelli/{modelloId}/versioni/{versioneId}/sezioni:
     get:
-      summary: Lista sezioni della versione modello
+      summary: Sezioni della versione e documento che compongono
       operationId: listSezioniModello
+      description: >-
+        Leggibili in qualunque stato: vedere com'e' fatto un documento
+        pubblicato e' lecito, ed e' modificarlo che non lo e'.
       parameters:
         - $ref: "#/components/parameters/ModelloId"
         - $ref: "#/components/parameters/VersioneId"
@@ -24,51 +27,40 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SezioneListResponse"
-    post:
-      summary: Aggiunge sezione alla versione modello
-      operationId: createSezioneModello
-      parameters:
-        - $ref: "#/components/parameters/ModelloId"
-        - $ref: "#/components/parameters/VersioneId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SezioneUpsertRequest"
-      responses:
-        "201":
-          description: Sezione creata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SezioneModello"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /modelli/{modelloId}/versioni/{versioneId}/sezioni/{sezioneId}:
+                $ref: "#/components/schemas/SezioniResponse"
+        "404":
+          description: Versione inesistente o non appartenente a quel modello
     put:
-      summary: Aggiorna sezione modificabile
-      operationId: updateSezioneModello
+      summary: Sostituisce l'intero insieme di sezioni della versione
+      operationId: replaceSezioniModello
+      description: >-
+        Ogni invio e' una **definizione completa**, non una modifica
+        incrementale: stessa semantica della configurazione in `010`. Una
+        sezione omessa viene rimossa. Con l'aggiornamento per singola sezione
+        il riordino avrebbe richiesto una sequenza di chiamate, ognuna
+        transitoriamente incoerente con le altre.
+        Si scrive **solo in BOZZA** (`002` FR-005).
       parameters:
         - $ref: "#/components/parameters/ModelloId"
         - $ref: "#/components/parameters/VersioneId"
-        - $ref: "#/components/parameters/SezioneId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SezioneUpsertRequest"
+              $ref: "#/components/schemas/SostituisciSezioniRequest"
       responses:
         "200":
-          description: Sezione aggiornata
+          description: Sezioni sostituite
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SezioneModello"
+                $ref: "#/components/schemas/SezioniResponse"
+        "400":
+          description: Codici duplicati, o blocco non conforme a GEMODO_DOCUMENT_V1
         "409":
-          $ref: "#/components/responses/Conflict"
+          description: >-
+            `MODELLO_VERSIONE_NON_MODIFICABILE`: la versione non e' in BOZZA.
   /modelli/{modelloId}/versioni/{versioneId}/sezioni/valida:
     post:
       summary: Valida sezioni, placeholder e campi complessi prima della pubblicazione
@@ -229,35 +221,60 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
-    SezioneListResponse:
+    SezioniResponse:
       type: object
-      required: [items]
+      required: [modello_versione_id, stato_versione, modificabile, sezioni, documento]
       properties:
-        items:
+        modello_versione_id: {type: string, format: uuid}
+        stato_versione: {type: string}
+        modificabile:
+          type: boolean
+          description: >-
+            Vero solo in BOZZA. Il builder non deve dedurre da se' se il form
+            e' scrivibile: la regola vive nel backend e questa ne e' la
+            proiezione.
+        sezioni:
+          type: array
+          items:
+            $ref: "#/components/schemas/SezioneModello"
+        documento:
+          description: >-
+            Le sezioni concatenate in un unico ModelloDocumentaleControllato,
+            con i blocchi rinumerati progressivamente e i placeholder in unione.
+            E' la forma in cui il documento si **legge**; le sezioni sono il
+            modo in cui si **conserva**.
+          type: object
+    SostituisciSezioniRequest:
+      type: object
+      additionalProperties: false
+      required: [sezioni]
+      properties:
+        sezioni:
           type: array
           items:
             $ref: "#/components/schemas/SezioneModello"
     SezioneModello:
       type: object
-      required: [id, modello_versione_id, ordine, obbligatoria, contenuto]
+      additionalProperties: false
+      required: [codice, ordine, contenuto]
       properties:
-        id:
-          type: integer
-          format: int64
-        modello_versione_id:
-          type: integer
-          format: int64
+        codice:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Univoco nella versione.
         ordine:
           type: integer
-        titolo:
-          type: string
-        obbligatoria:
-          type: boolean
-        origine_template_id:
-          type: integer
-          format: int64
+          minimum: 0
         contenuto:
-          $ref: "#/components/schemas/ContenutoStrutturato"
+          type: array
+          description: >-
+            Lista di BloccoDocumento (`app/documentale/schemas.py`), serializzata
+            cosi' com'e' nella colonna JSONB. Un tipo o un posizionamento fuori
+            dagli enum ammessi e' rifiutato con 400: il documento e' una
+            struttura controllata, non contenuto arbitrario.
+          items:
+            $ref: "#/components/schemas/BloccoDocumento"
     SezioneUpsertRequest:
       type: object
       required: [ordine, obbligatoria, contenuto]
@@ -273,6 +290,31 @@ components:
           format: int64
         contenuto:
           $ref: "#/components/schemas/ContenutoStrutturato"
+    BloccoDocumento:
+      type: object
+      additionalProperties: false
+      required: [id, tipo, posizionamento]
+      properties:
+        id: {type: string}
+        tipo:
+          type: string
+          enum: [INTESTAZIONE, LOGO, TITOLO, PARAGRAFO, TABELLA, COLONNE, FIRMA, FOOTER, INTERRUZIONE_PAGINA]
+        contenuto: {type: string, nullable: true}
+        posizionamento:
+          type: string
+          enum: [TOP, BODY, BOTTOM_LEFT, BOTTOM_RIGHT, BOTTOM_CENTER, INLINE, COLUMN_LEFT, COLUMN_RIGHT]
+        ordine: {type: integer, default: 0}
+        stile: {type: string, nullable: true}
+        placeholder_usati:
+          type: array
+          items: {type: string}
+        regole_layout:
+          type: object
+          additionalProperties: {type: string}
+        asset_ref: {type: string, nullable: true}
+        colonne:
+          type: array
+          items: {type: string}
     ContenutoStrutturato:
       type: object
       required: [blocchi]

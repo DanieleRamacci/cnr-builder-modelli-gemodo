@@ -33,6 +33,12 @@ from app.db.session import get_db
 from app.discovery.configuration import discovery_per_tipo
 from app.discovery.port import PortaDiscovery
 from app.discovery.schemas import CatalogoDiscovery
+# DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO: il validatore del documento
+# controllato e' di proprieta' della `009` e resta dove vive; `003` lo usa
+# invece di riscriverlo. E' una dipendenza su una **regola**, non sui dati che
+# il dominio persiste - quelli stanno in `app/documentale/schemas.py`.
+from app.quality.document_model import validate_document_model
+from app.quality.errors import ContrattoNonValidoError
 
 TRANSIZIONI_VALIDE: dict[str, set[str]] = {
     "BOZZA": {"IN_REVISIONE"},
@@ -504,6 +510,9 @@ class BuilderService:
             self.db,
             modello_documento_id=derivato.id,
             campi=builder_repository.clona_campi(sorgente),
+            # L'edizione derivata eredita anche il documento composto: e' lo
+            # stesso bando in un'altra dimensione, non un documento diverso.
+            sezioni=builder_repository.clona_sezioni(sorgente),
             formato_documentale=sorgente.formato_documentale,
             struttura_documentale=sorgente.struttura_documentale,
         )
@@ -608,6 +617,114 @@ class BuilderService:
         self.db.commit()
         return versione
 
+    @staticmethod
+    def _placeholder_ammessi(versione: ModelloDocumentoVersione) -> set[str]:
+        """I placeholder che il contratto dati della versione espone (003 T010).
+
+        Sono i codici dei campi richiesti: un documento puo' citare solo cio'
+        che il modello chiede davvero a chi genera. Non le etichette, che
+        cambiano senza cambiare il contratto.
+        """
+        return {campo.codice for campo in versione.campi}
+
+    def _valida_documento(self, versione: ModelloDocumentoVersione) -> None:
+        """Verifica il documento composto contro il contratto dati (003 T010/T011).
+
+        Il validatore e' quello della `009` (`quality/document_model.py`):
+        `DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO` stabilisce che resta li' e che
+        `003` lo **usa** invece di riscriverlo. Accettava gia'
+        `placeholder_contratto_dati` e non aveva chiamanti: questo e' il
+        cablaggio che mancava.
+
+        `ContrattoNonValidoError` raccoglie **tutte** le violazioni, non la
+        prima: chi sta componendo deve poterle correggere in un giro solo.
+        """
+        try:
+            validate_document_model(
+                builder_repository.composizione_documentale(versione),
+                placeholder_contratto_dati=self._placeholder_ammessi(versione),
+            )
+        except ContrattoNonValidoError as errore:
+            raise BuilderDomainError(
+                ErrorCode.PLACEHOLDER_NON_VALIDO,
+                "Il documento non e' coerente con il contratto dati del modello",
+                status_code=400,
+                dettagli=[{"violazione": violazione} for violazione in errore.violazioni],
+            ) from errore
+
+    def _versione_del_modello(
+        self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
+    ) -> ModelloDocumentoVersione:
+        """Risolve la versione verificando che appartenga a quel modello.
+
+        Il controllo non e' formale: senza, conoscendo un id di versione si
+        leggerebbe una versione di un modello su cui non si ha scrittura,
+        passando l'autorizzazione del modello indicato nell'URL.
+        """
+        versione = builder_repository.get_versione(self.db, versione_id)
+        if versione is None or versione.modello_documento_id != modello_id:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_TROVATO, "Versione non trovata", status_code=404,
+            )
+        modello = builder_repository.get_modello(self.db, modello_id)
+        if modello is None or modello.stato == "ELIMINATO":
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404,
+            )
+        verify_scrittura_su_contesto(principal, modello.tipo_documento.codice_contesto)
+        return versione
+
+    def sezioni(
+        self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
+    ) -> ModelloDocumentoVersione:
+        """Le sezioni della versione, leggibili in qualunque stato (003 T006)."""
+        return self._versione_del_modello(principal, modello_id, versione_id)
+
+    def sostituisci_sezioni(
+        self,
+        principal: PrincipalGEMODO,
+        modello_id: uuid.UUID,
+        versione_id: uuid.UUID,
+        sezioni: list,
+    ) -> ModelloDocumentoVersione:
+        """Sostituisce l'intero insieme di sezioni della versione (003 T007/T008).
+
+        Si scrive **solo in BOZZA**. E' `002` FR-005 - il contenuto pubblicato
+        non cambia sotto i piedi di chi lo sta usando - messo finalmente alla
+        prova: finora nessun percorso di scrittura poteva violarlo, perche' un
+        percorso per modificare il corpo del documento non esisteva.
+        """
+        versione = self._versione_del_modello(principal, modello_id, versione_id)
+        if versione.stato != "BOZZA":
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_MODIFICABILE,
+                f"La versione e' in stato {versione.stato}: le sezioni si modificano solo in BOZZA",
+                status_code=409,
+            )
+        builder_repository.sostituisci_sezioni(
+            self.db,
+            versione=versione,
+            sezioni=[
+                {"codice": s.codice, "ordine": s.ordine,
+                 "contenuto": [b.model_dump(mode="json") for b in s.contenuto]}
+                for s in sezioni
+            ],
+        )
+        self.db.flush()
+        self.db.refresh(versione)
+        self._valida_documento(versione)
+        registra_evento(
+            self.db,
+            tipo_evento="SEZIONI_AGGIORNATE",
+            principal=principal,
+            modello_documento_id=modello_id,
+            modello_versione_id=versione.id,
+            payload_minimo={"codici": [s.codice for s in sezioni]},
+        )
+        self.db.commit()
+        self.db.refresh(versione)
+        return versione
+
     def transizione(self, principal: PrincipalGEMODO, versione_id: uuid.UUID, nuovo_stato: str, *, modello_id: uuid.UUID | None = None) -> ModelloDocumentoVersione:
         versione = builder_repository.get_versione(self.db, versione_id)
         if versione is None or (modello_id is not None and versione.modello_documento_id != modello_id):
@@ -635,6 +752,12 @@ class BuilderService:
             )
 
         if nuovo_stato == "PUBBLICATO":
+            # 003 T012, cancello di pubblicazione. E' il punto in cui `003`
+            # protegge `004`: da qui in poi il documento e' immutabile e
+            # genera output veri, quindi un placeholder che non corrisponde a
+            # nessun campo del contratto diventerebbe un buco nel PDF che
+            # nessuno puo' piu' chiudere senza una versione nuova.
+            self._valida_documento(versione)
             precedente = builder_repository.get_versione_pubblicata_corrente(
                 self.db,
                 tipo_documento_id=modello.tipo_documento_id,

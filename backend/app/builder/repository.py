@@ -9,7 +9,19 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, PolicyDimensione, TipoDocumento
+from app.catalog.models import (
+    ModelloCampoRichiesto,
+    ModelloDocumento,
+    ModelloDocumentoVersione,
+    PolicyDimensione,
+    SezioneModello,
+    TipoDocumento,
+)
+from app.documentale.schemas import (
+    FORMATO_DOCUMENTALE,
+    BloccoDocumento,
+    ModelloDocumentaleControllato,
+)
 
 # Valore del filtro livello che seleziona i modelli generici, cioe' quelli che
 # non valorizzano la dimensione. Serve un token esplicito perche' "assente" in
@@ -312,7 +324,8 @@ def crea_versione(
     *,
     modello_documento_id: uuid.UUID,
     campi: list[ModelloCampoRichiesto],
-    formato_documentale: str = "GEMODO_DOCUMENT_V1",
+    sezioni: list[SezioneModello] | None = None,
+    formato_documentale: str = FORMATO_DOCUMENTALE,
     struttura_documentale: dict | None = None,
 ) -> ModelloDocumentoVersione:
     numero_versione = (
@@ -337,6 +350,12 @@ def crea_versione(
     for campo in campi:
         campo.modello_versione_id = versione.id
         db.add(campo)
+    # 003 T004: le sezioni si ereditano come i campi. Una versione nuova parte
+    # da com'era il documento, non da un foglio bianco: e' quasi sempre una
+    # correzione di quello precedente, non una riscrittura.
+    for sezione in sezioni or ():
+        sezione.modello_versione_id = versione.id
+        db.add(sezione)
     db.flush()
     return versione
 
@@ -369,6 +388,84 @@ def get_edizione_derivata(
         ModelloDocumento.dimensioni[nome_dimensione].astext == valore,
         ModelloDocumento.stato != "ELIMINATO",
     ))
+
+
+def sostituisci_sezioni(db: Session, *, versione: ModelloDocumentoVersione, sezioni: list[dict]) -> None:
+    """Rimpiazza l'insieme delle sezioni della versione (003 T007).
+
+    Cancella e riscrive invece di riconciliare riga per riga: l'insieme
+    inviato **e'** la definizione della versione, e una riconciliazione
+    dovrebbe comunque decidere cosa fare dei codici spariti - cioe' cancellare
+    gli stessi record, con piu' passaggi e piu' modi di sbagliare.
+    """
+    versione.sezioni.clear()
+    db.flush()
+    for sezione in sezioni:
+        db.add(SezioneModello(
+            id=uuid.uuid4(),
+            modello_versione_id=versione.id,
+            codice=sezione["codice"],
+            ordine=sezione["ordine"],
+            contenuto=deepcopy(sezione["contenuto"]),
+        ))
+    db.flush()
+
+
+def get_versione_con_sezioni(db: Session, versione_id: uuid.UUID) -> ModelloDocumentoVersione | None:
+    return db.scalar(
+        select(ModelloDocumentoVersione)
+        .where(ModelloDocumentoVersione.id == versione_id)
+        .options(selectinload(ModelloDocumentoVersione.sezioni))
+    )
+
+
+def clona_sezioni(versione: ModelloDocumentoVersione) -> list[SezioneModello]:
+    """Copia le sezioni per una versione nuova (003 T004).
+
+    `contenuto` va copiato in profondita': senza, due versioni
+    condividerebbero la stessa lista di blocchi e modificare la bozza
+    cambierebbe anche il documento gia' pubblicato.
+    """
+    return [SezioneModello(
+        id=uuid.uuid4(),
+        codice=sezione.codice,
+        ordine=sezione.ordine,
+        contenuto=deepcopy(sezione.contenuto),
+    ) for sezione in versione.sezioni]
+
+
+def composizione_documentale(versione: ModelloDocumentoVersione) -> ModelloDocumentaleControllato:
+    """Assembla il documento completo dalle sezioni ordinate (003 T003).
+
+    Le sezioni sono il modo in cui il documento e' **conservato**; questa e' la
+    forma in cui viene **letto**: un unico `ModelloDocumentaleControllato` con
+    i blocchi di tutte le sezioni in sequenza. I blocchi sono rinumerati con
+    un `ordine` progressivo globale, cosi' che due sezioni che internamente
+    partono entrambe da zero non si sovrappongano una volta concatenate.
+
+    `placeholder_usati` raccoglie l'unione di quelli dei blocchi: e' l'insieme
+    che la validazione (003 US2) confronta con i campi del modello.
+    """
+    blocchi: list[BloccoDocumento] = []
+    for sezione in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice)):
+        for blocco in sorted(
+            (BloccoDocumento.model_validate(b) for b in sezione.contenuto or ()),
+            key=lambda b: b.ordine,
+        ):
+            blocchi.append(blocco.model_copy(update={"ordine": len(blocchi)}))
+    placeholder: list[str] = []
+    for blocco in blocchi:
+        for nome in blocco.placeholder_usati:
+            if nome not in placeholder:
+                placeholder.append(nome)
+    return ModelloDocumentaleControllato(
+        id=str(versione.id),
+        modello_versione_id=str(versione.id),
+        formato=versione.formato_documentale,
+        blocchi=blocchi,
+        placeholder_usati=placeholder,
+        spec_owner="specs/003-sezioni-placeholder-versionamento",
+    )
 
 
 def clona_campi(versione: ModelloDocumentoVersione) -> list[ModelloCampoRichiesto]:

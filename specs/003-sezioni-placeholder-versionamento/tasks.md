@@ -50,6 +50,20 @@
 > riscriverla; US2 vive qui come cancello di pubblicazione, mentre la
 > sostituzione dei valori a runtime resta di `004`.
 
+> **Priorita' 1 dal 2026-09-24 (decisione dell'utente).** Questa spec e' il
+> builder vero: comporre il documento. Finche' non e' chiusa, ogni PDF esce
+> marcato `DOCUMENTO DI TEST - NON UFFICIALE` (`generazione/renderer.py`) e
+> GEBAN non puo' usare in produzione nulla di cio' che GEMODO produce. Lo
+> spartiacque e' T020, che toglie quella marcatura: tutto cio' che viene prima
+> serve ad arrivarci.
+>
+> La verifica di compatibilita' del contratto (`010` T056 e seguenti) e'
+> stata **spostata dopo**: avvisa che un modello non rispecchia piu' il ramo,
+> ma finche' i modelli non producono documenti ufficiali l'avviso arriva su
+> qualcosa che nessuno sta ancora usando. Prima il modello serve a qualcosa,
+> poi lo si sorveglia. Il lavoro gia' fatto per quella catena (T055, migration
+> `0022`) resta pronto e non intralcia nulla.
+
 **Input**: Design documents from `specs/003-sezioni-placeholder-versionamento/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/sezioni-placeholder-api.openapi.yaml`, `quickstart.md`
@@ -102,23 +116,38 @@ il piano precedente e' fallito proprio per aver assunto invece di verificare.
 del modello: e' cosi' che FR-008 ottiene lo storico e FR-005 di `002`
 l'immutabilita' dopo la pubblicazione, senza inventare un secondo meccanismo.
 
-- [ ] T001 Mapping ORM `SezioneModello` in `backend/app/catalog/models.py`,
-      accanto a `ModelloDocumentoVersione`, sulla tabella esistente
-      `sezione_modello`. Nessuna migration di struttura: la tabella c'e' gia'
-      (R01). Relazione `versione.sezioni` ordinata per `ordine`
-- [ ] T002 In `contenuto` (JSONB) si serializza una lista di `BloccoDocumento`
-      gia' definiti in `quality/schemas.py`. **Non** duplicare quei Pydantic in
-      `builder`: importarli. Se la separazione fra moduli lo rende scomodo,
-      spostarli in un modulo condiviso invece di ricopiarli
-- [ ] T003 Funzione di composizione che, data una versione, assembla il
-      `ModelloDocumentaleControllato` completo dalle sue sezioni ordinate, in
-      `backend/app/builder/repository.py`
-- [ ] T004 Estendere `clona_campi`/`crea_versione` in
-      `backend/app/builder/repository.py:114-187` perche' una versione nuova
-      erediti anche le sezioni della precedente, come gia' fa con i campi
-- [ ] T005 [P] Test di persistenza: sezioni ordinate, vincolo unico su
-      `(versione, codice)`, cancellazione a cascata con la versione, in
-      `backend/tests/builder/test_sezioni_persistenza.py`
+- [x] T001 (`catalog/models.py`) Mapping ORM `SezioneModello` sulla tabella
+      esistente `sezione_modello`, nessuna migration di struttura. Relazione
+      `versione.sezioni` ordinata per `ordine`, con `cascade="all, delete-orphan"`:
+      la sequenza e' parte del documento, non un dettaglio di presentazione,
+      quindi non puo' dipendere da come il database restituisce le righe.
+- [x] T002 (`app/documentale/schemas.py`, nuovo) `contenuto` serializza una
+      lista di `BloccoDocumento`. **Scelta la seconda opzione prevista dal
+      task**: i Pydantic sono stati *spostati* in un modulo condiviso, non
+      importati da `quality`. `app/quality/` descrive la readiness della `009`
+      - manifest, gate, coverage - e nessun modulo di dominio lo importa: farlo
+      avrebbe invertito il verso della dipendenza, con il dominio che dipende
+      da chi lo ispeziona. `quality/schemas.py` ri-esporta dallo stesso modulo,
+      quindi la `009` vede gli stessi nomi e non esistono due definizioni che
+      possono divergere.
+- [x] T003 (`builder/repository.py::composizione_documentale`) Assembla il
+      `ModelloDocumentaleControllato` dalle sezioni ordinate. I blocchi sono
+      **rinumerati con un ordine progressivo globale**: due sezioni che
+      internamente ripartono da zero si sovrapporrebbero una volta concatenate.
+      `placeholder_usati` raccoglie l'unione senza duplicati, ed e' l'insieme
+      che la validazione di US2 confrontera' con i campi del modello.
+- [x] T004 (`builder/repository.py::clona_sezioni`, `crea_versione`,
+      `builder/service.py`) Una versione nuova eredita le sezioni come gia'
+      faceva con i campi, e l'edizione derivata pure: e' lo stesso bando in
+      un'altra dimensione, non un documento diverso. La copia di `contenuto`
+      e' **profonda**: condividendo la lista, modificare la bozza avrebbe
+      cambiato anche il documento gia' pubblicato.
+- [x] T005 [P] (`backend/tests/builder/test_sezioni_persistenza.py`) Cinque
+      test su PostgreSQL reale: ordine dichiarato rispettato anche inserendo
+      in ordine sparso, vincolo unico su `(versione, codice)`, cascata alla
+      cancellazione, composizione che concatena e rinumera, eredita' che non
+      condivide il contenuto. E' la prima cosa che esercita davvero la
+      tabella, ferma e senza mapping dalla migration `0001`.
 
 ---
 
@@ -127,19 +156,32 @@ l'immutabilita' dopo la pubblicazione, senza inventare un secondo meccanismo.
 **Independent Test**: una versione in `BOZZA` accetta creazione, modifica e
 riordino delle sezioni; una versione `PUBBLICATO` li rifiuta.
 
-- [ ] T006 [US1] `GET /api/v1/builder/modelli/{modelloId}/versioni/{versioneId}/sezioni`
-      in `backend/app/builder/api.py`, con autorizzazione per contesto tramite
-      `verify_scrittura_su_contesto` come ogni altra rotta del builder
-- [ ] T007 [US1] `PUT .../sezioni` che sostituisce l'intero insieme di sezioni
-      della versione (stessa semantica di `010`: ogni submit e' una definizione
-      completa, non una modifica incrementale)
-- [ ] T008 [US1] Rifiuto di qualunque scrittura su una versione non in `BOZZA`,
-      con errore funzionale esplicito (`MODELLO_VERSIONE_NON_MODIFICABILE`):
-      FR-005 di `002` finalmente messo alla prova da un percorso di scrittura
-      che potrebbe violarlo
-- [ ] T009 [P] [US1] Test: composizione su bozza, rifiuto su pubblicata,
-      riordino, eredita' delle sezioni in una versione derivata, in
-      `backend/tests/builder/test_sezioni_api.py`
+- [x] T006 [US1] (`builder/api.py::leggi_sezioni`, `service.py::sezioni`)
+      `GET .../sezioni` con autorizzazione per contesto. Risponde anche con il
+      **documento composto**, non solo con le sezioni: e' la forma in cui il
+      documento si legge. Leggibile in qualunque stato, perche' vedere com'e'
+      fatto un documento pubblicato e' lecito ed e' modificarlo che non lo e'.
+      La versione deve appartenere al modello dell'URL: senza quel controllo un
+      id di versione noto sarebbe bastato a scavalcare l'autorizzazione.
+- [x] T007 [US1] (`builder/api.py::sostituisci_sezioni`,
+      `repository.py::sostituisci_sezioni`) `PUT .../sezioni` sostituisce
+      l'insieme: una sezione omessa viene rimossa. Il repository cancella e
+      riscrive invece di riconciliare riga per riga - una riconciliazione
+      dovrebbe comunque decidere cosa fare dei codici spariti, cioe'
+      cancellare gli stessi record con piu' passaggi e piu' modi di sbagliare.
+      **Il contratto `0.2.0` prevedeva `POST` piu' `PUT` per singola sezione**:
+      descriveva anche campi che nella tabella non esistono (`id` intero,
+      `obbligatoria`, `origine_template_id`), come i percorsi che la
+      ricognizione del 2026-09-22 trovo' inesistenti. Riscritto (T023).
+- [x] T008 [US1] (`builder/service.py::sostituisci_sezioni`) Scrittura solo in
+      `BOZZA`, altrimenti `409 MODELLO_VERSIONE_NON_MODIFICABILE`. La risposta
+      espone `modificabile`, cosi' il builder non deve dedurre da se' se il
+      form e' scrivibile: la regola vive nel backend.
+- [x] T009 [P] [US1] (`backend/tests/builder/test_sezioni_api.py`) Sei test
+      HTTP su PostgreSQL reale: composizione, riordino come invio unico,
+      rimozione per omissione, rifiuto su pubblicata con lettura ancora
+      permessa, codici duplicati, blocco di tipo sconosciuto, versione di un
+      altro modello, eredita' nell'edizione derivata.
 
 ---
 
@@ -148,18 +190,33 @@ riordino delle sezioni; una versione `PUBBLICATO` li rifiuta.
 **Independent Test**: una sezione che usa un placeholder non presente fra i
 campi della versione non supera la validazione, e la versione non si pubblica.
 
-- [ ] T010 [US2] Derivare l'insieme dei placeholder ammessi dai
-      `ModelloCampoRichiesto` della versione (R06) e passarlo a
-      `validate_document_model(..., placeholder_contratto_dati=...)`:
-      e' il cablaggio che R03 aspetta. FR-004, FR-005
-- [ ] T011 [US2] Chiamare la validazione alla scrittura delle sezioni (T007),
-      restituendo l'elenco completo delle violazioni, non la prima
-- [ ] T012 [US2] **Cancello di pubblicazione**: `service.transizione` verso
-      `PUBBLICATO` rifiuta una versione con placeholder non dichiarati o non
-      risolti. FR-006. Questo e' il punto in cui `003` protegge davvero `004`
-- [ ] T013 [P] [US2] Test: placeholder sconosciuto rifiutato alla scrittura;
-      pubblicazione bloccata; messaggio che elenca tutte le violazioni, in
-      `backend/tests/builder/test_placeholder_validazione.py`
+- [x] T010 [US2] (`builder/service.py::_placeholder_ammessi`,
+      `_valida_documento`) I placeholder ammessi sono i **codici** dei campi
+      richiesti della versione - non le etichette, che cambiano senza cambiare
+      il contratto - e arrivano a `validate_document_model` come
+      `placeholder_contratto_dati`. Era il cablaggio che mancava: la funzione
+      accettava gia' quel parametro e non aveva chiamanti.
+- [x] T011 [US2] (`builder/service.py::sostituisci_sezioni`) La validazione
+      scatta alla scrittura e risponde `400 PLACEHOLDER_NON_VALIDO` con
+      **tutte** le violazioni nei `dettagli`, non la prima: chi sta componendo
+      le corregge in un giro solo. La scrittura avviene nella stessa
+      transazione, quindi un rifiuto non lascia sezioni a meta' - c'e' un test
+      che rilegge e verifica che non sia rimasto nulla.
+- [x] T012 [US2] (`builder/service.py::transizione`) **Cancello di
+      pubblicazione**: la transizione a `PUBBLICATO` rivalida il documento e
+      rifiuta se un placeholder non corrisponde ad alcun campo. Serve anche con
+      T011 gia' attivo, perche' una versione puo' essere stata composta prima
+      che la validazione esistesse, o i campi possono essere cambiati dopo. Da
+      `PUBBLICATO` in poi il documento e' immutabile e genera output veri: un
+      buco che arriva li' non si chiude piu' senza una versione nuova.
+      Verificato che il test lo presidi davvero, rimuovendo il cancello e
+      vedendolo fallire.
+- [x] T013 [P] [US2] (`backend/tests/builder/test_placeholder_validazione.py`)
+      Cinque test HTTP su PostgreSQL reale: placeholder del contratto ammesso,
+      sconosciuto rifiutato senza lasciare scritture parziali, elenco completo
+      delle violazioni su tre segnaposti in due sezioni, pubblicazione bloccata
+      su una versione composta aggirando l'API, e caso normale che si pubblica
+      senza ostacoli.
 - [ ] T014 [US2] Campi complessi (FR-007): decidere se lo schema di sotto-campi
       serve gia' ora. L'albero GEBAN reale osservato il 2026-09-22 non espone
       alcun campo complesso (65 foglie, nessuna chiave extra), quindi questo
@@ -215,9 +272,15 @@ chiusa, GEMODO produce una scheda dati, non un bando.
       FR di `003` via via che vengono chiusi, e rimozione delle voci
       corrispondenti da `docs/coverage-baseline.yaml` (il cricchetto puo' solo
       restringersi)
-- [ ] T023 [P] Contratto OpenAPI delle rotte sezioni in
+- [x] T023 [P] (`contracts/sezioni-placeholder-api.openapi.yaml` 0.3.0)
+      Rotte sezioni riscritte sulla realta': `GET` + `PUT` d'insieme al posto
+      di `POST` + `PUT` per singola sezione, `SezioneModello` con
+      `codice`/`ordine`/`contenuto` al posto dei campi mai esistiti, e
+      `BloccoDocumento` allineato al Pydantic condiviso. Restano da rivedere
+      con i rispettivi task le rotte `/valida` e `/template-sezioni`.
+      *(Originale: Contratto OpenAPI delle rotte sezioni in
       `specs/003-sezioni-placeholder-versionamento/contracts/sezioni-placeholder-api.openapi.yaml`,
-      allineato alle rotte effettivamente esposte
+      allineato alle rotte effettivamente esposte)*
 - [ ] T024 Scenario eseguibile nel quickstart di `009`, sul modello dello
       Scenario 11: comporre sezioni, tentare un placeholder non valido,
       pubblicare, generare

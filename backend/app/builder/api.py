@@ -14,6 +14,9 @@ from fastapi import APIRouter, Depends, Query
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    SezioneResponse,
+    SezioniResponse,
+    SostituisciSezioniRequest,
     FiltriModelli,
     VociFiltriModelli,
     LinguaFiltro,
@@ -32,6 +35,7 @@ from app.builder.schemas import (
     StrutturaTipoDocumentoResponse,
     VersioneResponse,
 )
+from app.builder import repository as builder_service_repository
 from app.builder.repository import NOME_LIVELLO
 from app.builder.service import BuilderService, get_builder_service
 from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione
@@ -288,6 +292,60 @@ def crea_versione(
 ) -> VersioneResponse:
     versione = service.crea_versione(principal, modelloId, request.campi)
     return _versione_response(versione)
+
+
+def _sezioni_response(versione) -> SezioniResponse:
+    return SezioniResponse(
+        modello_versione_id=str(versione.id),
+        stato_versione=versione.stato,
+        # Il builder non deve dedurre da se' se il form e' scrivibile:
+        # la regola di FR-005 sta nel backend, e questa ne e' la proiezione.
+        modificabile=versione.stato == "BOZZA",
+        sezioni=[
+            SezioneResponse(codice=s.codice, ordine=s.ordine, contenuto=s.contenuto or [])
+            for s in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice))
+        ],
+        documento=builder_service_repository.composizione_documentale(versione),
+    )
+
+
+@router.get(
+    "/modelli/{modelloId}/versioni/{versioneId}/sezioni",
+    response_model=SezioniResponse,
+)
+def leggi_sezioni(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> SezioniResponse:
+    """Sezioni della versione e documento che compongono (003 T006).
+
+    Leggibili in qualunque stato: vedere com'e' fatto un documento pubblicato
+    e' lecito, ed e' modificarlo che non lo e'.
+    """
+    return _sezioni_response(service.sezioni(principal, modelloId, versioneId))
+
+
+@router.put(
+    "/modelli/{modelloId}/versioni/{versioneId}/sezioni",
+    response_model=SezioniResponse,
+)
+def sostituisci_sezioni(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    request: SostituisciSezioniRequest,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> SezioniResponse:
+    """Sostituisce l'intero insieme di sezioni (003 T007/T008).
+
+    Ogni invio e' una definizione completa, non una modifica incrementale.
+    Su una versione che non e' in `BOZZA` risponde `409
+    MODELLO_VERSIONE_NON_MODIFICABILE`.
+    """
+    versione = service.sostituisci_sezioni(principal, modelloId, versioneId, request.sezioni)
+    return _sezioni_response(versione)
 
 
 @router.post("/modelli/{modelloId}/versioni/{versioneId}/invia-revisione", response_model=VersioneResponse)
