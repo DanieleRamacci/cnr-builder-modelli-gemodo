@@ -979,6 +979,31 @@ minima, ma non ancora equivalente al builder-editor del prototipo.
       andrebbero perse. Le violazioni del backend sulla transizione rifiutata
       (400 `PLACEHOLDER_NON_VALIDO`, `dettagli[].violazione`) non vengono piu'
       scartate: finiscono in `[data-transition-blocks]`.
+**Build di produzione rotto e ripristinato (2026-09-24)**: il deploy Coolify del
+commit `eaf35be` e' fallito su `ng build --configuration production`. Non un
+errore di codice: il budget `anyComponentStyle` (8 kB, default Angular CLI) era
+superato da `modello-anteprima.component.scss`, cresciuto in questa fase da 7,0
+a 10,05 kB compilati fra il foglio documento (T127/T128) e stato salvataggio,
+readiness e correzioni topbar (T123/T129). Il build locale non era stato
+eseguito dopo quelle modifiche: solo `ng test`, `lint` e `tsc`.
+Risolto in due mosse:
+1. Tolta la duplicazione reale nel foglio - segnaposto inline e token del
+   pannello, etichetta di stile e pastiglia del campo, stato disabilitato
+   ripetuto su tre controlli, i due elenchi di blocchi. Vale ~0,3 kB: utile,
+   ma non sufficiente.
+2. Alzata a 12 kB la soglia d'**errore** di `anyComponentStyle` in
+   `angular.json`, lasciando l'**avviso** a 4 kB. `angular.json` e' JSON e non
+   ammette commenti, quindi la motivazione sta qui: la 2b e' di gran lunga la
+   schermata piu' complessa dell'applicazione (tre pannelli, cornice documento,
+   editor) e 9,7 kB non sono grasso; l'avviso a 4 kB continua a segnalare la
+   crescita, e infatti compare anche per `dimensioni.component.scss` (6,2 kB).
+**Alternativa non scelta**, se si preferisse tenere la soglia a 8 kB: tagliare
+dettaglio visivo della 2b, oppure spezzare il foglio in due `styleUrls` - che
+pero' aggira il controllo invece di rispondergli.
+**Da non ripetere**: `ng build --configuration production` va eseguito prima di
+consegnare modifiche agli stili, perche' i budget scattano solo li' e non in
+`ng test`.
+
 - [x] T130 [FR-026/SC-007] Aggiungere test di regressione visuale/e2e per la
       2b editor fullscreen su viewport desktop e mobile, inclusi segnaposto
       laterali, editor centrale e assenza dell'header globale (missing). Chiuso
