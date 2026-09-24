@@ -948,3 +948,32 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
       sola); potrebbe diventare una costrizione arbitraria quando si
       aggiungera' un secondo sistema. Valutare se renderlo
       `(codice_contesto, codice)`
+
+- [x] T114 (`discovery/schemas.py`, `discovery/adapter_http.py`, `builder/service.py`,
+      migration `0021`, contratto `geban-discovery-endpoint.openapi.yaml` 0.7.0;
+      test in `backend/tests/discovery/test_discovery.py`,
+      `backend/tests/builder/test_builder_flow_api.py`,
+      `backend/tests/integration/test_migrazione_campo_senza_lingua_0021.py`)
+      **Contratto 0.7.0: la lingua e' della foglia, non del campo.** Il
+      2026-09-24 l'albero GEBAN di test e' passato da 1047 campi con `lingua`
+      su ciascuno a 852 campi senza, con `lingue` sulle 65 foglie: la 0.6.0 la
+      pretendeva su ogni campo e dichiarava non conforme l'intera risposta.
+      `lingua` sul campo diventa facoltativa e vale, se presente, come
+      restrizione a una lingua sola. L'identita' del campo era la coppia
+      `(codice, lingua)` e il frontend manda "IT" di default, quindi la
+      creazione versione ripiega sul campo senza lingua: senza, ogni campo
+      sarebbe stato respinto con `CAMPO_NON_AMMESSO` su un albero conforme.
+      `campo_modello.lingua` diventa nullable con unicita' `NULLS NOT
+      DISTINCT` (PostgreSQL 15+), per non attribuire al campo una lingua
+      implicita - stessa ragione di `DEC-011-PERSISTENZA-DIMENSIONI` un
+      livello piu' in basso. Vedi `DEC-011-LINGUA-SULLA-FOGLIA-NON-SUL-CAMPO`.
+
+- [x] T115 (`integrazione-configura.component.*`, `integrazione-struttura-json.component.*`,
+      `discovery-example.ts`; test negli spec corrispondenti) La verifica
+      distingue **raggiungibilita'** da **conformita'**: un endpoint che
+      risponde con un albero difforme era dichiarato irraggiungibile (`KO`),
+      e l'unico messaggio era "La risposta discovery non rispetta il
+      contratto", senza dire dove. Ora l'esito porta campo, percorso e numero
+      di occorrenze, la check-list separa le due righe, e il link alla
+      struttura JSON attesa apre la pagina dell'integrazione invece del form
+      di creazione contesto. L'esempio mostrato e' allineato alla 0.7.0.

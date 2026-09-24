@@ -1,4 +1,11 @@
-/** Forma documentale minima del discovery; i valori sono esempi, non dati runtime. */
+/**
+ * Forma documentale minima del discovery; i valori sono esempi, non dati runtime.
+ *
+ * Contratto 0.7.0: la lingua sta sulla **foglia** (`lingue`), non dentro ogni
+ * campo. La foglia dichiara un contratto campi solo, valido per tutte le lingue
+ * che dichiara. `lingua` su un campo resta ammessa e vale come restrizione a una
+ * lingua sola: qui la usa `titolo_en`, che esiste solo in inglese.
+ */
 export const DISCOVERY_EXAMPLE = {
   BANDO_CONCORSO: {
     validita: '2026-09-15T00:00:00Z',
@@ -14,43 +21,39 @@ export const DISCOVERY_EXAMPLE = {
             tipo_livello: 'profilo',
             livelli_possibili: ['IV', 'V', 'VI'],
             livello_base: 'VI',
-            lingue_possibili: ['IT', 'EN'],
+            lingue: ['IT', 'ENG'],
             campi: [
               {
                 codice: 'codice_bando',
                 etichetta: 'Codice bando',
                 tipo: 'string',
-                lingua: 'IT',
                 obbligatorio: true,
                 ordine: 1,
                 descrizione: 'Identificativo funzionale del bando',
                 validazione: { minLength: 1 },
               },
               {
-                codice: 'titolo_it',
+                codice: 'titolo',
                 etichetta: 'Titolo',
                 tipo: 'string',
-                lingua: 'IT',
                 obbligatorio: true,
                 ordine: 2,
-                descrizione: 'Titolo italiano del bando',
+                descrizione: 'Titolo del bando',
                 validazione: { minLength: 1 },
               },
               {
-                codice: 'descrizione_ridotta_it',
+                codice: 'descrizione_ridotta',
                 etichetta: 'Descrizione ridotta',
                 tipo: 'string',
-                lingua: 'IT',
                 obbligatorio: false,
                 ordine: 3,
-                descrizione: 'Sintesi italiana del bando',
+                descrizione: 'Sintesi del bando',
                 validazione: null,
               },
               {
-                codice: 'sede_prescelta_it',
+                codice: 'sede_prescelta',
                 etichetta: 'Sede',
                 tipo: 'string',
-                lingua: 'IT',
                 obbligatorio: true,
                 ordine: 4,
                 descrizione: 'Sede associata alla procedura',
@@ -60,7 +63,6 @@ export const DISCOVERY_EXAMPLE = {
                 codice: 'numero_posti',
                 etichetta: 'Numero posti',
                 tipo: 'number',
-                lingua: 'IT',
                 obbligatorio: true,
                 ordine: 5,
                 descrizione: 'Numero dei posti previsti',
@@ -70,17 +72,18 @@ export const DISCOVERY_EXAMPLE = {
                 codice: 'titolo_en',
                 etichetta: 'Title',
                 tipo: 'string',
+                // Campo ristretto a una lingua sola: l'unico caso in cui
+                // dichiarare `lingua` sul campo (contratto 0.7.0).
                 lingua: 'EN',
                 obbligatorio: true,
                 ordine: 6,
-                descrizione: 'Titolo inglese del bando',
+                descrizione: 'Titolo inglese, per le sole edizioni EN',
                 validazione: { minLength: 1 },
               },
               {
                 codice: 'livello',
                 etichetta: 'Livello',
                 tipo: 'string',
-                lingua: 'IT',
                 obbligatorio: true,
                 ordine: 7,
                 descrizione: 'Livello professionale del bando',
