@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.6.0
+  version: 0.7.0
   description: >
     Questo file descrive la modalita ad albero completo. La proposta alternativa
     a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
@@ -46,9 +46,11 @@ info:
     restare identica ovunque, a qualunque livello e per qualunque tipo
     documento, e' la struttura di un singolo campo**
     (`components.schemas.CampoContrattoDati`): codice, etichetta, tipo,
-    lingua, obbligatorio, ordine, descrizione, validazione - sempre questi
-    otto attributi, sempre con questo significato, indipendentemente da dove
-    nell'albero compare il campo.
+    obbligatorio, ordine, e i facoltativi lingua, descrizione, validazione -
+    sempre questi attributi, sempre con questo significato, indipendentemente
+    da dove nell'albero compare il campo. La lingua sta sulla foglia
+    (`lingue`) e non dentro ogni campo: sul campo e' ammessa, dalla 0.7.0,
+    solo per restringerlo a una lingua sola.
 
     5. Potete rispondere anche per piu' di un tipo documento nello stesso
     endpoint (chiavi multiple nella mappa) se vi e' comodo, ma per questa
@@ -422,7 +424,7 @@ components:
         Struttura FISSA per ogni campo, identica a qualunque livello
         dell'albero e per qualunque tipo documento - e' l'unica parte di
         questo contratto che non cambia mai.
-      required: [codice, etichetta, tipo, lingua, obbligatorio, ordine]
+      required: [codice, etichetta, tipo, obbligatorio, ordine]
       properties:
         codice:
           type: string
@@ -442,6 +444,17 @@ components:
         lingua:
           type: string
           enum: [IT, EN]
+          nullable: true
+          description: >
+            **Opzionale dalla 0.7.0.** La lingua e' una proprieta' della
+            foglia (`lingue`), non del singolo campo: una foglia dichiara un
+            contratto campi solo, che vale per tutte le lingue che dichiara.
+            Indicate `lingua` su un campo solo se quel campo esiste in una
+            lingua sola, e allora vale come restrizione. Fino alla 0.6.0 era
+            obbligatoria su ogni campo, e un albero che la ometteva risultava
+            interamente non conforme. E' un rilassamento: ogni albero valido
+            con la 0.6.0 resta valido, nessuna integrazione deve cambiare
+            nulla.
         obbligatorio:
           type: boolean
         ordine:

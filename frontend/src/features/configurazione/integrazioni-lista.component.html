@@ -74,7 +74,10 @@
         >
           Verifica endpoint
         </a>
-        <a routerLink="/configurazione/contesti/nuovo" class="btn btn-sm btn-outline-secondary">
+        <a
+          [routerLink]="['/configurazione/contesti', integrazione.id, 'struttura-json']"
+          class="btn btn-sm btn-outline-secondary"
+        >
           Struttura JSON
         </a>
         <a

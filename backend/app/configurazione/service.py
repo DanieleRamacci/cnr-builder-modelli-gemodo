@@ -580,7 +580,14 @@ class IntegrazioniService:
             return "CONFORME", []
         except DiscoveryError as exc:
             esito = "NON_CONFORME" if exc.codice == "DISCOVERY_NON_CONFORME" else "NON_RAGGIUNGIBILE"
-            return esito, [{"codice": exc.codice, "messaggio": exc.messaggio}]
+            errori = [{"codice": exc.codice, "messaggio": exc.messaggio}]
+            # I dettagli dicono *dove* l'albero e' difforme: senza, l'operatore
+            # legge "non rispetta il contratto" e non ha modo di intervenire.
+            errori.extend(
+                {"codice": exc.codice, "messaggio": dettaglio["messaggio"], "percorso": dettaglio.get("percorso")}
+                for dettaglio in exc.dettagli or []
+            )
+            return esito, errori
 
 
 def get_integrazioni_service(db: Session = Depends(get_db)):

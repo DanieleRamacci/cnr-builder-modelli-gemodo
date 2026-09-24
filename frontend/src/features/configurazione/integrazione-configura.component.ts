@@ -84,6 +84,29 @@ export class IntegrazioneConfiguraComponent {
     return BADGE[stato];
   }
 
+  /**
+   * Raggiungibilita' e conformita' sono due esiti distinti: un endpoint che
+   * risponde ma con un albero difforme e' NON_CONFORME, non irraggiungibile.
+   * Prima la check-list leggeva solo `stato === 'ERRORE'` e dichiarava KO la
+   * raggiungibilita' in entrambi i casi.
+   */
+  protected raggiungibilita(integrazione: IntegrazioneAdmin): string {
+    const esito = integrazione.ultima_verifica?.esito;
+    if (!esito) return integrazione.url ? 'Da verificare' : 'Da fare';
+    return esito === 'NON_RAGGIUNGIBILE' ? 'KO' : 'OK';
+  }
+
+  protected conformitaSchema(integrazione: IntegrazioneAdmin): string {
+    const esito = integrazione.ultima_verifica?.esito;
+    if (!esito) return 'Da fare';
+    if (esito === 'NON_RAGGIUNGIBILE') return 'Non valutato';
+    return esito === 'CONFORME' ? 'OK' : 'KO';
+  }
+
+  protected conforme(integrazione: IntegrazioneAdmin): boolean {
+    return integrazione.ultima_verifica?.esito === 'CONFORME';
+  }
+
   protected salvaConfigurazione(): void {
     const current = this.integrazione();
     if (!current || this.form.invalid || this.salvando() || this.verificando()) {

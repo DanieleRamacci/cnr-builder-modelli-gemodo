@@ -314,8 +314,11 @@ export interface components {
              * @enum {string}
              */
             tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
-            /** @enum {string} */
-            lingua: "IT" | "EN";
+            /**
+             * @description **Opzionale dalla 0.7.0.** La lingua e' una proprieta' della foglia (`lingue`), non del singolo campo: una foglia dichiara un contratto campi solo, che vale per tutte le lingue che dichiara. Indicate `lingua` su un campo solo se quel campo esiste in una lingua sola, e allora vale come restrizione. Fino alla 0.6.0 era obbligatoria su ogni campo, e un albero che la ometteva risultava interamente non conforme. E' un rilassamento: ogni albero valido con la 0.6.0 resta valido, nessuna integrazione deve cambiare nulla.
+             * @enum {string|null}
+             */
+            lingua?: "IT" | "EN" | null;
             obbligatorio: boolean;
             ordine: number;
             descrizione?: string | null;

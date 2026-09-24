@@ -1146,6 +1146,28 @@ decisions:
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-23
 
+  - id: DEC-011-LINGUA-SULLA-FOGLIA-NON-SUL-CAMPO
+    titolo: La lingua e' una proprieta' della foglia discovery, non del singolo campo
+    owner_spec: specs/010-configurazione-cataloghi-integrazioni
+    spec_interessate: [specs/011-dimensioni-generiche-modello, specs/002-builder-modelli]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Contratto discovery 0.7.0: `lingua` sul campo passa da obbligatoria a
+      facoltativa. Una foglia dichiara `lingue` e un contratto campi solo,
+      valido per tutte quelle che dichiara; sul campo la lingua vale, se
+      presente, come restrizione a una sola. La 0.6.0 la pretendeva su ogni
+      campo, scritta su un albero GEBAN che il 2026-09-24 e' cambiato: l'albero
+      reale non la invia piu' e l'intera risposta risultava non conforme. E' un
+      rilassamento, ogni albero valido con la 0.6.0 resta valido. Persistenza:
+      migration 0021 rende `campo_modello.lingua` nullable, con unicita'
+      NULLS NOT DISTINCT - stessa ragione di DEC-011-PERSISTENZA-DIMENSIONI un
+      livello piu' in basso, per non attribuire al campo una lingua implicita.
+      Resta valorizzata a IT nella proiezione di catalogo, dove serve a
+      costruire lo JSON Schema dei campi richiesti.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-24
+
   - id: DEC-011-CONTRATTO-GEBAN-ADDITIVO
     titolo: Evoluzione additiva del catalogo verso GEBAN
     owner_spec: specs/011-dimensioni-generiche-modello

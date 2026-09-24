@@ -111,7 +111,7 @@ def test_invalid_structure_is_functional_error(payload, change):
     elif change == "string_order":
         field["ordine"] = "1"
     elif change == "missing_field":
-        field.pop("lingua")
+        field.pop("etichetta")  # 0.7.0: `lingua` non e' piu' obbligatoria, `etichetta` si'.
     elif change == "invalid_type":
         field["tipo"] = "enum"
     elif change == "invalid_date":
@@ -147,6 +147,38 @@ def test_una_foglia_senza_lingua_e_conforme(payload):
     foglia = catalogo.nodi[0].figli[0]
     assert foglia.lingue_possibili is None
     assert foglia.campi, "i campi della foglia restano leggibili"
+
+
+def test_un_campo_senza_lingua_e_conforme_e_vale_per_tutte_le_lingue(payload):
+    """Contratto 0.7.0: la lingua sta sulla foglia, non dentro ogni campo.
+
+    Fino alla 0.6.0 `lingua` era obbligatoria su ogni campo, sulla scorta di un
+    albero GEBAN che dichiarava un campo per lingua. L'albero reale dichiara
+    invece `lingue` sulla foglia e un contratto campi solo, valido per tutte:
+    pretendere `lingua` sul campo rendeva non conforme l'intera risposta. Qui
+    la foglia dichiara IT e EN e nessun campo indica una lingua.
+    """
+    foglia = payload["BANDO_CONCORSO"]["nodi"][0]["figli"][0]
+    foglia["lingue_possibili"] = ["IT", "EN"]
+    for campo in foglia["campi"]:
+        campo.pop("lingua", None)
+
+    catalogo = adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
+
+    letta = catalogo.nodi[0].figli[0]
+    assert letta.lingue_possibili == ("IT", "EN")
+    assert letta.campi, "i campi restano leggibili"
+    assert all(campo.lingua is None for campo in letta.campi)
+
+
+def test_un_campo_puo_ancora_restringersi_a_una_lingua(payload):
+    """Il rilassamento non toglie nulla: chi invia `lingua` sul campo resta valido."""
+    foglia = payload["BANDO_CONCORSO"]["nodi"][0]["figli"][0]
+    foglia["campi"][0]["lingua"] = "EN"
+
+    catalogo = adapter_for(payload).catalogo_discovery("BANDO_CONCORSO")
+
+    assert catalogo.nodi[0].figli[0].campi[0].lingua == "EN"
 
 
 def test_missing_document_type_is_not_an_empty_catalog(payload):

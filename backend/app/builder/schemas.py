@@ -231,7 +231,9 @@ class CampoVersioneResponse(BaseModel):
     codice: str
     etichetta: str
     tipo: str
-    lingua: str
+    # Assente se la foglia discovery dichiara le lingue per se' (contratto 0.7.0):
+    # il campo vale allora per tutte, e non ha una lingua propria da esporre.
+    lingua: str | None = None
     obbligatorio: bool
     ordine: int
     descrizione: str | None = None

@@ -139,28 +139,45 @@
       <ul class="mm-check-list ps-0">
         <li>
           <span>Raggiungibilita' endpoint</span>
-          <strong>{{
-            corrente.stato === 'ERRORE' ? 'KO' : corrente.url ? 'OK' : 'Da fare'
-          }}</strong>
+          <strong>{{ raggiungibilita(corrente) }}</strong>
         </li>
         <li>
           <span>Schema JSON discovery</span>
-          <strong>{{ corrente.ultima_verifica ? 'Verificato' : 'Da fare' }}</strong>
+          <strong>{{ conformitaSchema(corrente) }}</strong>
         </li>
         <li>
           <span>Tipi documento dichiarati</span>
-          <strong>{{ corrente.ultima_verifica ? "Letti dall'albero" : 'Da fare' }}</strong>
+          <strong>{{ conforme(corrente) ? "Letti dall'albero" : 'Da fare' }}</strong>
         </li>
         <li>
           <span>Campi obbligatori</span>
-          <strong>{{ corrente.ultima_verifica ? 'Configurabili' : 'Dopo verifica' }}</strong>
+          <strong>{{ conforme(corrente) ? 'Configurabili' : 'Dopo verifica' }}</strong>
         </li>
       </ul>
 
       @if (corrente.ultima_verifica?.errori?.length) {
         <div class="alert alert-danger mt-3">
-          @for (errore of corrente.ultima_verifica?.errori; track errore.codice) {
-            <div>{{ errore.messaggio }}</div>
+          @if (corrente.ultima_verifica?.esito === 'NON_CONFORME') {
+            <p class="mb-2">
+              L'endpoint ha risposto, ma l'albero discovery non rispetta il contratto
+              v{{ corrente.ultima_verifica?.versione_contratto }}. Punti difformi:
+            </p>
+          }
+          @for (errore of corrente.ultima_verifica?.errori; track $index) {
+            <div>
+              {{ errore.messaggio }}
+              @if (errore.percorso) {
+                <code class="d-block small">{{ errore.percorso }}</code>
+              }
+            </div>
+          }
+          @if (corrente.ultima_verifica?.esito === 'NON_CONFORME') {
+            <a
+              [routerLink]="['/configurazione/contesti', corrente.id, 'struttura-json']"
+              class="btn btn-sm btn-outline-danger mt-2"
+            >
+              Confronta con la struttura attesa
+            </a>
           }
         </div>
       }
@@ -178,7 +195,10 @@
         >
           Tipi documento e policy
         </a>
-        <a routerLink="/configurazione/contesti/nuovo" class="btn btn-outline-primary btn-sm">
+        <a
+          [routerLink]="['/configurazione/contesti', corrente.id, 'struttura-json']"
+          class="btn btn-outline-primary btn-sm"
+        >
           Vedi esempio JSON
         </a>
       </div>

@@ -1,0 +1,58 @@
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a>
+  <span class="mx-1">/</span>
+  <strong>Struttura JSON</strong>
+</nav>
+
+@if (caricamento()) {
+  <p role="status">Caricamento...</p>
+} @else if (errore()) {
+  <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+  <a routerLink="/configurazione" class="btn btn-outline-secondary">Torna alle integrazioni</a>
+} @else if (integrazione(); as corrente) {
+  <header class="mm-page-header">
+    <div>
+      <h1>Struttura JSON di esempio</h1>
+      <p>
+        Contratto documentale per <strong>{{ corrente.nome }}</strong
+        >. Mostra la forma che l'endpoint discovery deve restituire, non una copia della risposta
+        live.
+      </p>
+    </div>
+    <a
+      routerLink="/configurazione/tipi-documento"
+      [queryParams]="{ integrazioneId: corrente.id }"
+      class="btn btn-outline-primary"
+    >
+      Tipi e policy
+    </a>
+  </header>
+
+  <div class="mm-info-box mt-3">
+    I valori contenuti nel file sono esempi per gli sviluppatori dell'integrazione. L'albero
+    realmente restituito da {{ corrente.nome }} e le relative policy si consultano in
+    <strong>Tipi e policy</strong>.
+  </div>
+
+  <section class="json-document mt-4" aria-labelledby="json-title">
+    <div class="json-toolbar">
+      <div>
+        <h2 id="json-title">{{ nomeFile() }}</h2>
+        <span>application/json · esempio contrattuale</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copia()">
+          {{ copiaCompletata() ? 'Copiato' : 'Copia' }}
+        </button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="scarica()">
+          Scarica JSON
+        </button>
+      </div>
+    </div>
+    <pre class="mm-json-preview" aria-label="Esempio JSON API">{{ esempioJson }}</pre>
+  </section>
+
+  <div class="mt-4">
+    <a routerLink="/configurazione" class="btn btn-outline-secondary">Torna alle integrazioni</a>
+  </div>
+}

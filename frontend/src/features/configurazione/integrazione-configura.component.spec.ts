@@ -232,5 +232,56 @@ describe('IntegrazioneConfiguraComponent', () => {
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Discovery non disponibile');
+    expect(voceCheckList(fixture, "Raggiungibilita' endpoint")).toBe('KO');
+  });
+
+  it('keeps reachability OK on NON_CONFORME and shows where the tree is off-contract', () => {
+    setup(integrazione({ url: 'https://software.example.test/discovery' }));
+    service.verifica.mockReturnValue(
+      of(
+        integrazione({
+          url: 'https://software.example.test/discovery',
+          stato: 'ERRORE',
+          ultima_verifica: {
+            data: '2026-09-18T10:00:00Z',
+            revisione: 1,
+            versione_contratto: '0.6.0',
+            esito: 'NON_CONFORME',
+            errori: [
+              {
+                codice: 'DISCOVERY_NON_CONFORME',
+                messaggio: "La risposta discovery non rispetta il contratto: 'lingua' field required",
+              },
+              {
+                codice: 'DISCOVERY_NON_CONFORME',
+                messaggio: 'lingua: Field required (852 occorrenze)',
+                percorso: 'BANDO_CONCORSO.nodi.0.figli.0.campi.0.lingua',
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    (fixture.componentInstance as unknown as { avviaVerifica: () => void }).avviaVerifica();
+    fixture.detectChanges();
+
+    expect(voceCheckList(fixture, "Raggiungibilita' endpoint")).toBe('OK');
+    expect(voceCheckList(fixture, 'Schema JSON discovery')).toBe('KO');
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('lingua: Field required (852 occorrenze)');
+    expect(text).toContain('BANDO_CONCORSO.nodi.0.figli.0.campi.0.lingua');
   });
 });
+
+/** Valore della riga della check-list con l'etichetta data. */
+function voceCheckList(
+  fixture: ComponentFixture<IntegrazioneConfiguraComponent>,
+  etichetta: string,
+): string | undefined {
+  const voci = (fixture.nativeElement as HTMLElement).querySelectorAll('.mm-check-list li');
+  return Array.from(voci)
+    .find((li) => li.querySelector('span')?.textContent?.trim() === etichetta)
+    ?.querySelector('strong')
+    ?.textContent?.trim();
+}

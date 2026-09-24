@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 
 import { IntegrazioniAdminService } from './integrazioni-admin.service';
 import type { ApiError } from '../../shared/api-error';
+import { DISCOVERY_EXAMPLE_JSON } from './discovery-example';
 
 /**
  * Integration creation form (007 tasks.md T017, spec.md FR-021 Acceptance
@@ -20,40 +21,7 @@ export class IntegrazioneCreaComponent {
   private readonly service = inject(IntegrazioniAdminService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
-  protected readonly esempioJson = JSON.stringify(
-    {
-      contesto: 'geban',
-      tipi_documento: [
-        {
-          codice: 'BANDO_CONCORSO',
-          nome: 'Bando di concorso',
-          albero: [
-            {
-              codice: 'CP',
-              descrizione: 'Concorsi pubblici',
-              figli: [
-                {
-                  codice: 'RICERCATORE',
-                  descrizione: 'Ricercatore',
-                  dimensioni: {
-                    livello: ['I', 'II', 'III'],
-                    lingua: ['IT', 'EN'],
-                  },
-                  campi: [
-                    { codice: 'ente.denominazione', tipo: 'testo', obbligatorio: true },
-                    { codice: 'bando.scadenza', tipo: 'data', obbligatorio: true },
-                    { codice: 'profilo.codice', tipo: 'testo', obbligatorio: false },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    null,
-    2,
-  );
+  protected readonly esempioJson = DISCOVERY_EXAMPLE_JSON;
 
   protected readonly form = this.fb.nonNullable.group({
     codice: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],

@@ -87,6 +87,11 @@ describe('IntegrazioniListaComponent', () => {
         'a.btn[href="/configurazione/contesti/00000000-0000-4000-8000-000000000001/integrazione"]',
       )?.textContent,
     ).toContain('Verifica endpoint');
+    expect(
+      fixture.nativeElement.querySelector(
+        'a[href="/configurazione/contesti/00000000-0000-4000-8000-000000000001/struttura-json"]',
+      )?.textContent,
+    ).toContain('Struttura JSON');
   });
 
   it('shows a failed load instead of an empty registry and allows retry', () => {

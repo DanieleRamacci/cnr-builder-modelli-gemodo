@@ -26,6 +26,31 @@ def _origin(url: str) -> tuple[str, str, int]:
     return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
 
 
+MAX_DETTAGLI_VALIDAZIONE = 10
+
+
+def _dettagli_validazione(exc: ValidationError, codice: str) -> tuple[str, list[dict[str, Any]]]:
+    """Riassume gli errori pydantic: stesso difetto ripetuto su piu' percorsi resta una riga."""
+    gruppi: dict[tuple[str, str], list[str]] = {}
+    for errore in exc.errors():
+        campo = str(errore["loc"][-1]) if errore["loc"] else codice
+        percorso = ".".join(str(parte) for parte in (codice, *errore["loc"]))
+        gruppi.setdefault((campo, errore["msg"]), []).append(percorso)
+    dettagli = []
+    for (campo, messaggio), percorsi in list(gruppi.items())[:MAX_DETTAGLI_VALIDAZIONE]:
+        occorrenze = f" ({len(percorsi)} occorrenze)" if len(percorsi) > 1 else ""
+        dettagli.append({
+            "campo": campo,
+            "percorso": percorsi[0],
+            "messaggio": f"{campo}: {messaggio}{occorrenze}",
+        })
+    prima = next(iter(gruppi))
+    motivo = f"'{prima[0]}' {prima[1].lower()} in {codice}"
+    if len(gruppi) > 1:
+        motivo = f"{motivo}, e altri {len(gruppi) - 1} difetti"
+    return motivo, dettagli
+
+
 def _reject_constant(value: str) -> None:
     raise ValueError("Costante JSON non valida")
 
@@ -106,7 +131,7 @@ class AdapterHTTP:
                             status_code=503,
                         )
                     if response.headers.get("content-type", "").split(";")[0].strip() != "application/json":
-                        raise risposta_non_valida()
+                        raise risposta_non_valida("la risposta non e' application/json")
                     raw = bytearray()
                     for chunk in response.iter_bytes():
                         total_bytes += len(chunk)
@@ -122,21 +147,27 @@ class AdapterHTTP:
                         raise risposta_non_valida()
                     for codice, struttura in fragment.items():
                         if not isinstance(struttura, dict) or not isinstance(struttura.get("nodi"), list):
-                            raise risposta_non_valida()
+                            raise risposta_non_valida(f"il tipo documento {codice} non espone una lista 'nodi'")
                         precedente = raccolta.get(codice)
                         if precedente is None:
                             raccolta[codice] = {**struttura, "nodi": list(struttura["nodi"])}
                         else:
                             if precedente.get("validita") != struttura.get("validita"):
-                                raise risposta_non_valida()
+                                raise risposta_non_valida(f"validita' discordante fra le pagine di {codice}")
                             precedente["nodi"].extend(struttura["nodi"])
                 url = urljoin(url, next_href) if next_href is not None else None
             if not raccolta:
-                raise risposta_non_valida()
+                raise risposta_non_valida("nessun tipo documento dichiarato")
             cataloghi = {}
             for codice, struttura in raccolta.items():
                 self._check_depth(struttura["nodi"])
-                cataloghi[codice] = CatalogoDiscovery.model_validate({**struttura, "codice_tipo_documento": codice})
+                try:
+                    cataloghi[codice] = CatalogoDiscovery.model_validate(
+                        {**struttura, "codice_tipo_documento": codice}
+                    )
+                except ValidationError as exc:
+                    motivo, dettagli = _dettagli_validazione(exc, codice)
+                    raise risposta_non_valida(motivo, dettagli) from None
             return MappaDiscovery(cataloghi=cataloghi)
         except httpx.TimeoutException:
             raise DiscoveryError(

@@ -159,7 +159,14 @@ class PolicyDimensione(Base):
 class ModelloCampoRichiesto(Base):
     __tablename__ = "campo_modello"
     __table_args__ = (
-        UniqueConstraint("modello_versione_id", "codice", "lingua", name="uq_campo_modello_versione_codice_lingua"),
+        # NULLS NOT DISTINCT: 0.7.0 ammette il campo senza lingua, e in PostgreSQL
+        # due NULL non si equivalgono - senza questo, due campi con lo stesso
+        # codice e lingua assente convivrebbero sulla stessa versione.
+        UniqueConstraint(
+            "modello_versione_id", "codice", "lingua",
+            name="uq_campo_modello_versione_codice_lingua",
+            postgresql_nulls_not_distinct=True,
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -171,7 +178,9 @@ class ModelloCampoRichiesto(Base):
     descrizione: Mapped[str | None] = mapped_column(Text, nullable=True)
     tipo_dato: Mapped[str] = mapped_column(String(32), nullable=False)
     obbligatorio: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    lingua: Mapped[str] = mapped_column(String(8), nullable=False, default="IT")
+    # Assente quando la foglia discovery dichiara le lingue per se' (0.7.0):
+    # il contratto del campo vale allora per tutte, e non ne ha una propria.
+    lingua: Mapped[str | None] = mapped_column(String(8), nullable=True)
     ordine: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     formato: Mapped[str | None] = mapped_column(String(64), nullable=True)
     valore_default: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
 
 # specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml (info.version)
-VERSIONE_CONTRATTO_DISCOVERY = "0.6.0"
+VERSIONE_CONTRATTO_DISCOVERY = "0.7.0"
 
 
 class CampoDiscovery(BaseModel):
@@ -20,7 +20,14 @@ class CampoDiscovery(BaseModel):
     codice: StrictStr = Field(min_length=1)
     etichetta: StrictStr
     tipo: Literal["string", "number", "date", "boolean", "array", "object"]
-    lingua: Literal["IT", "EN"]
+    # 0.7.0: la lingua e' una proprieta' della **foglia** (`lingue_possibili`),
+    # non del singolo campo: una foglia dichiara un contratto campi solo, valido
+    # per tutte le lingue che dichiara. `lingua` sul campo resta ammessa per gli
+    # alberi che la inviano, e vale allora come restrizione di quel campo a una
+    # lingua sola. Era obbligatoria fino alla 0.6.0, scritta su un albero GEBAN
+    # che nel frattempo e' cambiato: pretenderla rendeva non conforme l'intera
+    # risposta. E' un rilassamento, ogni albero valido con la 0.6.0 resta valido.
+    lingua: Literal["IT", "EN"] | None = None
     obbligatorio: StrictBool
     ordine: int = Field(strict=True, ge=1)
     descrizione: StrictStr | None = None

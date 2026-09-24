@@ -91,3 +91,28 @@ def test_map_timeout_is_distinct_without_changing_legacy_catalog_errors():
         adapter.catalogo_discovery("BANDO_CONCORSO")
     assert error.value.codice == "DISCOVERY_NON_DISPONIBILE"
     assert error.value.status_code == 503
+
+
+def test_non_conformity_names_the_offending_field_and_paths(discovery_server):
+    """L'operatore deve poter vedere *quale* parte dell'albero e' difforme."""
+    base, responses, _ = discovery_server
+    body = fragment()
+    for nodo in body["BANDO_CONCORSO"]["nodi"]:
+        for campo in _foglie(nodo):
+            campo.pop("etichetta", None)
+    responses["/discovery"] = (200, body)
+    with pytest.raises(DiscoveryError) as error:
+        AdapterHTTP(base + "/discovery").mappa_discovery()
+    assert error.value.codice == "DISCOVERY_NON_CONFORME"
+    assert "etichetta" in error.value.messaggio
+    dettagli = error.value.dettagli
+    assert dettagli, "la difformita' deve portare i percorsi difformi"
+    assert all(d["percorso"].startswith("BANDO_CONCORSO.nodi.") for d in dettagli)
+    assert any("etichetta" in d["percorso"] for d in dettagli)
+
+
+def _foglie(nodo):
+    for campo in nodo.get("campi", []):
+        yield campo
+    for figlio in nodo.get("figli", []):
+        yield from _foglie(figlio)

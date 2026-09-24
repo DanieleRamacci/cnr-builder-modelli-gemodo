@@ -328,8 +328,9 @@ export interface components {
              * @enum {string}
              */
             tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
-            /** @enum {string} */
-            lingua: "IT" | "EN";
+            /** @description Assente se la foglia discovery dichiara le lingue per se' (contratto 0.7.0): il campo vale allora per tutte e non ne ha una propria.
+             * @enum {string|null} */
+            lingua?: "IT" | "EN" | null;
             obbligatorio: boolean;
             ordine: number;
             descrizione?: string | null;

@@ -579,9 +579,19 @@ class BuilderService:
             for campo in foglia.campi
         }
         campi_modello: list[ModelloCampoRichiesto] = []
+        risolti: set[str] = set()
         for richiesto in campi_richiesti:
             chiave = (richiesto.codice, richiesto.lingua)
-            sorgente = disponibili.get(chiave)
+            # 0.7.0: un campo che non dichiara la lingua vale per tutte le lingue
+            # della foglia, quindi la lingua non entra nella sua identita' e la
+            # richiesta la trova comunque (il client ne manda una per default).
+            sorgente = disponibili.get(chiave) or disponibili.get((richiesto.codice, None))
+            if sorgente is not None and sorgente.lingua is None:
+                if sorgente.codice in risolti:
+                    raise BuilderDomainError(
+                        ErrorCode.CAMPO_NON_AMMESSO, "Campi duplicati nella versione", status_code=400
+                    )
+                risolti.add(sorgente.codice)
             if sorgente is None:
                 raise BuilderDomainError(
                     ErrorCode.CAMPO_NON_AMMESSO,

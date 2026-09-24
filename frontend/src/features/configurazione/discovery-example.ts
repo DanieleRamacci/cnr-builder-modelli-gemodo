@@ -1,0 +1,100 @@
+/** Forma documentale minima del discovery; i valori sono esempi, non dati runtime. */
+export const DISCOVERY_EXAMPLE = {
+  BANDO_CONCORSO: {
+    validita: '2026-09-15T00:00:00Z',
+    nodi: [
+      {
+        codice: 'TD',
+        descrizione: 'Tempo Determinato',
+        tipo_livello: 'tipologia',
+        figli: [
+          {
+            codice: 'COLLABORATORE_TECNICO_ER',
+            descrizione: 'Collaboratore Tecnico E.R.',
+            tipo_livello: 'profilo',
+            livelli_possibili: ['IV', 'V', 'VI'],
+            livello_base: 'VI',
+            lingue_possibili: ['IT', 'EN'],
+            campi: [
+              {
+                codice: 'codice_bando',
+                etichetta: 'Codice bando',
+                tipo: 'string',
+                lingua: 'IT',
+                obbligatorio: true,
+                ordine: 1,
+                descrizione: 'Identificativo funzionale del bando',
+                validazione: { minLength: 1 },
+              },
+              {
+                codice: 'titolo_it',
+                etichetta: 'Titolo',
+                tipo: 'string',
+                lingua: 'IT',
+                obbligatorio: true,
+                ordine: 2,
+                descrizione: 'Titolo italiano del bando',
+                validazione: { minLength: 1 },
+              },
+              {
+                codice: 'descrizione_ridotta_it',
+                etichetta: 'Descrizione ridotta',
+                tipo: 'string',
+                lingua: 'IT',
+                obbligatorio: false,
+                ordine: 3,
+                descrizione: 'Sintesi italiana del bando',
+                validazione: null,
+              },
+              {
+                codice: 'sede_prescelta_it',
+                etichetta: 'Sede',
+                tipo: 'string',
+                lingua: 'IT',
+                obbligatorio: true,
+                ordine: 4,
+                descrizione: 'Sede associata alla procedura',
+                validazione: { minLength: 1 },
+              },
+              {
+                codice: 'numero_posti',
+                etichetta: 'Numero posti',
+                tipo: 'number',
+                lingua: 'IT',
+                obbligatorio: true,
+                ordine: 5,
+                descrizione: 'Numero dei posti previsti',
+                validazione: { minimum: 1 },
+              },
+              {
+                codice: 'titolo_en',
+                etichetta: 'Title',
+                tipo: 'string',
+                lingua: 'EN',
+                obbligatorio: true,
+                ordine: 6,
+                descrizione: 'Titolo inglese del bando',
+                validazione: { minLength: 1 },
+              },
+              {
+                codice: 'livello',
+                etichetta: 'Livello',
+                tipo: 'string',
+                lingua: 'IT',
+                obbligatorio: true,
+                ordine: 7,
+                descrizione: 'Livello professionale del bando',
+                validazione: {
+                  fonte_opzioni: 'profilo.livelli_possibili',
+                  default: 'profilo.livello_base',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+} as const;
+
+export const DISCOVERY_EXAMPLE_JSON = JSON.stringify(DISCOVERY_EXAMPLE, null, 2);

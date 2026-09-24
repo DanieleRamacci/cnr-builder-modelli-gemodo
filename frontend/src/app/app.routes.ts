@@ -71,6 +71,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'contesti/:id/struttura-json',
+        loadComponent: () =>
+          import('../features/configurazione/integrazione-struttura-json.component').then(
+            (m) => m.IntegrazioneStrutturaJsonComponent,
+          ),
+      },
+      {
         path: 'tipi-documento',
         loadComponent: () =>
           import('../features/configurazione/tipi-documento-lista.component').then(

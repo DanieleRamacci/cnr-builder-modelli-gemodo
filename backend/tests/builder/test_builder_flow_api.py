@@ -469,6 +469,43 @@ def test_unavailable_external_service_never_returns_seed_or_creates_model(builde
 
 
 @pytest.mark.integration
+def test_versione_su_albero_con_lingua_solo_sulla_foglia(builder_client, catalogo_esterno):
+    """Contratto 0.7.0: albero nella forma che GEBAN invia davvero.
+
+    La foglia dichiara `lingue`, i campi non dichiarano nulla. L'identita' del
+    campo era la coppia `(codice, lingua)`, e il frontend manda "IT" di default:
+    senza il ripiego sul campo senza lingua ogni campo sarebbe stato respinto
+    con CAMPO_NON_AMMESSO, pur essendo l'albero conforme.
+    """
+    _, responses, _ = catalogo_esterno
+    campi = [
+        {"codice": codice, "etichetta": codice, "tipo": "string",
+         "obbligatorio": True, "ordine": ordine}
+        for ordine, codice in enumerate(["codice_bando", "titolo", "numero_posti"], start=1)
+    ]
+    responses["/discovery"] = (200, {"BANDO_CONCORSO": {
+        "validita": "2026-09-17T00:00:00Z", "nodi": [
+            {"codice": "TD", "descrizione": "Tempo determinato", "tipo_livello": "tipologia", "figli": [
+                {"codice": "RICERCATORE", "descrizione": "Ricercatore", "tipo_livello": "profilo",
+                 "livelli_possibili": ["I", "II", "III"],
+                 "lingue": ["IT", "ENG"], "campi": campi}
+            ]}
+        ]}})
+    modello = _crea_modello(builder_client, codice="pytest-lingua-sulla-foglia")
+
+    response = builder_client.post(
+        f"/api/v1/builder/modelli/{modello['id']}/versioni",
+        # Come il frontend, che non conosce una lingua per campo e manda il default.
+        json={"campi": [{"codice": campo["codice"], "lingua": "IT"} for campo in campi]},
+    )
+
+    assert response.status_code == 201, response.text
+    salvati = builder_client.get(f"/api/v1/builder/modelli/{modello['id']}").json()["versioni"][0]["campi"]
+    assert [campo["codice"] for campo in salvati] == ["codice_bando", "titolo", "numero_posti"]
+    assert all(campo["lingua"] is None for campo in salvati), "la lingua resta della foglia"
+
+
+@pytest.mark.integration
 def test_crea_modello_e_versione_con_campo_non_ammesso_viene_rifiutato(builder_client):
     modello = _crea_modello(builder_client, codice="pytest-modello-campo-invalido")
 

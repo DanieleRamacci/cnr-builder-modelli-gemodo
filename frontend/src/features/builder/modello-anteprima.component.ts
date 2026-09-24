@@ -106,7 +106,9 @@ const PROPRIETA_NODO = new Set([
               </div>
               <div class="etichetta">{{ campo.etichetta }}</div>
               <div class="riga">
-                <span class="lingua">{{ campo.lingua }}</span>
+                @if (campo.lingua) {
+                  <span class="lingua">{{ campo.lingua }}</span>
+                }
                 @if (campo.obbligatorio) {
                   <span class="pill">obbligatorio</span>
                 }
