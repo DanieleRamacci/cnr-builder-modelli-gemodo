@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Registro Software E Discovery Autorizzato
-  version: 0.2.0
+  version: 0.3.0
   description: >
     Contratto T078, implementato (T081 registro/configurazione/verifica admin,
     T082 resolver builder dal registro, T083 letture manager). La matrice di
@@ -288,6 +288,16 @@ components:
         nome_dimensione: {type: string, minLength: 1, maxLength: 64}
         consente_valore_generico: {type: boolean}
         valore_default: {type: string, minLength: 1, maxLength: 64, nullable: true}
+        conferma_impatto:
+          type: boolean
+          default: false
+          description: >-
+            011 FR-010b. Chiudere il generico (`consente_valore_generico` da
+            vero a falso) lascia senza un valore ammesso i modelli pubblicati
+            che non valorizzano la dimensione. Senza questa conferma la
+            richiesta e' respinta con `409 CONFERMA_IMPATTO_RICHIESTA`, i cui
+            `dettagli` elencano i modelli coinvolti. Il cambio non viene mai
+            rifiutato: vietarlo sarebbe un vicolo cieco.
     PolicyDimensione:
       type: object
       additionalProperties: false
@@ -297,6 +307,62 @@ components:
         consente_valore_generico: {type: boolean}
         valore_default: {type: string, nullable: true}
         modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
+        modelli_pubblicati_senza_valore:
+          type: integer
+          minimum: 0
+          description: >-
+            011 FR-010b. Modelli pubblicati che NON valorizzano la dimensione:
+            l'insieme che chiudere il generico lascia senza un valore ammesso.
+            Restano reperibili nel catalogo (FR-010, seconda clausola), ma da
+            quel momento non se ne possono creare di nuovi.
+    EsitoCompatibilitaVersione:
+      type: object
+      additionalProperties: false
+      description: >-
+        FR-014/FR-015 (T055: schema definito prima di esporre esiti runtime;
+        l'endpoint che lo restituisce e' T058). Confronto fra una versione
+        modello e il ramo discovery live. E' distinto dallo stato di
+        pubblicazione: una versione `PUBBLICATO` puo' essere `DA_AGGIORNARE`
+        senza smettere di essere pubblicata.
+      required: [esito, verificato_at, differenze]
+      properties:
+        esito:
+          type: string
+          enum: [ALLINEATO, COMPATIBILE_CON_VARIAZIONI, DA_AGGIORNARE, NON_VERIFICABILE]
+          description: >-
+            `DA_AGGIORNARE` e' il solo esito che chiede un'azione.
+            `NON_VERIFICABILE` copre l'errore esterno e la versione priva di
+            firma, e MUST NOT essere presentato come allineato.
+        verificato_at: {type: string, format: date-time}
+        firma_osservata:
+          type: string
+          nullable: true
+          description: Firma del ramo live al momento del confronto; assente se non calcolabile.
+        differenze:
+          type: array
+          description: I motivi dell'esito, nella forma che la dashboard mostra.
+          items:
+            type: object
+            required: [tipo]
+            properties:
+              tipo:
+                type: string
+                enum:
+                  - PERCORSO_SCOMPARSO
+                  - DIPENDENZA_SCOMPARSA
+                  - CAMPO_USATO_RIMOSSO
+                  - NUOVO_CAMPO_OBBLIGATORIO
+                  - TIPO_CAMBIATO
+                  - VINCOLO_PIU_STRETTO
+                  - VINCOLO_PIU_PERMISSIVO
+                  - VALORE_SCELTO_NON_PIU_AMMESSO
+                  - VALORI_AMMESSI_RISTRETTI
+                  - VALORI_AMMESSI_AMPLIATI
+                  - OBBLIGATORIO_DIVENUTO_OPZIONALE
+              campo: {type: string}
+              percorso: {type: string}
+              atteso: {}
+              osservato: {}
     DimensioneNonConfigurata:
       type: object
       additionalProperties: false

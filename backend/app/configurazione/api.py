@@ -116,7 +116,7 @@ def struttura_tipo_documento_live(
 def policy_dimensioni_live(
     integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni
 ):
-    policy, non_configurate, conteggi = service.policy_dimensioni_live(
+    policy, non_configurate, conteggi, impatti = service.policy_dimensioni_live(
         integrazione_id, codice, principal
     )
     return PolicyDimensioniResponse(
@@ -127,6 +127,7 @@ def policy_dimensioni_live(
                 consente_valore_generico=item.consente_valore_generico,
                 valore_default=item.valore_default,
                 modelli_pubblicati_che_la_valorizzano=conteggi[item.nome_dimensione],
+                modelli_pubblicati_senza_valore=impatti[item.nome_dimensione],
             )
             for item in policy
         ],
@@ -160,5 +161,10 @@ def imposta_policy_dimensione_live(
         valore_default=policy.valore_default,
         modelli_pubblicati_che_la_valorizzano=builder_repository.conta_modelli_pubblicati_con_dimensione(
             service.db, policy.tipo_documento_id, policy.nome_dimensione
+        ),
+        modelli_pubblicati_senza_valore=len(
+            builder_repository.modelli_pubblicati_senza_dimensione(
+                service.db, policy.tipo_documento_id, policy.nome_dimensione
+            )
         ),
     )

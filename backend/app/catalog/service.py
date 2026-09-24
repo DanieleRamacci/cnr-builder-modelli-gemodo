@@ -146,6 +146,24 @@ class CatalogService:
             for p in builder_repository.policy_dimensioni(self.db, tipo.id)
             if p.consente_valore_generico
         }
+        # 011 FR-010 (rivisto, DEC-011-POLICY-NON-INVALIDA-IL-PUBBLICATO): la
+        # policy governa cosa si puo' *creare*, non la reperibilita' di cio'
+        # che e' gia' pubblicato. Un modello senza quella dimensione e' stato
+        # pubblicato quando il generico era ammesso, e dichiara di valere per
+        # tutti i valori: chiudere la policy dopo lo rendeva irreperibile per
+        # ogni valore, cioe' lo stesso danno che FR-009 vieta quando la causa
+        # e' l'albero che cambia. Non indebolisce la protezione originale
+        # ("tornare un'edizione diversa da quella richiesta sarebbe
+        # scorretto"): un modello generico non e' un'edizione diversa.
+        generiche |= {
+            nome
+            for nome in richieste
+            if nome not in generiche
+            and any(
+                builder_repository.modelli_pubblicati_senza_dimensione(self.db, tipo.id, nome)
+                for tipo in tipi
+            )
+        }
         rilassate: list[str] = []
         for nome in sorted(richieste):
             if nome not in generiche:

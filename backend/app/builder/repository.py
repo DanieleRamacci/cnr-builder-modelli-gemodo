@@ -187,12 +187,9 @@ def policy_dimensioni(db: Session, tipo_documento_id) -> list[PolicyDimensione]:
         .order_by(PolicyDimensione.nome_dimensione)))
 
 
-def conta_modelli_pubblicati_con_dimensione(
-    db: Session, tipo_documento_id, nome_dimensione: str
-) -> int:
-    """Conta i modelli pubblicati che valorizzano la dimensione richiesta."""
-    return int(db.scalar(
-        select(func.count(func.distinct(ModelloDocumento.id)))
+def _modelli_pubblicati(tipo_documento_id):
+    return (
+        select(ModelloDocumento)
         .join(
             ModelloDocumentoVersione,
             ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id,
@@ -201,9 +198,38 @@ def conta_modelli_pubblicati_con_dimensione(
             ModelloDocumento.tipo_documento_id == tipo_documento_id,
             ModelloDocumento.stato != "ELIMINATO",
             ModelloDocumentoVersione.stato == "PUBBLICATO",
-            ModelloDocumento.dimensioni.has_key(nome_dimensione),  # noqa: W601 - operatore JSONB
         )
+    )
+
+
+def conta_modelli_pubblicati_con_dimensione(
+    db: Session, tipo_documento_id, nome_dimensione: str
+) -> int:
+    """Conta i modelli pubblicati che valorizzano la dimensione richiesta."""
+    return int(db.scalar(
+        _modelli_pubblicati(tipo_documento_id)
+        .with_only_columns(func.count(func.distinct(ModelloDocumento.id)))
+        .where(ModelloDocumento.dimensioni.has_key(nome_dimensione))  # noqa: W601 - operatore JSONB
     ) or 0)
+
+
+def modelli_pubblicati_senza_dimensione(
+    db: Session, tipo_documento_id, nome_dimensione: str
+) -> list[ModelloDocumento]:
+    """I modelli pubblicati che **non** valorizzano la dimensione.
+
+    Sono l'insieme opposto di `conta_modelli_pubblicati_con_dimensione`, ed e'
+    quello che conta quando si chiude il generico: sono questi a restare senza
+    un valore ammesso. Il conteggio mostrato prima del salvataggio guardava
+    solo l'altro insieme, quindi annunciava zero proprio quando l'impatto
+    c'era (DEC-011-POLICY-NON-INVALIDA-IL-PUBBLICATO).
+    """
+    return list(db.scalars(
+        _modelli_pubblicati(tipo_documento_id)
+        .where(~ModelloDocumento.dimensioni.has_key(nome_dimensione))  # noqa: W601 - operatore JSONB
+        .distinct()
+        .order_by(ModelloDocumento.codice)
+    ))
 
 
 def salva_policy_dimensione(

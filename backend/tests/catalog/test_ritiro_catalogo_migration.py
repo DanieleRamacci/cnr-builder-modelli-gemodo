@@ -38,13 +38,29 @@ def test_migration_preserves_owned_models_and_contracts(postgres_database_url, m
             """), {"id": uuid.uuid4(), "modello": refs[0]["id"]})
             tabelle = ["modello_versione", "campo_modello", "audit_evento_modello",
                        "sezione_modello", "generazione_documento"]
-            prima = {t: db.execute(sa.text(f"SELECT * FROM {t} ORDER BY id")).all() for t in tabelle}
+            prima = {
+                t: db.execute(sa.text(f"SELECT * FROM {t} ORDER BY id")).mappings().all()
+                for t in tabelle
+            }
             modelli_prima = db.execute(sa.text("SELECT * FROM modello_documento ORDER BY id")).mappings().all()
         command.upgrade(config, "head")
         with engine.connect() as db:
-            dopo = {t: db.execute(sa.text(f"SELECT * FROM {t} ORDER BY id")).all() for t in tabelle}
+            dopo = {
+                t: db.execute(sa.text(f"SELECT * FROM {t} ORDER BY id")).mappings().all()
+                for t in tabelle
+            }
             modelli_dopo = db.execute(sa.text("SELECT * FROM modello_documento ORDER BY id")).mappings().all()
-        assert prima == dopo
+        # Si confrontano le **colonne di prima**, non le tuple intere: una
+        # migration che aggiunge una colonna nuova (0022) lascia i dati
+        # esistenti intatti, ed e' quello che questo test deve provare. Con il
+        # confronto posizionale bastava una colonna in piu', vuota su tutte le
+        # righe, per farlo fallire senza che nulla fosse andato perduto.
+        for tabella, righe_prima in prima.items():
+            righe_dopo = dopo[tabella]
+            assert len(righe_prima) == len(righe_dopo), tabella
+            for vecchia, nuova in zip(righe_prima, righe_dopo, strict=True):
+                for colonna, valore in vecchia.items():
+                    assert nuova[colonna] == valore, f"{tabella}.{colonna}"
         assert len(modelli_prima) == len(modelli_dopo)
         for old, new in zip(modelli_prima, modelli_dopo, strict=True):
             for key, value in old.items():

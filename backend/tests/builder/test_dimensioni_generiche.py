@@ -36,6 +36,7 @@ from tests.builder.test_builder_flow_api import (  # noqa: F401  (fixtures)
     catalogo_esterno,
     db_engine,
     integrazione_connessa,
+    policy_url,
 )
 from tests.discovery.conftest import discovery_server  # noqa: F401  (fixture)
 from tests.support.postgres import postgres_database_url  # noqa: F401  (fixture)
@@ -48,7 +49,9 @@ CAMPI_CONTRATTO = [
     {"codice": "oggetto_contratto", "lingua": "IT"},
     {"codice": "compenso", "lingua": "IT"},
 ]
-POLICY_URL = f"/api/v1/builder/tipi-documento/{TIPO}/policy-dimensioni"
+# La lettura resta sul builder; la scrittura passa dall'endpoint unico di
+# `configurazione`, l'unico che vede l'albero dell'integrazione.
+POLICY_READ_URL = f"/api/v1/builder/tipi-documento/{TIPO}/policy-dimensioni"
 
 
 @pytest.fixture()
@@ -170,7 +173,7 @@ def test_la_policy_governa_una_dimensione_che_nessuno_aveva_previsto(
     assert primo.status_code == 201, primo.text
 
     obbligatoria = builder_client.put(
-        POLICY_URL, json={"nome_dimensione": "area_geografica", "consente_valore_generico": False},
+        policy_url(integrazione_connessa, TIPO), json={"nome_dimensione": "area_geografica", "consente_valore_generico": False},
     )
     assert obbligatoria.status_code in {200, 201}, obbligatoria.text
 
@@ -179,7 +182,7 @@ def test_la_policy_governa_una_dimensione_che_nessuno_aveva_previsto(
     assert senza_valore.json()["codice"] == "DIMENSIONE_RICHIEDE_VALORE"
 
     generica = builder_client.put(
-        POLICY_URL, json={"nome_dimensione": "area_geografica", "consente_valore_generico": True},
+        policy_url(integrazione_connessa, TIPO), json={"nome_dimensione": "area_geografica", "consente_valore_generico": True},
     )
     assert generica.status_code == 200, generica.text
 
@@ -353,7 +356,7 @@ def test_edizione_derivata_rifiutata_se_la_dimensione_ammette_generico(
         builder_client, integrazione_connessa, dimensioni={"area_geografica": "NORD"},
     ).json()
     policy = builder_client.put(
-        POLICY_URL,
+        policy_url(integrazione_connessa, TIPO),
         json={"nome_dimensione": "area_geografica", "consente_valore_generico": True},
     )
     assert policy.status_code == 200, policy.text
@@ -401,7 +404,7 @@ def test_fallback_lingua_e_governato_dalla_policy(
         assert senza_fallback.json()["fallback_applicato"] is False
 
         policy = builder_client.put(
-            f"/api/v1/builder/tipi-documento/{codice_tipo}/policy-dimensioni",
+            policy_url(integrazione_connessa, codice_tipo),
             json={"nome_dimensione": "lingua", "consente_valore_generico": True},
         )
         assert policy.status_code == 200, policy.text

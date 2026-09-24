@@ -532,3 +532,21 @@ alla domanda letterale da cui la spec nasce.
 **Non rinviare Phase 8**: quei documenti, dopo le fasi 6 e 7, direbbero il falso.
 Un conflitto lasciato aperto e' esattamente il tipo di residuo che ha reso
 necessaria questa spec.
+
+- [x] T055b (`builder/repository.py`, `builder/service.py`, `configurazione/service.py`,
+      `catalog/service.py`, `dimensioni.component.*`; test in
+      `backend/tests/builder/test_policy_dimensione.py` e
+      `frontend/.../dimensioni.component.spec.ts`)
+      **FR-010 seconda clausola + FR-010b.** Rilevato collaudando le API reali
+      il 2026-09-24: chiudere il generico di una dimensione rendeva
+      irreperibile nel catalogo, **per ogni valore**, un modello gia'
+      pubblicato che non la valorizzava, e l'avviso mostrato prima di salvare
+      annunciava `0` perche' contava i modelli che la **valorizzano** - cioe'
+      l'insieme opposto a quello colpito. Tre interventi: il conteggio
+      dell'impatto guarda l'insieme giusto ed e' esposto anche in lettura
+      (`modelli_pubblicati_senza_valore`); il cambio richiede `conferma_impatto`
+      quando l'impatto e' maggiore di zero, senza mai essere rifiutato
+      (vietarlo sarebbe un vicolo cieco, contro DEC-011-POLICY-LINGUA-ALL-ADMIN);
+      il fallback del catalogo scatta comunque per i modelli gia' pubblicati,
+      perche' la policy governa cosa si crea, non la reperibilita' del
+      pubblicato. Vedi DEC-011-POLICY-NON-INVALIDA-IL-PUBBLICATO.

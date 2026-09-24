@@ -280,6 +280,27 @@ contro un endpoint discovery che dichiara quel tipo.
   `consente_valore_generico` e' vero, non scatta altrove. Generalizza
   `DEC-007-FALLBACK-LIVELLO-CATALOGO`, che resta valida nel merito per il
   livello e la cui motivazione sulla lingua va conservata.
+  MUST inoltre scattare, indipendentemente dalla policy corrente, per i modelli
+  **gia' pubblicati** che non valorizzano quella dimensione.
+  *(Seconda clausola aggiunta il 2026-09-24, `DEC-011-POLICY-NON-INVALIDA-IL-PUBBLICATO`.
+  Con la sola prima clausola, chiudere il generico rendeva irreperibile per
+  **ogni** valore un modello gia' pubblicato: lo stesso danno che FR-009 vieta
+  quando la causa e' l'albero che cambia, con la sola differenza che qui la
+  causa e' una configurazione nostra. La policy governa cosa si puo' creare,
+  non la reperibilita' di cio' che e' gia' stato pubblicato. La protezione
+  originale - "tornare un'edizione diversa da quella esplicitamente richiesta
+  sarebbe scorretto" - non si indebolisce: un modello generico non e'
+  un'edizione diversa, dichiara di valere per tutti i valori.)*
+- **FR-010b**: Chiudere il generico di una dimensione (`consente_valore_generico`
+  da vero a falso) MUST esporre, prima di salvare, quanti modelli pubblicati
+  non la valorizzano, e MUST richiedere una conferma esplicita quando sono piu'
+  di zero. MUST NOT rifiutare il cambio: vietarlo creerebbe un vicolo cieco -
+  per sbloccarsi servirebbe modificare i modelli, che richiede la policy gia'
+  cambiata - e contraddirebbe `DEC-011-POLICY-LINGUA-ALL-ADMIN`, per cui la
+  scelta e' "deliberata dell'admin, non un'impossibilita' strutturale".
+  *(Aggiunto il 2026-09-24. Il conteggio esisteva ma contava i modelli che
+  **valorizzano** la dimensione: l'insieme opposto a quello che il cambio
+  tocca, quindi annunciava zero proprio quando l'impatto c'era.)*
 - **FR-011**: Il valore proposto di default per una dimensione MUST seguire una
   regola dichiarata, non l'ordine con cui l'integrazione elenca i valori.
   Assorbe `DEC-002-DEFAULT-VALORE-DIMENSIONE`. L'ordine dell'albero discovery

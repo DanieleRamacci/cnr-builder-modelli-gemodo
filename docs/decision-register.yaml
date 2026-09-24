@@ -1146,6 +1146,30 @@ decisions:
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-23
 
+  - id: DEC-011-POLICY-NON-INVALIDA-IL-PUBBLICATO
+    titolo: La policy governa cosa si crea, non la reperibilita' di cio' che e' gia' pubblicato
+    owner_spec: specs/011-dimensioni-generiche-modello
+    spec_interessate: [specs/002-builder-modelli, specs/001-catalogo-contratto-geban]
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Rilevato il 2026-09-24 collaudando le API reali. Chiudere il generico di
+      una dimensione rendeva irreperibile nel catalogo, per **ogni** valore, un
+      modello gia' pubblicato che non la valorizzava - lo stesso danno che
+      FR-009 vieta quando la causa e' l'albero che cambia. Il conteggio mostrato
+      prima del salvataggio contava i modelli che **valorizzano** la dimensione,
+      cioe' l'insieme opposto a quello colpito, e annunciava zero proprio quando
+      l'impatto c'era. Tre conseguenze: FR-010 acquista una seconda clausola (il
+      fallback scatta comunque per i modelli gia' pubblicati che non valorizzano
+      la dimensione); nasce FR-010b (l'impatto vero e' esposto in lettura e il
+      cambio richiede conferma esplicita, ma non viene mai rifiutato, per non
+      creare il vicolo cieco che DEC-011-POLICY-LINGUA-ALL-ADMIN esclude); la
+      protezione originale di DEC-007-FALLBACK-LIVELLO-CATALOGO resta intatta,
+      perche' un modello generico non e' "un'edizione diversa da quella
+      richiesta" ma un modello che dichiara di valere per tutti i valori.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-24
+
   - id: DEC-011-LINGUA-SULLA-FOGLIA-NON-SUL-CAMPO
     titolo: La lingua e' una proprieta' della foglia discovery, non del singolo campo
     owner_spec: specs/010-configurazione-cataloghi-integrazioni

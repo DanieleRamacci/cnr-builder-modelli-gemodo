@@ -164,6 +164,57 @@ describe('DimensioniComponent', () => {
     });
   });
 
+  it('chiede conferma invece di rompere in silenzio i modelli senza valore (FR-010b)', () => {
+    // Chiudere il generico lascia senza un valore ammesso i modelli pubblicati
+    // che non lo valorizzano: il backend si ferma con 409 ed elenca quali.
+    policyService.salvaPolicy.mockReturnValueOnce(
+      throwError(() => ({
+        status: 409,
+        codice: 'CONFERMA_IMPATTO_RICHIESTA',
+        messaggio: "2 modelli pubblicati non valorizzano 'area_geografica'.",
+        dettagli: [
+          { modello_id: 'm-1', codice: 'bando-generico-1', nome: 'Bando generico 1' },
+          { modello_id: 'm-2', codice: 'bando-generico-2', nome: 'Bando generico 2' },
+        ],
+      })),
+    );
+    fixture = TestBed.createComponent(DimensioniComponent);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="TD"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[data-node="RICERCATORE"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('#area_geografica-distinto') as HTMLInputElement).click();
+    fixture.detectChanges();
+    (
+      fixture.nativeElement.querySelector(
+        '[data-save-policy="area_geografica"]',
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    const testo = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(testo).toContain('2 modelli pubblicati non valorizzano');
+    expect(testo).toContain('Bando generico 1');
+    expect(testo).toContain('Bando generico 2');
+
+    const conferma = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((b) => b.textContent?.includes('Confermo, procedi'))!;
+    conferma.click();
+
+    expect(policyService.salvaPolicy).toHaveBeenLastCalledWith(
+      'integration-1',
+      'BANDO_CONCORSO',
+      {
+        nome_dimensione: 'area_geografica',
+        consente_valore_generico: false,
+        conferma_impatto: true,
+        valore_default: null,
+      },
+    );
+  });
+
   it('allows a generic language policy and warns using live model counts', () => {
     fixture = TestBed.createComponent(DimensioniComponent);
     fixture.detectChanges();

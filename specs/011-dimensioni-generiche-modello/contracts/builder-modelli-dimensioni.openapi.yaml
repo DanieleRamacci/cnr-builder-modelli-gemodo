@@ -119,6 +119,16 @@ paths:
                         consente_valore_generico: {type: boolean}
                         valore_default: {type: string, nullable: true}
                         modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
+                        modelli_pubblicati_senza_valore:
+                          type: integer
+                          minimum: 0
+                          description: >-
+                            FR-010b: modelli pubblicati che NON valorizzano la
+                            dimensione. E' l'insieme che chiudere il generico
+                            lascia senza un valore ammesso, quindi la
+                            conseguenza da leggere prima di chiuderlo. Restano
+                            reperibili (FR-010, seconda clausola), ma da quel
+                            momento non se ne possono creare di nuovi.
                   dimensioni_non_configurate:
                     type: array
                     description: Dimensioni viste sull'albero live e non ancora configurate.
@@ -130,8 +140,8 @@ paths:
                         modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
               example:
                 policy:
-                  - {nome_dimensione: lingua, consente_valore_generico: false, valore_default: IT, modelli_pubblicati_che_la_valorizzano: 2}
-                  - {nome_dimensione: livello_professionale, consente_valore_generico: true, valore_default: null, modelli_pubblicati_che_la_valorizzano: 1}
+                  - {nome_dimensione: lingua, consente_valore_generico: false, valore_default: IT, modelli_pubblicati_che_la_valorizzano: 2, modelli_pubblicati_senza_valore: 0}
+                  - {nome_dimensione: livello_professionale, consente_valore_generico: true, valore_default: null, modelli_pubblicati_che_la_valorizzano: 1, modelli_pubblicati_senza_valore: 4}
                 dimensioni_non_configurate:
                   - {nome_dimensione: area_geografica, modelli_pubblicati_che_la_valorizzano: 3}
 

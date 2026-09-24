@@ -307,11 +307,28 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       Evolvere porta e adapter locale mantenendo i consumatori esistenti
       funzionanti; documentare compatibilita' dei metodi storici, test di regressione
       builder su Postgres reale. Nessun parser HTTP a livelli fissi.
-- [ ] T055 [FR-014] Progettare persistenza per versione modello e migration
-      dei metadati di firma/dipendenze/esito; definire algoritmo versionato,
-      normalizzazione e matrice blocco/avviso, compresi nuovi obbligatori,
-      attributi usati e campo opzionale necessario al modello. Aggiornare
-      contratto amministrativo prima di esporre esiti runtime.
+- [x] T055 [FR-014] (migration `0022`, `catalog/models.py`,
+      `data-model.md` sezione "Verifica di compatibilita'",
+      `contracts/integrazioni-api.openapi.yaml` 0.3.0; test in
+      `backend/tests/integration/test_migrazione_firma_contratto_0022.py`)
+      Progettata la persistenza dei metadati di firma/dipendenze/esito.
+      **Due collocazioni**, perche' i tempi di vita differiscono: firma,
+      algoritmo e `contratto_firmato` stanno su `modello_versione` e non
+      cambiano mai (descrivono il ramo com'era); l'esito sta in
+      `esito_compatibilita_versione`, riscritto a ogni ciclo. Tenerli insieme
+      avrebbe aggiornato una versione pubblicata a ogni giro, contro il
+      criterio "conserva data e motivo senza modificare il contenuto
+      pubblicato". `contratto_firmato` **non replica il catalogo** (FR-014):
+      solo i valori ammessi delle dipendenze usate e i campi obbligatori del
+      ramo, cioe' cio' che non sta gia' in `campo_modello`. Definiti
+      l'algoritmo `sha256-v1` con la sua normalizzazione (ramo del modello,
+      campi usati piu' tutti gli obbligatori, chiavi e opzioni ordinate,
+      timestamp esclusi) e la **matrice blocco/avviso**: si segnala cio' che
+      restringe, si ignora cio' che allarga; un campo nuovo pesa solo se
+      obbligatorio. Le versioni anteriori restano senza firma e risultano
+      `NON_VERIFICABILE`, mai allineate per presunzione. Contratto
+      amministrativo aggiornato **prima** di esporre esiti runtime, come il
+      task richiede: lo schema c'e', l'endpoint che lo restituisce e' T058.
 - [ ] T056 [FR-014] Implementare firma SHA-256 e confronto con il contratto
       della versione modello; testare ordinamenti, timestamp variabili,
       ramo scomparso, nuovi obbligatori, opzionali non usati e variazioni di
@@ -977,3 +994,52 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
       di occorrenze, la check-list separa le due righe, e il link alla
       struttura JSON attesa apre la pagina dell'integrazione invece del form
       di creazione contesto. L'esempio mostrato e' allineato alla 0.7.0.
+
+- [x] T116 (`builder/api.py`, `builder/service.py`, `configurazione/service.py`;
+      test in `backend/tests/builder/test_policy_dimensione.py`)
+      **La policy si scrive da un endpoint solo.** Ne esistevano due per lo
+      stesso dato: `PUT /api/v1/builder/tipi-documento/{codice}/policy-dimensioni`
+      e `PUT /api/v1/configurazione/integrazioni/{id}/tipi-documento/{codice}/policy-dimensioni`.
+      Il primo non verificava che la dimensione fosse dichiarata nell'albero
+      (si poteva registrare una policy per una dimensione inesistente) e
+      accettava `ROLE_MANAGER` invece di `GEMODO_ADMIN`: due strade per la
+      stessa scrittura, con controlli diversi. Rimosso il primo. La policy si
+      decide guardando l'albero che l'integrazione manda davvero, quindi vive
+      dove quell'albero arriva. La **lettura** resta disponibile anche sotto
+      `/builder`, perche' serve a `modello-crea` e `modello-anteprima` per
+      costruire il form e non deve richiedere il ruolo di amministratore.
+
+- [ ] T117 [UX] **Segnalare nella pagina dei modelli quando l'alberatura e'
+      cambiata sotto un modello.** Oggi un campo nuovo o rimosso sull'albero
+      discovery non produce alcun segnale: il modello continua a esistere come
+      se nulla fosse. Un campo **nuovo** non e' un problema di per se' (il
+      contratto e' additivo e `extra="allow"` lo assorbe); il punto e' che
+      l'amministratore deve poter vedere che quel modello non rispecchia piu'
+      l'albero corrente - "obsoleto" - e decidere se rigenerarne una versione.
+      Vale per qualunque scostamento, non solo per i campi. Si appoggia a
+      FR-014/T055-T056 (firma SHA-256 del contratto per versione), che e' il
+      meccanismo con cui lo scostamento si rileva senza confronti a mano.
+      **Dipende da T056.** Non e' coperto da T098-T100: quelli segnalano a
+      livello di integrazione e tipo documento (dimensione senza policy,
+      versione di contratto divergente), mentre qui la segnalazione e' sul
+      **singolo modello pubblicato** e va dove l'utente lo guarda, cioe'
+      l'elenco dei modelli. Richiesto dall'utente il 2026-09-24.
+
+- [ ] T118 [UX] **La pagina "Struttura JSON" deve partire dalla struttura
+      generica, non dall'esempio del bando.** Oggi `discovery-example.ts`
+      mostra un esempio cablato su `BANDO_CONCORSO`: per una **integrazione
+      nuova**, che non ha nulla a che vedere con i bandi, e' un esempio finto e
+      fuorviante. La pagina deve mostrare la **forma generica** del contratto
+      discovery - nodi, foglie, campi, dimensioni dichiarate dalla foglia - e
+      da li' generare un esempio costruito sul tipo documento e
+      sull'integrazione correnti. Richiesto dall'utente il 2026-09-24.
+
+- [ ] T119 **Principio da presidiare: la verifica controlla la forma, non i
+      contenuti attesi.** L'unica cosa che la verifica dell'endpoint deve
+      stabilire e' che la risposta sia **strutturata correttamente in modo
+      generico**, perche' quella struttura vale per tutte le integrazioni e
+      tutti i tipi documento che GEMODO gestira'. MUST NOT verificare che i
+      contenuti corrispondano a un albero interno di riferimento, ne' che i
+      codici siano quelli attesi da un'integrazione particolare. Da tenere
+      presente rivedendo T117 e T118, che non devono reintrodurre un confronto
+      con un contenuto cablato. Ribadito dall'utente il 2026-09-24.

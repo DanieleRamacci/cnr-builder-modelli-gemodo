@@ -119,9 +119,46 @@ class ModelloDocumentoVersione(Base):
     pubblicato_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 010 FR-014: il ramo **com'era** quando la versione e' nata. Immutabile:
+    # descrive il passato, quindi nessun ciclo di verifica lo riscrive.
+    # Nullo sulle versioni anteriori alla migration 0022, che non hanno una
+    # firma e non possono averne una inventata (vedi la sua docstring).
+    firma_algoritmo: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    firma_contratto: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    contratto_firmato: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     modello: Mapped[ModelloDocumento] = relationship(back_populates="versioni")
     campi: Mapped[list[ModelloCampoRichiesto]] = relationship(back_populates="versione_modello")
+    esito_compatibilita: Mapped["EsitoCompatibilitaVersione | None"] = relationship(
+        back_populates="versione", uselist=False, cascade="all, delete-orphan",
+    )
+
+
+class EsitoCompatibilitaVersione(Base):
+    """Ultimo confronto fra la versione e il ramo live (010 FR-014/FR-015).
+
+    Sta fuori da `modello_versione` perche' e' l'unico dato che il runner
+    riscrive: tenerlo li' avrebbe aggiornato una versione pubblicata a ogni
+    ciclo. L'esito e' distinto dallo stato di pubblicazione - una versione
+    `PUBBLICATO` puo' essere `DA_AGGIORNARE` senza smettere di essere
+    pubblicata - e un errore esterno resta `NON_VERIFICABILE`, mai allineato.
+    """
+
+    __tablename__ = "esito_compatibilita_versione"
+    __table_args__ = (
+        UniqueConstraint("modello_versione_id", name="uq_esito_compatibilita_versione"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    modello_versione_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("modello_versione.id", ondelete="CASCADE"), nullable=False
+    )
+    esito: Mapped[str] = mapped_column(String(32), nullable=False)
+    verificato_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    differenze: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    firma_osservata: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    versione: Mapped[ModelloDocumentoVersione] = relationship(back_populates="esito_compatibilita")
 
 
 class PolicyDimensione(Base):

@@ -108,6 +108,34 @@
           <div class="alert alert-danger" role="alert">{{ erroreSalvataggio() }}</div>
         }
 
+        @if (confermaRichiesta(); as conferma) {
+          <div class="alert alert-warning" role="alert">
+            <p class="mb-2"><strong>{{ conferma.messaggio }}</strong></p>
+            <ul class="mb-2">
+              @for (modello of conferma.modelli; track modello.modello_id) {
+                <li>{{ modello.nome }} <code>{{ modello.codice }}</code></li>
+              }
+            </ul>
+            <div class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-warning"
+                [disabled]="!!salvando()"
+                (click)="salva(conferma.nome, true)"
+              >
+                Confermo, procedi
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                (click)="annullaConferma()"
+              >
+                Annulla
+              </button>
+            </div>
+          </div>
+        }
+
         <div class="dimension-list">
           @for (dimensione of dimensioni(); track dimensione.nome) {
             <article class="dimension-card" [class.pending]="!configurata(dimensione)">

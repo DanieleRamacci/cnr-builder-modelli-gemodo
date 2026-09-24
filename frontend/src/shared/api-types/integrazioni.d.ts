@@ -187,12 +187,16 @@ export interface components {
             nome_dimensione: string;
             consente_valore_generico: boolean;
             valore_default?: string | null;
+            /** @description FR-010b: conferma di aver letto quanti modelli pubblicati non valorizzano la dimensione. Obbligatoria per chiudere il generico quando sono piu' di zero; altrimenti la richiesta e' respinta con CONFERMA_IMPATTO_RICHIESTA. */
+            conferma_impatto?: boolean;
         };
         PolicyDimensione: {
             nome_dimensione: string;
             consente_valore_generico: boolean;
             valore_default: string | null;
             modelli_pubblicati_che_la_valorizzano: number;
+            /** @description FR-010b: modelli pubblicati che NON la valorizzano, cioe' l'insieme che chiudere il generico lascia senza un valore ammesso. Restano reperibili, ma da quel momento non se ne possono creare di nuovi. */
+            modelli_pubblicati_senza_valore?: number;
         };
         DimensioneNonConfigurata: {
             nome_dimensione: string;

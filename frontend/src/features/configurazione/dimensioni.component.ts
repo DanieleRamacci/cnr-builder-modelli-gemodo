@@ -12,6 +12,19 @@ import {
   type StrutturaLive,
 } from './policy-dimensioni.service';
 
+/** Un modello pubblicato che la dimensione non la valorizza (011 FR-010b). */
+interface ModelloImpattato {
+  modello_id: string;
+  codice: string;
+  nome: string;
+}
+
+interface ConfermaImpatto {
+  nome: string;
+  messaggio: string;
+  modelli: ModelloImpattato[];
+}
+
 interface DimensioneFoglia {
   nome: string;
   valori: string[];
@@ -52,6 +65,7 @@ export class DimensioniComponent {
   protected readonly errore = signal<string | null>(null);
   protected readonly salvando = signal<string | null>(null);
   protected readonly erroreSalvataggio = signal<string | null>(null);
+  protected readonly confermaRichiesta = signal<ConfermaImpatto | null>(null);
   protected readonly inModifica = signal<string[]>([]);
   protected readonly scelte = signal<Record<string, boolean | null>>({});
   protected readonly defaultScelti = signal<Record<string, string | null>>({});
@@ -199,21 +213,27 @@ export class DimensioniComponent {
     this.defaultScelti.update((defaults) => ({ ...defaults, [nome]: valore || null }));
   }
 
+  protected annullaConferma(): void {
+    this.confermaRichiesta.set(null);
+  }
+
   protected annulla(nome: string): void {
     this.inModifica.update((nomi) => nomi.filter((item) => item !== nome));
     this.scelte.update((scelte) => ({ ...scelte, [nome]: null }));
     this.defaultScelti.update((defaults) => ({ ...defaults, [nome]: null }));
   }
 
-  protected salva(nome: string): void {
+  protected salva(nome: string, confermaImpatto = false): void {
     const consenteValoreGenerico = this.scelta(nome);
     if (consenteValoreGenerico === null || this.salvando()) return;
     this.salvando.set(nome);
     this.erroreSalvataggio.set(null);
+    if (!confermaImpatto) this.confermaRichiesta.set(null);
     this.service
       .salvaPolicy(this.integrazioneId, this.codice, {
         nome_dimensione: nome,
         consente_valore_generico: consenteValoreGenerico,
+        ...(confermaImpatto ? { conferma_impatto: true } : {}),
         valore_default: this.defaultScelto(nome),
       })
       .subscribe({
@@ -229,10 +249,26 @@ export class DimensioniComponent {
             };
           });
           this.inModifica.update((nomi) => nomi.filter((item) => item !== nome));
+          this.confermaRichiesta.set(null);
           this.salvando.set(null);
         },
         error: (error: ApiError) => {
           this.salvando.set(null);
+          // Chiudere il generico lascia senza un valore ammesso i modelli
+          // pubblicati che non lo valorizzano. Non e' un errore: e' la
+          // conseguenza da leggere prima di procedere (011 FR-010b).
+          if (error.codice === 'CONFERMA_IMPATTO_RICHIESTA') {
+            this.confermaRichiesta.set({
+              nome,
+              messaggio: error.messaggio,
+              modelli: (error.dettagli ?? []).map((dettaglio) => ({
+                modello_id: dettaglio['modello_id'] ?? '',
+                codice: dettaglio['codice'] ?? '',
+                nome: dettaglio['nome'] ?? '',
+              })),
+            });
+            return;
+          }
           this.erroreSalvataggio.set(error.messaggio);
         },
       });

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.builder import repository as builder_repository
 from app.catalog.models import TipoDocumento
-from app.common.errors import DomainError
+from app.common.errors import DomainError, ErrorCode
 from app.common.security import PrincipalGEMODO, ensure_roles
 from app.configurazione import repository
 from app.configurazione.models import AttributoProfilo, AuditEventoConfigurazione, AuditEventoIntegrazione, DefinizioneStruttura, EndpointIntegrazione, Integrazione, SchemaDiscoveryGenerato
@@ -420,11 +420,49 @@ class IntegrazioniService:
             )
             for nome in configurate | set(non_configurate)
         }
-        return policy, non_configurate, conteggi
+        # FR-010b: quanti modelli pubblicati resterebbero senza valore ammesso
+        # se si chiudesse il generico. E' l'insieme opposto a `conteggi`, ed e'
+        # quello che il cambio tocca davvero.
+        impatti = {
+            nome: (
+                len(builder_repository.modelli_pubblicati_senza_dimensione(
+                    self.db, tipo.id, nome
+                ))
+                if tipo else 0
+            )
+            for nome in configurate | set(non_configurate)
+        }
+        return policy, non_configurate, conteggi, impatti
 
     def imposta_policy_dimensione_live(
         self, integrazione_id: uuid.UUID, codice: str, request, principal: PrincipalGEMODO
     ):
+        """Registra la policy di una dimensione. **Unico punto di scrittura.**
+
+        Esisteva un secondo PUT sotto `/api/v1/builder`, che scriveva lo stesso
+        dato senza verificare che la dimensione fosse dichiarata nell'albero e
+        accettando ruoli piu' larghi. E' stato rimosso: la policy si decide
+        guardando l'albero che l'integrazione manda davvero, quindi appartiene
+        a questo lato. La lettura resta disponibile anche dal builder, dove
+        serve a costruire il form e non richiede il ruolo di amministratore.
+
+        Nessuna dimensione e' esclusa dal generico. Prima esisteva
+        `DIMENSIONI_SENZA_GENERICO = {"lingua"}`, che rifiutava con
+        `GENERICO_NON_SUPPORTATO` il tentativo di dichiarare la lingua
+        generica: serviva perche' la colonna era NOT NULL e il contratto la
+        esponeva obbligatoria, quindi accettare e poi salvare 'IT' sarebbe
+        stata una bugia silenziosa. Con 011 la colonna non esiste piu' e il
+        contratto ammette il null, quindi il divieto non ha piu' una ragione
+        tecnica - ed era, alla lettera, un nome di dimensione scritto nel
+        codice.
+
+        La protezione non sparisce, cambia natura: la conseguenza e' calcolata
+        dai dati e va confermata prima di salvare (FR-010b). Il rischio residuo
+        e' dichiarato in DEC-011-POLICY-LINGUA-ALL-ADMIN - portare la lingua
+        del bando a generico riaprirebbe l'ambiguita' che DEC-001-LINGUA-IT-EN
+        aveva chiuso - ma e' una scelta deliberata dell'admin, non
+        un'impossibilita' strutturale.
+        """
         source, mappa = self._mappa_live(integrazione_id, principal)
         catalogo = mappa.cataloghi.get(codice)
         if catalogo is None:
@@ -440,6 +478,23 @@ class IntegrazioniService:
                 status_code=409,
             )
         tipo = self._tipo_live_locale(source, codice, associa=True)
+        if not request.consente_valore_generico:
+            impattati = builder_repository.modelli_pubblicati_senza_dimensione(
+                self.db, tipo.id, request.nome_dimensione,
+            )
+            if impattati and not request.conferma_impatto:
+                raise DomainError(
+                    ErrorCode.CONFERMA_IMPATTO_RICHIESTA,
+                    f"{len(impattati)} modelli pubblicati non valorizzano "
+                    f"'{request.nome_dimensione}': restano reperibili, ma da ora "
+                    f"non se ne potranno creare di nuovi senza un valore. "
+                    f"Confermare per procedere.",
+                    status_code=409,
+                    dettagli=[
+                        {"modello_id": str(m.id), "codice": m.codice, "nome": m.nome}
+                        for m in impattati
+                    ],
+                )
         policy, _ = builder_repository.salva_policy_dimensione(
             self.db,
             tipo_documento_id=tipo.id,

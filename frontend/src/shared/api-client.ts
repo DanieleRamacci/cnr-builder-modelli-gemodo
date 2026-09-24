@@ -35,11 +35,16 @@ export class ApiClient {
 }
 
 function mapError(error: HttpErrorResponse): Observable<never> {
-  const body = error.error as { codice?: string; messaggio?: string } | null;
+  const body = error.error as {
+    codice?: string;
+    messaggio?: string;
+    dettagli?: Record<string, string>[];
+  } | null;
   const apiError: ApiError = {
     codice: body?.codice ?? 'ERRORE_SCONOSCIUTO',
     messaggio: body?.messaggio ?? 'Errore di comunicazione con il servizio',
     status: error.status,
+    ...(body?.dettagli ? { dettagli: body.dettagli } : {}),
   };
   return throwError(() => apiError);
 }

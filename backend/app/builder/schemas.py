@@ -193,6 +193,11 @@ class PolicyDimensioneRequest(BaseModel):
     # None significa "nessuna preselezione", che per una dimensione generica
     # equivale a "il default e' non valorizzarla".
     valore_default: str | None = Field(default=None, min_length=1, max_length=64)
+    # Chiudere il generico lascia senza valore ammesso i modelli pubblicati che
+    # non valorizzano la dimensione. Il cambio resta permesso - la scelta e'
+    # dell'admin per DEC-011-POLICY-LINGUA-ALL-ADMIN, e vietarlo creerebbe un
+    # vicolo cieco - ma non deve poter accadere per distrazione.
+    conferma_impatto: bool = False
 
 
 class PolicyDimensioneResponse(BaseModel):
@@ -200,6 +205,10 @@ class PolicyDimensioneResponse(BaseModel):
     consente_valore_generico: bool
     valore_default: str | None = None
     modelli_pubblicati_che_la_valorizzano: int = 0
+    # Modelli pubblicati che NON la valorizzano: l'insieme che chiudere il
+    # generico lascia senza valore ammesso, e quindi la conseguenza da leggere
+    # prima di chiuderlo.
+    modelli_pubblicati_senza_valore: int = 0
 
 
 class DimensioneNonConfigurata(BaseModel):

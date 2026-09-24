@@ -115,6 +115,12 @@ def integrazione_connessa(db_engine, catalogo_esterno, monkeypatch):
             db.execute(sa.text("UPDATE tipo_documento SET integrazione_id = :precedente WHERE codice = 'BANDO_CONCORSO'"),
                       {"precedente": integrazione_precedente})
             db.execute(sa.delete(EndpointIntegrazione).where(EndpointIntegrazione.integrazione_id == source_id))
+            # Scrivere una policy dall'endpoint di configurazione lascia un
+            # evento di audit legato all'integrazione: senza questa riga il
+            # teardown urta il vincolo di chiave esterna.
+            db.execute(sa.text(
+                "DELETE FROM audit_evento_integrazione WHERE integrazione_id = :id"
+            ), {"id": source_id})
             db.execute(sa.delete(Integrazione).where(Integrazione.id == source_id))
             db.commit()
 
@@ -125,6 +131,9 @@ def builder_client(db_engine, monkeypatch, integrazione_connessa):
     monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geri-angular-public")
     monkeypatch.setenv("GEMODO_MOCK_CONTEXT", "geban")
     monkeypatch.setenv("GEMODO_MOCK_CONTEXT_ROLES", "ROLE_MANAGER#geban")
+    # La policy si scrive solo dall'endpoint di configurazione, che richiede
+    # GEMODO_ADMIN: i test che la impostano passano di li', come fa l'admin.
+    monkeypatch.setenv("GEMODO_MOCK_ROLES", "GEMODO_ADMIN,DOCUMENTI_VIEWER,DOCUMENTI_GENERATORE")
 
     session_factory = sessionmaker(bind=db_engine)
 
@@ -274,6 +283,16 @@ def test_selected_integration_requires_context_permission_before_creating_type(b
         with Session(db_engine) as db:
             db.execute(sa.delete(Integrazione).where(Integrazione.id == source_id))
             db.commit()
+
+
+def policy_url(integrazione_id, codice: str = "BANDO_CONCORSO") -> str:
+    """L'unico endpoint di scrittura della policy: vive in `configurazione`,
+    dove arriva l'albero dell'integrazione e si puo' verificare che la
+    dimensione sia davvero dichiarata."""
+    return (
+        f"/api/v1/configurazione/integrazioni/{integrazione_id}"
+        f"/tipi-documento/{codice}/policy-dimensioni"
+    )
 
 
 def _crea_modello(

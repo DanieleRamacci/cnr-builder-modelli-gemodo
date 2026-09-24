@@ -212,13 +212,23 @@ class BuilderService:
         registrate = builder_repository.policy_dimensioni(self.db, tipo.id)
         nomi = {p.nome_dimensione for p in registrate}
         non_configurate = sorted(self._dimensioni_live(codice_tipo_documento, tipo) - nomi)
+        tutte = nomi | set(non_configurate)
         conteggi = {
             nome: builder_repository.conta_modelli_pubblicati_con_dimensione(
                 self.db, tipo.id, nome
             )
-            for nome in nomi | set(non_configurate)
+            for nome in tutte
         }
-        return tipo, registrate, non_configurate, conteggi
+        # Quanti modelli pubblicati resterebbero senza valore ammesso se si
+        # chiudesse il generico: la schermata lo mostra prima che l'admin lo
+        # faccia, non dopo averglielo lasciato fare in silenzio.
+        impatti = {
+            nome: len(builder_repository.modelli_pubblicati_senza_dimensione(
+                self.db, tipo.id, nome
+            ))
+            for nome in tutte
+        }
+        return tipo, registrate, non_configurate, conteggi, impatti
 
     def _dimensioni_live(self, codice_tipo_documento: str, tipo) -> set[str]:
         """Le dimensioni che l'albero live dichiara, qualunque siano (011 FR-005).
@@ -231,34 +241,6 @@ class BuilderService:
         """
         catalogo = self._catalogo(codice_tipo_documento, aggiornato=False, tipo=tipo)
         return set(_dimensioni_dichiarate_ovunque(catalogo))
-
-    def imposta_policy_dimensione(self, principal: PrincipalGEMODO, codice_tipo_documento: str, request):
-        """Registra la policy di una dimensione. Nessuna dimensione e' esclusa.
-
-        Prima esisteva `DIMENSIONI_SENZA_GENERICO = {"lingua"}`, che rifiutava con
-        `GENERICO_NON_SUPPORTATO` il tentativo di dichiarare la lingua generica:
-        serviva perche' la colonna era NOT NULL e il contratto la esponeva
-        obbligatoria, quindi accettare e poi salvare 'IT' sarebbe stata una bugia
-        silenziosa. Con 011 la colonna non esiste piu' e il contratto ammette il
-        null, quindi il divieto non ha piu' una ragione tecnica - ed era, alla
-        lettera, un nome di dimensione scritto nel codice.
-
-        La protezione non sparisce, cambia natura: la schermata mostra la
-        conseguenza calcolata dai dati prima di salvare. Il rischio residuo e'
-        dichiarato in DEC-011-POLICY-LINGUA-ALL-ADMIN - portare la lingua del
-        bando a generico riaprirebbe l'ambiguita' che DEC-001-LINGUA-IT-EN aveva
-        chiuso - ma e' ora una scelta deliberata dell'admin, non un'impossibilita'
-        strutturale.
-        """
-        tipo = self._resolve_tipo_documento(codice_tipo_documento)
-        verify_scrittura_su_contesto(principal, tipo.codice_contesto)
-        policy, creata = builder_repository.salva_policy_dimensione(
-            self.db, tipo_documento_id=tipo.id, nome_dimensione=request.nome_dimensione,
-            consente_valore_generico=request.consente_valore_generico,
-            valore_default=request.valore_default, soggetto=principal.subject,
-        )
-        self.db.commit()
-        return policy, creata
 
     def dettaglio(self, principal: PrincipalGEMODO, modello_id: uuid.UUID) -> ModelloDocumento:
         modello = builder_repository.modello_con_campi(self.db, modello_id)

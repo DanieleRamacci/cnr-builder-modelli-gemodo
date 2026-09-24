@@ -341,7 +341,97 @@ versione dell'algoritmo di firma, SHA-256, definizioni delle dipendenze usate
 e dei campi obbligatori del ramo alla creazione, data/esito/differenze dell'ultima
 verifica. Riutilizzare le definizioni gia' nel contratto del modello; conservare
 solo quelle ulteriori necessarie a spiegare il confronto, mai tutto il catalogo.
-La collocazione persistente e la migration vanno definite in T055 prima del codice.
+La collocazione persistente e la migration sono definite qui sotto (T055,
+migration `0022`); il calcolo vero e proprio della firma e' T056.
+
+### Collocazione persistente (T055, migration 0022)
+
+I metadati stanno in **due posti**, perche' hanno tempi di vita diversi:
+
+| Dato | Dove | Quando cambia |
+| --- | --- | --- |
+| `firma_algoritmo`, `firma_contratto` | `modello_versione` | mai: nasce con la versione |
+| `contratto_firmato` (JSONB) | `modello_versione` | mai |
+| esito, data, differenze | `esito_compatibilita_versione` | a ogni ciclo del runner |
+
+Tenere l'esito sulla riga della versione avrebbe significato **aggiornare una
+versione pubblicata a ogni giro di verifica**, contro il criterio "il controllo
+conserva data e motivo senza modificare il contenuto pubblicato", e avrebbe
+confuso lo stato di pubblicazione con l'esito di compatibilita', che la 010
+tiene distinti. La tabella tiene **una riga per versione**: e' l'ultimo esito,
+non uno storico - lo storico delle verifiche vive sull'integrazione (T093),
+dove la domanda e' come si e' comportata quella sorgente nel tempo.
+
+`contratto_firmato` **non e' una copia del catalogo** (FR-014 lo vieta).
+Contiene solo cio' che serve a spiegare un confronto e che non sta gia' altrove:
+i valori ammessi delle dipendenze usate e l'insieme dei campi obbligatori del
+ramo al momento della firma. Codici, tipi e obbligatorieta' dei campi scelti
+restano in `campo_modello`; il percorso in `modello_documento`.
+
+Le colonne sono nullable e le versioni anteriori alla 0022 restano senza firma:
+l'albero di allora non e' piu' osservabile, quindi non se ne puo' ricostruire
+una. Il confronto le riporta `NON_VERIFICABILE` finche' non sono ripubblicate,
+che e' l'informazione vera invece di un allineamento presunto. Un vincolo
+`CHECK` impedisce una firma senza il suo algoritmo: quando l'algoritmo cambia
+versione la firma va **ricalcolata**, mai riusata.
+
+### Matrice blocco/avviso (T055)
+
+Cosa produce quale esito. `DA_AGGIORNARE` e' il solo esito che chiede
+un'azione; `COMPATIBILE_CON_VARIAZIONI` segnala senza chiedere nulla.
+
+| Variazione osservata sul ramo | Esito |
+| --- | --- |
+| Percorso di categorizzazione scomparso | `DA_AGGIORNARE` |
+| Dipendenza usata dal modello scomparsa | `DA_AGGIORNARE` |
+| Campo **usato** rimosso dal ramo | `DA_AGGIORNARE` |
+| Campo **nuovo e obbligatorio** comparso nel ramo | `DA_AGGIORNARE` |
+| Tipo di un campo usato cambiato | `DA_AGGIORNARE` |
+| Vincolo di validazione **piu' stretto** su un campo usato | `DA_AGGIORNARE` |
+| Valori ammessi di una dipendenza ristretti, **e il valore scelto non c'e' piu'** | `DA_AGGIORNARE` |
+| Campo usato passato da obbligatorio a opzionale | `COMPATIBILE_CON_VARIAZIONI` |
+| Valori ammessi di una dipendenza **ampliati** | `COMPATIBILE_CON_VARIAZIONI` |
+| Valori ristretti ma il valore scelto e' ancora ammesso | `COMPATIBILE_CON_VARIAZIONI` |
+| Vincolo di validazione **piu' permissivo** su un campo usato | `COMPATIBILE_CON_VARIAZIONI` |
+| Campo **nuovo e opzionale** comparso nel ramo | `ALLINEATO` (ignorato) |
+| Campo opzionale **non usato** modificato o rimosso | `ALLINEATO` (ignorato) |
+| Etichette, descrizioni, ordine, `validita` | `ALLINEATO` (ignorato) |
+| Rami diversi da quello del modello, comunque cambiati | `ALLINEATO` (ignorato) |
+| Discovery irraggiungibile, non conforme o in timeout | `NON_VERIFICABILE` |
+| Versione senza firma (anteriore alla 0022) | `NON_VERIFICABILE` |
+
+Il criterio dietro la tabella: **si segnala cio' che restringe**, perche' un
+modello costruito su un ramo piu' largo potrebbe non essere piu' compilabile;
+non si segnala cio' che allarga, perche' quanto il modello chiede resta
+ottenibile. Un campo nuovo **non e'** di per se' un problema - il contratto e'
+additivo - e lo diventa solo se e' obbligatorio, perche' allora il documento
+prodotto sarebbe incompleto rispetto a quanto il ramo ora pretende.
+
+### Algoritmo versionato (T055)
+
+Identificatore `sha256-v1`, conservato accanto alla firma. Normalizzazione
+prima del calcolo:
+
+1. si prende il **solo ramo** del modello, raggiunto per
+   `percorso_categorizzazione`; se non esiste il confronto si ferma qui con
+   `DA_AGGIORNARE`, senza calcolare nulla;
+2. si tengono i campi **usati dal modello** piu' **tutti gli obbligatori del
+   ramo** (questi ultimi servono a rilevare i nuovi obbligatori: senza, un
+   campo aggiunto dopo non comparirebbe nel confronto);
+3. di ogni campo restano `codice`, `tipo`, `obbligatorio`, `lingua` e
+   `validazione`; cadono `etichetta`, `descrizione` e `ordine`, che non
+   cambiano cio' che il documento deve contenere;
+4. chiavi degli oggetti e insiemi di opzioni sono **ordinati**, cosi' che due
+   risposte equivalenti con ordine diverso diano la stessa firma - l'ordine
+   dell'albero discovery non e' garantito stabile dal contratto;
+5. `validita` e ogni altro timestamp sono esclusi: cambiano a ogni risposta;
+6. il risultato e' serializzato in JSON canonico (chiavi ordinate, separatori
+   compatti, UTF-8) e passato a SHA-256.
+
+Una firma diversa **apre un diff, non decide**: e' la matrice qui sopra a
+stabilire l'esito. Firma uguale significa `ALLINEATO` senza ulteriore lavoro,
+ed e' il caso normale, quindi il confronto costoso si paga solo quando
+qualcosa e' davvero cambiato.
 
 La firma ordina chiavi/campi e insiemi di opzioni, include default e vincoli,
 esclude `validita` variabile e dettagli descrittivi. La selezione corrente

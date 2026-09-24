@@ -25,7 +25,6 @@ from app.builder.schemas import (
     ModelloResponse,
     ModelloDettaglioResponse,
     ModelloGestioneResponse,
-    PolicyDimensioneRequest,
     PolicyDimensioneResponse,
     PolicyDimensioniResponse,
     VersioneDettaglioResponse,
@@ -170,7 +169,7 @@ def leggi_policy_dimensioni(
     service: BuilderService = Depends(get_builder_service),
 ):
     """Policy registrate e dimensioni ancora prive di policy (DEC-002-POLICY)."""
-    tipo, policy, non_configurate, conteggi = service.policy_dimensioni(
+    tipo, policy, non_configurate, conteggi, impatti = service.policy_dimensioni(
         principal, codiceTipoDocumento
     )
     return PolicyDimensioniResponse(
@@ -181,6 +180,7 @@ def leggi_policy_dimensioni(
                 consente_valore_generico=p.consente_valore_generico,
                 valore_default=p.valore_default,
                 modelli_pubblicati_che_la_valorizzano=conteggi[p.nome_dimensione],
+                modelli_pubblicati_senza_valore=impatti[p.nome_dimensione],
             )
             for p in policy
         ],
@@ -194,19 +194,14 @@ def leggi_policy_dimensioni(
     )
 
 
-@router.put("/tipi-documento/{codiceTipoDocumento}/policy-dimensioni", response_model=PolicyDimensioneResponse)
-def imposta_policy_dimensione(
-    codiceTipoDocumento: str,
-    request: PolicyDimensioneRequest,
-    principal: PrincipalGEMODO = Depends(require_principal),
-    service: BuilderService = Depends(get_builder_service),
-):
-    policy, _ = service.imposta_policy_dimensione(principal, codiceTipoDocumento, request)
-    return PolicyDimensioneResponse(
-        nome_dimensione=policy.nome_dimensione,
-        consente_valore_generico=policy.consente_valore_generico,
-        valore_default=policy.valore_default,
-    )
+# La policy si scrive da un endpoint solo, quello di `configurazione`
+# (`PUT /api/v1/configurazione/integrazioni/{id}/tipi-documento/{codice}/policy-dimensioni`):
+# e' li' che arriva l'albero dell'integrazione, quindi e' l'unico punto che puo'
+# verificare che la dimensione sia davvero dichiarata prima di registrarne la
+# policy. Qui esisteva un secondo PUT che quella verifica non la faceva e
+# accettava ruoli piu' larghi: due strade per lo stesso dato, con controlli
+# diversi. La lettura resta invece disponibile anche qui, perche' serve al
+# builder per costruire il form e non richiede il ruolo di amministratore.
 
 
 @router.get("/tipi-documento/{codiceTipoDocumento}/struttura-disponibile", response_model=StrutturaDisponibileResponse, response_model_exclude_none=True)
