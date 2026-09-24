@@ -92,7 +92,7 @@ T041-T043 restano backlog distinto.
 **Purpose**: sostituire il placeholder `frontend/package.json` con un vero
 progetto Angular, avviabile da `infra/local/compose.yaml`.
 
-- [x] T001 *(2026-09-18)* Sostituire `frontend/package.json` con un vero
+- [x] T001 _(2026-09-18)_ Sostituire `frontend/package.json` con un vero
       progetto Angular 21.2 (standalone, signals) generato via `ng new`,
       preservando la struttura placeholder gia' presente (`src/app`,
       `src/features/builder`, `src/features/generazioni`, `src/shared`)
@@ -100,33 +100,31 @@ progetto Angular, avviabile da `infra/local/compose.yaml`.
       con i suoi peer `@ngx-translate/core`/`@ngx-translate/http-loader` e
       `bootstrap-italia` (vedi `research.md` per la correzione sul nome
       pacchetto reale). Verificato con `ng build` reale (successo).
-- [x] T002 [P] *(2026-09-18)* Vitest (gia' default Angular 21) per gli unit
+- [x] T002 [P] _(2026-09-18)_ Vitest (gia' default Angular 21) per gli unit
       test in `frontend/` - verificato con `ng test --watch=false` reale
       (2 test passati, `app.spec.ts` aggiornato per la nuova shell minimale).
-- [x] T003 [P] *(2026-09-18)* Playwright per gli e2e in `frontend/e2e/`,
+- [x] T003 [P] _(2026-09-18)_ Playwright per gli e2e in `frontend/e2e/`,
       puntato di default a `http://localhost:4200`. Verificato per davvero:
       `ng serve` reale in background + `playwright test` contro il server
       vero (non solo config statica) - vedi `e2e/smoke.spec.ts` (test
       placeholder, i veri scenari arrivano con US4/US5).
-- [x] T004 [P] *(2026-09-18)* ESLint/Prettier in `frontend/` - `ng add
-      @angular-eslint/schematics` si e' rivelato rotto su questo workspace
+- [x] T004 [P] _(2026-09-18)_ ESLint/Prettier in `frontend/` - `ng add
+  @angular-eslint/schematics` si e' rivelato rotto su questo workspace
       (falso positivo di version-mismatch anche con `@21` esplicito, non
-      applicava la configurazione); risolto installando `angular-eslint@21`
-      + `eslint@10` manualmente e scrivendo `eslint.config.js` a mano.
+      applicava la configurazione); risolto installando `angular-eslint@21` + `eslint@10` manualmente e scrivendo `eslint.config.js` a mano.
       Verificato con `eslint .` (0 errori) e `prettier --check` reali dopo
       un `prettier --write` iniziale.
-- [x] T005 *(2026-09-18)* Scritto `frontend/Dockerfile` (dev, `node:24-slim`
-      + `ng serve --host 0.0.0.0`, coerente con lo stile gia' usato da
+- [x] T005 _(2026-09-18)_ Scritto `frontend/Dockerfile` (dev, `node:24-slim` + `ng serve --host 0.0.0.0`, coerente con lo stile gia' usato da
       `backend/Dockerfile`) e `.dockerignore`. Verificato per davvero:
       `docker build` + `docker run` reali, app raggiungibile su `:4200` dal
       host.
       **Aggiornamento 2026-09-18 (richiesto dall'utente dopo la domanda "cosa
       posso provare dopo il push")**: trovato un problema reale - il deploy
       Coolify (`docker-compose.coolify.yml`) buildava il servizio `frontend`
-      dal `Dockerfile` di *root* (la vecchia pagina statica placeholder
+      dal `Dockerfile` di _root_ (la vecchia pagina statica placeholder
       `deploy/coolify-test/`), completamente scollegato dalla vera app
       Angular. Un push non avrebbe mostrato nulla di nuovo. Risolto: `frontend/
-      Dockerfile` e' ora multi-stage con due target espliciti (nessun default,
+  Dockerfile` e' ora multi-stage con due target espliciti (nessun default,
       entrambi i compose li richiamano esplicitamente) - `dev` (invariato,
       `ng serve`) e `production` (`ng build --configuration production` +
       nginx statico su `:80`, con `scripts/docker-entrypoint-nginx.sh` che
@@ -169,8 +167,8 @@ incremento (client HTTP tipizzato, autenticazione, shell applicativa).
 **⚠️ CRITICAL**: nessun task di User Story 4/5 puo' iniziare prima che questa
 fase sia completa.
 
-- [x] T006 *(2026-09-18)* Verificato `specs/002-builder-modelli/contracts/
-      builder-modelli-api.openapi.yaml` contro `backend/app/builder/api.py`:
+- [x] T006 _(2026-09-18)_ Verificato `specs/002-builder-modelli/contracts/
+  builder-modelli-api.openapi.yaml` contro `backend/app/builder/api.py`:
       drift totale, non solo parziale - la 0.2.0 descriveva un CRUD
       tipi-documento/categorie mai implementato cosi' (quello spazio e' ora
       coperto in sola lettura da `integrazioni-api.openapi.yaml`,
@@ -188,7 +186,7 @@ fase sia completa.
       esistere), piu' `/openapi/builder-modelli.yaml`, `/docs/builder-modelli`,
       `/redoc/builder-modelli` interrogati via `TestClient` reale (200 su
       tutti e tre). Suite completa: 295 passati, 0 falliti.
-- [x] T007 [P] *(2026-09-18)* Generati i tipi TypeScript dai 4 contratti
+- [x] T007 [P] _(2026-09-18)_ Generati i tipi TypeScript dai 4 contratti
       OpenAPI necessari (`integrazioni`, `configurazione-cataloghi`,
       `builder-discovery`, `builder-modelli`) via `openapi-typescript`,
       script `frontend/scripts/genera-tipi-api.sh` (portabile su bash 3.2 di
@@ -198,7 +196,7 @@ fase sia completa.
       `geban-discovery-endpoint.openapi.yaml` (in `010`, non nella stessa
       cartella di `002`) risolto correttamente in `StrutturaTipoDocumento`;
       `tsc --noEmit` pulito sui file generati; `ng build` invariato.
-- [x] T008 *(2026-09-18)* Implementato il client HTTP condiviso (wrapper
+- [x] T008 _(2026-09-18)_ Implementato il client HTTP condiviso (wrapper
       sottile su `HttpClient`, non un SDK generato) in
       `frontend/src/shared/api-client.ts`, con mappatura esplicita
       dell'envelope di errore backend (`{codice, messaggio}`) verso `ApiError`
@@ -218,7 +216,7 @@ fase sia completa.
       `curl http://localhost:4200/api/v1/test` con `ng serve` + proxy attivi.
       4 unit test Vitest reali (`api-client.spec.ts`, incl. mappatura errore
       409 e fallback su risposta senza envelope) - 6/6 test totali passati.
-- [x] T009 [P] *(2026-09-18)* Implementato il modulo di autenticazione
+- [x] T009 [P] _(2026-09-18)_ Implementato il modulo di autenticazione
       Keycloak (`keycloak-angular@21` + `keycloak-js`, Authorization Code +
       PKCE `S256`, client id `gemodo-frontend`) in
       `frontend/src/app/auth/` (`keycloak-config.ts` per il parsing di
@@ -233,7 +231,7 @@ fase sia completa.
       browser). Risolto con un pattern di runtime-config standard:
       `public/runtime-config.json` (default committato con gli stessi
       valori di default del backend), rigenerato dai veri env var del
-      container a *startup* (non build) da
+      container a _startup_ (non build) da
       `scripts/genera-runtime-config.sh`, richiamato dal `CMD` del
       `Dockerfile` prima di `ng serve`; `main.ts` lo recupera con `fetch`
       prima di chiamare `bootstrapApplication` (`app.config.ts` e' ora una
@@ -259,7 +257,7 @@ fase sia completa.
       Keycloak/browser/backend aveva uno scarto minimo. Aggiunto
       `KEYCLOAK_JWT_LEEWAY_SECONDS` (default 60) alla validazione PyJWT e ai
       compose, con test mirati su `iat`/`nbf` futuri entro/fuori tolleranza.
-- [x] T010 [P] *(2026-09-18)* Implementata la shell applicativa
+- [x] T010 [P] _(2026-09-18)_ Implementata la shell applicativa
       (`frontend/src/app/shell/`) con `design-angular-kit` reale
       (`it-header`/`it-navbar`/`it-navbar-item`/`it-footer`, brand "GEMODO",
       link a `/configurazione` e `/builder`), non un placeholder.
@@ -319,7 +317,7 @@ verificato con successo. Il servizio `mock-geban`
 attuale non espone l'endpoint discovery descritto nel quickstart: questo
 prerequisito va completato prima del checkpoint US4 e di T031.
 
-- [x] T033 [US4] *(2026-09-18)* Prerequisito di collaudo emerso alla ripresa: predisporre
+- [x] T033 [US4] _(2026-09-18)_ Prerequisito di collaudo emerso alla ripresa: predisporre
       un discovery HTTP reale con dati demo conformi al contratto 0.4.0,
       relativo avvio ripetibile e allowlist locale. Il compose punta a
       `mock-geban/`, che non contiene un Dockerfile e oggi contiene solo
@@ -352,17 +350,17 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
 - [x] T011 [P] [US4] Unit test (Vitest) per il componente lista integrazioni:
       stato vuoto al primo avvio, badge di stato per `DEFINITO`/`CONNESSO`/
       `ERRORE`, in `frontend/src/features/configurazione/integrazioni-
-      lista.component.spec.ts`
+  lista.component.spec.ts`
 - [x] T012 [P] [US4] Unit test (Vitest) per il form di creazione: validazione
       lunghezza campi, gestione `409 INTEGRAZIONE_DUPLICATA` come errore di
       form, in `frontend/src/features/configurazione/integrazione-
-      crea.component.spec.ts`
+  crea.component.spec.ts`
 - [x] T013 [P] [US4] Unit test (Vitest) per il form di
       configurazione/verifica: gestione `409 REVISIONE_SUPERATA` (ricarica,
       non sovrascrive), `422 DESTINAZIONE_NON_APPROVATA`, `409
-      VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
+  VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
       in `frontend/src/features/configurazione/integrazione-
-      configura.component.spec.ts`
+  configura.component.spec.ts`
 - [x] T014 (2026-09-21: ESEGUITO su stack reale, 3 e2e verdi - vedi quickstart.md 'Playwright su stack reale eseguito') [US4] Test e2e (Playwright) end-to-end: admin crea
       un'integrazione, la configura verso `mock-geban` reale, la verifica e
       vede lo stato finale corretto (Scenario 1 di `quickstart.md`), in
@@ -384,7 +382,7 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
       timeout, pulsante verifica con stato disabilitato durante la chiamata,
       visualizzazione esito) in
       `frontend/src/features/configurazione/integrazione-
-      configura.component.ts` (dipende da T013, T015)
+  configura.component.ts` (dipende da T013, T015)
 - [x] T019 [US4] Instradamento `/configurazione` e voce di navigazione
       visibile solo con ruolo `GEMODO_ADMIN` nel token (abilitazione UI, mai
       autorizzazione - il backend gia' applica `require_admin`), in
@@ -413,7 +411,7 @@ FR-022/FR-023).
       `frontend/src/features/builder/integrazioni-manager.component.spec.ts`
 - [x] T021 [P] [US5] Unit test (Vitest) per la navigazione ad albero:
       profondita' variabile, stati caricamento/vuoto/`409
-      INTEGRAZIONE_NON_CONNESSA`/errore di trasporto distinti, in
+  INTEGRAZIONE_NON_CONNESSA`/errore di trasporto distinti, in
       `frontend/src/features/builder/struttura-albero.component.spec.ts`
 - [x] T022 [P] [US5] Unit test (Vitest) per il form creazione modello:
       selezione percorso -> risoluzione categoria/tipologia, gestione errore
@@ -585,7 +583,6 @@ ritirare il flag di generazione specifico dei bandi.
       browser end-to-end. Gate indipendente FAIL: report reviewer non valido
       e regressione interna bloccata; non dichiarare completa la feature.
 
-
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: nessuna dipendenza, primo passo.
@@ -594,7 +591,7 @@ ritirare il flag di generazione specifico dei bandi.
   autenticazione).
 - **US4 (Phase 3)** e **US5 (Phase 4)**: entrambe dipendono solo da Phase 2,
   sono indipendenti fra loro (US5 richiede un'integrazione gia' `CONNESSO`
-  per essere provata end-to-end, ma non richiede che gli *schermi* di US4
+  per essere provata end-to-end, ma non richiede che gli _schermi_ di US4
   esistano - puo' essere provata con un'integrazione creata via Swagger o
   fixture, come gia' fa `integrazione_connessa` lato backend). Possono
   procedere in parallelo se piu' persone lavorano sul frontend.
@@ -719,7 +716,6 @@ Playwright su stack reale.
 - [x] T092 (2026-09-21: `modello-crea.component` con blocchi-livello dinamici L1..Ln, stepper a 3 passi, riepilogo laterale, Genera modello; 56 test Vitest, lint e build passati; `e2e/builder-lifecycle.spec.ts` aggiornato al nuovo flusso ma NON eseguito su stack reale) Categorizzazione a tendine a cascata (schermata 2a: select L1-L4 dipendenti, azzeramento a cascata, stepper 3 passi) al posto dell'albero cliccabile in `frontend/src/features/builder/modello-crea.component.*`, con test per percorso ambiguo (assorbe T021/T022/T026)
 - [x] T093 [P] (2026-09-21: metriche sui modelli caricati, ricerca + filtri stato/lingua, tabella 1b e griglia 1c con toggle `?view=grid`, badge di stato del design; nessuna metrica inventata - solo conteggi reali della pagina caricata; 65 test Vitest, lint e build passati) Lista modelli `/contesti/:ctxId/modelli` in tabella (1b) con toggle griglia `?view=grid` (1c), stati vuoto/errore/caricamento
 
-
 ## Phase 15: Anteprima modello sulla schermata 2b ridotta (2026-09-22)
 
 **Goal**: vedere i campi che l'API mette a disposizione per un modello, sulla
@@ -811,8 +807,7 @@ sistema integrato diventa inutilizzabile.
 
 - [x] T106 [FR-029] (`--mm-shell-larghezza` in `styles.scss`, usata dalle tre
       regole di `shell.component.scss`) Larghezza del contenitore definita una
-      volta sola e crescente per soglie: 1320px sotto 1600, poi 1480, 1720 e
-      2040. Sotto 1600px nulla cambia. Misurato in browser: viewport 1366 ->
+      volta sola e crescente per soglie: 1320px sotto 1600, poi 1480, 1720 e 2040. Sotto 1600px nulla cambia. Misurato in browser: viewport 1366 ->
       1320px, 1600 -> 1480px, 1920 -> 1720px, 2560 -> 2040px
 - [x] T107 [FR-029] (`.griglia-modelli`) Colonne per costruzione con
       `repeat(auto-fill, minmax(280px, 1fr))` invece di tre soglie fisse: a
@@ -918,3 +913,51 @@ prova e' stato composto con uno script. E' l'unico pezzo che separa
       `CONFERMA_IMPATTO_RICHIESTA`). La parte di conferma e' **gia'
       implementata** in `dimensioni.component`; resta l'avviso di ambito in
       T113.
+
+## Phase 16: Convergence 2b editor completo (2026-09-24)
+
+**Origine**: confronto con `design_handoff_modellario` screen 2b dopo il
+riallineamento dei segnaposto. T116-T120 rendono la pagina operativa in forma
+minima, ma non ancora equivalente al builder-editor del prototipo.
+
+- [x] T122 [FR-026] Rendere `/modelli/:modelId/builder` una schermata editor
+      fullscreen: nascondere header/footer globali della shell e rimuovere il
+      padding shell su questa route, lasciando come unico header la topbar blu
+      scuro della 2b (partial). Chiuso 2026-09-24: `ShellComponent` riconosce
+      la route 2b e applica `.app-main-editor`, coperto da
+      `shell.component.spec.ts`.
+- [ ] T123 [FR-026] Allineare la topbar 2b al design: azioni `Crea modello
+      derivato`, `Anteprima`, `Esporta .docx`, `Pubblica`, stato salvataggio e
+      conferme/disabled state coerenti con lo stato versione (partial). Stato
+      2026-09-24: azioni visibili e transizione corrente cablata; restano
+      saveState/autosave, conferma dedicata e export `.docx` reale.
+- [x] T124 [FR-011/FR-035] Sostituire la `textarea` centrale con un editor di
+      testo controllato, dentro il foglio, evitando HTML/CSS libero e salvando
+      il contenuto nel formato documentale sicuro del backend (partial). Chiuso
+      2026-09-24: editor `contenteditable="plaintext-only"` senza HTML/CSS
+      libero, con salvataggio del testo nel blocco documentale.
+- [x] T125 [FR-011/FR-035] Inserire i segnaposto dal pannello laterale nel punto
+      del cursore dell'editor attivo e supportare drag/drop dal pannello destro
+      al foglio centrale (partial). Chiuso 2026-09-24: click e drag/drop usano
+      l'editor attivo e aggiornano `placeholder_usati` tramite il testo salvato.
+- [x] T126 [FR-026/FR-035] Rendere la toolbar `B/I/U/H1/H2/liste/Tab` un
+      controllo editor reale o, dove il backend non persiste ancora lo stile,
+      uno stato esplicito e non ingannevole legato al blocco selezionato
+      (partial). Chiuso 2026-09-24: H1/H2 aggiornano `stile`, liste e Tab
+      trasformano testo controllato; B/I/U restano disabilitati perche' il
+      formato documentale vieta HTML/CSS libero.
+- [ ] T127 [FR-026] Completare il foglio centrale come nello screen 2b:
+      intestazione documento, metadati determina, blocchi con tag, firma e
+      comando tratteggiato `Inserisci una nuova sezione di testo` (partial).
+- [ ] T128 [FR-026/FR-011] Implementare le tab laterali `Blocchi` e `Proprietà`
+      con contenuto reale per inserimento blocchi predefiniti e proprietà della
+      sezione selezionata, oppure tracciare il contratto backend mancante se non
+      disponibile (missing).
+- [ ] T129 [FR-009/FR-012] Collegare le transizioni da topbar
+      (`invia-revisione`, `approva`, `pubblica`) ai blocchi di pubblicazione e
+      ai messaggi di readiness/placeholder invalidi gia' esposti dal backend
+      (partial). Stato 2026-09-24: chiamata base alla transizione corrente
+      cablata dalla topbar; restano readiness/blocchi di pubblicazione.
+- [ ] T130 [FR-026/SC-007] Aggiungere test di regressione visuale/e2e per la
+      2b editor fullscreen su viewport desktop e mobile, inclusi segnaposto
+      laterali, editor centrale e assenza dell'header globale (missing).

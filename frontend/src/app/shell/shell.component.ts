@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import Keycloak from 'keycloak-js';
 
 import { hasClientRole, hasManagerAccess } from '../auth/roles';
@@ -17,6 +17,7 @@ import { RUNTIME_CONFIG } from '../runtime-config';
   styleUrl: './shell.component.scss',
 })
 export class ShellComponent {
+  private readonly router = inject(Router);
   private readonly keycloak = inject(Keycloak);
   protected readonly userName =
     this.keycloak.tokenParsed?.['name'] ||
@@ -31,6 +32,10 @@ export class ShellComponent {
   // UI-only (spec.md FR-023): hides the link, never the real authorization -
   // adminGuard + the backend's require_admin are what actually protect the route.
   protected readonly isAdmin = hasClientRole(inject(Keycloak), 'gemodo-backend', 'GEMODO_ADMIN');
+
+  protected isEditorFullscreen(): boolean {
+    return /^\/modelli\/[^/]+\/builder(?:[?#].*)?$/.test(this.router.url);
+  }
 
   private initials(name: string): string {
     return name

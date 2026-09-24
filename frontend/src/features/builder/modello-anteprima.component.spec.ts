@@ -213,7 +213,7 @@ describe('2b ridotta: anteprima modello', () => {
     dialog.close = vi.fn();
     const bottone = Array.from(
       root.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-    ).find((b) => b.textContent?.includes('Crea edizione collegata'))!;
+    ).find((b) => b.textContent?.includes('Crea modello derivato'))!;
     expect(bottone).toBeTruthy();
     bottone.click();
     expect(dialog.showModal).toHaveBeenCalled();
@@ -280,7 +280,7 @@ describe('2b ridotta: anteprima modello', () => {
     fixture.detectChanges();
     expect(
       Array.from(root.querySelectorAll('button')).find((b) =>
-        b.textContent?.includes('Crea edizione collegata'),
+        b.textContent?.includes('Crea modello derivato'),
       ),
     ).toBeUndefined();
     http.verify();
@@ -299,6 +299,61 @@ describe('2b ridotta: anteprima modello', () => {
       'Posti disponibili {{numero_posti}}',
     );
     expect(root.querySelectorAll('.outline-item').length).toBe(2);
+    http.verify();
+  });
+
+  it('uses the fullscreen editor controls instead of a textarea form', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.querySelector('textarea')).toBeNull();
+    const editor = root.querySelector(
+      '[contenteditable][data-section-text="intro"]',
+    ) as HTMLElement;
+    expect(editor.textContent).toContain('Introduzione');
+    editor.dispatchEvent(new Event('focus'));
+    (
+      Array.from(root.querySelectorAll('.format-toolbar button')).find((button) =>
+        button.textContent?.includes('H1'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('.section-editor.style-h1 [data-section-text="intro"]')).toBeTruthy();
+    http.verify();
+  });
+
+  it('offers the builder-editor topbar actions and runs the version transition', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.textContent).toContain('Anteprima');
+    expect(root.textContent).toContain('Esporta .docx');
+    const action = Array.from(root.querySelectorAll('.topbar button')).find((button) =>
+      button.textContent?.includes('Invia in revisione'),
+    ) as HTMLButtonElement;
+    expect(action).toBeTruthy();
+    action.click();
+
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/invia-revisione');
+    expect(request.request.method).toBe('POST');
+    request.flush({ ...dettaglio.versioni[0], stato: 'IN_REVISIONE' });
+    http.expectOne('/api/v1/builder/modelli/model').flush({
+      ...dettaglio,
+      versioni: [{ ...dettaglio.versioni[0], stato: 'IN_REVISIONE' }],
+    });
+    flushSections(http, {
+      ...sezioniResponse,
+      stato_versione: 'IN_REVISIONE',
+      modificabile: false,
+    });
+    flushDerivationConfig(http);
     http.verify();
   });
 
@@ -358,9 +413,9 @@ describe('2b ridotta: anteprima modello', () => {
     placeholder.click();
     fixture.detectChanges();
 
-    expect(
-      (root.querySelector('[data-section-text="sezione-1"]') as HTMLTextAreaElement).value,
-    ).toBe('{{titolo_it}}');
+    expect(root.querySelector('[data-section-text="sezione-1"]')?.textContent).toBe(
+      '{{titolo_it}}',
+    );
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
     expect(request.request.body.sezioni[0].contenuto[0].placeholder_usati).toEqual(['titolo_it']);
@@ -399,9 +454,9 @@ describe('2b ridotta: anteprima modello', () => {
     flushDerivationConfig(http);
     fixture.detectChanges();
 
-    const textarea = root.querySelector('[data-section-text="intro"]') as HTMLTextAreaElement;
-    textarea.value = 'Testo con {{campo_non_dichiarato}}';
-    textarea.dispatchEvent(new Event('input'));
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.textContent = 'Testo con {{campo_non_dichiarato}}';
+    editor.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni').flush(

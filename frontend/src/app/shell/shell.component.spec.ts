@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import Keycloak from 'keycloak-js';
 import { provideDesignAngularKit } from 'design-angular-kit';
 import { ShellComponent } from './shell.component';
 import { RUNTIME_CONFIG } from '../runtime-config';
 
-function setup(roles: string[]) {
+function setup(roles: string[], url = '/') {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
@@ -19,6 +19,7 @@ function setup(roles: string[]) {
       },
     ],
   });
+  Object.defineProperty(TestBed.inject(Router), 'url', { configurable: true, get: () => url });
   const fixture = TestBed.createComponent(ShellComponent);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
@@ -66,5 +67,12 @@ describe('header applicativo (design handoff)', () => {
     const header = root.querySelector('header')!;
     expect(header.querySelector('nav')).not.toBeNull();
     expect(header.querySelector('a[href="/profilo"]')).not.toBeNull();
+  });
+
+  it('hides the global chrome on the fullscreen builder editor route', () => {
+    const root = setup(['GEMODO_MODELLI_GESTORE'], '/modelli/model/builder');
+    expect(root.querySelector('.app-header')).toBeNull();
+    expect(root.querySelector('.app-footer')).toBeNull();
+    expect(root.querySelector('.app-main-editor')).not.toBeNull();
   });
 });

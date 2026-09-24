@@ -1,36 +1,42 @@
-<header class="app-header">
-  <div class="app-header-row">
-    <a routerLink="/" class="brand-link" aria-label="Home GEMODO">
-      <span class="brand-mark" aria-hidden="true">GM</span>
-      <span>GEMODO</span>
-    </a>
-    <nav class="app-nav" aria-label="Navigazione principale">
-      @if (isManager || isAdmin) {
-        <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Contesti</a>
-      }
-      @if (isManager) {
-        <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Modelli</a>
-      }
-      @if (isAdmin) {
-        <a routerLink="/configurazione" routerLinkActive="active" class="nav-link">Impostazioni</a>
-      }
-    </nav>
-    <a routerLink="/profilo" class="user-link" title="Profilo utente">
-      <span class="user-name">{{ userName }}</span>
-      <span class="avatar">{{ userInitials || 'U' }}</span>
-    </a>
-  </div>
-</header>
+@if (!isEditorFullscreen()) {
+  <header class="app-header">
+    <div class="app-header-row">
+      <a routerLink="/" class="brand-link" aria-label="Home GEMODO">
+        <span class="brand-mark" aria-hidden="true">GM</span>
+        <span>GEMODO</span>
+      </a>
+      <nav class="app-nav" aria-label="Navigazione principale">
+        @if (isManager || isAdmin) {
+          <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Contesti</a>
+        }
+        @if (isManager) {
+          <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Modelli</a>
+        }
+        @if (isAdmin) {
+          <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+            >Impostazioni</a
+          >
+        }
+      </nav>
+      <a routerLink="/profilo" class="user-link" title="Profilo utente">
+        <span class="user-name">{{ userName }}</span>
+        <span class="avatar">{{ userInitials || 'U' }}</span>
+      </a>
+    </div>
+  </header>
+}
 
-<main class="app-main">
+<main class="app-main" [class.app-main-editor]="isEditorFullscreen()">
   <router-outlet />
 </main>
 
-<footer class="app-footer">
-  <div class="app-footer-row">
-    GEMODO - CNR
-    @if (externalDocsUrl) {
-      <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
-    }
-  </div>
-</footer>
+@if (!isEditorFullscreen()) {
+  <footer class="app-footer">
+    <div class="app-footer-row">
+      GEMODO - CNR
+      @if (externalDocsUrl) {
+        <a [href]="externalDocsUrl" target="_blank" rel="noopener" class="ms-3">Documentazione</a>
+      }
+    </div>
+  </footer>
+}

@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -17,6 +18,7 @@ type Nodo = {
   [nome: string]: unknown;
 };
 type CandidatoDerivazione = { nome: string; valori: string[] };
+type AzioneVersione = { route: string; label: string };
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
 };
@@ -57,6 +59,11 @@ const PROPRIETA_NODO = new Set([
   'livelli_possibili',
   'livello_base',
 ]);
+const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
+  BOZZA: { route: 'invia-revisione', label: 'Invia in revisione' },
+  IN_REVISIONE: { route: 'approva', label: 'Approva' },
+  APPROVATO: { route: 'pubblica', label: 'Pubblica' },
+};
 
 /**
  * Schermata 2b (builder-editor) in versione ridotta, decisa il 2026-09-22.
@@ -86,7 +93,19 @@ const PROPRIETA_NODO = new Set([
             [disabled]="salvando()"
             (click)="derivazione.showModal()"
           >
-            Crea edizione collegata
+            Crea modello derivato
+          </button>
+        }
+        <button type="button" class="btn btn-sm" (click)="scorriAnteprima()">Anteprima</button>
+        <button type="button" class="btn btn-sm" disabled>Esporta .docx</button>
+        @if (azioneVersione(); as azione) {
+          <button
+            type="button"
+            class="btn btn-sm primary"
+            [disabled]="salvandoStato() || salvandoSezioni()"
+            (click)="cambiaStatoVersione(azione)"
+          >
+            {{ salvandoStato() ? 'Aggiornamento...' : azione.label }}
           </button>
         }
       </div>
@@ -101,16 +120,37 @@ const PROPRIETA_NODO = new Set([
 
     @if (modello(); as m) {
       <div class="format-toolbar">
-        <span class="tool strong">B</span>
-        <span class="tool italic">I</span>
-        <span class="tool underline">U</span>
+        <button
+          type="button"
+          class="tool strong"
+          disabled
+          title="Stile inline non ancora persistito"
+        >
+          B
+        </button>
+        <button
+          type="button"
+          class="tool italic"
+          disabled
+          title="Stile inline non ancora persistito"
+        >
+          I
+        </button>
+        <button
+          type="button"
+          class="tool underline"
+          disabled
+          title="Stile inline non ancora persistito"
+        >
+          U
+        </button>
         <span class="separator"></span>
-        <span class="tool">H1</span>
-        <span class="tool">H2</span>
+        <button type="button" class="tool" (click)="applicaStileBlocco('H1')">H1</button>
+        <button type="button" class="tool" (click)="applicaStileBlocco('H2')">H2</button>
         <span class="separator"></span>
-        <span class="tool">1.</span>
-        <span class="tool">•</span>
-        <span class="tool">Tab</span>
+        <button type="button" class="tool" (click)="applicaLista('ordinata')">1.</button>
+        <button type="button" class="tool" (click)="applicaLista('puntata')">•</button>
+        <button type="button" class="tool" (click)="inserisciTab()">Tab</button>
         <span class="hint"
           >Clicca un segnaposto nel pannello laterale per inserirlo nella sezione selezionata</span
         >
@@ -216,25 +256,32 @@ const PROPRIETA_NODO = new Set([
                 <article
                   class="section-editor"
                   [class.selected]="sezione.codice === sezioneAttiva()"
+                  [class.style-h1]="stileSezione(sezione) === 'H1'"
+                  [class.style-h2]="stileSezione(sezione) === 'H2'"
                 >
                   <span class="section-tag">modificabile</span>
                   <h3>{{ sezione.codice }}</h3>
-                  <label class="visually-hidden" [for]="'sezione-' + sezione.codice">
-                    Testo sezione {{ sezione.codice }}
-                  </label>
-                  <textarea
-                    [id]="'sezione-' + sezione.codice"
+                  <div
+                    #editor
+                    class="editor-text"
+                    contenteditable="plaintext-only"
+                    role="textbox"
+                    tabindex="0"
+                    spellcheck="true"
+                    [attr.aria-label]="'Testo sezione ' + sezione.codice"
                     [attr.data-section-text]="sezione.codice"
-                    [value]="testoSezione(sezione)"
-                    [disabled]="salvandoSezioni()"
-                    (focus)="selezionaSezione(sezione.codice)"
-                    (input)="aggiornaTesto(sezione.codice, $any($event.target).value)"
-                  ></textarea>
+                    [textContent]="testoSezione(sezione)"
+                    (focus)="selezionaSezione(sezione.codice, editor)"
+                    (input)="aggiornaTestoDaEditor(sezione.codice, editor)"
+                    (keydown)="gestisciTastoEditor($event, sezione.codice, editor)"
+                    (dragover)="consentiDrop($event)"
+                    (drop)="rilasciaSegnaposto($event, sezione.codice, editor)"
+                  ></div>
                 </article>
               }
             }
 
-            <div class="document-preview" data-document-preview>
+            <div id="anteprima-documento" class="document-preview" data-document-preview>
               @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
                 <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
               }
@@ -279,7 +326,9 @@ const PROPRIETA_NODO = new Set([
                 type="button"
                 class="campo"
                 [attr.data-placeholder]="campo.codice"
+                draggable="true"
                 [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
+                (dragstart)="iniziaTrascinamento($event, campo)"
                 (click)="inserisciPlaceholderAttivo(campo)"
               >
                 <span class="drag-handle" aria-hidden="true">⠿</span>
@@ -364,11 +413,14 @@ const PROPRIETA_NODO = new Set([
 })
 export class ModelloAnteprimaComponent {
   private readonly api = inject(ApiClient);
+  private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly id = inject(ActivatedRoute).snapshot.paramMap.get('modelId')!;
+  private editorAttivo: HTMLElement | null = null;
   protected readonly modello = signal<Dettaglio | null>(null);
   protected readonly caricamento = signal(false);
   protected readonly salvando = signal(false);
+  protected readonly salvandoStato = signal(false);
   protected readonly errore = signal<string | null>(null);
   protected readonly sezioni = signal<SezioniResponse | null>(null);
   protected readonly sezioniLocali = signal<SezioneDocumento[]>([]);
@@ -393,6 +445,10 @@ export class ModelloAnteprimaComponent {
         .toLocaleLowerCase()
         .includes(query),
     );
+  });
+  protected readonly azioneVersione = computed(() => {
+    const stato = this.corrente()?.stato;
+    return stato ? (AZIONI_VERSIONE[stato] ?? null) : null;
   });
 
   constructor() {
@@ -437,12 +493,17 @@ export class ModelloAnteprimaComponent {
     return sezione.contenuto[0]?.contenuto ?? '';
   }
 
+  protected stileSezione(sezione: SezioneDocumento): string {
+    return sezione.contenuto[0]?.stile ?? '';
+  }
+
   protected placeholderSezione(sezione: SezioneDocumento): string[] {
     return sezione.contenuto.flatMap((blocco) => blocco.placeholder_usati);
   }
 
-  protected selezionaSezione(codice: string): void {
+  protected selezionaSezione(codice: string, editor?: HTMLElement): void {
     this.sezioneAttiva.set(codice);
+    if (editor) this.editorAttivo = editor;
   }
 
   protected aggiungiSezione(): void {
@@ -496,6 +557,16 @@ export class ModelloAnteprimaComponent {
     );
   }
 
+  protected aggiornaTestoDaEditor(codice: string, editor: HTMLElement): void {
+    this.aggiornaTesto(codice, this.testoEditor(editor));
+  }
+
+  protected gestisciTastoEditor(event: KeyboardEvent, codice: string, editor: HTMLElement): void {
+    if (event.key !== 'Tab') return;
+    event.preventDefault();
+    this.inserisciTestoNelEditor(codice, '  ', editor);
+  }
+
   protected inserisciPlaceholder(codiceSezione: string, campo: CampoVersione): void {
     const token = `{{${campo.codice}}}`;
     this.sezioniLocali.update((sezioni) =>
@@ -510,7 +581,101 @@ export class ModelloAnteprimaComponent {
   protected inserisciPlaceholderAttivo(campo: CampoVersione): void {
     const codice = this.sezioneAttiva();
     if (!codice) return;
-    this.inserisciPlaceholder(codice, campo);
+    this.inserisciTestoNelEditor(codice, `{{${campo.codice}}}`);
+  }
+
+  protected iniziaTrascinamento(event: DragEvent, campo: CampoVersione): void {
+    event.dataTransfer?.setData('application/x-gemodo-placeholder', campo.codice);
+    event.dataTransfer?.setData('text/plain', `{{${campo.codice}}}`);
+  }
+
+  protected consentiDrop(event: DragEvent): void {
+    if (!this.sezioni()?.modificabile || this.salvandoSezioni()) return;
+    event.preventDefault();
+  }
+
+  protected rilasciaSegnaposto(event: DragEvent, codiceSezione: string, editor: HTMLElement): void {
+    event.preventDefault();
+    this.selezionaSezione(codiceSezione, editor);
+    const codiceCampo = event.dataTransfer?.getData('application/x-gemodo-placeholder');
+    if (codiceCampo) {
+      const campo = this.corrente()?.campi.find((item) => item.codice === codiceCampo);
+      if (campo) {
+        this.inserisciTestoNelEditor(codiceSezione, `{{${campo.codice}}}`, editor);
+        return;
+      }
+    }
+    const testo = event.dataTransfer?.getData('text/plain');
+    if (testo) this.inserisciTestoNelEditor(codiceSezione, testo, editor);
+  }
+
+  protected applicaStileBlocco(stile: 'H1' | 'H2'): void {
+    const codice = this.sezioneAttiva();
+    if (!codice || !this.sezioni()?.modificabile) return;
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) => {
+        if (sezione.codice !== codice) return sezione;
+        const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
+        return {
+          ...sezione,
+          contenuto: [
+            {
+              ...blocco,
+              stile: blocco.stile === stile ? null : stile,
+            },
+            ...sezione.contenuto.slice(1),
+          ],
+        };
+      }),
+    );
+  }
+
+  protected applicaLista(tipo: 'ordinata' | 'puntata'): void {
+    const codice = this.sezioneAttiva();
+    if (!codice || !this.sezioni()?.modificabile) return;
+    const sezione = this.sezioniLocali().find((item) => item.codice === codice);
+    if (!sezione) return;
+    const righe = this.testoSezione(sezione)
+      .split('\n')
+      .map((riga, indice) => {
+        const pulita = riga.replace(/^(\d+\.|-)\s+/, '');
+        return tipo === 'ordinata' ? `${indice + 1}. ${pulita}` : `- ${pulita}`;
+      });
+    this.aggiornaTesto(codice, righe.join('\n'));
+    this.sincronizzaEditorAttivo(codice);
+  }
+
+  protected inserisciTab(): void {
+    const codice = this.sezioneAttiva();
+    if (!codice) return;
+    this.inserisciTestoNelEditor(codice, '  ');
+  }
+
+  protected scorriAnteprima(): void {
+    this.document.getElementById('anteprima-documento')?.scrollIntoView({ block: 'center' });
+  }
+
+  protected cambiaStatoVersione(azione: AzioneVersione): void {
+    const versione = this.corrente();
+    if (!versione || this.salvandoStato()) return;
+    this.salvandoStato.set(true);
+    this.errore.set(null);
+    this.api
+      .post<Versione>(
+        `/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/${azione.route}`,
+        {},
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.salvandoStato.set(false);
+          this.carica();
+        },
+        error: (e: ApiError) => {
+          this.salvandoStato.set(false);
+          this.errore.set(e.messaggio);
+        },
+      });
   }
 
   protected salvaSezioni(): void {
@@ -568,6 +733,61 @@ export class ModelloAnteprimaComponent {
           this.errore.set(e.messaggio);
         },
       });
+  }
+
+  private inserisciTestoNelEditor(
+    codiceSezione: string,
+    testo: string,
+    editor?: HTMLElement,
+  ): void {
+    const target = editor ?? this.editorAttivo;
+    if (
+      target &&
+      target.getAttribute('data-section-text') === codiceSezione &&
+      this.editorHaSelezione(target)
+    ) {
+      target.focus();
+      const selection = this.document.getSelection();
+      const range = selection?.getRangeAt(0);
+      if (selection && range) {
+        range.deleteContents();
+        range.insertNode(this.document.createTextNode(testo));
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.aggiornaTesto(codiceSezione, this.testoEditor(target));
+        return;
+      }
+    }
+
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) => {
+        if (sezione.codice !== codiceSezione) return sezione;
+        const corrente = this.testoSezione(sezione);
+        return this.sezioneConTesto(sezione, `${corrente}${corrente ? ' ' : ''}${testo}`);
+      }),
+    );
+    this.sincronizzaEditorAttivo(codiceSezione);
+  }
+
+  private editorHaSelezione(editor: HTMLElement): boolean {
+    const selection = this.document.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    const range = selection.getRangeAt(0);
+    const contenitore = range.commonAncestorContainer;
+    return contenitore === editor || editor.contains(contenitore);
+  }
+
+  private testoEditor(editor: HTMLElement): string {
+    return editor.textContent ?? '';
+  }
+
+  private sincronizzaEditorAttivo(codiceSezione: string): void {
+    if (this.editorAttivo?.getAttribute('data-section-text') !== codiceSezione) return;
+    const sezione = this.sezioniLocali().find((item) => item.codice === codiceSezione);
+    if (sezione && this.editorAttivo.textContent !== this.testoSezione(sezione)) {
+      this.editorAttivo.textContent = this.testoSezione(sezione);
+    }
   }
 
   private caricaCandidati(dettaglio: Dettaglio): void {
