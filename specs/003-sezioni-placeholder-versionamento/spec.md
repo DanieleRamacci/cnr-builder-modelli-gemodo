@@ -156,6 +156,14 @@ placeholder non dichiarati nei campi richiesti.
 - **FR-007a**: Il sistema MUST impedire campi complessi definiti come JSON libero generico quando sono usati per il contratto dati verso GEBAN.
 - **FR-007b**: Il sistema MUST validare i valori dei campi complessi rispetto allo schema dei sotto-campi dichiarato.
 - **FR-008**: Il sistema MUST mantenere lo storico del contenuto sezioni tramite le versioni modello pubblicate.
+> **Titolarita' di FR-009, FR-010 e FR-011 (T017, 2026-09-24).** Questi tre
+> requisiti dicono la stessa cosa di FR-036..FR-038 della `009`, che possiede
+> anche il validatore (`backend/app/quality/document_model.py`) per
+> `DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO`. La titolarita' e' **della `009`** e
+> la matrice di copertura (COV-031..COV-033) la attribuisce a lei; `003` li
+> **eredita** e non li ricopre. Scriverla in un posto solo evita due titolari
+> per la stessa regola, che era l'ambiguita' segnalata da T017.
+
 - **FR-009**: Il sistema MUST supportare solo i blocchi documentali ammessi `LOGO`, `INTESTAZIONE`, `TITOLO`, `PARAGRAFO`, `TABELLA`, `COLONNE`, `FIRMA`, `FOOTER`, `INTERRUZIONE_PAGINA` nel perimetro corrente.
 - **FR-010**: Il sistema MUST validare la compatibilita' tra tipo blocco e posizionamento, rifiutando layout fuori grammatica controllata.
 - **FR-011**: Il sistema MUST referenziare asset del modello tramite id, versione, storage reference e hash quando disponibile; gli asset non devono essere incorporati come contenuto libero.

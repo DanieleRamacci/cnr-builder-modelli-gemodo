@@ -278,8 +278,12 @@ coverage:
     stato: COPERTO
 
   # --- Modello documentale controllato (FR-036..FR-038) ---
+  # 003 T017: la titolarita' e' di `009`, che possiede questi requisiti e il
+  # validatore (`quality/document_model.py`, DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO).
+  # `003` FR-009..FR-011 dicono la stessa cosa e la **ereditano**: dichiararlo
+  # in un posto solo evita due titolari per la stessa regola.
   - id: COV-031
-    spec_owner: specs/003-sezioni-placeholder-versionamento
+    spec_owner: specs/009-fondamenta-mock-test-qualita
     requirement_id: FR-036
     scenario_id: SCENARIO-8
     contract_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
@@ -287,7 +291,7 @@ coverage:
     note: contiene_html_libero/css_libero/script tutti false, validati da document_model.py
 
   - id: COV-032
-    spec_owner: specs/003-sezioni-placeholder-versionamento
+    spec_owner: specs/009-fondamenta-mock-test-qualita
     requirement_id: FR-037
     scenario_id: SCENARIO-8
     contract_ref: infra/local/document-models/bando-concorso-standard-v1.yaml
@@ -295,11 +299,96 @@ coverage:
     note: intestazione, logo, titolo, paragrafo, tabella, colonne, firma, footer, interruzione pagina tutti presenti nel seed demo
 
   - id: COV-033
-    spec_owner: specs/003-sezioni-placeholder-versionamento
+    spec_owner: specs/009-fondamenta-mock-test-qualita
     requirement_id: FR-038
     scenario_id: SCENARIO-8
     contract_ref: infra/local/document-models/README.md
     stato: COPERTO
+
+  # --- Corpo del documento: sezioni, placeholder, resa (003, 2026-09-24) ---
+  - id: COV-092
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-001
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_sezioni_persistenza.py
+    stato: COPERTO
+    note: ordine dichiarato, unicita' (versione, codice), cascata, composizione, eredita' senza condivisione
+
+  - id: COV-093
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-002
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_sezioni_api.py
+    stato: COPERTO
+    note: GET/PUT d'insieme, riordino come invio unico, rimozione per omissione, versione di altro modello respinta
+
+  - id: COV-094
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-003
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_sezioni_api.py
+    stato: COPERTO
+    note: 002 FR-005 - scrittura solo in BOZZA, 409 MODELLO_VERSIONE_NON_MODIFICABILE, lettura sempre permessa
+
+  - id: COV-095
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-004
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_placeholder_validazione.py
+    stato: COPERTO
+    note: placeholder fuori contratto respinti alla scrittura, elenco completo delle violazioni
+
+  - id: COV-096
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-006
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_placeholder_validazione.py
+    stato: COPERTO
+    note: cancello di pubblicazione; verificato che il test fallisca rimuovendolo
+
+  - id: COV-097
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-008
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/e2e/test_documento_composto.py
+    stato: COPERTO
+    note: PDF con testo composto e valori sostituiti, valore mancante che ferma la generazione, modello senza sezioni invariato
+
+  # 003 FR-009..FR-011 sono gli stessi requisiti di 009 FR-036..FR-038 (T017):
+  # la regola e' una, il validatore e' uno, e la copertura rimanda a quella.
+  - id: COV-098
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-009
+    scenario_id: SCENARIO-8
+    contract_ref: backend/tests/builder/test_sezioni_api.py
+    stato: COPERTO
+    note: ereditato da 009 FR-037 (COV-032); test_un_blocco_di_tipo_sconosciuto_non_entra lo esercita dal builder
+
+  - id: COV-099
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-010
+    scenario_id: SCENARIO-8
+    contract_ref: backend/app/quality/document_model.py
+    stato: COPERTO
+    note: ereditato da 009 FR-036 (COV-031); grammatica tipo/posizionamento validata da validate_document_model
+
+  - id: COV-100
+    spec_owner: specs/003-sezioni-placeholder-versionamento
+    requirement_id: FR-011
+    scenario_id: SCENARIO-8
+    contract_ref: backend/app/quality/document_model.py
+    stato: COPERTO
+    note: ereditato da 009 FR-038 (COV-033); asset referenziati per id, mai incorporati
+
+  # Buco preesistente al 2026-09-24 (introdotto con FR-014 nel commit de29c99):
+  # il requisito aveva gia' il suo test e mancava solo la riga.
+  - id: COV-101
+    spec_owner: specs/011-dimensioni-generiche-modello
+    requirement_id: FR-014
+    scenario_id: SCENARIO-11
+    contract_ref: backend/tests/builder/test_dimensioni_generiche.py
+    stato: COPERTO
+    note: test_edizione_derivata_rifiutata_se_la_dimensione_ammette_generico - la derivazione discende dalla policy
 
   # --- Documentazione API / riuso (FR-039..FR-045) ---
   - id: COV-034

@@ -236,10 +236,12 @@ Non riscrivere: usare.
       docstring come `spec 009, FR-036..FR-038`
 - [-] T016 [US3] SUPERATO: creare `backend/app/builder/document_model/`.
       Il validatore vive in `quality/` e li' resta
-- [ ] T017 [US3] Trasferire formalmente la proprieta' di FR-009, FR-010 e
-      FR-011 a `009` nella matrice di copertura, oppure dichiarare in `spec.md`
-      che `003` li eredita. Oggi sono coperti da righe COV con
-      `spec_owner: 009`: la titolarita' va scritta una volta sola
+- [x] T017 [US3] (`docs/quality-coverage-matrix.yaml` COV-031..033,
+      `specs/003.../spec.md`) L'ambiguita' era piu' precisa di come il task la
+      descriveva: le righe COV avevano `spec_owner: 003` ma
+      `requirement_id: FR-036..FR-038`, che sono della `009`. Titolarita'
+      portata sulla `009`, che possiede anche il validatore; `003` dichiara in
+      `spec.md` di **ereditarli** e non li ricopre. Scritta una volta sola.
 
 ---
 
@@ -248,27 +250,42 @@ Non riscrivere: usare.
 **Goal**: il punto di arrivo dell'intera spec. Finche' questa fase non e'
 chiusa, GEMODO produce una scheda dati, non un bando.
 
-- [ ] T018 Estendere `backend/app/generazione/renderer.py` perche' renda una
-      lista di `BloccoDocumento` invece di coppie etichetta/valore, rispettando
-      tipo e posizionamento. Mantenere la funzione pura: blocchi in, byte PDF
-      fuori, nessun I/O
-- [ ] T019 Sostituire i placeholder con i valori di `request.dati` al momento
-      della generazione, in `backend/app/generazione/service.py`. Un
-      placeholder senza valore e' un errore funzionale esplicito, mai una
-      stringa vuota silenziosa
+- [x] T018 (`generazione/renderer.py::render_documento`) Rende una lista di
+      `BloccoDocumento` rispettando tipo e posizionamento; resta pura, blocchi
+      in e byte fuori. Il posizionamento diventa un allineamento, che e' quanto
+      questo renderer sa esprimere. `render_pdf` **resta**: un modello senza
+      sezioni - ogni modello creato prima della `003` - continua a produrre
+      l'elenco etichetta/valore, cosi' nulla di gia' pubblicato cambia forma
+      da sotto. Logo e asset versionati restano fuori perimetro.
+- [x] T019 (`generazione/renderer.py::sostituisci_placeholder`,
+      `generazione/service.py`) `{{campo}}` diventa il valore; un segnaposto
+      senza valore solleva `PlaceholderSenzaValore` e la generazione risponde
+      `DATI_NON_VALIDI` **nominando i campi mancanti**, mai una stringa vuota:
+      un bando con un buco al posto dei posti sembra completo, ed e' peggio di
+      un bando non generato. Nota emersa dai test: per un campo **obbligatorio**
+      interviene prima `validate_payload`, che e' il controllo giusto per quel
+      caso; questo errore copre i campi **opzionali** che il testo cita e che
+      quella validazione non puo' vedere.
 - [ ] T020 Rimuovere la marcatura `DOCUMENTO DI TEST - NON UFFICIALE` **solo**
       quando esiste un percorso ufficiale: oggi ADR 0002 dice che non esiste.
       Coordinare con `004`, che possiede la generazione ufficiale. Non
       rimuoverla come effetto collaterale di questa fase
-- [ ] T021 [P] Test end-to-end: modello con sezioni e placeholder, pubblicato,
-      poi `POST /api/v1/documenti/genera` produce un PDF che contiene il testo
-      composto con i valori sostituiti, in `backend/tests/e2e/`
+- [x] T021 [P] (`backend/tests/e2e/test_documento_composto.py`) Tre test sul
+      percorso intero: il PDF contiene il testo composto con i valori dentro e
+      nessun `{{` sopravvissuto; un valore mancante ferma la generazione
+      nominando il campo; un modello senza sezioni resta l'elenco di prima. Il
+      testo si verifica nei **byte grezzi** del PDF - `compress=False` lo
+      lascia ispezionabile - senza aggiungere una libreria di lettura PDF.
 
 ---
 
 ## Phase 7: Allineamento
 
-- [ ] T022 [P] Righe di copertura in `docs/quality-coverage-matrix.yaml` per i
+- [x] T022 [P] (`docs/quality-coverage-matrix.yaml` COV-092..097) Sei righe
+      nuove: persistenza sezioni, API d'insieme, scrittura solo in BOZZA,
+      placeholder contro il contratto, cancello di pubblicazione, PDF composto
+      end-to-end. Tutte con un test reale come `contract_ref`.
+      *(Originale: Righe di copertura in `docs/quality-coverage-matrix.yaml` per i
       FR di `003` via via che vengono chiusi, e rimozione delle voci
       corrispondenti da `docs/coverage-baseline.yaml` (il cricchetto puo' solo
       restringersi)
