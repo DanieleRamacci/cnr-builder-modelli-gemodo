@@ -10,7 +10,13 @@ from sqlalchemy.orm import Session
 from app.catalog import repository as catalog_repository
 from app.common.security import PrincipalGEMODO
 from app.db.session import get_db
-from app.generazione.renderer import render_pdf
+from app.builder import repository as builder_repository
+from app.generazione.renderer import (
+    PlaceholderSenzaValore,
+    render_documento,
+    render_pdf,
+    sostituisci_placeholder,
+)
 from app.generazione.schemas import EsitoGenerazione
 from app.storage import archivio
 from app.storage.models import DocumentoGenerato
@@ -56,11 +62,37 @@ class GenerazioneDocumentiService:
 
         titolo = f"{version.modello.tipo_documento.nome} - {version.modello.nome}"
         campi = catalog_repository.list_required_fields(self.db, version.id)
-        righe = [(campo.etichetta, request.dati[campo.codice]) for campo in campi if campo.codice in request.dati]
         nome_file = f"{version.modello.codice}-v{version.versione}-{request.external_context_id}.pdf"
 
+        # 003 T018/T019: se la versione ha sezioni, il documento e' quello
+        # composto. Un modello senza sezioni - ogni modello creato prima della
+        # `003` - resta l'elenco etichetta/valore, quindi nulla di gia'
+        # pubblicato cambia forma da sotto.
+        documentale = builder_repository.composizione_documentale(version)
         try:
-            contenuto = render_pdf(titolo=titolo, righe=righe)
+            if documentale.blocchi:
+                blocchi = sostituisci_placeholder(documentale.blocchi, request.dati)
+                contenuto = render_documento(titolo=titolo, blocchi=blocchi)
+            else:
+                righe = [
+                    (campo.etichetta, request.dati[campo.codice])
+                    for campo in campi if campo.codice in request.dati
+                ]
+                contenuto = render_pdf(titolo=titolo, righe=righe)
+        except PlaceholderSenzaValore as mancanti:
+            # Un segnaposto senza valore non e' un errore di produzione del
+            # file: e' il documento che non si puo' comporre con questi dati.
+            return RisultatoGenerazione(
+                self._risposta(
+                    stato="DATI_NON_VALIDI",
+                    messaggio=(
+                        "Documento non generato: mancano i valori per "
+                        + ", ".join(mancanti.mancanti)
+                    ),
+                    request=request, validazione=validazione, riferimento=None,
+                ),
+                contenuto=None, nome_file=None,
+            )
         except Exception:
             fallito = self.storage.registra_fallimento(
                 sistema_richiedente=request.sistema_richiedente, external_context_id=request.external_context_id,
