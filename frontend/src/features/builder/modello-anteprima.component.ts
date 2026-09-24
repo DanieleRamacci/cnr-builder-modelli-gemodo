@@ -100,15 +100,41 @@ const PROPRIETA_NODO = new Set([
     }
 
     @if (modello(); as m) {
+      <div class="format-toolbar">
+        <span class="tool strong">B</span>
+        <span class="tool italic">I</span>
+        <span class="tool underline">U</span>
+        <span class="separator"></span>
+        <span class="tool">H1</span>
+        <span class="tool">H2</span>
+        <span class="separator"></span>
+        <span class="tool">1.</span>
+        <span class="tool">•</span>
+        <span class="tool">Tab</span>
+        <span class="hint"
+          >Clicca un segnaposto nel pannello laterale per inserirlo nella sezione selezionata</span
+        >
+      </div>
+
       <div class="corpo">
         <aside class="outline">
-          <h2>Sezioni</h2>
+          <h2>Sezioni del modello</h2>
           @if (sezioniLocali().length === 0) {
             <p class="vuoto-sezioni">Nessuna sezione configurata.</p>
           }
           @for (sezione of sezioniLocali(); track sezione.codice; let i = $index) {
-            <div class="outline-item">
-              <strong>{{ sezione.codice }}</strong>
+            <div class="outline-item" [class.selected]="sezione.codice === sezioneAttiva()">
+              <button
+                type="button"
+                class="outline-select"
+                (click)="selezionaSezione(sezione.codice)"
+              >
+                <span class="handle" aria-hidden="true">≡</span>
+                <span class="outline-copy">
+                  <strong>{{ sezione.codice }}</strong>
+                  <small>modificabile · {{ placeholderSezione(sezione).length }} segnaposto</small>
+                </span>
+              </button>
               @if (sezioni()?.modificabile) {
                 <div class="section-actions">
                   <button
@@ -117,7 +143,7 @@ const PROPRIETA_NODO = new Set([
                     [disabled]="i === 0 || salvandoSezioni()"
                     [attr.data-move-section]="sezione.codice"
                     data-direction="up"
-                    (click)="spostaSezione(i, -1)"
+                    (click)="spostaSezione(i, -1); $event.stopPropagation()"
                   >
                     Su
                   </button>
@@ -127,7 +153,7 @@ const PROPRIETA_NODO = new Set([
                     [disabled]="i === sezioniLocali().length - 1 || salvandoSezioni()"
                     [attr.data-move-section]="sezione.codice"
                     data-direction="down"
-                    (click)="spostaSezione(i, 1)"
+                    (click)="spostaSezione(i, 1); $event.stopPropagation()"
                   >
                     Giu
                   </button>
@@ -136,7 +162,7 @@ const PROPRIETA_NODO = new Set([
                     class="btn btn-sm btn-outline-danger"
                     [disabled]="salvandoSezioni()"
                     [attr.data-remove-section]="sezione.codice"
-                    (click)="rimuoviSezione(sezione.codice)"
+                    (click)="rimuoviSezione(sezione.codice); $event.stopPropagation()"
                   >
                     Rimuovi
                   </button>
@@ -187,28 +213,23 @@ const PROPRIETA_NODO = new Set([
 
             @if (sezioni()?.modificabile) {
               @for (sezione of sezioniLocali(); track sezione.codice) {
-                <article class="section-editor">
+                <article
+                  class="section-editor"
+                  [class.selected]="sezione.codice === sezioneAttiva()"
+                >
+                  <span class="section-tag">modificabile</span>
                   <h3>{{ sezione.codice }}</h3>
+                  <label class="visually-hidden" [for]="'sezione-' + sezione.codice">
+                    Testo sezione {{ sezione.codice }}
+                  </label>
                   <textarea
+                    [id]="'sezione-' + sezione.codice"
                     [attr.data-section-text]="sezione.codice"
                     [value]="testoSezione(sezione)"
                     [disabled]="salvandoSezioni()"
+                    (focus)="selezionaSezione(sezione.codice)"
                     (input)="aggiornaTesto(sezione.codice, $any($event.target).value)"
                   ></textarea>
-                  <div class="placeholder-toolbar" aria-label="Segnaposti disponibili">
-                    @for (campo of corrente()?.campi ?? []; track campo.codice + campo.lingua) {
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        [attr.data-placeholder]="campo.codice"
-                        [attr.data-section-placeholder]="sezione.codice"
-                        [disabled]="salvandoSezioni()"
-                        (click)="inserisciPlaceholder(sezione.codice, campo)"
-                      >
-                        {{ campo.codice }}
-                      </button>
-                    }
-                  </div>
                 </article>
               }
             }
@@ -227,35 +248,67 @@ const PROPRIETA_NODO = new Set([
         </section>
 
         <aside class="pannello">
-          <h2>Campi del contratto</h2>
-          @if (!corrente()?.campi?.length) {
-            <p class="vuoto-sezioni">Questa versione non ha campi.</p>
-          }
-          @for (campo of corrente()?.campi ?? []; track campo.codice + campo.lingua) {
-            <div class="campo">
-              <div class="riga">
-                <span class="token">{{ campo.codice }}</span>
-                <span class="tipo">{{ campo.tipo }}</span>
-              </div>
-              <div class="etichetta">{{ campo.etichetta }}</div>
-              <div class="riga">
-                @if (campo.lingua) {
-                  <span class="lingua">{{ campo.lingua }}</span>
-                }
-                @if (campo.obbligatorio) {
-                  <span class="pill">obbligatorio</span>
-                }
-              </div>
-            </div>
-          }
+          <div class="panel-tabs" role="tablist" aria-label="Pannello builder">
+            <button type="button" class="active">Segnaposto</button>
+            <button type="button" disabled>Blocchi</button>
+            <button type="button" disabled>Proprietà</button>
+          </div>
+          <div class="panel-body">
+            <label class="visually-hidden" for="cerca-segnaposto">Cerca segnaposto</label>
+            <input
+              id="cerca-segnaposto"
+              class="form-control"
+              type="text"
+              placeholder="Cerca segnaposto"
+              [value]="ricercaSegnaposto()"
+              (input)="ricercaSegnaposto.set($any($event.target).value)"
+            />
+            <p class="panel-hint">
+              Clicca per inserire nella sezione selezionata. I segnaposto derivano dai campi della
+              versione.
+            </p>
 
-          <h2>Versioni</h2>
-          @for (versione of m.versioni; track versione.id) {
-            <div class="versione">
-              v{{ versione.numero_versione }} · {{ versione.stato }}
-              <span class="api">ID API: {{ versione.public_id ?? '-' }}</span>
-            </div>
-          }
+            <h2>Segnaposto</h2>
+            @if (!corrente()?.campi?.length) {
+              <p class="vuoto-sezioni">Questa versione non ha campi.</p>
+            } @else if (campiSegnaposto().length === 0) {
+              <p class="vuoto-sezioni">Nessun segnaposto trovato.</p>
+            }
+            @for (campo of campiSegnaposto(); track campo.codice + campo.lingua) {
+              <button
+                type="button"
+                class="campo"
+                [attr.data-placeholder]="campo.codice"
+                [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
+                (click)="inserisciPlaceholderAttivo(campo)"
+              >
+                <span class="drag-handle" aria-hidden="true">⠿</span>
+                <span class="campo-copy">
+                  <span class="riga">
+                    <span class="token">{{ campo.codice }}</span>
+                    <span class="tipo">{{ campo.tipo }}</span>
+                  </span>
+                  <span class="etichetta">{{ campo.etichetta }}</span>
+                  <span class="riga">
+                    @if (campo.lingua) {
+                      <span class="lingua">{{ campo.lingua }}</span>
+                    }
+                    @if (campo.obbligatorio) {
+                      <span class="pill">obbligatorio</span>
+                    }
+                  </span>
+                </span>
+              </button>
+            }
+
+            <h2>Versioni</h2>
+            @for (versione of m.versioni; track versione.id) {
+              <div class="versione">
+                v{{ versione.numero_versione }} · {{ versione.stato }}
+                <span class="api">ID API: {{ versione.public_id ?? '-' }}</span>
+              </div>
+            }
+          </div>
 
           <footer>
             Categoria: <strong>{{ m.percorso_categorizzazione.join(' / ') }}</strong>
@@ -322,12 +375,25 @@ export class ModelloAnteprimaComponent {
   protected readonly salvandoSezioni = signal(false);
   protected readonly erroreSezioni = signal<string | null>(null);
   protected readonly violazioniSezioni = signal<string[]>([]);
+  protected readonly sezioneAttiva = signal<string | null>(null);
+  protected readonly ricercaSegnaposto = signal('');
   protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
   protected readonly dimensioneScelta = signal('');
   protected readonly valoreScelto = signal('');
   protected readonly candidatoScelto = computed(() =>
     this.candidatiDerivazione().find((item) => item.nome === this.dimensioneScelta()),
   );
+  protected readonly campiSegnaposto = computed(() => {
+    const query = this.ricercaSegnaposto().trim().toLocaleLowerCase();
+    const campi = this.corrente()?.campi ?? [];
+    if (!query) return campi;
+    return campi.filter((campo) =>
+      [campo.codice, campo.etichetta, campo.tipo, campo.lingua ?? '']
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+  });
 
   constructor() {
     this.carica();
@@ -371,6 +437,14 @@ export class ModelloAnteprimaComponent {
     return sezione.contenuto[0]?.contenuto ?? '';
   }
 
+  protected placeholderSezione(sezione: SezioneDocumento): string[] {
+    return sezione.contenuto.flatMap((blocco) => blocco.placeholder_usati);
+  }
+
+  protected selezionaSezione(codice: string): void {
+    this.sezioneAttiva.set(codice);
+  }
+
   protected aggiungiSezione(): void {
     const progressivo = this.sezioniLocali().length + 1;
     let codice = `sezione-${progressivo}`;
@@ -388,12 +462,17 @@ export class ModelloAnteprimaComponent {
         contenuto: [this.nuovoBlocco(codice, '')],
       },
     ]);
+    this.sezioneAttiva.set(codice);
   }
 
   protected rimuoviSezione(codice: string): void {
-    this.sezioniLocali.update((sezioni) =>
-      this.riordina(sezioni.filter((sezione) => sezione.codice !== codice)),
+    const aggiornate = this.riordina(
+      this.sezioniLocali().filter((sezione) => sezione.codice !== codice),
     );
+    this.sezioniLocali.set(aggiornate);
+    if (this.sezioneAttiva() === codice) {
+      this.sezioneAttiva.set(aggiornate[0]?.codice ?? null);
+    }
   }
 
   protected spostaSezione(indice: number, direzione: -1 | 1): void {
@@ -426,6 +505,12 @@ export class ModelloAnteprimaComponent {
         return this.sezioneConTesto(sezione, `${testo}${testo ? ' ' : ''}${token}`);
       }),
     );
+  }
+
+  protected inserisciPlaceholderAttivo(campo: CampoVersione): void {
+    const codice = this.sezioneAttiva();
+    if (!codice) return;
+    this.inserisciPlaceholder(codice, campo);
   }
 
   protected salvaSezioni(): void {
@@ -553,9 +638,9 @@ export class ModelloAnteprimaComponent {
 
   private applicaSezioni(response: SezioniResponse): void {
     this.sezioni.set(response);
-    this.sezioniLocali.set(
-      this.riordina(response.sezioni.map((sezione) => this.clonaSezione(sezione))),
-    );
+    const locali = this.riordina(response.sezioni.map((sezione) => this.clonaSezione(sezione)));
+    this.sezioniLocali.set(locali);
+    this.sezioneAttiva.set(locali[0]?.codice ?? null);
   }
 
   private clonaSezione(sezione: SezioneDocumento): SezioneDocumento {

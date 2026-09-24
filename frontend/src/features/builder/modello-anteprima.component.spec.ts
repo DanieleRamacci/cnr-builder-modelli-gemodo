@@ -350,11 +350,12 @@ describe('2b ridotta: anteprima modello', () => {
 
     (root.querySelector('[data-add-section]') as HTMLButtonElement).click();
     fixture.detectChanges();
-    (
-      root.querySelector(
-        '[data-section-placeholder="sezione-1"][data-placeholder="titolo_it"]',
-      ) as HTMLButtonElement
-    ).click();
+    expect(root.querySelector('[data-section-placeholder]')).toBeNull();
+    const placeholder = root.querySelector(
+      '.pannello [data-placeholder="titolo_it"]',
+    ) as HTMLButtonElement;
+    expect(placeholder).toBeTruthy();
+    placeholder.click();
     fixture.detectChanges();
 
     expect(

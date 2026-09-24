@@ -891,8 +891,9 @@ prova e' stato composto con uno script. E' l'unico pezzo che separa
       corrisponde a un campo (`PLACEHOLDER_NON_VALIDO`, con l'elenco completo
       delle violazioni nei `dettagli`): l'interfaccia deve evitare che
       l'utente ci arrivi, e mostrare quelle violazioni quando succede lo stesso.
-      Chiuso 2026-09-24: chip dei campi versione e messaggi di violazione
-      backend mostrati in pagina.
+      Chiuso 2026-09-24: elenco segnaposto nel pannello laterale della
+      schermata 2b `builder-editor`, non nel foglio centrale, con messaggi di
+      violazione backend mostrati in pagina.
 - [x] T118 [FR-036] Anteprima del **documento composto** in
       `modello-anteprima`, al posto del solo elenco dei campi. La risposta di
       `GET .../sezioni` porta gia' `documento` con i blocchi in ordine, quindi
