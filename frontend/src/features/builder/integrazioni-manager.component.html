@@ -228,8 +228,9 @@
             <span class="codice">{{ model.codice }}</span>
             <div class="tags">
               <span>{{ model.codice_tipo_documento }}</span>
-              <span>{{ model.lingua === 'IT' ? 'Italiano' : 'Inglese' }}</span>
-              <span>{{ model.livello_professionale ?? 'Tutti i livelli' }}</span>
+              @for (dimensione of etichetteDimensioni(model); track dimensione) {
+                <span>{{ dimensione }}</span>
+              }
             </div>
             <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
             <ng-container
@@ -262,10 +263,9 @@
                     model.nome
                   }}</a>
                   <div class="small codice">{{ model.codice }}</div>
-                  <div class="small">
-                    {{ model.lingua === 'IT' ? 'Italiano' : 'Inglese' }} ·
-                    {{ model.livello_professionale ?? 'Tutti i livelli' }}
-                  </div>
+                  @if (etichetteDimensioni(model).length) {
+                    <div class="small">{{ etichetteDimensioni(model).join(' · ') }}</div>
+                  }
                 </td>
                 <td>
                   {{ model.codice_tipo_documento }}

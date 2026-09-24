@@ -7,7 +7,16 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Il realm locale dichiara solo `http://localhost:4200`: il setup registra
+  // l'origine effettiva della suite fra i redirect URI e la toglie alla fine.
+  globalSetup: './e2e/support/global-setup.ts',
+  globalTeardown: './e2e/support/global-teardown.ts',
+  // Serie, non parallelo: questi test condividono un realm Keycloak e un
+  // database. In parallelo si pestano i piedi sul client `gemodo-frontend`
+  // (redirect URI aggiunti e ripristinati a vicenda) e sui vincoli di
+  // unicita' del contesto `geban`.
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: 'list',
   use: {
@@ -15,7 +24,5 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

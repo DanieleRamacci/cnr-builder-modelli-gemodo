@@ -109,7 +109,7 @@ progetto Angular, avviabile da `infra/local/compose.yaml`.
       vero (non solo config statica) - vedi `e2e/smoke.spec.ts` (test
       placeholder, i veri scenari arrivano con US4/US5).
 - [x] T004 [P] _(2026-09-18)_ ESLint/Prettier in `frontend/` - `ng add
-  @angular-eslint/schematics` si e' rivelato rotto su questo workspace
+@angular-eslint/schematics` si e' rivelato rotto su questo workspace
       (falso positivo di version-mismatch anche con `@21` esplicito, non
       applicava la configurazione); risolto installando `angular-eslint@21` + `eslint@10` manualmente e scrivendo `eslint.config.js` a mano.
       Verificato con `eslint .` (0 errori) e `prettier --check` reali dopo
@@ -124,7 +124,7 @@ progetto Angular, avviabile da `infra/local/compose.yaml`.
       dal `Dockerfile` di _root_ (la vecchia pagina statica placeholder
       `deploy/coolify-test/`), completamente scollegato dalla vera app
       Angular. Un push non avrebbe mostrato nulla di nuovo. Risolto: `frontend/
-  Dockerfile` e' ora multi-stage con due target espliciti (nessun default,
+Dockerfile` e' ora multi-stage con due target espliciti (nessun default,
       entrambi i compose li richiamano esplicitamente) - `dev` (invariato,
       `ng serve`) e `production` (`ng build --configuration production` +
       nginx statico su `:80`, con `scripts/docker-entrypoint-nginx.sh` che
@@ -168,7 +168,7 @@ incremento (client HTTP tipizzato, autenticazione, shell applicativa).
 fase sia completa.
 
 - [x] T006 _(2026-09-18)_ Verificato `specs/002-builder-modelli/contracts/
-  builder-modelli-api.openapi.yaml` contro `backend/app/builder/api.py`:
+builder-modelli-api.openapi.yaml` contro `backend/app/builder/api.py`:
       drift totale, non solo parziale - la 0.2.0 descriveva un CRUD
       tipi-documento/categorie mai implementato cosi' (quello spazio e' ora
       coperto in sola lettura da `integrazioni-api.openapi.yaml`,
@@ -350,17 +350,17 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
 - [x] T011 [P] [US4] Unit test (Vitest) per il componente lista integrazioni:
       stato vuoto al primo avvio, badge di stato per `DEFINITO`/`CONNESSO`/
       `ERRORE`, in `frontend/src/features/configurazione/integrazioni-
-  lista.component.spec.ts`
+lista.component.spec.ts`
 - [x] T012 [P] [US4] Unit test (Vitest) per il form di creazione: validazione
       lunghezza campi, gestione `409 INTEGRAZIONE_DUPLICATA` come errore di
       form, in `frontend/src/features/configurazione/integrazione-
-  crea.component.spec.ts`
+crea.component.spec.ts`
 - [x] T013 [P] [US4] Unit test (Vitest) per il form di
       configurazione/verifica: gestione `409 REVISIONE_SUPERATA` (ricarica,
       non sovrascrive), `422 DESTINAZIONE_NON_APPROVATA`, `409
-  VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
+VERIFICA_IN_CORSO`, esito `CONNESSO`/`ERRORE` con motivi sanificati,
       in `frontend/src/features/configurazione/integrazione-
-  configura.component.spec.ts`
+configura.component.spec.ts`
 - [x] T014 (2026-09-21: ESEGUITO su stack reale, 3 e2e verdi - vedi quickstart.md 'Playwright su stack reale eseguito') [US4] Test e2e (Playwright) end-to-end: admin crea
       un'integrazione, la configura verso `mock-geban` reale, la verifica e
       vede lo stato finale corretto (Scenario 1 di `quickstart.md`), in
@@ -382,7 +382,7 @@ senza mai chiamare l'API a mano (`spec.md` User Story 4, FR-021).
       timeout, pulsante verifica con stato disabilitato durante la chiamata,
       visualizzazione esito) in
       `frontend/src/features/configurazione/integrazione-
-  configura.component.ts` (dipende da T013, T015)
+configura.component.ts` (dipende da T013, T015)
 - [x] T019 [US4] Instradamento `/configurazione` e voce di navigazione
       visibile solo con ruolo `GEMODO_ADMIN` nel token (abilitazione UI, mai
       autorizzazione - il backend gia' applica `require_admin`), in
@@ -411,7 +411,7 @@ FR-022/FR-023).
       `frontend/src/features/builder/integrazioni-manager.component.spec.ts`
 - [x] T021 [P] [US5] Unit test (Vitest) per la navigazione ad albero:
       profondita' variabile, stati caricamento/vuoto/`409
-  INTEGRAZIONE_NON_CONNESSA`/errore di trasporto distinti, in
+INTEGRAZIONE_NON_CONNESSA`/errore di trasporto distinti, in
       `frontend/src/features/builder/struttura-albero.component.spec.ts`
 - [x] T022 [P] [US5] Unit test (Vitest) per il form creazione modello:
       selezione percorso -> risoluzione categoria/tipologia, gestione errore
@@ -926,11 +926,19 @@ minima, ma non ancora equivalente al builder-editor del prototipo.
       scuro della 2b (partial). Chiuso 2026-09-24: `ShellComponent` riconosce
       la route 2b e applica `.app-main-editor`, coperto da
       `shell.component.spec.ts`.
-- [ ] T123 [FR-026] Allineare la topbar 2b al design: azioni `Crea modello
+- [x] T123 [FR-026] Allineare la topbar 2b al design: azioni `Crea modello
       derivato`, `Anteprima`, `Esporta .docx`, `Pubblica`, stato salvataggio e
-      conferme/disabled state coerenti con lo stato versione (partial). Stato
-      2026-09-24: azioni visibili e transizione corrente cablata; restano
-      saveState/autosave, conferma dedicata e export `.docx` reale.
+      conferme/disabled state coerenti con lo stato versione (partial). Chiuso
+      2026-09-24: la topbar mostra lo stato salvataggio (`[data-save-state]`:
+      salvato / modifiche non salvate / salvataggio / errore), il salvataggio
+      automatico scatta all'uscita dal blocco (non a timer: il PUT sostituisce
+      l'intero documento e salvare a meta' frase manderebbe al backend un testo
+      incompleto) e ogni transizione passa da un dialogo di conferma dedicato.
+      **Resta fuori**: `Esporta .docx` e' disabilitato con il motivo scritto nel
+      `title`, perche' il contratto backend non esiste - `generazione` produce
+      solo PDF di un documento gia' compilato (`app/generazione/renderer.py`,
+      004), non un export .docx del modello. Serve una decisione di prodotto
+      prima di un endpoint.
 - [x] T124 [FR-011/FR-035] Sostituire la `textarea` centrale con un editor di
       testo controllato, dentro il foglio, evitando HTML/CSS libero e salvando
       il contenuto nel formato documentale sicuro del backend (partial). Chiuso
@@ -946,18 +954,68 @@ minima, ma non ancora equivalente al builder-editor del prototipo.
       (partial). Chiuso 2026-09-24: H1/H2 aggiornano `stile`, liste e Tab
       trasformano testo controllato; B/I/U restano disabilitati perche' il
       formato documentale vieta HTML/CSS libero.
-- [ ] T127 [FR-026] Completare il foglio centrale come nello screen 2b:
+- [x] T127 [FR-026] Completare il foglio centrale come nello screen 2b:
       intestazione documento, metadati determina, blocchi con tag, firma e
       comando tratteggiato `Inserisci una nuova sezione di testo` (partial).
-- [ ] T128 [FR-026/FR-011] Implementare le tab laterali `Blocchi` e `Proprietà`
+      Chiuso 2026-09-24: la pagina 2b renderizza cornice documento,
+      intestazione/firma, blocchi con tag e comando inline; coperto da
+      `modello-anteprima.component.spec.ts`.
+- [x] T128 [FR-026/FR-011] Implementare le tab laterali `Blocchi` e `Proprietà`
       con contenuto reale per inserimento blocchi predefiniti e proprietà della
       sezione selezionata, oppure tracciare il contratto backend mancante se non
-      disponibile (missing).
-- [ ] T129 [FR-009/FR-012] Collegare le transizioni da topbar
+      disponibile (missing). Chiuso 2026-09-24: `Blocchi` inserisce sezioni
+      controllate da template, `Proprietà` espone codice, stile e conteggio
+      segnaposto della sezione attiva; coperto da test.
+- [x] T129 [FR-009/FR-012] Collegare le transizioni da topbar
       (`invia-revisione`, `approva`, `pubblica`) ai blocchi di pubblicazione e
       ai messaggi di readiness/placeholder invalidi gia' esposti dal backend
-      (partial). Stato 2026-09-24: chiamata base alla transizione corrente
-      cablata dalla topbar; restano readiness/blocchi di pubblicazione.
-- [ ] T130 [FR-026/SC-007] Aggiungere test di regressione visuale/e2e per la
+      (partial). Chiuso 2026-09-24: il pannello sezioni ha un riquadro
+      readiness (`[data-readiness]`) che anticipa gli stessi controlli di
+      `BuilderService._valida_documento` (documento senza sezioni, sezione
+      senza testo, segnaposto fuori dai campi della versione); la conferma di
+      `pubblica` e' disabilitata finche' quei blocchi esistono, e qualunque
+      transizione e' bloccata se ci sono modifiche non salvate - dopo
+      `invia-revisione` la versione non e' piu' modificabile e le modifiche
+      andrebbero perse. Le violazioni del backend sulla transizione rifiutata
+      (400 `PLACEHOLDER_NON_VALIDO`, `dettagli[].violazione`) non vengono piu'
+      scartate: finiscono in `[data-transition-blocks]`.
+- [x] T130 [FR-026/SC-007] Aggiungere test di regressione visuale/e2e per la
       2b editor fullscreen su viewport desktop e mobile, inclusi segnaposto
-      laterali, editor centrale e assenza dell'header globale (missing).
+      laterali, editor centrale e assenza dell'header globale (missing). Chiuso
+      2026-09-24: `e2e/builder-lifecycle.spec.ts` entra nella 2b prima del
+      ciclo di vita e verifica assenza di `.app-header`/`.app-footer`,
+      `main.app-main-editor`, pannello segnaposto, scrittura nell'editor con
+      inserimento di un segnaposto, autosalvataggio, readiness pulita e export
+      `.docx` disabilitato; poi screenshot desktop (1280) e mobile (390) con il
+      controllo di assenza di scroll orizzontale, che non dice solo "sborda" ma
+      elenca gli elementi oltre il bordo.
+      **Eseguito davvero 2026-09-24** su stack reale (Keycloak usa-e-getta su
+      :8081 con `realm-gemodo.local.json`, postgres su :55432 migrato a head,
+      backend uvicorn su :8003, discovery-mock su :9100, `ng serve` su :4202):
+      3 test e2e passati (smoke, admin-integrazione, builder-lifecycle).
+      **Due difetti reali trovati dall'esecuzione, non dai test unitari**:
+      1. L'editor centrale rimescolava il testo digitato. `[textContent]` era un
+         binding vivo: Angular riscriveva il nodo a ogni battuta e il caret
+         tornava a inizio blocco ("Premesso che " usciva "sso che Preme").
+         Il testo ora si allinea al modello solo quando la modifica arriva da
+         fuori, cioe' quando quell'editor non ha il fuoco.
+      2. La topbar sforava a destra a 1280px: il nome generato del modello
+         ("DEMO - Tempo determinato - DEMO - Ricercatore - IT - VI - ...")
+         spingeva `Invia in revisione` fuori dalla barra. Titolo e codice ora
+         troncano con ellissi, le azioni non si comprimono; a 390px le azioni
+         vanno a capo.
+      **Manutenzione dei locator**, necessaria perche' i test erano fermi al
+      2026-09-21: `Crea versione inglese` -> `Crea modello derivato` (T116),
+      card della home con numero e descrizione nell'accessible name,
+      `Nuova integrazione` -> `Nuovo contesto` e `/configurazione/contesti/:id/
+      integrazione` (010), `Verifica` -> `Verifica ora`, dimensioni generiche
+      `#lingua` -> `#dimensione-lingua` + `#dimensione-livello_professionale`
+      (011). Gli stessi rinomi sono stati applicati a
+      `e2e/admin-integrazione.spec.ts`, che per gli stessi motivi non passava
+      piu'.
+      **Per rieseguirlo**: il test non e' ripetibile su un database gia' usato
+      (FR-024, 409 sulla creazione del modello) - ripulire lo schema e
+      rimigrare. Non serve invece toccare `public/runtime-config.json`: ogni
+      test lo stubba sul realm locale, e il `globalSetup` di Playwright
+      registra l'origine della suite fra i redirect URI del client (vedi
+      011 T041, che ha condiviso la fixture in `e2e/support/keycloak.ts`).

@@ -25,6 +25,7 @@ const model = {
   variante: 'STANDARD',
   lingua: 'IT',
   livello_professionale: 'VI',
+  dimensioni: { lingua: 'IT', livello_professionale: 'VI' },
   derivato_da_modello_id: null,
   codice_contesto: 'geban',
   integrazione_id: 'source',
@@ -108,17 +109,19 @@ describe('context models and lifecycle', () => {
   }
   /** Le voci dei filtri sono lette a ogni cambio contesto (007 FR-028). */
   function flushVoci(http: HttpTestingController, voci: Partial<Record<string, string[]>> = {}) {
-    http.match((r) => r.url === '/api/v1/builder/modelli/filtri').forEach((r) =>
-      r.flush({
-        codici_tipo_documento: [],
-        codici_tipologia: [],
-        codici_categoria: [],
-        lingue: [],
-        livelli_professionali: [],
-        varianti: [],
-        ...voci,
-      }),
-    );
+    http
+      .match((r) => r.url === '/api/v1/builder/modelli/filtri')
+      .forEach((r) =>
+        r.flush({
+          codici_tipo_documento: [],
+          codici_tipologia: [],
+          codici_categoria: [],
+          lingue: [],
+          livelli_professionali: [],
+          varianti: [],
+          ...voci,
+        }),
+      );
   }
   it('lists the models of the context taken from the /contesti/:ctxId/modelli route', () => {
     const { fixture, http } = setup(['geban', 'altro'], 'altro');
@@ -131,15 +134,17 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('Nessun modello presente');
     http.verify();
   });
-  it('shows the model table with language and level for the default context', () => {
+  it('shows the model table with the model dimensions for the default context', () => {
     const { fixture, http } = setup();
     const first = http.expectOne((r) => r.url === '/api/v1/builder/modelli');
     expect(first.request.params.get('codice_contesto')).toBe('geban');
     first.flush([model]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Modello CTER');
-    expect(fixture.nativeElement.textContent).toContain('Italiano');
-    expect(fixture.nativeElement.textContent).toContain('VI');
+    // Le dimensioni si leggono da `dimensioni`, non da lingua/livello: un tipo
+    // documento che non le dichiara non deve vedersene attribuire (011 FR-006).
+    expect(fixture.nativeElement.textContent).toContain('lingua: IT');
+    expect(fixture.nativeElement.textContent).toContain('livello professionale: VI');
     http.verify();
   });
   it('refuses a context in the URL that the backend did not authorize, without querying models', () => {
@@ -158,6 +163,7 @@ describe('context models and lifecycle', () => {
     nome: 'Bando tecnologi',
     lingua: 'EN',
     livello_professionale: null,
+    dimensioni: { lingua: 'EN' },
     versioni: [{ ...version, id: 'v2', stato: 'PUBBLICATO' }],
   };
   it('summarises the loaded models by the state of their latest version', () => {

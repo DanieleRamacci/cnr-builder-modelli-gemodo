@@ -376,9 +376,38 @@ comportamento ma fornisce il valore iniziale di una configurazione.
   mai nullo per le richieste che GEBAN fa oggi.
 - [x] T040 [US5] Test: creare un'edizione derivata su un modello `CONTRATTI`
   fallisce con errore funzionale leggibile (verifica applicata di T034).
-- [ ] T041 [US5] [P] Playwright: percorso completo dall'interfaccia — registra
+- [x] T041 [US5] [P] Playwright: percorso completo dall'interfaccia — registra
   integrazione, scopri `CONTRATTI`, configura la policy di `area_geografica`,
   crea due modelli, pubblicali entrambi.
+  Chiuso 2026-09-24: `frontend/e2e/dimensioni-generiche.spec.ts`, **eseguito su
+  stack reale** (Keycloak locale :8081, postgres :55432, backend :8003,
+  discovery-mock :9100, `ng serve` :4202). Il test attraversa tutto il
+  percorso e verifica le proprieta' della spec dall'interfaccia: nessun campo
+  lingua sulla foglia `CONTRATTI` (FR-006), nomi generati diversi fra NORD e
+  CENTRO (FR-003), entrambi i modelli `PUBBLICATO` a fine corsa - il secondo
+  non archivia il primo (FR-004).
+  **Due difetti trovati dall'esecuzione**, entrambi corretti con test unitario
+  di regressione (verificato che fallisce senza la correzione):
+  1. `modello-crea`: la risposta di `policy-dimensioni` arriva dopo la scelta
+     della foglia e `inizializzaDimensioni` riscriveva le dimensioni con i
+     default, cancellando il valore appena scelto dall'utente. Il bottone
+     tornava disabilitato senza spiegazione. Ora una scelta gia' fatta non
+     viene toccata; cambiando foglia invece si riparte da zero.
+  2. `integrazioni-manager`: l'elenco modelli scriveva "Italiano/Inglese ·
+     Tutti i livelli" leggendo `lingua` e `livello_professionale`, quindi
+     attribuiva una lingua ai modelli `CONTRATTI`, che non ne hanno una
+     (FR-006). Ora mostra le dimensioni davvero valorizzate, e niente se non
+     ce ne sono.
+  **Infrastruttura di test**, condivisa con la 007: la fixture Keycloak vive in
+  `e2e/support/keycloak.ts`; la registrazione dell'origine fra i redirect URI
+  del client e' passata al `globalSetup`/`globalTeardown` di Playwright, perche'
+  serve a tutta la suite (il realm dichiara solo `localhost:4200`); la suite gira
+  in serie (`workers: 1`), perche' i test condividono realm e database. Ogni
+  test stubba `runtime-config.json` sul realm locale, cosi' non serve piu'
+  modificare il file del deployment prima di lanciarli.
+  **Resta il vincolo del database pulito**: per FR-024 i tipi documento
+  appartengono a una sola integrazione per contesto, quindi una seconda corsa
+  sullo stesso schema fallisce. Ripulire e rimigrare prima di rieseguire.
 
 **Checkpoint**: la domanda da cui la spec nasce ha risposta «no, non serve
 sviluppo».

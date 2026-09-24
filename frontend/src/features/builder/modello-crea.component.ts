@@ -390,7 +390,7 @@ export class ModelloCreaComponent {
       .subscribe({
         next: (risposta) => {
           this.policy.set(Object.fromEntries(risposta.policy.map((p) => [p.nome_dimensione, p])));
-          if (this.leaf()) this.inizializzaDimensioni();
+          if (this.leaf()) this.inizializzaDimensioni({ mantieniScelte: true });
         },
         error: () => this.policy.set({}),
       });
@@ -401,9 +401,21 @@ export class ModelloCreaComponent {
     if (node.campi) this.inizializzaDimensioni();
     this.modelId = null;
   }
-  private inizializzaDimensioni(): void {
+  /**
+   * Riempie le dimensioni con preset e default della policy.
+   *
+   * `mantieniScelte` serve quando la policy arriva **dopo** che la foglia e'
+   * gia' scelta: senza, la risposta cancellava il valore che l'utente aveva
+   * appena selezionato, e il bottone tornava disabilitato senza spiegazione
+   * (visto dall'e2e della 011, T041). Cambiando foglia invece si riparte da
+   * zero, perche' i valori della foglia precedente non c'entrano piu'.
+   */
+  private inizializzaDimensioni(opzioni: { mantieniScelte?: boolean } = {}): void {
+    const scelte = opzioni.mantieniScelte ? this.dimensioni() : {};
     const valori = Object.fromEntries(
       this.dimensioniFoglia().flatMap((dimensione) => {
+        const gia = scelte[dimensione.nome];
+        if (gia && dimensione.valori.includes(gia)) return [[dimensione.nome, gia]];
         const preset = this.presetDimensioni[dimensione.nome];
         const valoreDefault = this.policy()[dimensione.nome]?.valore_default;
         const scelto = dimensione.valori.includes(preset)

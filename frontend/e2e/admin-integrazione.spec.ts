@@ -1,4 +1,9 @@
-import { test, expect, request as playwrightRequest, type APIRequestContext } from '@playwright/test';
+import {
+  test,
+  expect,
+  request as playwrightRequest,
+  type APIRequestContext,
+} from '@playwright/test';
 
 /**
  * Real end-to-end admin flow (007 tasks.md T014, spec.md User Story 4, quickstart.md
@@ -29,7 +34,10 @@ const DISCOVERY_URL = process.env['E2E_DISCOVERY_URL'] ?? 'http://127.0.0.1:9100
 function realmBaseUrl(): { serverUrl: string; realm: string } {
   const marker = '/realms/';
   const index = KEYCLOAK_URL.indexOf(marker);
-  return { serverUrl: KEYCLOAK_URL.slice(0, index), realm: KEYCLOAK_URL.slice(index + marker.length) };
+  return {
+    serverUrl: KEYCLOAK_URL.slice(0, index),
+    realm: KEYCLOAK_URL.slice(index + marker.length),
+  };
 }
 
 let adminContext: APIRequestContext;
@@ -40,10 +48,21 @@ let userId: string | undefined;
 test.beforeAll(async () => {
   const { serverUrl, realm } = realmBaseUrl();
   adminContext = await playwrightRequest.newContext();
-  const tokenResponse = await adminContext.post(`${serverUrl}/realms/master/protocol/openid-connect/token`, {
-    form: { client_id: 'admin-cli', username: KEYCLOAK_ADMIN_USERNAME, password: KEYCLOAK_ADMIN_PASSWORD, grant_type: 'password' },
-  });
-  expect(tokenResponse.ok(), 'Keycloak admin login failed - is the realm reachable and admin-cli enabled?').toBeTruthy();
+  const tokenResponse = await adminContext.post(
+    `${serverUrl}/realms/master/protocol/openid-connect/token`,
+    {
+      form: {
+        client_id: 'admin-cli',
+        username: KEYCLOAK_ADMIN_USERNAME,
+        password: KEYCLOAK_ADMIN_PASSWORD,
+        grant_type: 'password',
+      },
+    },
+  );
+  expect(
+    tokenResponse.ok(),
+    'Keycloak admin login failed - is the realm reachable and admin-cli enabled?',
+  ).toBeTruthy();
   const { access_token: adminToken } = await tokenResponse.json();
   const authHeader = { Authorization: `Bearer ${adminToken}` };
 
@@ -63,20 +82,32 @@ test.beforeAll(async () => {
   });
   expect(createResponse.status()).toBe(201);
 
-  const usersResponse = await adminContext.get(`${serverUrl}/admin/realms/${realm}/users?username=${testUsername}`, { headers: authHeader });
+  const usersResponse = await adminContext.get(
+    `${serverUrl}/admin/realms/${realm}/users?username=${testUsername}`,
+    { headers: authHeader },
+  );
   const [user] = await usersResponse.json();
   userId = user.id;
 
-  const clientsResponse = await adminContext.get(`${serverUrl}/admin/realms/${realm}/clients?clientId=gemodo-backend`, { headers: authHeader });
+  const clientsResponse = await adminContext.get(
+    `${serverUrl}/admin/realms/${realm}/clients?clientId=gemodo-backend`,
+    { headers: authHeader },
+  );
   const [client] = await clientsResponse.json();
 
-  const roleResponse = await adminContext.get(`${serverUrl}/admin/realms/${realm}/clients/${client.id}/roles/GEMODO_ADMIN`, { headers: authHeader });
+  const roleResponse = await adminContext.get(
+    `${serverUrl}/admin/realms/${realm}/clients/${client.id}/roles/GEMODO_ADMIN`,
+    { headers: authHeader },
+  );
   const role = await roleResponse.json();
 
-  const assignResponse = await adminContext.post(`${serverUrl}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${client.id}`, {
-    headers: authHeader,
-    data: [role],
-  });
+  const assignResponse = await adminContext.post(
+    `${serverUrl}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${client.id}`,
+    {
+      headers: authHeader,
+      data: [role],
+    },
+  );
   expect(assignResponse.status()).toBe(204);
 });
 
@@ -85,17 +116,38 @@ test.afterAll(async () => {
     return;
   }
   const { serverUrl, realm } = realmBaseUrl();
-  const tokenResponse = await adminContext.post(`${serverUrl}/realms/master/protocol/openid-connect/token`, {
-    form: { client_id: 'admin-cli', username: KEYCLOAK_ADMIN_USERNAME, password: KEYCLOAK_ADMIN_PASSWORD, grant_type: 'password' },
-  });
+  const tokenResponse = await adminContext.post(
+    `${serverUrl}/realms/master/protocol/openid-connect/token`,
+    {
+      form: {
+        client_id: 'admin-cli',
+        username: KEYCLOAK_ADMIN_USERNAME,
+        password: KEYCLOAK_ADMIN_PASSWORD,
+        grant_type: 'password',
+      },
+    },
+  );
   const { access_token: adminToken } = await tokenResponse.json();
-  await adminContext.delete(`${serverUrl}/admin/realms/${realm}/users/${userId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  await adminContext.delete(`${serverUrl}/admin/realms/${realm}/users/${userId}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
   await adminContext.dispose();
 });
 
 test('admin creates, configures and verifies an integration end-to-end', async ({ page }) => {
   const codice = `E2E_${Date.now()}`;
 
+  // Come gli altri: il runtime-config del dev server punta al SSO CNR, non al
+  // realm locale dove questo test ha appena creato l'utente.
+  await page.route('**/runtime-config.json', (route) =>
+    route.fulfill({
+      json: {
+        keycloakIssuerUrl: KEYCLOAK_URL,
+        keycloakClientId: 'gemodo-frontend',
+        externalDocsUrl: '',
+      },
+    }),
+  );
   await page.goto('/');
   await page.fill('#username', testUsername);
   await page.fill('#password', testPassword);
@@ -110,19 +162,23 @@ test('admin creates, configures and verifies an integration end-to-end', async (
   await page.waitForURL('**/configurazione');
   await expect(page.locator('body')).not.toContainText(codice);
 
-  await page.click('text=Nuova integrazione');
-  await page.waitForURL('**/configurazione/nuova');
+  // La 010 ha rinominato l'integrazione in "contesto" in interfaccia e ha
+  // spostato la creazione sotto /configurazione/contesti/nuovo.
+  await page.getByRole('link', { name: 'Nuovo contesto' }).first().click();
+  await page.waitForURL('**/configurazione/contesti/nuovo');
   await page.fill('#codice', codice);
   await page.fill('#nome', 'Integrazione e2e');
   await page.fill('#codiceContesto', 'geban');
   await page.click('button[type=submit]');
-  await page.waitForURL(/\/configurazione\/[0-9a-f-]{36}$/, { timeout: 10000 });
+  await page.waitForURL(/\/configurazione\/contesti\/[0-9a-f-]{36}\/integrazione$/, {
+    timeout: 10000,
+  });
   await expect(page.locator('body')).toContainText('Non verificato');
 
   await page.fill('#url', DISCOVERY_URL);
   await page.click('button:has-text("Salva configurazione")');
   await expect(page.locator('#url')).toHaveValue(DISCOVERY_URL);
 
-  await page.click('button:has-text("Verifica")');
+  await page.click('button:has-text("Verifica ora")');
   await expect(page.locator('body')).toContainText('Connesso', { timeout: 10000 });
 });

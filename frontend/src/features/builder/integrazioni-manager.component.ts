@@ -102,6 +102,20 @@ export class IntegrazioniManagerComponent {
     );
   }
   /**
+   * Le dimensioni valorizzate del modello, come le ha salvate il backend.
+   *
+   * Non si scrive piu' "Italiano/Inglese · Tutti i livelli": erano lingua e
+   * livello letti da due colonne dedicate, e un tipo documento che non le
+   * dichiara - `CONTRATTI` con `area_geografica` - si vedeva attribuire una
+   * lingua che non ha mai avuto (011 FR-006: nessun valore implicito di
+   * ripiego). Un modello senza dimensioni non mostra nulla.
+   */
+  protected etichetteDimensioni(model: Model): string[] {
+    return Object.entries(model.dimensioni ?? {})
+      .filter(([, valore]) => !!valore)
+      .map(([nome, valore]) => `${nome.replaceAll('_', ' ')}: ${valore}`);
+  }
+  /**
    * Filtri e ricerca sono applicati dal server: qui non si rifiltra nulla.
    * Rifiltrare la pagina ricevuta darebbe risultati sbagliati dalla seconda
    * pagina in poi ed e' esattamente il difetto che 007 FR-028 vieta.

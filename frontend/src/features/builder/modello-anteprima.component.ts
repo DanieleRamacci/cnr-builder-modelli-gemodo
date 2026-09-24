@@ -1,5 +1,14 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
@@ -18,7 +27,25 @@ type Nodo = {
   [nome: string]: unknown;
 };
 type CandidatoDerivazione = { nome: string; valori: string[] };
-type AzioneVersione = { route: string; label: string };
+type AzioneVersione = {
+  route: string;
+  label: string;
+  conferma: string;
+  /** `true` dove il backend valida il documento prima di accettare la transizione. */
+  verificaDocumento: boolean;
+};
+type StatoSalvataggio = {
+  codice: 'salvato' | 'modificato' | 'salvataggio' | 'errore';
+  etichetta: string;
+};
+type PannelloBuilder = 'segnaposto' | 'blocchi' | 'proprieta';
+type BloccoPredefinito = {
+  codice: string;
+  titolo: string;
+  descrizione: string;
+  contenuto: string;
+  stile: 'H1' | 'H2' | null;
+};
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
 };
@@ -60,9 +87,26 @@ const PROPRIETA_NODO = new Set([
   'livello_base',
 ]);
 const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
-  BOZZA: { route: 'invia-revisione', label: 'Invia in revisione' },
-  IN_REVISIONE: { route: 'approva', label: 'Approva' },
-  APPROVATO: { route: 'pubblica', label: 'Pubblica' },
+  BOZZA: {
+    route: 'invia-revisione',
+    label: 'Invia in revisione',
+    conferma:
+      "La versione passa in revisione: da quel momento le sezioni non sono piu' modificabili.",
+    verificaDocumento: false,
+  },
+  IN_REVISIONE: {
+    route: 'approva',
+    label: 'Approva',
+    conferma: 'La versione viene approvata e resta pronta per la pubblicazione.',
+    verificaDocumento: false,
+  },
+  APPROVATO: {
+    route: 'pubblica',
+    label: 'Pubblica',
+    conferma:
+      "La pubblicazione rende il modello utilizzabile e archivia la versione corrente: non e' reversibile.",
+    verificaDocumento: true,
+  },
 };
 
 /**
@@ -85,6 +129,13 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           >{{ m.codice }} · v{{ corrente()?.numero_versione }} · {{ corrente()?.stato }}</span
         >
       }
+      <span
+        class="save-state"
+        data-save-state
+        role="status"
+        [attr.data-state]="statoSalvataggio().codice"
+        >{{ statoSalvataggio().etichetta }}</span
+      >
       <div class="azioni">
         @if (puoDerivare()) {
           <button
@@ -97,19 +148,39 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           </button>
         }
         <button type="button" class="btn btn-sm" (click)="scorriAnteprima()">Anteprima</button>
-        <button type="button" class="btn btn-sm" disabled>Esporta .docx</button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          data-export-docx
+          disabled
+          title="Il backend non espone ancora un export .docx del modello: vedi T123 in tasks.md"
+        >
+          Esporta .docx
+        </button>
         @if (azioneVersione(); as azione) {
           <button
             type="button"
             class="btn btn-sm primary"
+            data-version-action
             [disabled]="salvandoStato() || salvandoSezioni()"
-            (click)="cambiaStatoVersione(azione)"
+            (click)="confermaAzione.showModal()"
           >
             {{ salvandoStato() ? 'Aggiornamento...' : azione.label }}
           </button>
         }
       </div>
     </header>
+
+    @if (violazioniStato().length) {
+      <div class="alert alert-danger" role="alert" data-transition-blocks>
+        Il backend ha rifiutato la transizione:
+        <ul class="mb-0">
+          @for (violazione of violazioniStato(); track violazione) {
+            <li>{{ violazione }}</li>
+          }
+        </ul>
+      </div>
+    }
 
     @if (errore()) {
       <div class="alert alert-danger" role="alert">{{ errore() }}</div>
@@ -234,61 +305,122 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               Versione in sola lettura: le sezioni pubblicate restano consultabili.
             </p>
           }
+
+          @if (sezioni()) {
+            <section class="readiness" data-readiness>
+              <h3>Pronto per la pubblicazione</h3>
+              @if (blocchiDocumento().length === 0) {
+                <p class="readiness-ok">Nessun blocco: il documento rispetta il contratto dati.</p>
+              } @else {
+                <ul class="readiness-elenco">
+                  @for (blocco of blocchiDocumento(); track blocco) {
+                    <li data-readiness-block>{{ blocco }}</li>
+                  }
+                </ul>
+              }
+            </section>
+          }
         </aside>
 
         <section class="foglio">
-          <div class="pagina">
-            @if (erroreSezioni()) {
-              <div class="alert alert-danger" role="alert">
-                {{ erroreSezioni() }}
-                @if (violazioniSezioni().length) {
-                  <ul class="mb-0">
-                    @for (violazione of violazioniSezioni(); track violazione) {
-                      <li>{{ violazione }}</li>
-                    }
-                  </ul>
-                }
+          <div class="pagina" id="anteprima-documento" data-document-preview>
+            <div class="document-header">
+              <div class="logo-box" aria-hidden="true"></div>
+              <div class="document-heading">
+                <strong
+                  >Comune di
+                  <span class="inline-token">{{ tokenDocumento(['ente', 'comune'], 'ente') }}</span>
+                </strong>
+                <span>Area appalti e contratti</span>
               </div>
-            }
+              <div class="document-meta">
+                Det. n.
+                <span class="inline-token">{{
+                  tokenDocumento(['numero', 'determina'], 'numero_atto')
+                }}</span>
+                <br />
+                del
+                <span class="inline-token">{{ tokenDocumento(['data'], 'data_atto') }}</span>
+              </div>
+            </div>
 
-            @if (sezioni()?.modificabile) {
-              @for (sezione of sezioniLocali(); track sezione.codice) {
-                <article
-                  class="section-editor"
-                  [class.selected]="sezione.codice === sezioneAttiva()"
-                  [class.style-h1]="stileSezione(sezione) === 'H1'"
-                  [class.style-h2]="stileSezione(sezione) === 'H2'"
+            <div class="document-body">
+              @if (erroreSezioni()) {
+                <div class="alert alert-danger" role="alert">
+                  {{ erroreSezioni() }}
+                  @if (violazioniSezioni().length) {
+                    <ul class="mb-0">
+                      @for (violazione of violazioniSezioni(); track violazione) {
+                        <li>{{ violazione }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+
+              @if (sezioni()?.modificabile) {
+                @for (sezione of sezioniLocali(); track sezione.codice) {
+                  <article
+                    class="section-editor"
+                    [class.selected]="sezione.codice === sezioneAttiva()"
+                    [class.style-h1]="stileSezione(sezione) === 'H1'"
+                    [class.style-h2]="stileSezione(sezione) === 'H2'"
+                  >
+                    <span class="section-tag">{{ etichettaStile(stileSezione(sezione)) }}</span>
+                    <h3>{{ sezione.codice }}</h3>
+                    <div
+                      #editor
+                      class="editor-text"
+                      contenteditable="plaintext-only"
+                      role="textbox"
+                      tabindex="0"
+                      spellcheck="true"
+                      [attr.aria-label]="'Testo sezione ' + sezione.codice"
+                      [attr.data-section-text]="sezione.codice"
+                      (focus)="selezionaSezione(sezione.codice, editor)"
+                      (blur)="autosalva()"
+                      (input)="aggiornaTestoDaEditor(sezione.codice, editor)"
+                      (keydown)="gestisciTastoEditor($event, sezione.codice, editor)"
+                      (dragover)="consentiDrop($event)"
+                      (drop)="rilasciaSegnaposto($event, sezione.codice, editor)"
+                    ></div>
+                  </article>
+                }
+              } @else {
+                @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
+                  <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
+                }
+                @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
+                  <article
+                    class="section-editor readonly"
+                    [class.style-h1]="blocco.stile === 'H1'"
+                    [class.style-h2]="blocco.stile === 'H2'"
+                  >
+                    <span class="section-tag">{{ etichettaStile(blocco.stile ?? '') }}</span>
+                    <div class="editor-text">{{ blocco.contenuto || 'Blocco senza testo' }}</div>
+                  </article>
+                }
+              }
+
+              <div class="document-signature">
+                <div>
+                  <strong>Il Responsabile del procedimento</strong>
+                  <span class="inline-token">{{
+                    tokenDocumento(['rup', 'responsabile'], 'rup')
+                  }}</span>
+                </div>
+              </div>
+
+              @if (sezioni()?.modificabile) {
+                <button
+                  type="button"
+                  class="add-section-inline"
+                  data-add-section-inline
+                  [disabled]="salvandoSezioni()"
+                  (click)="aggiungiSezione()"
                 >
-                  <span class="section-tag">modificabile</span>
-                  <h3>{{ sezione.codice }}</h3>
-                  <div
-                    #editor
-                    class="editor-text"
-                    contenteditable="plaintext-only"
-                    role="textbox"
-                    tabindex="0"
-                    spellcheck="true"
-                    [attr.aria-label]="'Testo sezione ' + sezione.codice"
-                    [attr.data-section-text]="sezione.codice"
-                    [textContent]="testoSezione(sezione)"
-                    (focus)="selezionaSezione(sezione.codice, editor)"
-                    (input)="aggiornaTestoDaEditor(sezione.codice, editor)"
-                    (keydown)="gestisciTastoEditor($event, sezione.codice, editor)"
-                    (dragover)="consentiDrop($event)"
-                    (drop)="rilasciaSegnaposto($event, sezione.codice, editor)"
-                  ></div>
-                </article>
-              }
-            }
-
-            <div id="anteprima-documento" class="document-preview" data-document-preview>
-              @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
-                <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
-              }
-              @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
-                <p [class.titolo-blocco]="blocco.tipo === 'PARAGRAFO' && blocco.ordine === 0">
-                  {{ blocco.contenuto || 'Blocco senza testo' }}
-                </p>
+                  Inserisci una nuova sezione di testo
+                </button>
               }
             </div>
           </div>
@@ -296,58 +428,135 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
 
         <aside class="pannello">
           <div class="panel-tabs" role="tablist" aria-label="Pannello builder">
-            <button type="button" class="active">Segnaposto</button>
-            <button type="button" disabled>Blocchi</button>
-            <button type="button" disabled>Proprietà</button>
+            <button
+              type="button"
+              role="tab"
+              [class.active]="pannelloAttivo() === 'segnaposto'"
+              [attr.aria-selected]="pannelloAttivo() === 'segnaposto'"
+              (click)="pannelloAttivo.set('segnaposto')"
+            >
+              Segnaposto
+            </button>
+            <button
+              type="button"
+              role="tab"
+              [class.active]="pannelloAttivo() === 'blocchi'"
+              [attr.aria-selected]="pannelloAttivo() === 'blocchi'"
+              (click)="pannelloAttivo.set('blocchi')"
+            >
+              Blocchi
+            </button>
+            <button
+              type="button"
+              role="tab"
+              [class.active]="pannelloAttivo() === 'proprieta'"
+              [attr.aria-selected]="pannelloAttivo() === 'proprieta'"
+              (click)="pannelloAttivo.set('proprieta')"
+            >
+              Proprietà
+            </button>
           </div>
           <div class="panel-body">
-            <label class="visually-hidden" for="cerca-segnaposto">Cerca segnaposto</label>
-            <input
-              id="cerca-segnaposto"
-              class="form-control"
-              type="text"
-              placeholder="Cerca segnaposto"
-              [value]="ricercaSegnaposto()"
-              (input)="ricercaSegnaposto.set($any($event.target).value)"
-            />
-            <p class="panel-hint">
-              Clicca per inserire nella sezione selezionata. I segnaposto derivano dai campi della
-              versione.
-            </p>
+            @if (pannelloAttivo() === 'segnaposto') {
+              <label class="visually-hidden" for="cerca-segnaposto">Cerca segnaposto</label>
+              <input
+                id="cerca-segnaposto"
+                class="form-control"
+                type="text"
+                placeholder="Cerca segnaposto"
+                [value]="ricercaSegnaposto()"
+                (input)="ricercaSegnaposto.set($any($event.target).value)"
+              />
+              <p class="panel-hint">
+                Clicca per inserire nella sezione selezionata. I segnaposto derivano dai campi della
+                versione.
+              </p>
 
-            <h2>Segnaposto</h2>
-            @if (!corrente()?.campi?.length) {
-              <p class="vuoto-sezioni">Questa versione non ha campi.</p>
-            } @else if (campiSegnaposto().length === 0) {
-              <p class="vuoto-sezioni">Nessun segnaposto trovato.</p>
-            }
-            @for (campo of campiSegnaposto(); track campo.codice + campo.lingua) {
-              <button
-                type="button"
-                class="campo"
-                [attr.data-placeholder]="campo.codice"
-                draggable="true"
-                [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
-                (dragstart)="iniziaTrascinamento($event, campo)"
-                (click)="inserisciPlaceholderAttivo(campo)"
-              >
-                <span class="drag-handle" aria-hidden="true">⠿</span>
-                <span class="campo-copy">
-                  <span class="riga">
-                    <span class="token">{{ campo.codice }}</span>
-                    <span class="tipo">{{ campo.tipo }}</span>
+              <h2>Segnaposto</h2>
+              @if (!corrente()?.campi?.length) {
+                <p class="vuoto-sezioni">Questa versione non ha campi.</p>
+              } @else if (campiSegnaposto().length === 0) {
+                <p class="vuoto-sezioni">Nessun segnaposto trovato.</p>
+              }
+              @for (campo of campiSegnaposto(); track campo.codice + campo.lingua) {
+                <button
+                  type="button"
+                  class="campo"
+                  [attr.data-placeholder]="campo.codice"
+                  draggable="true"
+                  [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
+                  (dragstart)="iniziaTrascinamento($event, campo)"
+                  (click)="inserisciPlaceholderAttivo(campo)"
+                >
+                  <span class="drag-handle" aria-hidden="true">⠿</span>
+                  <span class="campo-copy">
+                    <span class="riga">
+                      <span class="token">{{ campo.codice }}</span>
+                      <span class="tipo">{{ campo.tipo }}</span>
+                    </span>
+                    <span class="etichetta">{{ campo.etichetta }}</span>
+                    <span class="riga">
+                      @if (campo.lingua) {
+                        <span class="lingua">{{ campo.lingua }}</span>
+                      }
+                      @if (campo.obbligatorio) {
+                        <span class="pill">obbligatorio</span>
+                      }
+                    </span>
                   </span>
-                  <span class="etichetta">{{ campo.etichetta }}</span>
-                  <span class="riga">
-                    @if (campo.lingua) {
-                      <span class="lingua">{{ campo.lingua }}</span>
-                    }
-                    @if (campo.obbligatorio) {
-                      <span class="pill">obbligatorio</span>
-                    }
-                  </span>
-                </span>
-              </button>
+                </button>
+              }
+            } @else if (pannelloAttivo() === 'blocchi') {
+              <p class="panel-hint">
+                Blocchi di testo predefiniti per la categoria scelta. Clicca per inserirli come
+                nuova sezione.
+              </p>
+              @for (blocco of blocchiPredefiniti(); track blocco.codice) {
+                <button
+                  type="button"
+                  class="snippet"
+                  [attr.data-block-template]="blocco.codice"
+                  [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
+                  (click)="inserisciBloccoPredefinito(blocco)"
+                >
+                  <strong>{{ blocco.titolo }}</strong>
+                  <span>{{ blocco.descrizione }}</span>
+                </button>
+              }
+            } @else {
+              @if (sezioneCorrente(); as sezione) {
+                <h2>Proprietà</h2>
+                <label for="proprieta-codice">Titolo sezione</label>
+                <input
+                  id="proprieta-codice"
+                  class="form-control"
+                  type="text"
+                  [value]="sezione.codice"
+                  readonly
+                />
+                <label for="proprieta-stile">Stile blocco</label>
+                <select
+                  id="proprieta-stile"
+                  class="form-select"
+                  [value]="stileSezione(sezione)"
+                  [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
+                  (change)="impostaStileSezione($any($event.target).value)"
+                >
+                  <option value="">Paragrafo</option>
+                  <option value="H1">Titolo H1</option>
+                  <option value="H2">Titolo H2</option>
+                </select>
+                <div class="property-note">
+                  <strong>{{ placeholderSezione(sezione).length }}</strong>
+                  segnaposto usati in questa sezione.
+                </div>
+                <div class="property-note">
+                  Ripetibile: <strong>No</strong><br />
+                  Obbligatorietà: <strong>gestita dal contratto dati</strong>
+                </div>
+              } @else {
+                <p class="vuoto-sezioni">Seleziona una sezione per modificarne le proprietà.</p>
+              }
             }
 
             <h2>Versioni</h2>
@@ -365,6 +574,39 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         </aside>
       </div>
     }
+
+    <dialog #confermaAzione aria-labelledby="conferma-azione-titolo" data-confirm-transition>
+      @if (azioneVersione(); as azione) {
+        <h2 id="conferma-azione-titolo" class="h4">{{ azione.label }}?</h2>
+        <p>{{ azione.conferma }}</p>
+        @if (bloccoModificheNonSalvate()) {
+          <p class="blocco-pubblicazione" data-readiness-block>
+            Ci sono modifiche non salvate: salva il documento prima di cambiare stato.
+          </p>
+        }
+        @if (azione.verificaDocumento && blocchiDocumento().length) {
+          <p class="blocco-pubblicazione">Il documento non e' pubblicabile:</p>
+          <ul class="blocco-pubblicazione-elenco">
+            @for (blocco of blocchiDocumento(); track blocco) {
+              <li data-readiness-block>{{ blocco }}</li>
+            }
+          </ul>
+        }
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-outline-secondary" (click)="confermaAzione.close()">
+            Annulla
+          </button>
+          <button
+            class="btn btn-primary"
+            data-confirm-transition-submit
+            [disabled]="transizioneBloccata()"
+            (click)="cambiaStatoVersione(azione, confermaAzione)"
+          >
+            Conferma
+          </button>
+        </div>
+      }
+    </dialog>
 
     <dialog #derivazione aria-labelledby="derivazione-titolo">
       <h2 id="derivazione-titolo" class="h4">Creare un'edizione collegata?</h2>
@@ -428,6 +670,9 @@ export class ModelloAnteprimaComponent {
   protected readonly erroreSezioni = signal<string | null>(null);
   protected readonly violazioniSezioni = signal<string[]>([]);
   protected readonly sezioneAttiva = signal<string | null>(null);
+  protected readonly documentoModificato = signal(false);
+  protected readonly violazioniStato = signal<string[]>([]);
+  protected readonly pannelloAttivo = signal<PannelloBuilder>('segnaposto');
   protected readonly ricercaSegnaposto = signal('');
   protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
   protected readonly dimensioneScelta = signal('');
@@ -450,8 +695,101 @@ export class ModelloAnteprimaComponent {
     const stato = this.corrente()?.stato;
     return stato ? (AZIONI_VERSIONE[stato] ?? null) : null;
   });
+  protected readonly statoSalvataggio = computed<StatoSalvataggio>(() => {
+    if (this.salvandoSezioni()) return { codice: 'salvataggio', etichetta: 'Salvataggio...' };
+    if (this.erroreSezioni()) return { codice: 'errore', etichetta: 'Salvataggio non riuscito' };
+    if (!this.sezioni()?.modificabile) {
+      return { codice: 'salvato', etichetta: 'Versione in sola lettura' };
+    }
+    return this.documentoModificato()
+      ? { codice: 'modificato', etichetta: 'Modifiche non salvate' }
+      : { codice: 'salvato', etichetta: 'Tutte le modifiche salvate' };
+  });
+  /** I codici che il backend accetta come segnaposto: sono i campi della versione. */
+  protected readonly placeholderAmmessi = computed(
+    () => new Set((this.corrente()?.campi ?? []).map((campo) => campo.codice)),
+  );
+  /**
+   * Gli stessi blocchi che `pubblica` applicherebbe lato backend
+   * (`_valida_documento`), anticipati qui per non far scoprire il problema
+   * con un 400 a transizione gia' tentata.
+   */
+  protected readonly blocchiDocumento = computed<string[]>(() => {
+    const sezioni = this.sezioniLocali();
+    if (sezioni.length === 0) return ['Il documento non ha sezioni.'];
+    const blocchi: string[] = [];
+    const ammessi = this.placeholderAmmessi();
+    for (const sezione of sezioni) {
+      if (!this.testoSezione(sezione).trim()) {
+        blocchi.push(`La sezione "${sezione.codice}" non ha testo.`);
+      }
+      for (const placeholder of this.placeholderSezione(sezione)) {
+        if (!ammessi.has(placeholder)) {
+          blocchi.push(
+            `Il segnaposto {{${placeholder}}} della sezione "${sezione.codice}" non esiste fra i campi della versione.`,
+          );
+        }
+      }
+    }
+    return blocchi;
+  });
+  protected readonly bloccoModificheNonSalvate = computed(
+    () => !!this.sezioni()?.modificabile && this.documentoModificato(),
+  );
+  protected readonly transizioneBloccata = computed(() => {
+    if (this.salvandoStato() || this.salvandoSezioni()) return true;
+    if (this.bloccoModificheNonSalvate()) return true;
+    return !!this.azioneVersione()?.verificaDocumento && this.blocchiDocumento().length > 0;
+  });
+  protected readonly sezioneCorrente = computed(() => {
+    const codice = this.sezioneAttiva();
+    return this.sezioniLocali().find((sezione) => sezione.codice === codice) ?? null;
+  });
+  protected readonly blocchiPredefiniti = computed<BloccoPredefinito[]>(() => [
+    {
+      codice: 'oggetto',
+      titolo: 'Oggetto',
+      descrizione: 'Titolo sintetico con il segnaposto principale del modello.',
+      contenuto: `Oggetto: ${this.tokenDocumento(['titolo', 'oggetto'], 'titolo')}`,
+      stile: 'H1',
+    },
+    {
+      codice: 'premesse',
+      titolo: 'Premesse',
+      descrizione: "Paragrafo introduttivo per motivare l'atto.",
+      contenuto: 'Premesso che il procedimento richiede la predisposizione del presente atto.',
+      stile: 'H2',
+    },
+    {
+      codice: 'dettaglio',
+      titolo: 'Dettaglio',
+      descrizione: 'Blocco di testo operativo con i dati disponibili dal contratto.',
+      contenuto: `Sono disponibili ${this.tokenDocumento(['numero', 'posti'], 'numero_posti')} elementi secondo il contratto dati associato.`,
+      stile: null,
+    },
+  ]);
+
+  private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
 
   constructor() {
+    // Il testo dell'editor NON e' un binding: `[textContent]` riscriveva il
+    // nodo a ogni battuta e il caret tornava a inizio blocco, restituendo il
+    // testo mescolato (visto sullo screenshot e2e del 2026-09-24). Qui il DOM
+    // si allinea al modello solo quando la modifica arriva da fuori, cioe'
+    // quando quell'editor non e' quello su cui si sta scrivendo.
+    effect(() => {
+      const sezioni = this.sezioniLocali();
+      for (const riferimento of this.editors()) {
+        const elemento = riferimento.nativeElement;
+        if (elemento === this.document.activeElement) continue;
+        const sezione = sezioni.find(
+          (item) => item.codice === elemento.getAttribute('data-section-text'),
+        );
+        if (!sezione) continue;
+        const testo = this.testoSezione(sezione);
+        if (elemento.textContent !== testo) elemento.textContent = testo;
+      }
+    });
     this.carica();
   }
 
@@ -506,24 +844,31 @@ export class ModelloAnteprimaComponent {
     if (editor) this.editorAttivo = editor;
   }
 
-  protected aggiungiSezione(): void {
-    const progressivo = this.sezioniLocali().length + 1;
-    let codice = `sezione-${progressivo}`;
-    const usati = new Set(this.sezioniLocali().map((sezione) => sezione.codice));
-    let tentativo = progressivo + 1;
-    while (usati.has(codice)) {
-      codice = `sezione-${tentativo}`;
-      tentativo += 1;
-    }
+  protected aggiungiSezione(
+    contenuto = '',
+    codiceBase = 'sezione',
+    stile: 'H1' | 'H2' | null = null,
+    apriProprieta = false,
+  ): void {
+    const codice =
+      codiceBase === 'sezione'
+        ? this.codiceSezioneLibero(`sezione-${this.sezioniLocali().length + 1}`)
+        : this.codiceSezioneLibero(codiceBase);
     this.sezioniLocali.update((sezioni) => [
       ...sezioni,
       {
         codice,
         ordine: sezioni.length,
-        contenuto: [this.nuovoBlocco(codice, '')],
+        contenuto: [{ ...this.nuovoBlocco(codice, contenuto), stile }],
       },
     ]);
     this.sezioneAttiva.set(codice);
+    this.documentoModificato.set(true);
+    if (apriProprieta) this.pannelloAttivo.set('proprieta');
+  }
+
+  protected inserisciBloccoPredefinito(blocco: BloccoPredefinito): void {
+    this.aggiungiSezione(blocco.contenuto, blocco.codice, blocco.stile, true);
   }
 
   protected rimuoviSezione(codice: string): void {
@@ -531,6 +876,7 @@ export class ModelloAnteprimaComponent {
       this.sezioniLocali().filter((sezione) => sezione.codice !== codice),
     );
     this.sezioniLocali.set(aggiornate);
+    this.documentoModificato.set(true);
     if (this.sezioneAttiva() === codice) {
       this.sezioneAttiva.set(aggiornate[0]?.codice ?? null);
     }
@@ -545,11 +891,13 @@ export class ModelloAnteprimaComponent {
         aggiornate[destinazione],
         aggiornate[indice],
       ];
+      this.documentoModificato.set(true);
       return this.riordina(aggiornate);
     });
   }
 
   protected aggiornaTesto(codice: string, testo: string): void {
+    this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) =>
         sezione.codice === codice ? this.sezioneConTesto(sezione, testo) : sezione,
@@ -569,6 +917,7 @@ export class ModelloAnteprimaComponent {
 
   protected inserisciPlaceholder(codiceSezione: string, campo: CampoVersione): void {
     const token = `{{${campo.codice}}}`;
+    this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) => {
         if (sezione.codice !== codiceSezione) return sezione;
@@ -612,6 +961,7 @@ export class ModelloAnteprimaComponent {
   protected applicaStileBlocco(stile: 'H1' | 'H2'): void {
     const codice = this.sezioneAttiva();
     if (!codice || !this.sezioni()?.modificabile) return;
+    this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) => {
         if (sezione.codice !== codice) return sezione;
@@ -625,6 +975,23 @@ export class ModelloAnteprimaComponent {
             },
             ...sezione.contenuto.slice(1),
           ],
+        };
+      }),
+    );
+  }
+
+  protected impostaStileSezione(stile: string): void {
+    const codice = this.sezioneAttiva();
+    if (!codice || !this.sezioni()?.modificabile) return;
+    const normalizzato = stile === 'H1' || stile === 'H2' ? stile : null;
+    this.documentoModificato.set(true);
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) => {
+        if (sezione.codice !== codice) return sezione;
+        const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
+        return {
+          ...sezione,
+          contenuto: [{ ...blocco, stile: normalizzato }, ...sezione.contenuto.slice(1)],
         };
       }),
     );
@@ -655,11 +1022,13 @@ export class ModelloAnteprimaComponent {
     this.document.getElementById('anteprima-documento')?.scrollIntoView({ block: 'center' });
   }
 
-  protected cambiaStatoVersione(azione: AzioneVersione): void {
+  protected cambiaStatoVersione(azione: AzioneVersione, dialog?: HTMLDialogElement): void {
     const versione = this.corrente();
-    if (!versione || this.salvandoStato()) return;
+    if (!versione || this.salvandoStato() || this.transizioneBloccata()) return;
+    dialog?.close();
     this.salvandoStato.set(true);
     this.errore.set(null);
+    this.violazioniStato.set([]);
     this.api
       .post<Versione>(
         `/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/${azione.route}`,
@@ -674,8 +1043,25 @@ export class ModelloAnteprimaComponent {
         error: (e: ApiError) => {
           this.salvandoStato.set(false);
           this.errore.set(e.messaggio);
+          // Su `pubblica` il backend risponde 400 PLACEHOLDER_NON_VALIDO con
+          // tutte le violazioni: perderle lascerebbe l'utente col solo
+          // messaggio generico.
+          this.violazioniStato.set((e.dettagli ?? []).flatMap((d) => d['violazione'] ?? []));
         },
       });
+  }
+
+  /**
+   * Salvataggio automatico all'uscita dal blocco.
+   *
+   * Non e' un autosave a timer: il PUT sostituisce l'intero insieme di
+   * sezioni, quindi salvare a meta' di una frase manderebbe al backend un
+   * documento che l'utente non ha ancora finito di scrivere. L'uscita dal
+   * blocco e' il primo momento in cui il testo e' una versione completa.
+   */
+  protected autosalva(): void {
+    if (!this.documentoModificato() || !this.sezioni()?.modificabile) return;
+    this.salvaSezioni();
   }
 
   protected salvaSezioni(): void {
@@ -684,6 +1070,10 @@ export class ModelloAnteprimaComponent {
     this.salvandoSezioni.set(true);
     this.erroreSezioni.set(null);
     this.violazioniSezioni.set([]);
+    // Da qui in poi "modificato" significa "modificato dopo l'invio": e' il
+    // segnale che la risposta del PUT e' piu' vecchia di quello che l'utente
+    // ha in mano, e quindi non deve sovrascriverlo.
+    this.documentoModificato.set(false);
     const sezioni = this.riordina(this.sezioniLocali());
     this.api
       .put<SezioniResponse>(`/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/sezioni`, {
@@ -693,10 +1083,11 @@ export class ModelloAnteprimaComponent {
       .subscribe({
         next: (response) => {
           this.salvandoSezioni.set(false);
-          this.applicaSezioni(response);
+          this.applicaSezioni(response, this.documentoModificato());
         },
         error: (e: ApiError) => {
           this.salvandoSezioni.set(false);
+          this.documentoModificato.set(true);
           this.erroreSezioni.set(e.messaggio);
           this.violazioniSezioni.set((e.dettagli ?? []).flatMap((d) => d['violazione'] ?? []));
         },
@@ -710,6 +1101,20 @@ export class ModelloAnteprimaComponent {
 
   protected etichetta(nome: string): string {
     return nome.replaceAll('_', ' ').replace(/^./, (iniziale) => iniziale.toUpperCase());
+  }
+
+  protected etichettaStile(stile: string): string {
+    if (stile === 'H1') return 'titolo';
+    if (stile === 'H2') return 'sottotitolo';
+    return 'paragrafo';
+  }
+
+  protected tokenDocumento(indizi: string[], fallback: string): string {
+    const campo = this.corrente()?.campi.find((item) => {
+      const testo = `${item.codice} ${item.etichetta}`.toLocaleLowerCase();
+      return indizi.some((indizio) => testo.includes(indizio));
+    });
+    return `{{${campo?.codice ?? fallback}}}`;
   }
 
   protected creaEdizione(dialog: HTMLDialogElement): void {
@@ -760,6 +1165,7 @@ export class ModelloAnteprimaComponent {
       }
     }
 
+    this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) => {
         if (sezione.codice !== codiceSezione) return sezione;
@@ -788,6 +1194,14 @@ export class ModelloAnteprimaComponent {
     if (sezione && this.editorAttivo.textContent !== this.testoSezione(sezione)) {
       this.editorAttivo.textContent = this.testoSezione(sezione);
     }
+  }
+
+  private codiceSezioneLibero(base: string): string {
+    const usati = new Set(this.sezioniLocali().map((sezione) => sezione.codice));
+    if (!usati.has(base)) return base;
+    let progressivo = 2;
+    while (usati.has(`${base}-${progressivo}`)) progressivo += 1;
+    return `${base}-${progressivo}`;
   }
 
   private caricaCandidati(dettaglio: Dettaglio): void {
@@ -856,11 +1270,13 @@ export class ModelloAnteprimaComponent {
       });
   }
 
-  private applicaSezioni(response: SezioniResponse): void {
+  private applicaSezioni(response: SezioniResponse, mantieniLocali = false): void {
     this.sezioni.set(response);
+    if (mantieniLocali) return;
     const locali = this.riordina(response.sezioni.map((sezione) => this.clonaSezione(sezione)));
     this.sezioniLocali.set(locali);
     this.sezioneAttiva.set(locali[0]?.codice ?? null);
+    this.documentoModificato.set(false);
   }
 
   private clonaSezione(sezione: SezioneDocumento): SezioneDocumento {

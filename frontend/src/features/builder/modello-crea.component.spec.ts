@@ -292,6 +292,74 @@ describe('2a categorization cascade', () => {
     expect(opzioni).toContain('Seleziona un valore');
   });
 
+  it('keeps the value chosen before the policy response arrives', async () => {
+    // La policy si carica in parallelo alla struttura: se l'utente sceglie
+    // prima che risponda, la risposta non deve cancellargli la scelta sotto le
+    // dita (trovato dall'e2e della 011, T041).
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'source' } } } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ModelloCreaComponent);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/builder/integrazioni/source/tipi-documento').flush(['BANDO']);
+    const component = fixture.componentInstance as unknown as {
+      loadTree: (code: string) => void;
+      chooseAt: (indice: number, code: string) => void;
+    };
+    component.loadTree('BANDO');
+    http
+      .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
+      .flush({ nodi });
+    fixture.detectChanges();
+    component.chooseAt(0, 'TD');
+    component.chooseAt(1, 'RICERCATORE');
+    fixture.detectChanges();
+
+    // `ngModel` registra il control su microtask: prima di allora il select
+    // non e' ancora collegato e un change non arriverebbe al modello.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const livelli = fixture.nativeElement.querySelector(
+      '#dimensione-livello_professionale',
+    ) as HTMLSelectElement;
+    // `SelectControlValueAccessor` rimpiazza i value delle option con id
+    // interni: si seleziona per indice, non per valore.
+    livelli.selectedIndex = Array.from(livelli.options).findIndex(
+      (opzione) => opzione.textContent?.trim() === 'VII',
+    );
+    livelli.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    // La policy arriva adesso, con un default diverso da quello scelto.
+    flushPolicy(http, [
+      { nome_dimensione: 'lingua', consente_valore_generico: false, valore_default: 'IT' },
+      {
+        nome_dimensione: 'livello_professionale',
+        consente_valore_generico: false,
+        valore_default: 'VI',
+      },
+    ]);
+    fixture.detectChanges();
+    // `ngModel` scrive nella vista su microtask: senza attendere, il select
+    // mostrerebbe ancora il valore vecchio e il test non proverebbe nulla.
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      (
+        fixture.nativeElement.querySelector(
+          '#dimensione-livello_professionale',
+        ) as HTMLSelectElement
+      ).value,
+    ).toBe('VII');
+    http.verify();
+  });
+
   it('uses valore_default instead of the first value returned by discovery', async () => {
     const original = [...leafA.lingue_possibili];
     leafA.lingue_possibili.splice(0, leafA.lingue_possibili.length, 'EN', 'IT');

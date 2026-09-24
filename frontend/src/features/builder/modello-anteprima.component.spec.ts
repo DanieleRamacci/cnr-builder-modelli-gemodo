@@ -207,7 +207,9 @@ describe('2b ridotta: anteprima modello', () => {
     flushSections(http);
     flushDerivationConfig(http);
     fixture.detectChanges();
-    const dialog = root.querySelector('dialog')!;
+    const dialog = root.querySelector(
+      'dialog[aria-labelledby="derivazione-titolo"]',
+    ) as HTMLDialogElement;
     // jsdom non implementa showModal/close: stubbati come gia' fatto per la lista.
     dialog.showModal = vi.fn();
     dialog.close = vi.fn();
@@ -326,6 +328,86 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  it('renders the 2b document frame with header, signature and inline add command', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.querySelector('.document-header')?.textContent).toContain('Comune di');
+    expect(root.querySelector('.document-header')?.textContent).toContain('Det. n.');
+    expect(root.querySelector('.document-signature')?.textContent).toContain(
+      'Il Responsabile del procedimento',
+    );
+    expect(root.querySelector('[data-add-section-inline]')?.textContent).toContain(
+      'Inserisci una nuova sezione di testo',
+    );
+    http.verify();
+  });
+
+  it('inserts predefined blocks from the side panel as controlled document sections', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    (
+      Array.from(root.querySelectorAll('.panel-tabs button')).find((button) =>
+        button.textContent?.includes('Blocchi'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    (root.querySelector('[data-block-template="oggetto"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-section-text="oggetto"]')?.textContent).toContain(
+      'Oggetto: {{titolo_it}}',
+    );
+    expect(
+      root.querySelector('.section-editor.style-h1 [data-section-text="oggetto"]'),
+    ).toBeTruthy();
+
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    const aggiunta = request.request.body.sezioni.find(
+      (sezione: { codice: string }) => sezione.codice === 'oggetto',
+    );
+    expect(aggiunta.contenuto[0].stile).toBe('H1');
+    request.flush({
+      ...sezioniResponse,
+      sezioni: request.request.body.sezioni,
+      documento: {
+        ...sezioniResponse.documento,
+        blocchi: request.request.body.sezioni[2].contenuto,
+      },
+    });
+    http.verify();
+  });
+
+  it('edits the selected section style from the properties tab', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    (
+      Array.from(root.querySelectorAll('.panel-tabs button')).find((button) =>
+        button.textContent?.includes('Proprietà'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    const select = root.querySelector('#proprieta-stile') as HTMLSelectElement;
+    select.value = 'H2';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(root.querySelector('.section-editor.style-h2 [data-section-text="intro"]')).toBeTruthy();
+    http.verify();
+  });
+
   it('offers the builder-editor topbar actions and runs the version transition', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
@@ -335,11 +417,22 @@ describe('2b ridotta: anteprima modello', () => {
 
     expect(root.textContent).toContain('Anteprima');
     expect(root.textContent).toContain('Esporta .docx');
-    const action = Array.from(root.querySelectorAll('.topbar button')).find((button) =>
-      button.textContent?.includes('Invia in revisione'),
-    ) as HTMLButtonElement;
-    expect(action).toBeTruthy();
+    // L'export .docx resta disabilitato finche' il backend non lo espone: il
+    // bottone dichiara il motivo invece di fingere una funzione che non c'e'.
+    expect((root.querySelector('[data-export-docx]') as HTMLButtonElement).disabled).toBe(true);
+    const dialog = root.querySelector('[data-confirm-transition]') as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    const action = root.querySelector('[data-version-action]') as HTMLButtonElement;
+    expect(action.textContent).toContain('Invia in revisione');
     action.click();
+    fixture.detectChanges();
+    expect(dialog.showModal).toHaveBeenCalled();
+    expect(dialog.textContent).toContain('non sono piu');
+
+    const conferma = root.querySelector('[data-confirm-transition-submit]') as HTMLButtonElement;
+    expect(conferma.disabled).toBe(false);
+    conferma.click();
 
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/invia-revisione');
     expect(request.request.method).toBe('POST');
@@ -471,6 +564,147 @@ describe('2b ridotta: anteprima modello', () => {
 
     expect(root.querySelector('[role=alert]')?.textContent).toContain(
       "placeholder 'campo_non_dichiarato'",
+    );
+    http.verify();
+  });
+
+  it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-save-state]')?.textContent).toContain(
+      'Tutte le modifiche salvate',
+    );
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.textContent = 'Introduzione riscritta {{titolo_it}}';
+    editor.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(root.querySelector('[data-save-state]')?.textContent).toContain('Modifiche non salvate');
+
+    editor.dispatchEvent(new Event('blur'));
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.sezioni[0].contenuto[0].contenuto).toBe(
+      'Introduzione riscritta {{titolo_it}}',
+    );
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-save-state]')?.textContent).toContain(
+      'Tutte le modifiche salvate',
+    );
+    http.verify();
+  });
+
+  it('keeps edits typed while a save is in flight instead of overwriting them', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.textContent = 'Primo testo';
+    editor.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+
+    // L'utente continua a scrivere mentre il PUT e' ancora in volo.
+    editor.textContent = 'Primo testo, poi il seguito';
+    editor.dispatchEvent(new Event('input'));
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-section-text="intro"]')?.textContent).toBe(
+      'Primo testo, poi il seguito',
+    );
+    expect(root.querySelector('[data-save-state]')?.textContent).toContain('Modifiche non salvate');
+    http.verify();
+  });
+
+  it('blocks the version transition while there are unsaved changes', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.textContent = 'Testo non ancora salvato';
+    editor.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const dialog = root.querySelector('[data-confirm-transition]') as HTMLDialogElement;
+    expect(dialog.textContent).toContain('modifiche non salvate');
+    expect(
+      (root.querySelector('[data-confirm-transition-submit]') as HTMLButtonElement).disabled,
+    ).toBe(true);
+    http.verify();
+  });
+
+  it('lists the publication blocks for placeholders outside the version contract', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http, {
+      ...sezioniResponse,
+      sezioni: [
+        {
+          ...sezioniResponse.sezioni[0],
+          contenuto: [
+            {
+              ...sezioniResponse.sezioni[0].contenuto[0],
+              contenuto: 'Testo con {{campo_fantasma}}',
+              placeholder_usati: ['campo_fantasma'],
+            },
+          ],
+        },
+      ],
+    });
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const readiness = root.querySelector('[data-readiness]')!;
+    expect(readiness.textContent).toContain('{{campo_fantasma}}');
+    expect(readiness.textContent).toContain('intro');
+    http.verify();
+  });
+
+  it('shows the backend violations when the publication is refused', () => {
+    const { fixture, http, root } = setup();
+    const approvato = { ...dettaglio.versioni[0], stato: 'APPROVATO' };
+    http.expectOne('/api/v1/builder/modelli/model').flush({ ...dettaglio, versioni: [approvato] });
+    flushSections(http, {
+      ...sezioniResponse,
+      stato_versione: 'APPROVATO',
+      modificabile: false,
+    });
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const dialog = root.querySelector('[data-confirm-transition]') as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    expect(root.querySelector('[data-readiness]')?.textContent).toContain('Nessun blocco');
+    (root.querySelector('[data-version-action]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (root.querySelector('[data-confirm-transition-submit]') as HTMLButtonElement).click();
+
+    http.expectOne('/api/v1/builder/modelli/model/versioni/v2/pubblica').flush(
+      {
+        codice: 'PLACEHOLDER_NON_VALIDO',
+        messaggio: 'Il documento non e coerente con il contratto dati del modello',
+        dettagli: [{ violazione: "placeholder 'campo_fantasma' non dichiarato" }],
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-transition-blocks]')?.textContent).toContain(
+      "placeholder 'campo_fantasma' non dichiarato",
     );
     http.verify();
   });

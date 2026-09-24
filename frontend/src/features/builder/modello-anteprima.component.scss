@@ -32,23 +32,56 @@
     background: rgb(255 255 255 / 22%);
   }
 
+  // Il nome del modello e' generato e puo' essere lunghissimo ("DEMO - Tempo
+  // determinato - DEMO - Ricercatore - IT - VI - 2026-09-24"): senza troncarlo
+  // spingeva le azioni fuori dalla barra (visto sullo screenshot e2e).
   .titolo {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
     font-size: 15.5px;
     font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .meta {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
     font-family: 'Roboto Mono', monospace;
     font-size: 11.5px;
     color: rgb(255 255 255 / 70%);
     white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .save-state {
+    flex: none;
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    background: rgb(255 255 255 / 12%);
+    color: rgb(255 255 255 / 80%);
+
+    &[data-state='modificato'] {
+      background: rgb(255 193 7 / 22%);
+      color: #ffe08a;
+    }
+
+    &[data-state='errore'] {
+      background: rgb(220 53 69 / 26%);
+      color: #ffc2c7;
+    }
   }
 
   .azioni {
     display: flex;
+    flex: none;
     align-items: center;
     gap: 10px;
-    margin-left: auto;
   }
 
   // Il codice generato e' lungo: a larghezza telefono la topbar va mandata a
@@ -66,7 +99,14 @@
       overflow-wrap: anywhere;
     }
 
+    .save-state {
+      margin-left: 0;
+    }
+
+    // Quattro azioni su una riga sola sforano i 390px: a telefono vanno a capo
+    // (verificato dall'e2e, che misura il bordo destro di ogni elemento).
     .azioni {
+      flex-wrap: wrap;
       margin-left: 0;
       width: 100%;
     }
@@ -270,6 +310,58 @@
   }
 }
 
+.document-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid var(--td-ink-900);
+}
+
+.logo-box {
+  width: 38px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--td-border-300);
+}
+
+.document-heading {
+  display: flex;
+  flex-direction: column;
+  color: var(--td-ink-900);
+  font-size: 12.5px;
+  line-height: 1.4;
+
+  span {
+    color: var(--td-ink-500);
+  }
+}
+
+.document-meta {
+  margin-left: auto;
+  color: var(--td-ink-500);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.inline-token {
+  padding: 0 3px;
+  border-bottom: 1.5px dashed var(--td-primary);
+  background: #e9f2fb;
+  color: var(--td-primary-dark);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.document-body {
+  min-height: 500px;
+}
+
 .section-editor {
   position: relative;
   margin-top: 24px;
@@ -281,6 +373,11 @@
   &.selected {
     border-color: var(--td-primary);
     background: #fbfdff;
+  }
+
+  &.readonly {
+    border-color: transparent;
+    background: transparent;
   }
 
   .section-tag {
@@ -340,16 +437,39 @@
   }
 }
 
-.document-preview {
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--td-border-200);
+.document-signature {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
 
-  p {
-    margin-bottom: 12px;
-    color: var(--td-ink-600);
-    font-size: 14px;
-    line-height: 1.6;
+  > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--td-ink-900);
+    font-size: 12.5px;
+    text-align: center;
+  }
+}
+
+.add-section-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 26px;
+  padding: 14px;
+  border: 2px dashed var(--td-border-300);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--td-primary);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 
@@ -402,7 +522,18 @@
   padding: 16px 18px 20px;
   overflow: hidden;
 
-  .form-control {
+  label {
+    display: block;
+    margin: 12px 0 6px;
+    color: var(--td-ink-500);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .form-control,
+  .form-select {
     height: 36px;
     border: 1px solid var(--td-border-300);
     border-radius: 4px;
@@ -492,6 +623,46 @@
   }
 }
 
+.snippet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 9px;
+  padding: 11px 12px;
+  border: 1px solid #d9e4ef;
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  strong {
+    color: var(--td-ink-900);
+    font-size: 13.5px;
+  }
+
+  span {
+    color: var(--td-ink-500);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
+  &:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+  }
+}
+
+.property-note {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--td-border-200);
+  color: var(--td-ink-500);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .versione {
   margin-bottom: 4px;
   font-size: 12.5px;
@@ -512,4 +683,47 @@ dialog {
   &::backdrop {
     background: rgb(0 0 0 / 40%);
   }
+}
+
+.readiness {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--td-border-200);
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--td-ink-500);
+  }
+
+  .readiness-ok {
+    margin: 0;
+    font-size: 12.5px;
+    color: #14713a;
+  }
+
+  .readiness-elenco {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #a4161a;
+  }
+}
+
+.blocco-pubblicazione {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #a4161a;
+}
+
+.blocco-pubblicazione-elenco {
+  margin-bottom: 16px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a4161a;
 }
