@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { ModelloAnteprimaComponent } from './modello-anteprima.component';
 
 const dettaglio = {
@@ -233,6 +233,40 @@ describe('2b ridotta: anteprima modello', () => {
       .expectOne('/api/v1/builder/modelli/model')
       .flush({ ...dettaglio, derivato_da_modello_id: 'padre' });
     flushSections(http);
+    http.verify();
+  });
+
+  it('creates a variant from the builder editor and opens the new model', () => {
+    const { fixture, http, root } = setup();
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const dialog = root.querySelector('[data-create-variant-dialog]') as HTMLDialogElement;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    (root.querySelector('[data-create-variant-open]') as HTMLButtonElement).click();
+    expect(dialog.showModal).toHaveBeenCalled();
+    fixture.detectChanges();
+    expect((root.querySelector('[data-create-variant-submit]') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    const nota = root.querySelector('[data-variant-note]') as HTMLInputElement;
+    nota.value = 'Senza prova preselettiva';
+    nota.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    (root.querySelector('[data-create-variant-submit]') as HTMLButtonElement).click();
+
+    const richiesta = http.expectOne('/api/v1/builder/modelli/model/varianti');
+    expect(richiesta.request.method).toBe('POST');
+    expect(richiesta.request.body).toEqual({ nota: 'Senza prova preselettiva' });
+    richiesta.flush({ id: 'variante' });
+    expect(dialog.close).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/modelli', 'variante', 'builder']);
     http.verify();
   });
 

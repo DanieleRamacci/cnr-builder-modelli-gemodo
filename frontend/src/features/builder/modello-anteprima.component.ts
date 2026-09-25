@@ -10,7 +10,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
@@ -145,6 +145,17 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
             (click)="derivazione.showModal()"
           >
             Crea modello derivato
+          </button>
+        }
+        @if (modello()) {
+          <button
+            type="button"
+            class="btn btn-sm"
+            data-create-variant-open
+            [disabled]="salvando()"
+            (click)="variante.showModal()"
+          >
+            Crea variante
           </button>
         }
         <button type="button" class="btn btn-sm" (click)="scorriAnteprima()">Anteprima</button>
@@ -651,12 +662,42 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         <button class="btn btn-primary" (click)="creaEdizione(derivazione)">Crea</button>
       </div>
     </dialog>
+
+    <dialog #variante aria-labelledby="variante-titolo" data-create-variant-dialog>
+      <h2 id="variante-titolo" class="h4">Creare una variante?</h2>
+      <p>
+        Viene creato un modello sulla stessa categorizzazione, con una descrizione che lo
+        distingue dalle altre varianti.
+      </p>
+      <label for="nota-variante">In cosa differisce</label>
+      <input
+        id="nota-variante"
+        class="form-control mb-3"
+        type="text"
+        maxlength="500"
+        data-variant-note
+        [value]="notaVariante()"
+        (input)="notaVariante.set($any($event.target).value)"
+      />
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary" (click)="variante.close()">Annulla</button>
+        <button
+          class="btn btn-primary"
+          data-create-variant-submit
+          [disabled]="salvando() || !notaVariante().trim()"
+          (click)="creaVariante(variante)"
+        >
+          Crea variante
+        </button>
+      </div>
+    </dialog>
   `,
 })
 export class ModelloAnteprimaComponent {
   private readonly api = inject(ApiClient);
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly id = inject(ActivatedRoute).snapshot.paramMap.get('modelId')!;
   private editorAttivo: HTMLElement | null = null;
   protected readonly modello = signal<Dettaglio | null>(null);
@@ -677,6 +718,7 @@ export class ModelloAnteprimaComponent {
   protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
   protected readonly dimensioneScelta = signal('');
   protected readonly valoreScelto = signal('');
+  protected readonly notaVariante = signal('');
   protected readonly candidatoScelto = computed(() =>
     this.candidatiDerivazione().find((item) => item.nome === this.dimensioneScelta()),
   );
@@ -1132,6 +1174,28 @@ export class ModelloAnteprimaComponent {
         next: () => {
           this.salvando.set(false);
           this.carica();
+        },
+        error: (e: ApiError) => {
+          this.salvando.set(false);
+          this.errore.set(e.messaggio);
+        },
+      });
+  }
+
+  protected creaVariante(dialog: HTMLDialogElement): void {
+    const nota = this.notaVariante().trim();
+    if (this.salvando() || !nota) return;
+    dialog.close();
+    this.salvando.set(true);
+    this.errore.set(null);
+    this.api
+      .post<{ id: string }>(`/api/v1/builder/modelli/${this.id}/varianti`, { nota })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (modello) => {
+          this.salvando.set(false);
+          this.notaVariante.set('');
+          void this.router.navigate(['/modelli', modello.id, 'builder']);
         },
         error: (e: ApiError) => {
           this.salvando.set(false);

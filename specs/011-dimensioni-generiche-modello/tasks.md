@@ -493,7 +493,7 @@ falso.
 - [x] T050 [P] Documentare in `docs/` il modello di configurazione delle policy
   per dimensione, leggibile da un integratore esterno che non ha accesso al
   codice (Constitution VI).
-- [ ] T051 **Consegna a GEBAN, a cura dell'utente**: presa d'atto su
+- [x] T051 **Consegna a GEBAN, a cura dell'utente**: presa d'atto su
   `ModelloCatalogoSchema.lingua` nullable — nessun lavoro richiesto, nessun
   cambiamento nelle risposte che ricevono oggi, eventuale ricompilazione del
   client generato. **Non blocca l'implementazione**, deve precedere il rilascio.

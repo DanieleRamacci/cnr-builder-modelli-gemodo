@@ -794,12 +794,12 @@ sistema integrato diventa inutilizzabile.
       `integrazioni-manager.component.spec.ts`) Test: filtro senza
       corrispondenze restituisce un elenco vuoto e non un errore; il filtro
       precede la paginazione
-- [ ] T101 [FR-019 di `002`] Flusso varianti in interfaccia: alla creazione,
+- [x] T101 [FR-019 di `002`] Flusso varianti in interfaccia: alla creazione,
       se la categorizzazione e' gia' occupata, mostrare quale modello esiste e
       proporre la creazione di una variante chiedendo la descrizione; non
       mostrare alcuna sezione variante quando la categorizzazione e' libera.
       Stesso flusso raggiungibile dalla pagina di modifica di un modello
-- [ ] T102 [FR-019 di `002`] Nell'elenco, raggruppare le varianti sotto il
+- [x] T102 [FR-019 di `002`] Nell'elenco, raggruppare le varianti sotto il
       modello di base della loro categorizzazione, mostrando per ciascuna la
       descrizione scritta dal gestore
 

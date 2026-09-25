@@ -28,7 +28,7 @@ stata generalizzata: e' stata cancellata da `010` FR-016.
 | T080-T084 | **SUPERATI** | Vedi sopra. Marcati `[-]`. |
 | T086 | SUPERATO per annotazione propria | Gia' dichiarato "non piu' necessaria" nel task stesso. |
 | T087-T092 | **APERTI, ma la base e' crollata** | Il loader DB-backed dei profili non esiste (`load_sistemi_richiedenti_db` assente, `_configured_sistemi` legge ancora lo YAML). Ma `registro_contratti_dati`, su cui T087 aveva fatto la parte fatta, e' stato **droppato** da `0009`. Vanno ripianificati, non ripresi. |
-| T093-T102 | **APERTI e reali** | Perimetro del profilo di integrazione mai implementato: `PROFILO_INTEGRAZIONE_NON_ABILITATO` non esiste in `backend/app`. |
+| T093-T102 | **RINVIATI, non scope corrente** | Decisione utente 2026-09-25: per ora il confine operativo e' `codice_contesto`. I documenti del contesto `geban` sono consumabili da GEBAN; resta vietato accedere a documenti di altri contesti. Il perimetro fine per profilo/tipologia/`modello_versione_id` resta lavoro futuro, non prossimo blocco. |
 | T103-T107 | APERTI | Allineamento documentale e coverage. |
 | T114-T115 | APERTI | T115 e' una decisione da prendere, non codice: quando attivare `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` (oggi default `false`). |
 
@@ -541,6 +541,12 @@ per la risoluzione del profilo.
 ---
 
 ## Phase 9: User Story 5 - Applicare il perimetro contrattuale del profilo (Priority: P1) 🎯
+
+> **RINVIATO (decisione utente 2026-09-25)**: questa fase non e' il prossimo
+> blocco operativo. Per ora GEBAN e' autorizzato a consumare tutti i documenti
+> appartenenti al proprio `codice_contesto`; il controllo fine su profilo,
+> tipologia o singolo `modello_versione_id` non viene implementato adesso.
+> Resta invece non ammesso l'accesso a documenti di un altro contesto.
 
 **Goal**: le API catalogo/validazione rifiutano esplicitamente le richieste fuori dal
 perimetro del profilo del chiamante, invece di rispondere con un elenco vuoto
