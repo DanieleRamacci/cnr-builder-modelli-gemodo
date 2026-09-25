@@ -298,7 +298,7 @@ components:
   schemas:
     ModelloSearchResponse:
       type: object
-      required: [tipo_documento, fallback_applicato, dimensioni_rilassate, livello_richiesto, livello_risolto, modelli]
+      required: [tipo_documento, fallback_applicato, dimensioni_con_fallback, livello_richiesto, livello_risolto, modelli]
       properties:
         tipo_documento:
           type: string
@@ -313,7 +313,7 @@ components:
           enum: [OPERATIVA, STORICO]
         fallback_applicato:
           type: boolean
-        dimensioni_rilassate:
+        dimensioni_con_fallback:
           type: array
           items: {type: string}
         livello_richiesto:

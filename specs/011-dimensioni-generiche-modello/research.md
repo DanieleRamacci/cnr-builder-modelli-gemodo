@@ -229,10 +229,10 @@ di nuovo un nome nel codice. Conserva invece la motivazione come commento sulla
 policy e come test che verifica il comportamento con la policy di default.
 
 **Ordine del fallback quando piu' dimensioni ammettono il generico**: il piano
-adotta il rilassamento **una dimensione alla volta, in ordine alfabetico di
-nome**, e si ferma al primo risultato non vuoto. Motivazione: il risultato e'
+prova il fallback al generico **una dimensione alla volta, in ordine alfabetico
+di nome**, e si ferma al primo risultato non vuoto. Motivazione: il risultato e'
 deterministico e non dipende dall'ordine dell'albero (stesso principio di
-FR-011). La risposta deve dichiarare *quali* dimensioni sono state rilassate,
+FR-011). La risposta deve dichiarare *quali* dimensioni hanno usato il fallback,
 non solo che un fallback c'e' stato — `fallback_applicato: bool` non basta piu'.
 
 ## DEC-011-IDENTITA-SENZA-NOMI-CABLATI (decisa 2026-09-23)

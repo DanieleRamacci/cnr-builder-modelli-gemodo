@@ -102,7 +102,7 @@ Ruolo: `DOCUMENTI_VIEWER`. Contratto: **`/docs/geban-catalog`**
   "tipo_documento": "BANDO_CONCORSO",
   "profilo": "COLLABORATORE_TECNICO_ER",
   "fallback_applicato": true,
-  "dimensioni_rilassate": ["livello_professionale"],
+  "dimensioni_con_fallback": ["livello_professionale"],
   "livello_richiesto": "V",
   "livello_risolto": null,
   "modelli": [
@@ -127,8 +127,8 @@ Tre cose da sapere, perché cambiano il vostro codice:
 - **Le edizioni in altra lingua sono annidate**, non righe separate. Filtrando per
   `lingua=EN` ottenete invece l'edizione inglese al primo livello, senza il padre.
 - **Il fallback è governato dalla policy della dimensione.** Le dimensioni con
-  `consente_valore_generico=true` possono essere rilassate una alla volta; la
-  risposta indica quali in `dimensioni_rilassate`. Per il bando le policy di
+  `consente_valore_generico=true` possono usare un modello generico quando manca
+  quello specifico; la risposta indica quali in `dimensioni_con_fallback`. Per il bando le policy di
   default mantengono il comportamento storico: fallback sul livello, match
   esatto sulla lingua.
 

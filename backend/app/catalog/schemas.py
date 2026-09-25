@@ -98,7 +98,7 @@ class ModelloSearchResponse(BaseModel):
     # 011 FR-010: con piu' dimensioni che ammettono il generico, il booleano da
     # solo non dice piu' cosa e' successo. `livello_richiesto`/`livello_risolto`
     # restano come caso particolare, per non rompere GEBAN.
-    dimensioni_rilassate: list[str] = Field(default_factory=list)
+    dimensioni_con_fallback: list[str] = Field(default_factory=list)
     livello_richiesto: str | None = None
     livello_risolto: str | None = None
     modelli: list[ModelloCatalogoSchema]

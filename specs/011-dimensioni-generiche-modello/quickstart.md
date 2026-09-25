@@ -127,7 +127,7 @@ Sul tipo documento `BANDO`, con le policy di default (`lingua` false,
 
 1. `GET /api/v1/catalogo/modelli?livello_professionale=VI` dove esiste solo il
    modello generico → **fallback applicato**,
-   `dimensioni_rilassate: ["livello_professionale"]`.
+   `dimensioni_con_fallback: ["livello_professionale"]`.
 2. `GET /api/v1/catalogo/modelli?lingua=EN` dove esiste solo il modello `IT` →
    **nessun fallback**, risultato vuoto.
 

@@ -66,7 +66,7 @@ paths:
                     Cambia solo il motivo per cui scatta - vedi FR-010.
                   value:
                     fallback_applicato: true
-                    dimensioni_rilassate: [livello_professionale]
+                    dimensioni_con_fallback: [livello_professionale]
                     livello_richiesto: VI
                     livello_risolto: null
                     modelli:
@@ -86,21 +86,21 @@ components:
           items: {$ref: '#/components/schemas/ModelloCatalogoSchema'}
         fallback_applicato:
           type: boolean
-          description: Conservato. Vero se almeno una dimensione e' stata rilassata.
-        dimensioni_rilassate:
+          description: Conservato. Vero se almeno una dimensione richiesta e' stata risolta con fallback al generico.
+        dimensioni_con_fallback:
           type: array
           items: {type: string}
           description: >-
-            NUOVO. Quali dimensioni sono state rilassate, in ordine di
-            applicazione. Con piu' dimensioni che ammettono il generico,
-            fallback_applicato da solo non dice piu' cosa e' successo
+            NUOVO. Quali dimensioni richieste sono state risolte usando un
+            modello generico, in ordine di applicazione. Con piu' dimensioni
+            che ammettono il generico, fallback_applicato da solo non dice piu' cosa e' successo
             (DEC-011-FALLBACK-GOVERNATO-DA-POLICY).
           example: [livello_professionale]
         livello_richiesto:
           type: string
           nullable: true
           deprecated: true
-          description: Conservato. Caso particolare di dimensioni_rilassate.
+          description: Conservato. Caso particolare di dimensioni_con_fallback.
         livello_risolto:
           type: string
           nullable: true

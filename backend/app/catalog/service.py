@@ -94,17 +94,17 @@ class CatalogService:
             pubblicato_a=pubblicato_a,
         )
         versions = repository.list_published_model_versions(self.db, **query)
-        dimensioni_rilassate = self._fallback_per_policy(query, versions, tipi_autorizzati)
-        if dimensioni_rilassate:
+        dimensioni_con_fallback = self._fallback_per_policy(query, versions, tipi_autorizzati)
+        if dimensioni_con_fallback:
             versions = repository.list_published_model_versions(self.db, **query)
-        fallback_applicato = bool(dimensioni_rilassate)
+        fallback_applicato = bool(dimensioni_con_fallback)
         return ModelloSearchResponse(
             tipo_documento=tipo_documento,
             profilo=categoria,
             codice_tipologia=codice_tipologia,
             modalita=modalita,
             fallback_applicato=fallback_applicato,
-            dimensioni_rilassate=dimensioni_rilassate,
+            dimensioni_con_fallback=dimensioni_con_fallback,
             livello_richiesto=livello_professionale,
             livello_risolto=(
                 None if fallback_applicato or not versions else livello_professionale
@@ -164,7 +164,7 @@ class CatalogService:
                 for tipo in tipi
             )
         }
-        rilassate: list[str] = []
+        con_fallback: list[str] = []
         for nome in sorted(richieste):
             if nome not in generiche:
                 continue
@@ -186,9 +186,9 @@ class CatalogService:
             if repository.list_published_model_versions(self.db, **tentativo):
                 query.clear()
                 query.update(tentativo)
-                rilassate.append(nome)
+                con_fallback.append(nome)
                 break
-        return rilassate
+        return con_fallback
 
     def get_campi_richiesti(self, modello_versione_id: int, principal: PrincipalGEMODO) -> CampiRichiestiResponse:
         version = repository.get_model_version_by_public_id(self.db, modello_versione_id)

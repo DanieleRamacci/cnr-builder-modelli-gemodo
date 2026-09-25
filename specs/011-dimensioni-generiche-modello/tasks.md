@@ -281,7 +281,7 @@ cui la spec nasce, tranne il caso `contratti` end-to-end.
   `consente_valore_generico = true`, **una alla volta, in ordine alfabetico**,
   fermandosi al primo risultato non vuoto. Vedi
   DEC-011-FALLBACK-GOVERNATO-DA-POLICY.
-- [x] T029 [US4] Aggiungere `dimensioni_rilassate: list[str]` a
+- [x] T029 [US4] Aggiungere `dimensioni_con_fallback: list[str]` a
   `ModelloSearchResponse`, conservando `fallback_applicato`,
   `livello_richiesto` e `livello_risolto`. Con piu' dimensioni generiche il
   booleano da solo non dice piu' cosa e' successo.

@@ -432,7 +432,7 @@ def test_fallback_lingua_e_governato_dalla_policy(
         )
         assert con_fallback.status_code == 200, con_fallback.text
         assert con_fallback.json()["fallback_applicato"] is True
-        assert con_fallback.json()["dimensioni_rilassate"] == ["lingua"]
+        assert con_fallback.json()["dimensioni_con_fallback"] == ["lingua"]
         assert [item["modello_id"] for item in con_fallback.json()["modelli"]] == [
             modello_generico["public_id"],
         ]
