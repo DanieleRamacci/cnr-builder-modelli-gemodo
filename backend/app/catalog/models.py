@@ -59,6 +59,24 @@ class ModelloDocumento(Base):
             unique=True,
             postgresql_where=text("stato <> 'ELIMINATO'"),
         ),
+        # Lo slot di categorizzazione e la variante identificano un modello
+        # (002 FR-019). Senza questo indice due creazioni simultanee sulla
+        # stessa categorizzazione otterrebbero entrambe `STANDARD`, e alla
+        # pubblicazione la seconda archivierebbe la prima in silenzio.
+        Index(
+            "uq_modello_slot_variante",
+            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "variante",
+            unique=True,
+            postgresql_where=text("stato <> 'ELIMINATO'"),
+        ),
+        # La nota e' l'etichetta che distingue le varianti per chi legge: due
+        # uguali sullo stesso slot non sarebbero distinguibili in interfaccia.
+        Index(
+            "uq_modello_slot_nota",
+            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "nota",
+            unique=True,
+            postgresql_where=text("stato <> 'ELIMINATO' AND nota IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -72,6 +90,9 @@ class ModelloDocumento(Base):
     codice: Mapped[str] = mapped_column(String(128), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     variante: Mapped[str] = mapped_column(String(64), nullable=False, default="STANDARD")
+    # Il testo con cui il gestore dice in cosa la variante differisce. `nome`
+    # resta generato e non modificabile: i due campi non si sostituiscono.
+    nota: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # 011 DEC-011-PERSISTENZA-DIMENSIONI: la categorizzazione non e' piu' due
     # colonne dedicate ma un documento per nome di dimensione. Una chiave
     # assente significa dimensione non valorizzata, ed e' l'unico modo per

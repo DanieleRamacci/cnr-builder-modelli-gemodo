@@ -287,6 +287,7 @@ def crea_modello(
     percorso_categorizzazione: list[str],
     variante: str,
     dimensioni: dict[str, str],
+    nota: str | None = None,
     derivato_da_modello_id: uuid.UUID | None = None,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
@@ -299,6 +300,7 @@ def crea_modello(
         codice=codice,
         nome=nome,
         variante=variante,
+        nota=nota,
         dimensioni=dict(dimensioni),
         derivato_da_modello_id=derivato_da_modello_id,
         stato="ATTIVA",
@@ -306,6 +308,33 @@ def crea_modello(
     db.add(modello)
     db.flush()
     return modello
+
+
+def modelli_sullo_slot(
+    db: Session,
+    *,
+    tipo_documento_id: uuid.UUID,
+    percorso_categorizzazione: list[str],
+    dimensioni: dict[str, str],
+) -> list[ModelloDocumento]:
+    """I modelli non eliminati che occupano la stessa categorizzazione (002 FR-019).
+
+    E' lo stesso slot su cui `get_versione_pubblicata_corrente` decide quale
+    versione e' "quella corrente", meno la variante: qui servono proprio le
+    varianti gia' presenti, per sapere se la categorizzazione e' occupata e con
+    quale numerazione proseguire.
+    """
+    stmt = (
+        select(ModelloDocumento)
+        .where(
+            ModelloDocumento.tipo_documento_id == tipo_documento_id,
+            ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
+            ModelloDocumento.dimensioni == dimensioni,
+            ModelloDocumento.stato != "ELIMINATO",
+        )
+        .order_by(ModelloDocumento.created_at, ModelloDocumento.id)
+    )
+    return list(db.scalars(stmt))
 
 
 def get_modello(db: Session, modello_id: uuid.UUID) -> ModelloDocumento | None:

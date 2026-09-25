@@ -62,10 +62,36 @@ def test_migration_preserves_owned_models_and_contracts(postgres_database_url, m
                 for colonna, valore in vecchia.items():
                     assert nuova[colonna] == valore, f"{tabella}.{colonna}"
         assert len(modelli_prima) == len(modelli_dopo)
+        # `variante` e `nota` sono escluse dal confronto perche' la 0023 le
+        # cambia **di proposito**: il modello inserito sopra duplica la
+        # categorizzazione di un altro, e da 002 FR-019 due modelli sullo stesso
+        # slot non possono restare entrambi `STANDARD` - il secondo archivierebbe
+        # il primo alla pubblicazione. La migration li numera invece di fallire,
+        # e qui sotto si verifica che abbia toccato solo il duplicato.
         for old, new in zip(modelli_prima, modelli_dopo, strict=True):
             for key, value in old.items():
-                if key not in {"categoria_documento_id", "tipologia_bando_sol_id"}:
+                if key not in {"categoria_documento_id", "tipologia_bando_sol_id",
+                               "variante", "nota"}:
                     assert new[key] == value
+
+        # Si verifica la proprieta', non un elenco di codici: dopo la migration
+        # nessuno slot ha piu' due modelli, e ogni riga rinumerata porta scritto
+        # che l'ha rinumerata la migrazione - chi la legge in interfaccia deve
+        # sapere che va rivista, non scambiarla per una scelta del gestore.
+        rinumerati = [m for m in modelli_dopo if m["variante"] != "STANDARD"]
+        assert rinumerati, "nessun duplicato rinumerato: il caso non e' stato esercitato"
+        assert all(m["variante"].startswith("VARIANTE_") for m in rinumerati)
+        assert all("migrazione 0023" in (m["nota"] or "") for m in rinumerati)
+        with engine.connect() as db:
+            residui = db.execute(sa.text("""
+                SELECT count(*) FROM (
+                    SELECT 1 FROM modello_documento
+                     WHERE stato <> 'ELIMINATO'
+                     GROUP BY tipo_documento_id, percorso_categorizzazione, dimensioni, variante
+                    HAVING count(*) > 1
+                ) AS duplicati
+            """)).scalar()
+        assert residui == 0
         by_id = {m["id"]: m for m in modelli_dopo}
         for ref in refs:
             model = by_id[ref["id"]]

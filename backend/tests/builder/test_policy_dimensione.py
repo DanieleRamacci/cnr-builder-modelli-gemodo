@@ -61,11 +61,14 @@ def _tipo_id(db_engine) -> uuid.UUID:
         )
 
 
-def _crea(client, *, lingua="IT", livello=...):
+def _crea(client, *, lingua="IT", livello=..., nota=None):
+    # 002 FR-019: la categorizzazione di prova e' gia' occupata dal modello demo
+    # del seed, quindi ogni creazione qui e' una variante e serve la nota.
     payload = {
         "codice_tipo_documento": "BANDO_CONCORSO",
         "codice_categoria": "RICERCATORE",
         "codice_tipologia": "TD",
+        "nota": nota or f"policy {lingua} {livello} {uuid.uuid4().hex[:8]}",
     }
     payload["lingua"] = lingua
     if livello is not ...:

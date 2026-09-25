@@ -179,6 +179,9 @@ describe('DimensioniComponent', () => {
     expect(policyService.salvaPolicy).toHaveBeenCalledWith('integration-1', 'BANDO_CONCORSO', {
       nome_dimensione: 'area_geografica',
       consente_valore_generico: false,
+      // Sempre esplicita, anche quando e' falsa: il comportamento non dipende
+      // piu' da un default scritto nel contratto.
+      conferma_impatto: false,
       valore_default: null,
     });
   });

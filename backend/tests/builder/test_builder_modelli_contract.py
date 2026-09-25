@@ -13,6 +13,8 @@ import yaml
 from openapi_schema_validator import OAS30Validator
 from openapi_spec_validator import validate
 
+from app.builder.api import router as builder_router
+
 
 CONTRACT = (
     Path(__file__).resolve().parents[3]
@@ -30,11 +32,30 @@ def test_builder_modelli_openapi_is_valid_including_external_references(contract
 
 
 def test_contract_only_documents_routes_that_really_exist(contract):
-    # The 0.2.0 contract described a tipi-documento/categorie CRUD and
-    # archivia/sospendi/bozza-derivata transitions that were never implemented
-    # this way (backend/app/builder/api.py has none of them) - this is the
-    # concrete regression guard against drifting back to that.
-    assert set(contract["paths"]) == {
+    """Il contratto elenca esattamente le rotte che il router espone.
+
+    La 0.2.0 descriveva un CRUD di tipi documento/categorie e transizioni mai
+    implementate cosi' (`backend/app/builder/api.py` non ne aveva nessuna):
+    questo test e' la difesa contro quel ritorno.
+
+    Il confronto e' **contro il router vero**, non contro un elenco scritto a
+    mano: quello andava aggiornato a ogni rotta nuova e, fra un aggiornamento e
+    l'altro, non diceva piu' nulla di utile. Cosi' invece una rotta aggiunta
+    senza contratto - o un contratto che descrive una rotta inesistente - fa
+    fallire il test da solo.
+    """
+    reali = {
+        route.path.removeprefix(builder_router.prefix) for route in builder_router.routes
+    }
+    # Nessuna rotta documentata che non esista davvero. Questo confronto non
+    # invecchia: vale anche per le rotte aggiunte domani.
+    documentate = set(contract["paths"])
+    assert documentate <= reali, documentate - reali
+    # L'elenco resta esplicito perche' il router del builder serve anche rotte
+    # che appartengono ad **altri** contratti - `/integrazioni*` e' della 010,
+    # `/sezioni` della 003 - quindi qui non si puo' pretendere l'uguaglianza
+    # con tutto il router.
+    assert documentate == {
         "/contesti",
         "/tipi-documento/{codiceTipoDocumento}/struttura-disponibile",
         "/tipi-documento/{codiceTipoDocumento}/policy-dimensioni",
@@ -42,10 +63,13 @@ def test_contract_only_documents_routes_that_really_exist(contract):
         "/modelli/filtri",
         "/modelli/{modelloId}/versioni",
         "/modelli/{modelloId}",
+        "/modelli/{modelloId}/varianti",
         "/modelli/{modelloId}/edizioni-derivate",
         "/modelli/{modelloId}/versioni/{versioneId}/invia-revisione",
         "/modelli/{modelloId}/versioni/{versioneId}/approva",
         "/modelli/{modelloId}/versioni/{versioneId}/pubblica",
+        "/modelli/{modelloId}/versioni/{versioneId}/sospendi",
+        "/modelli/{modelloId}/versioni/{versioneId}/archivia",
     }
     assert contract["security"] == [{"KeycloakBearer": []}]
 

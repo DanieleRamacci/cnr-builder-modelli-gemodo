@@ -286,3 +286,40 @@ h1 {
     font-weight: 700;
   }
 }
+
+// Proposta di variante: compare solo quando la categorizzazione e' occupata
+// (002 FR-019). Sta dentro il riquadro degli attributi, accanto alla scelta
+// che l'ha provocata, non in cima alla pagina come un errore qualunque.
+.variante-richiesta {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid #f0c36d;
+  border-left: 4px solid #e5a000;
+  border-radius: 4px;
+  background: #fff9ec;
+
+  strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .occupante {
+    margin-bottom: 8px;
+
+    code {
+      margin-left: 6px;
+      font-size: 12px;
+    }
+  }
+
+  .nota-occupante {
+    display: block;
+    font-style: italic;
+  }
+
+  .spiegazione {
+    margin-bottom: 12px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+}

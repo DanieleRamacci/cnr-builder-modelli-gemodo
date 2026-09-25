@@ -86,6 +86,10 @@ class CreaModelloRequest(BaseModel):
     # Restano finche' il frontend non ha adottato `dimensioni`.
     lingua: Literal["IT", "EN"] | None = None
     livello_professionale: str | None = Field(default=None, min_length=1, max_length=64)
+    # 002 FR-019: il gestore scrive **in cosa** differisce, non il codice di
+    # variante, che genera il sistema. Serve solo quando la categorizzazione e'
+    # gia' occupata da un altro modello; li' diventa obbligatoria.
+    nota: str | None = Field(default=None, min_length=1, max_length=500)
 
     def dimensioni_effettive(self) -> dict[str, str]:
         """La mappa, con i campi di transizione fusi dentro."""
@@ -131,6 +135,21 @@ class ModelloResponse(BaseModel):
     lingua: str | None = None
     livello_professionale: str | None = None
     derivato_da_modello_id: str | None = None
+    nota: str | None = None
+
+
+class CreaVarianteRequest(BaseModel):
+    """Una variante dello stesso modello (002 FR-019, T048).
+
+    Eredita categorizzazione e dimensioni dal modello di origine: l'unica cosa
+    che il gestore fornisce e' la nota. Da non confondere con
+    `CreaEdizioneDerivataRequest`, che cambia una **dimensione** (tipicamente
+    la lingua) e non la variante.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    nota: str = Field(min_length=1, max_length=500)
 
 
 class CreaEdizioneDerivataRequest(BaseModel):

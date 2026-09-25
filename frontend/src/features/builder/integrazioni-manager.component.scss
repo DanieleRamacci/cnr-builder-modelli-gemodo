@@ -225,3 +225,29 @@
   font-weight: 700;
   color: var(--td-ink-900);
 }
+
+// Le varianti seguono il modello di base della loro categorizzazione (002
+// FR-019): il rientro e il segno dicono che sono scostamenti da quello sopra,
+// non modelli che capitano li' vicino.
+.riga-variante > td:first-child {
+  padding-left: 26px;
+}
+
+.segno-variante {
+  margin-right: 6px;
+  color: #5a6772;
+}
+
+.variante-nota {
+  color: #33485c;
+}
+
+.badge-variante {
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #e6f0fa;
+  color: #0059b3;
+  font-size: 11px;
+  font-weight: 700;
+}

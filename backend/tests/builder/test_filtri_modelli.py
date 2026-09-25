@@ -9,6 +9,8 @@ e' quello che impedisce una regressione verso quel comportamento.
 
 from __future__ import annotations
 
+import uuid
+
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -29,13 +31,17 @@ URL = "/api/v1/builder/modelli"
 
 
 def _crea(client, *, tipologia: str = "TD", categoria: str = "RICERCATORE",
-          lingua: str = "IT", livello: str | None = None) -> dict:
+          lingua: str = "IT", livello: str | None = None, nota: str | None = None) -> dict:
+    # 002 FR-019: la categorizzazione di prova e' gia' occupata dal modello demo
+    # del seed, quindi qui si creano varianti e ognuna deve dire in cosa
+    # differisce. La nota generata tiene i modelli distinti fra loro.
     response = client.post(URL, json={
         "codice_tipo_documento": "BANDO_CONCORSO",
         "codice_categoria": categoria,
         "codice_tipologia": tipologia,
         "lingua": lingua,
         "livello_professionale": livello,
+        "nota": nota or f"filtri {tipologia} {categoria} {lingua} {livello} {uuid.uuid4().hex[:8]}",
     })
     assert response.status_code == 201, response.text
     return response.json()

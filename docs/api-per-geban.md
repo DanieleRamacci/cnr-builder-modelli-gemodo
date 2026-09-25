@@ -69,6 +69,11 @@ Regole che contano:
 - **Gli attributi che non conosciamo non fanno fallire la risposta**, ma non
   vengono nemmeno usati in silenzio: compaiono come dimensioni non configurate
   finché un amministratore GEMODO non dichiara come trattarle.
+- **Non dovete inviare una chiave `dimensioni` nel discovery.** `dimensioni` e'
+  il nome del contenitore normalizzato che GEMODO usa internamente, e che puo'
+  riesporre nel catalogo. Nel discovery le dimensioni restano attributi della
+  foglia, per esempio `lingue_possibili`, `livelli_possibili` o
+  `area_geografica`.
 
 L'endpoint viene letto **dal vivo** a ogni operazione: non ne importiamo una copia.
 Deve essere raggiungibile e la sua origine va autorizzata lato GEMODO.
@@ -130,6 +135,12 @@ Tre cose da sapere, perché cambiano il vostro codice:
 Per filtrare una dimensione arbitraria usate la forma deep-object, per esempio
 `?dimensione[area_geografica]=NORD`. `lingua` e `livello_professionale` restano
 accettati come parametri compatibili.
+
+Il campo `dimensioni` nella risposta del catalogo e' additivo: riporta in forma
+generale i valori salvati da GEMODO per il modello. Per i bandi continuiamo a
+valorizzare anche `lingua` e `livello_professionale`; per un tipo documento che
+non dichiara la lingua, `lingua` sara' `null` e il valore specifico comparira'
+solo in `dimensioni`, per esempio `{"area_geografica": "NORD"}`.
 
 ## Policy delle dimensioni
 

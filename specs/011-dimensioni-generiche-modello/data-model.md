@@ -16,7 +16,7 @@ invariato.
 | Campo | Prima | Dopo | Nota |
 | --- | --- | --- | --- |
 | `lingua` | `String(2)` NOT NULL, default `IT`, check `IN ('IT','EN')` | **eliminata** | il valore vive in `dimensioni["lingua"]` |
-| `livello_professionale` | `String(64)` nullable | **eliminata** | il valore vive in `dimensioni["livello"]`, la chiave e' assente quando non valorizzato |
+| `livello_professionale` | `String(64)` nullable | **eliminata** | il valore vive in `dimensioni["livello_professionale"]`, la chiave e' assente quando non valorizzato |
 | `dimensioni` | — | `JSONB` NOT NULL DEFAULT `'{}'` | **nuova** |
 | `variante` | `String(64)` NOT NULL default `STANDARD` | invariata | FR-012: asse separato, non entra in `dimensioni` |
 | `codice`, `nome` | invariati | invariati | FR-007: la migrazione non li ricalcola |
@@ -26,8 +26,10 @@ invariato.
 
 Documento JSON **piatto**, un livello solo.
 
-- **Chiave**: nome della dimensione come arriva dall'albero discovery
-  (`lingua`, `livello`, `area_geografica`, …). Stringa, non vuota.
+- **Chiave**: nome normalizzato della dimensione derivata dall'albero discovery
+  (`lingua`, `livello_professionale`, `area_geografica`, ...). Stringa, non
+  vuota. `dimensioni` e' il contenitore interno GEMODO: non e' una chiave che
+  GEBAN deve inviare nel discovery.
 - **Valore**: stringa non vuota. Nessun altro tipo: i valori di dimensione
   arrivano da liste di stringhe sulle foglie.
 - **Chiave assente**: la dimensione non e' valorizzata per questo modello. E'
@@ -196,8 +198,10 @@ Sequenza, per DEC-011-MIGRAZIONE-IN-UN-PASSO:
 1. `ADD COLUMN dimensioni JSONB NOT NULL DEFAULT '{}'`
 2. popolamento:
    - `lingua` e' NOT NULL → sempre `{"lingua": <valore>}`
-   - `livello_professionale` NOT NULL → aggiunge `"livello": <valore>`
-   - `livello_professionale` NULL → **nessuna chiave** `livello`
+   - `livello_professionale` NOT NULL → aggiunge
+     `"livello_professionale": <valore>`
+   - `livello_professionale` NULL → **nessuna chiave**
+     `livello_professionale`
 3. `CREATE INDEX ... USING gin (dimensioni)`
 4. `DROP CONSTRAINT ck_modello_documento_lingua`
 5. `DROP COLUMN lingua`, `DROP COLUMN livello_professionale`
@@ -212,10 +216,10 @@ Sequenza, per DEC-011-MIGRAZIONE-IN-UN-PASSO:
    un cambiamento che l'utente non ha chiesto.
 
 Downgrade simmetrico: ricrea le colonne, ripopola da `dimensioni->>'lingua'` e
-`dimensioni->>'livello'`, ripristina il check, elimina colonna e indice. Un
-modello che valorizza dimensioni diverse da lingua e livello **perde quei
-valori** nel downgrade: e' inevitabile e va scritto nel docstring della
-migration, non scoperto dopo.
+`dimensioni->>'livello_professionale'`, ripristina il check, elimina colonna e
+indice. Un modello che valorizza dimensioni diverse da lingua e livello
+professionale **perde quei valori** nel downgrade: e' inevitabile e va scritto
+nel docstring della migration, non scoperto dopo.
 
 ### Cosa la migrazione non tocca (FR-007)
 

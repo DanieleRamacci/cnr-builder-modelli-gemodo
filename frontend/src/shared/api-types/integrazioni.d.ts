@@ -187,16 +187,40 @@ export interface components {
             nome_dimensione: string;
             consente_valore_generico: boolean;
             valore_default?: string | null;
-            /** @description FR-010b: conferma di aver letto quanti modelli pubblicati non valorizzano la dimensione. Obbligatoria per chiudere il generico quando sono piu' di zero; altrimenti la richiesta e' respinta con CONFERMA_IMPATTO_RICHIESTA. */
-            conferma_impatto?: boolean;
+            /**
+             * @description 011 FR-010b. Chiudere il generico (`consente_valore_generico` da vero a falso) lascia senza un valore ammesso i modelli pubblicati che non valorizzano la dimensione. Senza questa conferma la richiesta e' respinta con `409 CONFERMA_IMPATTO_RICHIESTA`, i cui `dettagli` elencano i modelli coinvolti. Il cambio non viene mai rifiutato: vietarlo sarebbe un vicolo cieco.
+             * @default false
+             */
+            conferma_impatto: boolean;
         };
         PolicyDimensione: {
             nome_dimensione: string;
             consente_valore_generico: boolean;
             valore_default: string | null;
             modelli_pubblicati_che_la_valorizzano: number;
-            /** @description FR-010b: modelli pubblicati che NON la valorizzano, cioe' l'insieme che chiudere il generico lascia senza un valore ammesso. Restano reperibili, ma da quel momento non se ne possono creare di nuovi. */
+            /** @description 011 FR-010b. Modelli pubblicati che NON valorizzano la dimensione: l'insieme che chiudere il generico lascia senza un valore ammesso. Restano reperibili nel catalogo (FR-010, seconda clausola), ma da quel momento non se ne possono creare di nuovi. */
             modelli_pubblicati_senza_valore?: number;
+        };
+        /** @description FR-014/FR-015 (T055: schema definito prima di esporre esiti runtime; l'endpoint che lo restituisce e' T058). Confronto fra una versione modello e il ramo discovery live. E' distinto dallo stato di pubblicazione: una versione `PUBBLICATO` puo' essere `DA_AGGIORNARE` senza smettere di essere pubblicata. */
+        EsitoCompatibilitaVersione: {
+            /**
+             * @description `DA_AGGIORNARE` e' il solo esito che chiede un'azione. `NON_VERIFICABILE` copre l'errore esterno e la versione priva di firma, e MUST NOT essere presentato come allineato.
+             * @enum {string}
+             */
+            esito: "ALLINEATO" | "COMPATIBILE_CON_VARIAZIONI" | "DA_AGGIORNARE" | "NON_VERIFICABILE";
+            /** Format: date-time */
+            verificato_at: string;
+            /** @description Firma del ramo live al momento del confronto; assente se non calcolabile. */
+            firma_osservata?: string | null;
+            /** @description I motivi dell'esito, nella forma che la dashboard mostra. */
+            differenze: {
+                /** @enum {string} */
+                tipo: "PERCORSO_SCOMPARSO" | "DIPENDENZA_SCOMPARSA" | "CAMPO_USATO_RIMOSSO" | "NUOVO_CAMPO_OBBLIGATORIO" | "TIPO_CAMBIATO" | "VINCOLO_PIU_STRETTO" | "VINCOLO_PIU_PERMISSIVO" | "VALORE_SCELTO_NON_PIU_AMMESSO" | "VALORI_AMMESSI_RISTRETTI" | "VALORI_AMMESSI_AMPLIATI" | "OBBLIGATORIO_DIVENUTO_OPZIONALE";
+                campo?: string;
+                percorso?: string;
+                atteso?: unknown;
+                osservato?: unknown;
+            }[];
         };
         DimensioneNonConfigurata: {
             nome_dimensione: string;
@@ -332,8 +356,10 @@ export interface components {
              * @enum {string}
              */
             tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
-            /** @description Assente se la foglia discovery dichiara le lingue per se' (contratto 0.7.0): il campo vale allora per tutte e non ne ha una propria.
-             * @enum {string|null} */
+            /**
+             * @description **Opzionale dalla 0.7.0.** La lingua e' una proprieta' della foglia (`lingue`), non del singolo campo: una foglia dichiara un contratto campi solo, che vale per tutte le lingue che dichiara. Indicate `lingua` su un campo solo se quel campo esiste in una lingua sola, e allora vale come restrizione. Fino alla 0.6.0 era obbligatoria su ogni campo, e un albero che la ometteva risultava interamente non conforme. E' un rilassamento: ogni albero valido con la 0.6.0 resta valido, nessuna integrazione deve cambiare nulla.
+             * @enum {string|null}
+             */
             lingua?: "IT" | "EN" | null;
             obbligatorio: boolean;
             ordine: number;

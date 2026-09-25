@@ -102,6 +102,39 @@ export class IntegrazioniManagerComponent {
     );
   }
   /**
+   * I modelli raggruppati per categorizzazione (002 FR-019, 007 T102).
+   *
+   * Le varianti seguono il modello di base della loro categorizzazione invece
+   * di sparpagliarsi nell'elenco: sono lo stesso documento con una differenza
+   * dichiarata, e viste separate non si capiscono.
+   *
+   * Il raggruppamento vale **sulla pagina caricata**, non sull'intero elenco:
+   * filtri e paginazione restano del server (FR-028), quindi una variante puo'
+   * trovarsi sulla pagina successiva rispetto alla sua base. Non si rimedia
+   * caricando tutto, che e' proprio cio' che FR-028 vieta.
+   */
+  protected readonly gruppiModelli = computed(() => {
+    const gruppi = new Map<string, Model[]>();
+    for (const model of this.visibili()) {
+      const chiave = JSON.stringify([
+        model.codice_tipo_documento,
+        model.percorso_categorizzazione,
+        Object.entries(model.dimensioni ?? {}).sort(),
+      ]);
+      gruppi.set(chiave, [...(gruppi.get(chiave) ?? []), model]);
+    }
+    return [...gruppi.values()].map((modelli) =>
+      [...modelli].sort((a, b) => {
+        if (a.variante === b.variante) return a.created_at.localeCompare(b.created_at);
+        // Lo standard apre il gruppo: e' il modello di base di quella
+        // categorizzazione, le varianti sono scostamenti da lui.
+        if (a.variante === 'STANDARD') return -1;
+        if (b.variante === 'STANDARD') return 1;
+        return a.variante.localeCompare(b.variante, undefined, { numeric: true });
+      }),
+    );
+  });
+  /**
    * Le dimensioni valorizzate del modello, come le ha salvate il backend.
    *
    * Non si scrive piu' "Italiano/Inglese · Tutti i livelli": erano lingua e

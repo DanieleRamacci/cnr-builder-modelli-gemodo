@@ -33,6 +33,15 @@ const PROPRIETA_NODO = new Set([
   'livello_base',
   'lingue_possibili',
 ]);
+/** Il modello che occupa la categorizzazione, come lo descrive il backend. */
+type ModelloOccupante = {
+  modello_id?: string;
+  codice?: string;
+  nome?: string;
+  variante?: string;
+  nota?: string;
+};
+
 @Component({
   standalone: true,
   imports: [FormsModule, RouterLink],
@@ -149,13 +158,42 @@ const PROPRIETA_NODO = new Set([
                     }
                   </select>
                 }
+                @if (modelloOccupante(); as occupante) {
+                  <div class="variante-richiesta" role="alert" data-variante-richiesta>
+                    <strong>Questa categorizzazione ha gia' un modello</strong>
+                    <p class="occupante">
+                      {{ occupante.nome }} <code>{{ occupante.codice }}</code>
+                      @if (occupante.nota) {
+                        <span class="nota-occupante">{{ occupante.nota }}</span>
+                      }
+                    </p>
+                    <p class="spiegazione">
+                      Due modelli sulla stessa categorizzazione devono distinguersi, altrimenti
+                      pubblicandone uno l'altro verrebbe archiviato. Scrivi in cosa differisce: la
+                      descrizione resta visibile in elenco e nel catalogo.
+                    </p>
+                    <label for="nota-variante" class="form-label">In cosa differisce</label>
+                    <input
+                      id="nota-variante"
+                      name="nota-variante"
+                      class="form-control"
+                      type="text"
+                      maxlength="500"
+                      [ngModel]="nota()"
+                      (ngModelChange)="nota.set($event)"
+                      placeholder="Es. senza prova preselettiva"
+                    />
+                  </div>
+                }
                 <div class="azioni-2a">
                   <button
                     type="submit"
                     class="btn btn-primary"
-                    [disabled]="form.invalid || saving()"
+                    [disabled]="
+                      form.invalid || saving() || (!!modelloOccupante() && !nota().trim())
+                    "
                   >
-                    Genera modello
+                    {{ modelloOccupante() ? 'Crea variante' : 'Genera modello' }}
                   </button>
                   <a
                     class="btn btn-outline-primary"
@@ -438,6 +476,13 @@ export class ModelloCreaComponent {
   private failed(error: ApiError): void {
     this.loading.set(false);
     this.saving.set(false);
+    if (error.codice === 'MODELLO_VARIANTE_RICHIESTA') {
+      // Il backend dice quale modello occupa lo slot: senza, l'utente vedrebbe
+      // un rifiuto e non saprebbe cosa ha davanti.
+      this.modelloOccupante.set(error.dettagli?.[0] ?? {});
+      this.error.set(null);
+      return;
+    }
     this.error.set(
       this.modelId
         ? `Modello salvato, versione non confermata: ${error.messaggio}`
@@ -458,6 +503,16 @@ export class ModelloCreaComponent {
   protected etichettaDimensione(nome: string): string {
     return nome.replaceAll('_', ' ').replace(/^./, (iniziale) => iniziale.toUpperCase());
   }
+  /**
+   * Il modello che occupa gia' la categorizzazione scelta (002 FR-019).
+   *
+   * Non e' un errore da mostrare e basta: e' l'informazione su cui si chiede
+   * la descrizione della variante. Finche' e' nullo la categorizzazione e'
+   * libera e di varianti non si parla proprio.
+   */
+  protected readonly modelloOccupante = signal<ModelloOccupante | null>(null);
+  protected readonly nota = signal('');
+
   protected create(): void {
     if (
       this.saving() ||
@@ -474,12 +529,14 @@ export class ModelloCreaComponent {
       this.createVersion(this.modelId);
       return;
     }
+    const nota = this.nota().trim();
     this.api
       .post<{ id: string; codice: string; nome: string }>('/api/v1/builder/modelli', {
         codice_tipo_documento: this.tipo,
         integrazione_id: this.id,
         percorso_categorizzazione: this.path(),
         dimensioni: this.dimensioni(),
+        ...(nota ? { nota } : {}),
       })
       .subscribe({
         next: (model) => {

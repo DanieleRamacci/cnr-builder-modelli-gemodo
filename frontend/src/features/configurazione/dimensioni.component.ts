@@ -245,7 +245,10 @@ export class DimensioniComponent {
       .salvaPolicy(this.integrazioneId, this.codice, {
         nome_dimensione: nome,
         consente_valore_generico: consenteValoreGenerico,
-        ...(confermaImpatto ? { conferma_impatto: true } : {}),
+        // Sempre esplicito: il contratto le da' un default, e i tipi generati
+        // la vogliono valorizzata. Ometterla quando e' falsa faceva dipendere
+        // il comportamento da un default scritto altrove.
+        conferma_impatto: confermaImpatto,
         valore_default: this.defaultScelto(nome),
       })
       .subscribe({

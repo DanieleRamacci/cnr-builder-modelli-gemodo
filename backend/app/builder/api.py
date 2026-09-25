@@ -23,6 +23,7 @@ from app.builder.schemas import (
     StatoVersioneFiltro,
     CreaModelloRequest,
     CreaEdizioneDerivataRequest,
+    CreaVarianteRequest,
     CreaVersioneRequest,
     IntegrazioneVisibile,
     ModelloResponse,
@@ -140,6 +141,7 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         lingua=modello.dimensioni.get("lingua"),
         livello_professionale=modello.dimensioni.get(NOME_LIVELLO),
         derivato_da_modello_id=str(modello.derivato_da_modello_id) if modello.derivato_da_modello_id else None,
+        nota=modello.nota,
     )
 
 
@@ -283,6 +285,26 @@ def crea_edizione_derivata(
     )
 
 
+@router.post(
+    "/modelli/{modelloId}/varianti",
+    response_model=ModelloGestioneResponse,
+    status_code=201,
+)
+def crea_variante(
+    modelloId: uuid.UUID,
+    request: CreaVarianteRequest,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> ModelloGestioneResponse:
+    """Una variante dello stesso modello (002 FR-019, T048).
+
+    Eredita categorizzazione, dimensioni e livello dall'origine: si indica solo
+    in cosa differisce. Distinta da `edizioni-derivate`, che cambia il valore
+    di una dimensione e non la variante.
+    """
+    return _modello_gestione_response(service.crea_variante(principal, modelloId, request))
+
+
 @router.post("/modelli/{modelloId}/versioni", response_model=VersioneResponse, status_code=201)
 def crea_versione(
     modelloId: uuid.UUID,
@@ -366,6 +388,37 @@ def approva(
     service: BuilderService = Depends(get_builder_service),
 ) -> VersioneResponse:
     return _versione_response(service.transizione(principal, versioneId, "APPROVATO", modello_id=modelloId))
+
+
+@router.post("/modelli/{modelloId}/versioni/{versioneId}/archivia", response_model=VersioneResponse)
+def archivia(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> VersioneResponse:
+    """Ritira dal catalogo una versione pubblicata o sospesa (002 T032).
+
+    La transizione era gia' ammessa e raggiungibile dal service, ma nessun
+    endpoint la esponeva: l'unico modo di archiviare era pubblicarne un'altra
+    sullo stesso slot, cioe' un effetto collaterale invece di una scelta.
+    """
+    return _versione_response(service.transizione(principal, versioneId, "ARCHIVIATO", modello_id=modelloId))
+
+
+@router.post("/modelli/{modelloId}/versioni/{versioneId}/sospendi", response_model=VersioneResponse)
+def sospendi(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> VersioneResponse:
+    """Sospende una versione pubblicata (002 T032).
+
+    Da `SOSPESO` si puo' solo archiviare: la sospensione non e' una pausa da
+    cui si torna indietro, ed e' la stessa macchina a stati a dirlo.
+    """
+    return _versione_response(service.transizione(principal, versioneId, "SOSPESO", modello_id=modelloId))
 
 
 @router.post("/modelli/{modelloId}/versioni/{versioneId}/pubblica", response_model=VersioneResponse)

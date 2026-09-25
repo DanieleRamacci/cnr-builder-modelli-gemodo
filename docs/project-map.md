@@ -195,6 +195,57 @@ product owner nella feature 010. Non reintrodurre un catalogo locale come
 ponte per US1/US2; la documentazione di forma e' distinta dai dati operativi
 esterni. Il precedente prerequisito US2/T108 e' superato.
 
+## Ambito Individuato, Non Ancora Specificato
+
+### Biblioteca di blocchi riutilizzabili - i "visti" (2026-09-24)
+
+Richiesta del product owner durante il completamento del builder, con
+indicazione esplicita di **non** implementarla finche' il builder non e'
+chiuso. Registrata qui perche' non appartiene a nessuna spec esistente e
+perche' tocca decisioni che conviene prendere prima di scrivere codice.
+
+**Il problema**: parti di un bando - i visti, le clausole di rito, i richiami
+normativi - sono identiche fra documenti diversi. Oggi vanno riscritte a mano
+in ogni modello. Riscriverle significa che divergono, e quando la norma cambia
+nessuno sa quali modelli la citavano.
+
+**Le tre parti chieste**:
+1. Un archivio di blocchi riutilizzabili, organizzati per categoria, da cui
+   scegliere dentro l'editor 2b invece di riscrivere il testo.
+2. Una schermata dove modificare il blocco **una volta per tutti** quelli che
+   lo usano.
+3. Controlli di dipendenza e di modifica: chi usa questo blocco, cosa succede
+   ai modelli che lo hanno gia' incluso, cosa e' lecito cambiare.
+
+**Le domande da sciogliere prima di implementare**, tutte con conseguenze
+pesanti e nessuna risolvibile leggendo il codice:
+- **Copia o riferimento?** Se il modello copia il testo, modificarlo dopo non
+  aggiorna nessuno - ma un documento gia' generato resta riproducibile. Se lo
+  riferisce, l'aggiornamento arriva a tutti - e allora una versione pubblicata
+  cambia contenuto sotto i piedi di chi la sta usando, che e' esattamente cio'
+  che `002` FR-005 vieta. La risposta probabile e' un riferimento **versionato**
+  con adozione esplicita, ma e' una decisione da registrare.
+- **Cosa succede alle versioni gia' pubblicate** quando il blocco cambia: la
+  `003` congela il corpo della versione pubblicata, quindi o restano alla
+  versione del blocco che avevano, o non si possono pubblicare blocchi
+  riferiti. Non si puo' avere entrambe.
+- **Chi possiede la biblioteca**: e' per contesto (`geban`), o trasversale?
+  I visti di un bando non sono quelli di un contratto, ma alcuni richiami
+  normativi lo sono.
+- **I segnaposto dentro un blocco riutilizzabile**: un visto che cita
+  `{{numero_atto}}` e' riutilizzabile solo fra modelli il cui contratto dati
+  dichiara quel campo. Serve un controllo di compatibilita' all'inserimento,
+  altrimenti il blocco rompe la validazione del documento che lo accoglie.
+
+**Prerequisito tecnico gia' noto**: l'editor 2b oggi mostra e modifica **un
+solo blocco per sezione** (`testoSezione` legge `contenuto[0]`) e sa creare
+solo paragrafi. Un blocco di biblioteca inserito come blocco proprio non
+sarebbe visibile finche' l'editor non gestisce sezioni multi-blocco.
+
+**Come procedere**: merita una spec propria (sarebbe la `012`), non un
+incremento di `003` o `007` - ha entita', interfaccia, versionamento e analisi
+d'impatto suoi. Da aprire con il processo Spec Kit quando il builder e' chiuso.
+
 ## Ordine Suggerito Di Approfondimento
 
 1. `001-catalogo-contratto-geban`

@@ -256,34 +256,45 @@
             </tr>
           </thead>
           <tbody>
-            @for (model of visibili(); track model.id) {
-              <tr>
-                <td>
-                  <a class="nome" [routerLink]="['/modelli', model.id, 'builder']">{{
-                    model.nome
-                  }}</a>
-                  <div class="small codice">{{ model.codice }}</div>
-                  @if (etichetteDimensioni(model).length) {
-                    <div class="small">{{ etichetteDimensioni(model).join(' · ') }}</div>
-                  }
-                </td>
-                <td>
-                  {{ model.codice_tipo_documento }}
-                  <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
-                </td>
-                <td>v{{ versioneCorrente(model)?.numero_versione ?? '-' }}</td>
-                <td>
-                  <span class="badge-stato" [attr.data-stato]="stato(model)">{{
-                    stato(model)
-                  }}</span>
-                </td>
-                <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td class="text-end azioni-cella">
-                  <ng-container
-                    *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
-                  ></ng-container>
-                </td>
-              </tr>
+            @for (gruppo of gruppiModelli(); track gruppo[0].id) {
+              @for (model of gruppo; track model.id) {
+                <tr [class.riga-variante]="model.variante !== 'STANDARD'">
+                  <td>
+                    @if (model.variante !== 'STANDARD') {
+                      <span class="segno-variante" aria-hidden="true">└</span>
+                    }
+                    <a class="nome" [routerLink]="['/modelli', model.id, 'builder']">{{
+                      model.nome
+                    }}</a>
+                    <div class="small codice">{{ model.codice }}</div>
+                    @if (model.variante !== 'STANDARD') {
+                      <div class="small variante-nota">
+                        <span class="badge-variante">variante</span>
+                        {{ model.nota || 'descrizione non indicata' }}
+                      </div>
+                    }
+                    @if (etichetteDimensioni(model).length) {
+                      <div class="small">{{ etichetteDimensioni(model).join(' · ') }}</div>
+                    }
+                  </td>
+                  <td>
+                    {{ model.codice_tipo_documento }}
+                    <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
+                  </td>
+                  <td>v{{ versioneCorrente(model)?.numero_versione ?? '-' }}</td>
+                  <td>
+                    <span class="badge-stato" [attr.data-stato]="stato(model)">{{
+                      stato(model)
+                    }}</span>
+                  </td>
+                  <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-end azioni-cella">
+                    <ng-container
+                      *ngTemplateOutlet="azioniModello; context: { $implicit: model }"
+                    ></ng-container>
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>

@@ -292,6 +292,73 @@ describe('2a categorization cascade', () => {
     expect(opzioni).toContain('Seleziona un valore');
   });
 
+  it('proposes a variant, with the occupying model, only when the slot is taken', async () => {
+    const { fixture, http, component } = setup([
+      { nome_dimensione: 'lingua', consente_valore_generico: false },
+      { nome_dimensione: 'livello_professionale', consente_valore_generico: true },
+    ]);
+    component.chooseAt(0, 'TD');
+    component.chooseAt(1, 'RICERCATORE');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    // Finche' la categorizzazione e' libera non si parla di varianti.
+    expect(root.querySelector('[data-variante-richiesta]')).toBeNull();
+
+    // La lingua e' obbligatoria per questa policy: senza, il form resta
+    // invalido e il bottone non invia nulla.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const lingua = root.querySelector('#dimensione-lingua') as HTMLSelectElement;
+    lingua.selectedIndex = Array.from(lingua.options).findIndex(
+      (opzione) => opzione.textContent?.trim() === 'IT',
+    );
+    lingua.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    genera(root).click();
+    http.expectOne('/api/v1/builder/modelli').flush(
+      {
+        codice: 'MODELLO_VARIANTE_RICHIESTA',
+        messaggio: 'Esiste gia un modello su questa categorizzazione',
+        dettagli: [
+          {
+            modello_id: 'esistente',
+            codice: 'bando-td-ricercatore',
+            nome: 'Bando Ricercatore',
+            variante: 'STANDARD',
+          },
+        ],
+      },
+      { status: 409, statusText: 'Conflict' },
+    );
+    fixture.detectChanges();
+
+    const proposta = root.querySelector('[data-variante-richiesta]')!;
+    expect(proposta.textContent).toContain('Bando Ricercatore');
+    expect(proposta.textContent).toContain('bando-td-ricercatore');
+    // Il rifiuto non si mostra come errore generico: e' diventato una richiesta.
+    expect(root.querySelector('.alert-danger')).toBeNull();
+    // `genera` cerca per testo, e il bottone ora si chiama diversamente: e'
+    // proprio il cambiamento che questo test verifica.
+    const invia = () => root.querySelector('.azioni-2a button[type=submit]') as HTMLButtonElement;
+    expect(invia().textContent).toContain('Crea variante');
+    expect(invia().disabled).toBe(true);
+
+    // Il campo e' appena comparso: `ngModel` vi si aggancia su microtask.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const nota = root.querySelector('#nota-variante') as HTMLInputElement;
+    nota.value = 'Senza prova preselettiva';
+    nota.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(invia().disabled).toBe(false);
+
+    invia().click();
+    const seconda = http.expectOne('/api/v1/builder/modelli');
+    expect(seconda.request.body.nota).toBe('Senza prova preselettiva');
+    http.verify();
+  });
+
   it('keeps the value chosen before the policy response arrives', async () => {
     // La policy si carica in parallelo alla struttura: se l'utente sceglie
     // prima che risponda, la risposta non deve cancellargli la scelta sotto le

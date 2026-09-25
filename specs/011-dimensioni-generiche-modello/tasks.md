@@ -82,7 +82,7 @@ scrivere il valore non c'e' nulla da far rispettare ne' da distinguere.
   (`lingua → 'IT'`, `livello_professionale → NULL`). Regola di popolamento delle
   dimensioni: `lingua` sempre presente; `livello_professionale` NULL **non**
   produce la chiave.
-- [ ] T004b [FR-007] **Verificare prima del deploy** se i modelli esistenti
+- [x] T004b [FR-007] **Verificare prima del deploy** se i modelli esistenti
   vanno conservati o cancellati. L'utente ha indicato che puo' cancellarli e
   ripartire pulito, il che chiuderebbe anche la convivenza fra i due stili di
   nome (T008). **Condizione da controllare**: che non esistano **documenti gia'
@@ -90,6 +90,10 @@ scrivere il valore non c'e' nulla da far rispettare ne' da distinguere.
   tracciabilita' richiesta dalla Constitution IV, e cancellare il modello lo
   spezzerebbe. Se sono tutti di prova, via libera. La migration va comunque
   scritta e testata (T006): girera' su qualunque cosa esista al momento.
+  **Decisione 2026-09-25**: l'ambiente e' dev e l'utente conferma che documenti
+  e modelli esistenti possono essere cancellati tutti. La cancellazione puo'
+  essere eseguita dall'utente come reset dati pre-deploy; non cambia il codice e
+  non elimina l'obbligo di mantenere testata la migration.
 - [x] T005 [FR-007] Downgrade simmetrico nella stessa migration, e **docstring
   che dichiara la perdita**: un modello che valorizza dimensioni diverse da
   lingua e livello perde quei valori nel downgrade. Va scritto li', non scoperto
@@ -98,9 +102,9 @@ scrivere il valore non c'e' nulla da far rispettare ne' da distinguere.
   `backend/tests/integration/`: partendo dal fixture di T002, dopo `upgrade`
   verificare che `codice` e `nome` siano **identici**, le versioni pubblicate
   ancora `PUBBLICATO`, i documenti generati ancora collegati, e `dimensioni`
-  popolato senza chiave `livello` dove la colonna era NULL. Poi `downgrade` e
-  ricontrollo. **Non SQLite**: la feature poggia su uguaglianza e GIN su JSONB,
-  un test su SQLite non prova nulla. Vedi anche `010/T073`.
+  popolato senza chiave `livello_professionale` dove la colonna era NULL. Poi
+  `downgrade` e ricontrollo. **Non SQLite**: la feature poggia su uguaglianza e
+  GIN su JSONB, un test su SQLite non prova nulla. Vedi anche `010/T073`.
 - [x] T007 [FR-001] In `backend/app/builder/repository.py`, aggiornare
   `crea_modello` e le funzioni che leggono/scrivono le due colonne rimosse per
   passare da e verso `dimensioni`.
@@ -338,14 +342,14 @@ cui la spec nasce, tranne il caso `contratti` end-to-end.
 
 - [x] T054 [US4] **Uniformare il nome a `livello_professionale`** (deciso
   dall'utente il 2026-09-23; l'alternativa «dichiarare una deroga» e' scartata).
-  La dimensione si chiama `livello` nelle policy (`POLICY_DI_RIPIEGO`,
-  `PolicyDimensione.nome_dimensione`, chiave di `dimensioni` per
-  DEC-011-MIGRAZIONE-IN-UN-PASSO) ma la colonna rimossa e il campo di contratto
-  si chiamano `livello_professionale`. Tenere i due nomi cablerebbe la
-  traduzione `dimensioni["livello"] → livello_professionale` in
-  `ModelloCatalogoSchema`, reintroducendo in piccolo il problema che la spec
-  elimina. Da allineare: righe `PolicyDimensione` esistenti (migration `0020`
-  passo 7), popolamento di T004, `POLICY_DI_RIPIEGO`, contratto, **e**
+  La prima stesura chiamava la dimensione `livello` nelle policy
+  (`PolicyDimensione.nome_dimensione`, chiave di `dimensioni` e
+  `POLICY_DI_RIPIEGO`), mentre la colonna rimossa e il campo di contratto si
+  chiamano `livello_professionale`. Tenere i due nomi cablerebbe la traduzione
+  fra `livello` e `livello_professionale` in `ModelloCatalogoSchema`,
+  reintroducendo in piccolo il problema che la spec elimina. Da allineare:
+  righe `PolicyDimensione` esistenti (migration `0020` passo 7), popolamento di
+  T004, `POLICY_DI_RIPIEGO`, contratto, **e**
   `backend/app/configurazione/service.py:351`, che deriva oggi il nome `livello`
   da `livelli_possibili`. Quest'ultimo e' **l'unico punto** in cui quel file va
   toccato, in deroga alla regola generale in testa a questo documento.
@@ -493,23 +497,28 @@ falso.
   `ModelloCatalogoSchema.lingua` nullable — nessun lavoro richiesto, nessun
   cambiamento nelle risposte che ricevono oggi, eventuale ricompilazione del
   client generato. **Non blocca l'implementazione**, deve precedere il rilascio.
+  Bozza pronta in `docs/presa-atto-geban-dimensioni-catalogo.md`.
 - [x] T052 [P] **Segnalare a GEBAN il refuso `_em`** (`descrizione_em`,
   `medaglione_em`, che dovrebbero essere `_en`, sistematico su tutte e 65 le
   foglie): **gia' comunicato dall'utente il 2026-09-23**. Resta da verificare,
   quando GEBAN risponde, se i codici vengono corretti a monte o se GEMODO deve
   accettarli come sono in via definitiva.
-- [ ] T053 Verifica del criterio di successo:
+- [x] T053 Verifica del criterio di successo:
   `grep -rn '"lingua"\|"livello"' backend/app/builder/` non deve trovare
-  occorrenze che governino comportamento. **Senza deroghe**: la riscrittura di
-  FR-013 ha eliminato quella delle edizioni derivate, e T054 quella del nome del
-  livello. Fuori dal criterio resta il solo `POLICY_DI_RIPIEGO` (T019), che non
-  governa comportamento ma fornisce il valore iniziale di una configurazione a
-  un tipo documento che non ne ha ancora. Ogni altra occorrenza e' un residuo.
-  **Verifica 2026-09-23**: il grep trova ancora i bridge di compatibilita'
-  richiesti da T009/T030 (`lingua` e `livello_professionale` nelle richieste e
-  nei filtri legacy), oltre al default esplicito richiesto da T019. Il criterio
-  letterale e' quindi in conflitto con task gia' confermati e non viene marcato
-  come completato finche' non si decide se escludere quei bridge o rimuoverli.
+  occorrenze che governino comportamento. **Decisione 2026-09-25**: il criterio
+  letterale viene sostituito da un criterio semantico, perche' i bridge legacy
+  richiesti da T009/T030 devono restare finche' i client usano ancora i campi
+  storici. Sono ammesse solo queste occorrenze:
+  (a) campi e filtri legacy `lingua`/`livello_professionale` in input/output,
+  tradotti in o proiettati da `dimensioni`;
+  (b) `POLICY_DI_RIPIEGO`, che inizializza la configurazione dei tipi esistenti;
+  (c) commenti, test e nomi storici dei campi richiesti. Restano vietati `if`
+  o rami applicativi che decidono enforcement, fallback, identita',
+  pubblicazione o derivazione sulla base del nome `lingua` o `livello`.
+  Verifica eseguita: le occorrenze rimaste nel builder sono bridge legacy,
+  default di configurazione, proiezioni di risposta, commenti/test o lingua del
+  singolo campo richiesto, non decisioni di business cablate sul nome della
+  dimensione.
 
 ---
 

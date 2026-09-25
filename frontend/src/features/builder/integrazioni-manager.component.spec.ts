@@ -147,6 +147,42 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('livello professionale: VI');
     http.verify();
   });
+  it('lists variants under the base model of their categorization', () => {
+    const { fixture, http } = setup();
+    const variante = {
+      ...model,
+      id: 'variante',
+      public_id: 3,
+      codice: 'MODEL-VAR',
+      nome: 'Modello CTER variante',
+      variante: 'VARIANTE_1',
+      nota: 'Senza prova preselettiva',
+    };
+    const altraCategorizzazione = {
+      ...model,
+      id: 'altro',
+      public_id: 4,
+      codice: 'ALTRA-CAT',
+      nome: 'Modello Tecnologi',
+      percorso_categorizzazione: ['TD', 'TECNOLOGO'],
+    };
+    // Arrivano in ordine sparso, come li puo' restituire il server.
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush([variante, altraCategorizzazione, model]);
+    fixture.detectChanges();
+
+    const righe = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
+    const codici = righe.map((riga) => riga.querySelector('.codice')!.textContent!.trim());
+    // La variante segue la sua base, non il modello di un'altra categorizzazione.
+    expect(codici).toEqual(['MODEL', 'MODEL-VAR', 'ALTRA-CAT']);
+    expect(righe[1].classList).toContain('riga-variante');
+    expect(righe[1].textContent).toContain('Senza prova preselettiva');
+    // Sul modello di base non si scrive "variante": non lo e'.
+    expect(righe[0].textContent).not.toContain('variante');
+    http.verify();
+  });
+
   it('refuses a context in the URL that the backend did not authorize, without querying models', () => {
     const { fixture, http } = setup(['geban'], 'estraneo');
     fixture.detectChanges();

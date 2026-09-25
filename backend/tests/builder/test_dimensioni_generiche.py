@@ -263,13 +263,19 @@ def test_due_creazioni_simultanee_sulla_stessa_combinazione_non_pubblicano_due_v
 ):
     """T026, edge case della spec: due creazioni gemelle.
 
-    **Il vincolo `uq_modello_documento_tipo_codice` non le intercetta**, e non
-    lo faceva nemmeno prima di 011: il `codice` termina con l'esadecimale
-    dell'id del modello, quindi due creazioni identiche producono comunque due
-    codici diversi. La protezione reale e' a valle, sullo slot di pubblicazione
-    (FR-004): il gemello che pubblica per secondo archivia la versione del
-    primo, quindi il catalogo non espone mai due versioni correnti sulla stessa
-    combinazione di dimensioni. E' questa la proprieta' che il test blocca.
+    **La protezione si e' spostata a monte** con 002 FR-019 (2026-09-24). Prima
+    entrambe le creazioni riuscivano e il catalogo restava coerente solo a
+    valle: il gemello che pubblicava per secondo archiviava la versione del
+    primo. Ora la seconda creazione sulla stessa combinazione e' rifiutata,
+    perche' un secondo modello sullo stesso slot deve dichiarare in cosa
+    differisce. La proprieta' della spec - il catalogo non espone mai due
+    versioni correnti sulla stessa combinazione - vale ancora, e per una via
+    piu' netta: il modello duplicato non nasce proprio.
+
+    `uq_modello_documento_tipo_codice` continua a non intercettarle, per la
+    ragione di sempre: il `codice` termina con l'esadecimale dell'id, quindi due
+    creazioni identiche producono comunque codici diversi. Quel che le blocca e'
+    il lock sul tipo documento piu' l'indice parziale sullo slot.
     """
     with ThreadPoolExecutor(max_workers=2) as pool:
         risposte = [
@@ -279,16 +285,18 @@ def test_due_creazioni_simultanee_sulla_stessa_combinazione_non_pubblicano_due_v
                 for _ in range(2)
             ]
         ]
-    assert [r.status_code for r in risposte] == [201, 201], [r.text for r in risposte]
-    gemelli = [r.json() for r in risposte]
-    assert gemelli[0]["codice"] != gemelli[1]["codice"]
+    assert sorted(r.status_code for r in risposte) == [201, 409], [r.text for r in risposte]
+    rifiutata = next(r for r in risposte if r.status_code == 409)
+    assert rifiutata.json()["codice"] == "MODELLO_VARIANTE_RICHIESTA"
+    # Nessun 500: la corsa e' gestita, non subita.
+    creato = next(r for r in risposte if r.status_code == 201).json()
 
-    versioni = [_pubblica(builder_client, modello) for modello in gemelli]
+    versione = _pubblica(builder_client, creato)
     with Session(db_engine) as db:
-        stati = dict(db.execute(sa.text(
-            "SELECT id::text, stato FROM modello_versione WHERE id IN (:a, :b)"
-        ), {"a": versioni[0]["id"], "b": versioni[1]["id"]}).all())
-    assert sorted(stati.values()) == ["ARCHIVIATO", "PUBBLICATO"]
+        stato = db.scalar(sa.text(
+            "SELECT stato FROM modello_versione WHERE id = :id"
+        ), {"id": versione["id"]})
+    assert stato == "PUBBLICATO"
 
 
 # --------------------------------------------------------------------------

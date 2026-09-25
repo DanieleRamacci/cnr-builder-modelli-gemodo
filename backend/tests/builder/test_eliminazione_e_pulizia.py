@@ -60,7 +60,10 @@ def _disattiva_tipo(client, tipo_id: str):
             app.dependency_overrides[require_principal] = precedente
 
 
-def _crea_modello(client, *, lingua: str = "IT", livello: str | None = None) -> dict:
+def _crea_modello(client, *, lingua: str = "IT", livello: str | None = None,
+                  nota: str | None = None) -> dict:
+    # 002 FR-019: sulla categorizzazione di prova c'e' gia' il modello demo del
+    # seed, quindi qui si creano varianti e serve dire in cosa differiscono.
     response = client.post(
         "/api/v1/builder/modelli",
         json={
@@ -69,6 +72,7 @@ def _crea_modello(client, *, lingua: str = "IT", livello: str | None = None) -> 
             "codice_tipologia": "TD",
             "lingua": lingua,
             "livello_professionale": livello,
+            "nota": nota or f"eliminazione {lingua} {livello} {uuid.uuid4().hex[:8]}",
         },
     )
     assert response.status_code == 201, response.text

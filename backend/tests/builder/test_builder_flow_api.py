@@ -296,8 +296,22 @@ def policy_url(integrazione_id, codice: str = "BANDO_CONCORSO") -> str:
 
 
 def _crea_modello(
-    client: TestClient, *, codice: str, lingua: str = "IT", livello_professionale: str | None = None,
+    client: TestClient,
+    *,
+    codice: str,
+    lingua: str = "IT",
+    livello_professionale: str | None = None,
+    nota: str | None = None,
 ) -> dict:
+    """Un modello sulla categorizzazione di prova.
+
+    La nota non e' un dettaglio del test: dal 002 FR-019 un secondo modello
+    sulla stessa categorizzazione deve dire in cosa differisce, e in un database
+    di prova quella categorizzazione e' gia' occupata dal modello demo del seed.
+    `codice` e' l'etichetta con cui ogni test riconosce il proprio modello,
+    quindi e' anche la nota naturale: cosi' ogni test resta indipendente invece
+    di contendersi lo slot standard.
+    """
     response = client.post(
         "/api/v1/builder/modelli",
         json={
@@ -306,6 +320,10 @@ def _crea_modello(
             "codice_tipologia": "TD",
             "lingua": lingua,
             "livello_professionale": livello_professionale,
+            # Unica per chiamata: lo stesso `codice` ricompare in test diversi
+            # dello stesso modulo, e due varianti con la stessa nota sullo
+            # stesso slot sono rifiutate (T033).
+            "nota": nota if nota is not None else f"{codice} {uuid.uuid4().hex[:8]}",
         },
     )
     assert response.status_code == 201, response.text
@@ -348,8 +366,12 @@ def test_struttura_disponibile_riflette_solo_la_discovery_http(builder_client, c
 
 
 def _richiesta_percorso(codice, percorso):
+    # `nota` per lo stesso motivo di `_crea_modello`: la categorizzazione puo'
+    # essere gia' occupata, e dal 002 FR-019 un secondo modello deve dire in
+    # cosa differisce. `codice` e' l'etichetta propria di ogni test.
     return {"codice_tipo_documento": "BANDO_CONCORSO",
-            "percorso_categorizzazione": percorso, "lingua": "IT"}
+            "percorso_categorizzazione": percorso, "lingua": "IT",
+            "nota": f"{codice} {uuid.uuid4().hex[:8]}"}
 
 
 @pytest.mark.integration
@@ -545,7 +567,11 @@ def test_creation_generates_identity_and_validates_language_and_level(builder_cl
         builder_client, codice="level-it", lingua="IT", livello_professionale="VI"
     )
 
-    assert generic_it["variante"] == "STANDARD"
+    # `STANDARD` spetta al primo modello della categorizzazione: qui lo slot
+    # italiano e' gia' occupato dal modello demo del seed, quindi questi nascono
+    # varianti. E' la stessa ragione per cui l'helper passa una nota.
+    assert generic_it["variante"].startswith("VARIANTE_")
+    assert generic_it["nota"].startswith("generic-it")
     assert generic_it["lingua"] == "IT"
     assert generic_it["livello_professionale"] is None
     assert generic_en["lingua"] == "EN"
@@ -602,11 +628,12 @@ def test_publication_scope_keeps_language_and_level_independent(builder_client, 
         _pubblica_fino_in_fondo(builder_client, model["id"], version["id"])
         versions.append(version)
 
-    replacement = _crea_modello(
-        builder_client, codice="level-it-2", lingua="IT", livello_professionale="VI"
-    )
-    replacement_version = _crea_versione(builder_client, replacement["id"])
-    _pubblica_fino_in_fondo(builder_client, replacement["id"], replacement_version["id"])
+    # La sostituzione avviene fra due **versioni dello stesso modello**: dal
+    # 002 FR-019 due modelli distinti sulla stessa categorizzazione non possono
+    # piu' condividere la variante, quindi non possono piu' archiviarsi a
+    # vicenda - che era il difetto, non il comportamento voluto.
+    replacement_version = _crea_versione(builder_client, models[2]["id"])
+    _pubblica_fino_in_fondo(builder_client, models[2]["id"], replacement_version["id"])
 
     with Session(db_engine) as db:
         states = {

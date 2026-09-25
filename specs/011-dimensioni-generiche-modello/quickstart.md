@@ -181,8 +181,8 @@ Applica `alembic upgrade head`.
 
 **Atteso**: `codice` e `nome` **identici** (non ricalcolati); le versioni
 pubblicate ancora `PUBBLICATO`; i documenti generati ancora collegati;
-`dimensioni` popolato da lingua e livello, **senza** la chiave `livello` dove la
-colonna era NULL.
+`dimensioni` popolato da lingua e livello professionale, **senza** la chiave
+`livello_professionale` dove la colonna era NULL.
 
 Poi `alembic downgrade -1` e ricontrolla: le colonne tornano popolate. Un
 modello che valorizzava dimensioni diverse da lingua e livello perde quei valori

@@ -136,6 +136,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/{modelloId}/varianti": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crea una variante dello stesso modello sulla stessa categorizzazione
+         * @description Eredita tipo, percorso e dimensioni dal modello di origine: si indica solo in cosa differisce. Il codice di variante (STANDARD, VARIANTE_1, VARIANTE_2...) lo assegna il sistema. Distinta da edizioni-derivate, che cambia il valore di una dimensione e non la variante.
+         */
+        post: operations["creaVariante"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}/edizioni-derivate": {
         parameters: {
             query?: never;
@@ -243,6 +265,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/{modelloId}/versioni/{versioneId}/sospendi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transizione PUBBLICATO -> SOSPESO
+         * @description Da SOSPESO si puo' solo archiviare: la sospensione non e' una pausa da cui si torna indietro.
+         */
+        post: operations["sospendiVersione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/modelli/{modelloId}/versioni/{versioneId}/archivia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transizione PUBBLICATO o SOSPESO -> ARCHIVIATO
+         * @description Ritira la versione dal catalogo come scelta esplicita. Prima esisteva solo come effetto collaterale della pubblicazione di un'altra versione sullo stesso slot.
+         */
+        post: operations["archiviaVersione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -274,6 +342,8 @@ export interface components {
             livello_professionale: string | null;
             /** Format: uuid */
             derivato_da_modello_id?: string | null;
+            /** @description Descrizione della variante scritta dal gestore; null sul modello standard. */
+            nota?: string | null;
             codice_contesto: string;
             /** Format: uuid */
             integrazione_id: string | null;
@@ -307,9 +377,8 @@ export interface components {
             codice: string;
             etichetta: string;
             tipo: string;
-            /** @description Assente se la foglia discovery dichiara le lingue per se' (contratto 0.7.0): il campo vale allora per tutte e non ne ha una propria.
-             * @enum {string|null} */
-            lingua?: "IT" | "EN" | null;
+            /** @enum {string} */
+            lingua: "IT" | "EN";
             obbligatorio: boolean;
             ordine: number;
             descrizione?: string | null;
@@ -336,6 +405,8 @@ export interface components {
             livello_professionale: string | null;
             /** Format: uuid */
             derivato_da_modello_id?: string | null;
+            /** @description Descrizione della variante scritta dal gestore; null sul modello standard. */
+            nota?: string | null;
             codice_contesto: string;
             /** Format: uuid */
             integrazione_id: string | null;
@@ -364,6 +435,11 @@ export interface components {
             lingua?: "IT" | "EN";
             /** @description Valore dichiarato in livelli_possibili; null significa tutti i livelli della foglia. */
             livello_professionale?: string | null;
+            /** @description In cosa questo modello differisce dagli altri sulla stessa categorizzazione (FR-019). Obbligatoria quando la categorizzazione e' gia' occupata: senza, la creazione risponde 409 MODELLO_VARIANTE_RICHIESTA indicando quale modello la occupa. Il codice di variante lo genera il sistema, non il chiamante. */
+            nota?: string | null;
+        };
+        CreaVarianteRequest: {
+            nota: string;
         };
         CreaEdizioneDerivataRequest: {
             /** @enum {string} */
@@ -385,6 +461,8 @@ export interface components {
             livello_professionale: string | null;
             /** Format: uuid */
             derivato_da_modello_id?: string | null;
+            /** @description Descrizione della variante scritta dal gestore; null sul modello standard. */
+            nota?: string | null;
         };
         CreaVersioneRequest: {
             campi: components["schemas"]["CampoVersione"][];
@@ -456,8 +534,10 @@ export interface components {
              * @enum {string}
              */
             tipo: "string" | "number" | "date" | "boolean" | "array" | "object";
-            /** @description Assente se la foglia discovery dichiara le lingue per se' (contratto 0.7.0): il campo vale allora per tutte e non ne ha una propria.
-             * @enum {string|null} */
+            /**
+             * @description **Opzionale dalla 0.7.0.** La lingua e' una proprieta' della foglia (`lingue`), non del singolo campo: una foglia dichiara un contratto campi solo, che vale per tutte le lingue che dichiara. Indicate `lingua` su un campo solo se quel campo esiste in una lingua sola, e allora vale come restrizione. Fino alla 0.6.0 era obbligatoria su ogni campo, e un albero che la ometteva risultava interamente non conforme. E' un rilassamento: ogni albero valido con la 0.6.0 resta valido, nessuna integrazione deve cambiare nulla.
+             * @enum {string|null}
+             */
             lingua?: "IT" | "EN" | null;
             obbligatorio: boolean;
             ordine: number;
@@ -846,6 +926,42 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    creaVariante: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "nota": "Senza prova preselettiva"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreaVarianteRequest"];
+            };
+        };
+        responses: {
+            /** @description Variante creata, senza versioni */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelloGestione"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     creaEdizioneDerivata: {
         parameters: {
             query?: never;
@@ -993,6 +1109,60 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Versione in stato PUBBLICATO, ora esposta dal catalogo (001) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Versione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    sospendiVersione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Versione in stato SOSPESO */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Versione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    archiviaVersione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Versione in stato ARCHIVIATO */
             200: {
                 headers: {
                     [name: string]: unknown;

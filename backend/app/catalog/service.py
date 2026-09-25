@@ -240,7 +240,10 @@ def _modello_catalogo_schema(version: ModelloDocumentoVersione) -> ModelloCatalo
         modello_id=modello.public_id,
         modello_versione_id=version.public_id,
         codice=modello.codice,
-        descrizione=modello.nome,
+        # 002 FR-019: la nota entra nella descrizione, non al posto del nome.
+        # Per GEBAN e' l'unico modo di distinguere due varianti della stessa
+        # categorizzazione, che altrimenti arriverebbero con descrizioni uguali.
+        descrizione=f"{modello.nome} - {modello.nota}" if modello.nota else modello.nome,
         variante=modello.variante,
         lingua=LinguaModello(modello.dimensioni["lingua"]) if modello.dimensioni.get("lingua") else None,
         livello_professionale=modello.dimensioni.get(NOME_LIVELLO),

@@ -23,7 +23,13 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
 from app.builder.audit import registra_evento
-from app.builder.schemas import CampoVersioneRequest, CreaEdizioneDerivataRequest, CreaModelloRequest, FiltriModelli
+from app.builder.schemas import (
+    CampoVersioneRequest,
+    CreaEdizioneDerivataRequest,
+    CreaModelloRequest,
+    CreaVarianteRequest,
+    FiltriModelli,
+)
 from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
@@ -97,12 +103,35 @@ def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-") or "modello"
 
 
+def _prossima_variante(esistenti: list[str]) -> str:
+    """Il codice di variante che il sistema assegna (002 FR-019, T047).
+
+    Il gestore scrive solo la nota: il codice viaggia verso GEBAN e nei log,
+    quindi lo genera il sistema in maiuscolo e senza spazi. `STANDARD` e' il
+    primo modello della categorizzazione; da li' in poi la numerazione conta
+    **le varianti aggiunte**, quindi la prima dopo lo standard e' `VARIANTE_1`.
+
+    Si numera a partire dal massimo gia' assegnato, non dal conteggio: un
+    modello eliminato non deve far riusare un codice che potrebbe comparire in
+    un log o in un documento gia' generato.
+    """
+    if not esistenti:
+        return "STANDARD"
+    numeri = [
+        int(codice.removeprefix("VARIANTE_"))
+        for codice in esistenti
+        if codice.startswith("VARIANTE_") and codice.removeprefix("VARIANTE_").isdigit()
+    ]
+    return f"VARIANTE_{max(numeri, default=0) + 1}"
+
+
 def _identita_modello(
     *,
     tipo: str,
     nodi,
     dimensioni: dict[str, str],
     modello_id: uuid.UUID,
+    variante: str = "STANDARD",
 ) -> tuple[str, str]:
     """Codice e nome generati, distinti per ogni combinazione di dimensioni (011 FR-003).
 
@@ -118,13 +147,19 @@ def _identita_modello(
     il privilegio che 011 toglie.
     """
     valori = [dimensioni[nome] for nome in sorted(dimensioni)]
+    # La variante entra nell'identita' solo quando c'e' davvero (002 FR-019):
+    # aggiungere "-standard" a ogni modello renderebbe illeggibili i codici di
+    # tutti per distinguere i pochi che hanno varianti.
+    parti_variante = [] if variante == "STANDARD" else [variante]
     suffix = modello_id.hex
-    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), *valori]))
+    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), *valori, *parti_variante]))
     codice = f"{prefix[:128 - len(suffix) - 1]}-{suffix}"
     # Una dimensione non valorizzata semplicemente non compare nel nome:
     # l'assenza e' l'informazione (FR-006), e non serve renderla con "tutti".
     etichetta_dimensioni = " - ".join(valori)
-    parti_suffix = [p for p in (etichetta_dimensioni, f"{datetime.now(timezone.utc):%Y-%m-%d}") if p]
+    parti_suffix = [
+        p for p in (etichetta_dimensioni, *parti_variante, f"{datetime.now(timezone.utc):%Y-%m-%d}") if p
+    ]
     name_suffix = " - " + " - ".join(parti_suffix)
     descriptions = " - ".join(n.descrizione for n in nodi)
     return codice, f"{descriptions[:255 - len(name_suffix)]}{name_suffix}"
@@ -369,12 +404,24 @@ class BuilderService:
         dimensioni = request.dimensioni_effettive()
         self._verifica_dimensioni(dimensioni, _dimensioni_dichiarate(foglia), policy)
         nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+        # Il lock sul tipo documento e' lo stesso che serializza le transizioni
+        # di stato: la numerazione della variante si calcola sotto di lui,
+        # altrimenti due creazioni simultanee leggono lo stesso massimo e
+        # scelgono lo stesso codice (002 FR-019, T047).
+        self.db.execute(select(TipoDocumento.id).where(TipoDocumento.id == tipo.id).with_for_update())
+        variante = self._variante_per_slot(
+            tipo_documento_id=tipo.id,
+            percorso=list(percorso),
+            dimensioni=dimensioni,
+            nota=request.nota,
+        )
         modello_id = uuid.uuid4()
         codice, nome = _identita_modello(
             tipo=request.codice_tipo_documento,
             nodi=nodi,
             dimensioni=dimensioni,
             modello_id=modello_id,
+            variante=variante,
         )
 
         modello = builder_repository.crea_modello(
@@ -386,7 +433,8 @@ class BuilderService:
             codice_categoria=categoria,
             codice_tipologia=tipologia,
             percorso_categorizzazione=list(percorso),
-            variante="STANDARD",
+            variante=variante,
+            nota=request.nota,
             dimensioni=dimensioni,
         )
         registra_evento(
@@ -401,6 +449,141 @@ class BuilderService:
             payload_minimo={
                 "codice": modello.codice,
                 "codice_tipo_documento": request.codice_tipo_documento,
+                "dimensioni": dimensioni,
+            },
+        )
+        self.db.commit()
+        return modello
+
+    def _variante_per_slot(
+        self,
+        *,
+        tipo_documento_id: uuid.UUID,
+        percorso: list[str],
+        dimensioni: dict[str, str],
+        nota: str | None,
+    ) -> str:
+        """Quale variante spetta a un modello nuovo su questa categorizzazione.
+
+        Senza questo controllo due modelli sulla stessa categorizzazione
+        nascevano entrambi `STANDARD` e alla pubblicazione il secondo
+        archiviava il primo in silenzio. L'errore dice **quale** modello occupa
+        gia' lo slot: e' l'informazione su cui il frontend costruisce la
+        proposta di creare una variante, e senza il gestore vedrebbe solo un
+        rifiuto senza sapere cosa ha davanti (002 FR-019, T043).
+        """
+        esistenti = builder_repository.modelli_sullo_slot(
+            self.db,
+            tipo_documento_id=tipo_documento_id,
+            percorso_categorizzazione=percorso,
+            dimensioni=dimensioni,
+        )
+        if not esistenti:
+            return "STANDARD"
+        if nota is None:
+            occupante = esistenti[0]
+            raise BuilderDomainError(
+                "MODELLO_VARIANTE_RICHIESTA",
+                "Esiste gia' un modello su questa categorizzazione: per affiancarne un altro "
+                "indicare in cosa differisce",
+                status_code=409,
+                dettagli=[{
+                    "modello_id": str(occupante.id),
+                    "codice": occupante.codice,
+                    "nome": occupante.nome,
+                    "variante": occupante.variante,
+                    "nota": occupante.nota,
+                }],
+            )
+        if any((m.nota or "").strip().casefold() == nota.strip().casefold() for m in esistenti):
+            raise BuilderDomainError(
+                "MODELLO_VARIANTE_DUPLICATA",
+                f"Esiste gia' una variante descritta come '{nota}' su questa categorizzazione",
+                status_code=409,
+            )
+        return _prossima_variante([m.variante for m in esistenti])
+
+    def crea_variante(
+        self,
+        principal: PrincipalGEMODO,
+        modello_id: uuid.UUID,
+        request: CreaVarianteRequest,
+    ) -> ModelloDocumento:
+        """Una variante di un modello esistente (002 FR-019, T048).
+
+        Eredita categorizzazione e dimensioni dall'origine: il gestore fornisce
+        solo la nota. Non e' `crea_edizione_derivata`, che cambia il valore di
+        una dimensione (tipicamente la lingua) e lascia invariata la variante.
+        """
+        origine = builder_repository.get_modello(self.db, modello_id)
+        if origine is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        verify_scrittura_su_contesto(principal, origine.tipo_documento.codice_contesto)
+        self.db.execute(select(TipoDocumento.id).where(
+            TipoDocumento.id == origine.tipo_documento_id,
+        ).with_for_update())
+        self.db.refresh(origine)
+
+        indice = self._catalogo(
+            origine.tipo_documento.codice, aggiornato=True, tipo=origine.tipo_documento,
+        ).indice_percorsi()
+        percorso = tuple(origine.percorso_categorizzazione)
+        foglia = indice.get(percorso)
+        if foglia is None or foglia.campi is None:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "Il ramo del modello non e' piu' disponibile",
+                status_code=404,
+            )
+        dimensioni = dict(origine.dimensioni)
+        variante = self._variante_per_slot(
+            tipo_documento_id=origine.tipo_documento_id,
+            percorso=list(percorso),
+            dimensioni=dimensioni,
+            nota=request.nota,
+        )
+        nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+        nuovo_id = uuid.uuid4()
+        codice, nome = _identita_modello(
+            tipo=origine.tipo_documento.codice,
+            nodi=nodi,
+            dimensioni=dimensioni,
+            modello_id=nuovo_id,
+            variante=variante,
+        )
+        try:
+            modello = builder_repository.crea_modello(
+                self.db,
+                modello_id=nuovo_id,
+                codice=codice,
+                nome=nome,
+                tipo_documento_id=origine.tipo_documento_id,
+                codice_categoria=origine.codice_categoria,
+                codice_tipologia=origine.codice_tipologia,
+                percorso_categorizzazione=list(percorso),
+                variante=variante,
+                nota=request.nota,
+                dimensioni=dimensioni,
+            )
+        except IntegrityError as errore:
+            # Il controllo applicativo non chiude la corsa fra due richieste
+            # simultanee: l'indice parziale si', e qui diventa un 409 invece di
+            # un 500 (stesso trattamento delle edizioni derivate, T040).
+            self.db.rollback()
+            raise BuilderDomainError(
+                "MODELLO_VARIANTE_DUPLICATA",
+                "Una variante con questa descrizione e' stata creata nel frattempo",
+                status_code=409,
+            ) from errore
+        registra_evento(
+            self.db,
+            tipo_evento="MODELLO_VARIANTE_CREATA",
+            principal=principal,
+            modello_documento_id=modello.id,
+            modello_versione_id=None,
+            payload_minimo={
+                "origine_modello_id": str(origine.id),
+                "variante": variante,
                 "dimensioni": dimensioni,
             },
         )
