@@ -12,6 +12,36 @@
 
 ## Clarifications
 
+### Audience Non Verificata - 2026-09-25
+
+**Decisione del product owner, definitiva**: GEMODO **non verifica il claim
+`aud`**, ne' quando e' assente ne' quando e' presente. Supera
+`DEC-006-AUD-ASSENTE-NEI-TOKEN-ACE` (che ne aveva tolto solo meta') con
+`DEC-006-AUD-NON-VERIFICATA`.
+
+**Perche'**: chi chiama da GEBAN - e dai servizi che verranno - porta **solo il
+contesto**. La regola residua "se `aud` c'e' deve contenere `gemodo-backend`"
+rifiutava un chiamante legittimo per un motivo che non dipendeva da lui: un
+client del realm `cnr` con l'audience mapper di serie (`oauth2-resource`)
+veniva respinto pur portando il contesto e i ruoli giusti. L'audience
+descriveva come era configurato il mapper del client, non cosa il chiamante
+stesse chiedendo.
+
+**Cosa dice "questo token e' per me"**, ora che `aud` non lo dice: l'allowlist
+di `azp` (client tecnico GEBAN, client interattivi configurati, client
+dichiarati attivi nel manifest dei profili) e il fatto che un ruolo non
+mappato non concede nulla. Chi allarga quell'allowlist allarga l'unica difesa
+rimasta.
+
+**`gemodo-backend` resta**, ma per una cosa sola e diversa: leggere i **ruoli
+diretti** in `resource_access.gemodo-backend.roles`, cioe' la via dell'admin
+GEMODO. I ruoli GEBAN non passano di li' e non ne hanno bisogno.
+
+**Regola per chi scrivera' qui in futuro**: non reintrodurre requisiti di
+audience in questa spec ne' nelle spec che la citano. Se servira' un segnale di
+destinazione piu' forte, si discute come requisito nuovo - non lo si fa
+rientrare come vincolo sul token.
+
 ### Enforcement API Per Contesto - 2026-09-17
 
 Permessi aggregati nel principal sono utili per il controllo generale, non
@@ -101,6 +131,10 @@ l'implementazione di questa spec; la feature attiva resta 010.
   Ogni token accettato dalle API GEMODO deve contenere audience `gemodo-backend`; il
   claim `contexts.geban.roles` prova il contesto/ruolo GEBAN, ma non sostituisce la
   destinazione del token verso GEMODO.
+  **Superata due volte, ora non vale piu'**: il 2026-09-16 contro un token ACE
+  reale (che `aud` non lo porta affatto) e definitivamente il 2026-09-25, quando
+  il controllo e' stato tolto del tutto - vedi "Audience Non Verificata" in
+  testa a questa sezione.
 - Q: Come deve essere configurato il mapper ACE indicato dal team GEBAN? -> A: Sul client
   che emette il token verso GEMODO deve essere aggiunto o verificato un mapper ACE con
   contesto `geban`, `Add to access token` attivo e `Add to ID token`/`userinfo` non
@@ -141,8 +175,10 @@ cosi' da proteggere catalogo, builder, generazione e download.
 
 1. **Given** una richiesta senza credenziali valide, **When** accede a una risorsa
    protetta, **Then** il servizio la rifiuta.
-2. **Given** una richiesta con identita' valida ma audience non coerente, **When** accede
-   al servizio, **Then** il servizio la rifiuta.
+2. **Given** una richiesta con identita' valida ma client chiamante non ammesso, **When**
+   accede al servizio, **Then** il servizio la rifiuta. (Fino al 2026-09-25 questo
+   scenario parlava di audience non coerente: l'audience non e' piu' verificata, il
+   client si'.)
 
 ---
 
@@ -175,7 +211,8 @@ generare documenti.
 7. **Given** un token ACE valido contiene `contexts.geban.roles` con
    `ROLE_COORDINATOR#geban`, **When** viene richiesta una generazione documento GEBAN,
    **Then** GEMODO deriva il permesso `DOCUMENTI_GENERATORE` tramite mapping configurato
-   e autorizza la richiesta solo se audience, client e contesto sono coerenti.
+   e autorizza la richiesta solo se client e contesto sono coerenti (l'audience non
+   entra nella decisione, 2026-09-25).
 8. **Given** un token ACE valido contiene `contexts.geban.roles` con `ROLE_USER#geban`,
    **When** l'utente tenta di accedere al builder modelli, **Then** GEMODO non abilita
    creazione, modifica, pubblicazione o archiviazione modelli.
@@ -216,8 +253,10 @@ target e timestamp.
 - Token con ruolo `DOCUMENTI_GENERATORE` ma client chiamante diverso da `geban-backend`.
 - Token con ruolo GEBAN di generazione usato per accedere al builder GEMODO.
 - Token con ruolo GEMODO builder usato per generare documenti dal flusso GEBAN.
-- Token ACE con audience corretta ma senza `contexts.geban.roles`.
-- Token ACE con `contexts.geban.roles` valido ma senza audience `gemodo-backend`.
+- Token ACE senza `contexts.geban.roles`: nessun permesso derivato.
+- Token ACE con `contexts.geban.roles` valido e audience qualunque - assente, o di un
+  altro client: deve essere **accettato** (2026-09-25). Era l'opposto fino a quella
+  data, ed e' il caso che rifiutava i chiamanti veri.
 - Token ACE con piu' contesti (`geri`, `geban`, altri): GEMODO considera solo i contesti
   configurati per il sistema richiedente o per il builder.
 - Ruolo ACE nuovo o rinominato non presente nella mappa configurata.
@@ -234,7 +273,8 @@ target e timestamp.
 ### Functional Requirements
 
 - **FR-001**: Tutte le API protette MUST richiedere identita' verificabile.
-- **FR-002**: Il servizio MUST verificare chiamante, audience, scadenza e ruoli o claim contestuali.
+- **FR-002**: Il servizio MUST verificare chiamante, firma, issuer, scadenza e ruoli o
+  claim contestuali. L'audience **non** rientra fra le verifiche (2026-09-25).
 - **FR-003**: Il servizio MUST distinguere utenti builder, sistema GEBAN e client tecnici.
 - **FR-003a**: Per le operazioni di generazione richieste da GEBAN, il servizio MUST
   ricevere un token Keycloak con audience GEMODO, client chiamante autorizzato e permesso
@@ -264,9 +304,13 @@ target e timestamp.
 - **FR-005h**: Per il builder modelli nel perimetro GEBAN, solo `ROLE_MANAGER#geban` MAY
   derivare il permesso `GEMODO_MODELLI_GESTORE`; gli altri ruoli GEBAN di generazione
   documenti MUST NOT abilitare gestione modelli.
-- **FR-005i**: Un token con ruoli esterni ACE/GEBAN MUST contenere audience
-  `gemodo-backend`; la presenza di `contexts.geban.roles` senza audience GEMODO non e'
-  sufficiente per accedere alle API GEMODO.
+- **FR-005i** (riscritto 2026-09-25, vedi "Audience Non Verificata"): un token con
+  ruoli esterni ACE/GEBAN MUST essere accettato **indipendentemente dal claim `aud`**,
+  presente o assente che sia. La destinazione verso GEMODO MUST essere stabilita dal
+  client chiamante (`azp` fra quelli ammessi) e dal contesto riconosciuto, non
+  dall'audience. Il testo precedente - che imponeva audience `gemodo-backend` - non
+  vale piu': rifiutava chiamanti legittimi per la configurazione del mapper del loro
+  client.
 - **FR-005j**: La configurazione di client ammessi e mapping ruoli esterni MUST poter
   rappresentare piu' applicativi sorgente, indicando per ciascuno contesto token,
   sistema richiedente, ruoli esterni riconosciuti, permessi GEMODO derivati e perimetro

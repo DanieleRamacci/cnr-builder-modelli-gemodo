@@ -899,8 +899,45 @@ decisions:
       ancora rifiutato). Documentazione da correggere ovunque mostri `aud`
       come presente/obbligatorio nell'esempio di token ACE: `keycloak-jwt.md`
       (esempi e regole di validazione), `deploy/coolify-test/index.html`.
+      **Superata il 2026-09-25 da DEC-006-AUD-NON-VERIFICATA**: la meta'
+      residua della regola - "`aud` presente deve contenere gemodo-backend" -
+      e' stata tolta.
     fase_bloccante: NESSUNA
-    data_ultima_revisione: 2026-09-16
+    data_ultima_revisione: 2026-09-25
+
+  - id: DEC-006-AUD-NON-VERIFICATA
+    titolo: GEMODO non verifica affatto il claim aud
+    owner_spec: specs/006-sicurezza-autorizzazioni-audit
+    spec_interessate:
+      - specs/001-catalogo-contratto-geban
+      - specs/002-builder-modelli
+      - specs/009-fondamenta-mock-test-qualita
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      decisione del product owner, 2026-09-25. `DEC-006-AUD-ASSENTE-NEI-TOKEN-ACE`
+      aveva reso il controllo condizionale: assente accettato, presente doveva
+      contenere `gemodo-backend`. La meta' residua rifiutava comunque un
+      chiamante legittimo per un motivo che non dipendeva da lui - un client
+      del realm `cnr` con l'audience mapper di serie (`oauth2-resource`) veniva
+      respinto pur portando il contesto e i ruoli giusti. Chi chiama da GEBAN,
+      e dai servizi che verranno, porta **solo il contesto**: su quello GEMODO
+      decide. Rimosso `_ensure_audience_if_declared` da
+      `backend/app/common/security.py`; `verify_aud` resta disabilitato in
+      `jwt.decode`. **Cosa resta a dire "questo token e' per me"**: l'allowlist
+      di `azp` in `_principal_from_payload` (client tecnico GEBAN, client
+      interattivi configurati, client dichiarati attivi nel manifest dei
+      profili) e il fatto che un ruolo non mappato non concede nulla - chi
+      allarga quell'allowlist allarga l'unica difesa rimasta. `gemodo-backend`
+      resta usato solo per leggere i **ruoli diretti** in
+      `resource_access.gemodo-backend.roles`, cioe' la via dell'admin GEMODO:
+      i ruoli GEBAN non passano di li'. Due test riscritti di conseguenza in
+      `backend/tests/common/test_security_jwt.py`, e il fixture
+      `tests/support/security.py` non lega piu' `resource_access` ad `aud` -
+      erano due claim indipendenti e tenerli legati faceva sparire i ruoli
+      appena un test cambiava l'audience.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-09-25
 
   - id: DEC-007-FALLBACK-LIVELLO-CATALOGO
     titolo: Fallback al livello generico nella ricerca catalogo

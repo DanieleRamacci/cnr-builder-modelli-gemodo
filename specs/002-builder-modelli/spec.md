@@ -268,7 +268,7 @@ versione pubblicata valida appare nel catalogo.
 - **FR-009**: Il sistema MUST rendere disponibili al catalogo operativo solo versioni pubblicate.
 - **FR-010**: Quando una nuova versione della stessa variante viene pubblicata, il sistema MUST passare automaticamente la precedente versione pubblicata corrente ad `ARCHIVIATO`; solo la nuova versione resta `PUBBLICATO` e visibile nel catalogo operativo.
 - **FR-011**: Il sistema MUST mantenere consultabili nello storico le versioni archiviate.
-- **FR-012**: Le API interne builder MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; le letture richiedono ruolo `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, le scritture e transizioni richiedono `GEMODO_MODELLI_GESTORE`.
+- **FR-012**: Le API interne builder MUST richiedere JWT Bearer Keycloak valido (firma, issuer, scadenza, client ammesso); le letture richiedono ruolo `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, le scritture e transizioni richiedono `GEMODO_MODELLI_GESTORE`. **L'audience non e' un requisito** (2026-09-25, `DEC-006-AUD-NON-VERIFICATA`): chi chiama da GEBAN porta solo il contesto. Il testo precedente imponeva audience `gemodo-backend`.
 - **FR-013**: Il sistema MUST restituire errori stabili `ACCESSO_NON_AUTENTICATO` e `ACCESSO_NON_AUTORIZZATO` quando autenticazione o autorizzazione builder falliscono.
 - **FR-014**: *(corretto 2026-09-15, `DEC-001-CONTESTO-SOSTITUISCE-UFFICIO`)* Il
   sistema MUST verificare che il token del gestore chiamante contenga il

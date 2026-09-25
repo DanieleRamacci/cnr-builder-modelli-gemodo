@@ -144,38 +144,18 @@ def decode_principal_from_token(
             algorithms=ALLOWED_ALGORITHMS,
             issuer=settings.keycloak_issuer_url,
             leeway=settings.keycloak_jwt_leeway_seconds,
-            # PyJWT rifiuta un token con `aud` presente se non gli passiamo
-            # `audience=`, ma ACE non valorizza affatto `aud` - l'unico modo per
-            # accettare entrambi i casi e' disabilitare il controllo integrato e
-            # farlo noi stessi, condizionalmente, in _ensure_audience_if_declared.
+            # `aud` non si verifica affatto (decisione del product owner,
+            # 2026-09-25). Chi chiama da GEBAN - e dai servizi che verranno -
+            # non porta `aud`: l'unico segnale di destinazione e' il contesto
+            # nel token, piu' l'allowlist dei client. Verificarlo "solo se
+            # presente" significava rifiutare un client corretto per come e'
+            # configurato il suo mapper, non per cio' che chiede.
             options={"verify_aud": False},
         )
     except InvalidTokenError as exc:
         logger.warning("Authentication rejected: jwt_validation=%s", type(exc).__name__)
         raise AuthenticationError() from exc
-    _ensure_audience_if_declared(payload, settings)
     return _principal_from_payload(payload, settings)
-
-
-def _ensure_audience_if_declared(payload: dict[str, Any], settings: Settings) -> None:
-    """Verify ``aud`` only when the token declares one.
-
-    ACE (2026-09-16, confirmed by the product owner against real tokens) does
-    not set ``aud`` at all - the ACE mapper only adds ``contexts.<nome>.roles``.
-    A token without ``aud`` is authenticated on issuer/signature/expiry alone;
-    the destination signal is the recognized context, checked later in
-    ``_principal_from_payload`` (client allow-list + configured
-    ``role_mappings``). Direct GEMODO clients (``gemodo-frontend``,
-    ``geban-backend``) still set ``aud``, so when it IS present it MUST still
-    contain ``keycloak_audience`` - this branch is not relaxed.
-    """
-
-    aud = payload.get("aud")
-    if aud is None:
-        return
-    if settings.keycloak_audience not in _audience_tuple(aud):
-        logger.warning("Authentication rejected: audience_mismatch")
-        raise AuthenticationError()
 
 
 def mock_principal(settings: Settings) -> PrincipalGEMODO:

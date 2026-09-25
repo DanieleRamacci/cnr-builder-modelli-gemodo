@@ -167,7 +167,7 @@ placeholder non dichiarati nei campi richiesti.
 - **FR-009**: Il sistema MUST supportare solo i blocchi documentali ammessi `LOGO`, `INTESTAZIONE`, `TITOLO`, `PARAGRAFO`, `TABELLA`, `COLONNE`, `FIRMA`, `FOOTER`, `INTERRUZIONE_PAGINA` nel perimetro corrente.
 - **FR-010**: Il sistema MUST validare la compatibilita' tra tipo blocco e posizionamento, rifiutando layout fuori grammatica controllata.
 - **FR-011**: Il sistema MUST referenziare asset del modello tramite id, versione, storage reference e hash quando disponibile; gli asset non devono essere incorporati come contenuto libero.
-- **FR-012**: Le API interne della `003` MUST richiedere JWT Bearer Keycloak valido con audience `gemodo-backend`; letture con `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, scritture e validazioni di pubblicazione con `GEMODO_MODELLI_GESTORE`.
+- **FR-012**: Le API interne della `003` MUST richiedere JWT Bearer Keycloak valido (firma, issuer, scadenza, client ammesso); letture con `GEMODO_MODELLI_VIEWER` o `GEMODO_MODELLI_GESTORE`, scritture e validazioni di pubblicazione con `GEMODO_MODELLI_GESTORE`. **L'audience non e' un requisito** (2026-09-25, `DEC-006-AUD-NON-VERIFICATA`).
 
 - **FR-013**: La struttura minima automatica MUST essere salvata nella versione
   e validata con gli stessi controlli su grammatica e placeholder. Modifiche

@@ -11,8 +11,9 @@ Keycloak. Serve come riferimento per chi configura GEBAN, GEMODO e Keycloak.
 - **Scelta definitiva aggiornata**: per le operazioni di generazione da GEBAN verso
   GEMODO sono ammessi due canali coerenti: il client tecnico `geban-backend`, mantenuto
   come doppio di test/CI, e i client ACE reali indicati dal team GEBAN. I token ACE
-  devono essere emessi dal realm `cnr`, contenere audience `gemodo-backend` e portare i
-  ruoli GEBAN nel claim `contexts.geban.roles`. GEMODO normalizza ruoli client GEMODO e
+  devono essere emessi dal realm `cnr` e portare i ruoli GEBAN nel claim
+  `contexts.geban.roles`. **L'audience non e' un requisito (2026-09-25)**: vedi
+  "Audience non verificata" sotto. GEMODO normalizza ruoli client GEMODO e
   ruoli ACE/GEBAN in permessi applicativi propri tramite mapping configurabile.
 - **Motivazione**: il token exchange richiede una funzionalita' Keycloak non abilitata di
   default e sviluppo dedicato lato backend GEBAN; il token tecnico e' uno standard OAuth2
@@ -69,6 +70,27 @@ Setup eseguito manualmente in Admin Console sul realm `cnr` di test:
   al token claim nella forma `contexts.geban.roles`. Questo mapper non imposta `aud`: per
   i token ACE, `aud` resta assente per design (vedi "Come Leggere Il Token ACE/GEBAN"
   sotto) - non e' un requisito da imporre lato ACE.
+
+## Audience Non Verificata (decisione del product owner, 2026-09-25)
+
+GEMODO **non verifica `aud`**, ne' quando e' assente ne' quando e' presente.
+
+Fino al 2026-09-24 il controllo era condizionale: assente andava bene, presente
+doveva contenere `gemodo-backend`. Sembrava prudente e invece rifiutava un
+chiamante legittimo per un motivo che non dipendeva da lui: un client del realm
+`cnr` con l'audience mapper di serie (`oauth2-resource`) veniva respinto pur
+portando il contesto giusto e i ruoli giusti. Chi chiama da GEBAN - e dai
+servizi che verranno - porta **solo il contesto**, e su quello GEMODO decide.
+
+**Cosa resta a dire "questo token e' per me"**: l'allowlist di `azp` in
+`_principal_from_payload` (client tecnico GEBAN, client interattivi configurati,
+client dichiarati attivi nel manifest dei profili) e il fatto che un ruolo non
+mappato non concede nulla. Chi allarga quell'allowlist sta allargando l'unica
+difesa rimasta: va fatto sapendo questo.
+
+`gemodo-backend` resta usato per una cosa sola, e diversa: leggere i **ruoli
+diretti** in `resource_access.gemodo-backend.roles`, cioe' la via dell'admin
+GEMODO. I ruoli GEBAN non passano di li' e non ne hanno bisogno.
 
 ## Principio Di Base
 

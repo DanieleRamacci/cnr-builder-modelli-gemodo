@@ -38,6 +38,10 @@ def signed_token(
     audience: str | list[str] | None = "gemodo-backend",
     client_id: str = "geban-backend",
     roles: Iterable[str] | None = ("DOCUMENTI_GENERATORE",),
+    # Keycloak mette i ruoli sotto il client che li possiede, non sotto `aud`:
+    # i due claim sono indipendenti. Tenerli legati faceva sparire i ruoli
+    # appena un test cambiava l'audience, che e' una bugia del fixture.
+    resource_audience: str = "gemodo-backend",
     contexts: dict[str, Iterable[str]] | None = None,
     expires_delta: timedelta = timedelta(minutes=5),
     issued_at_delta: timedelta = timedelta(),
@@ -57,7 +61,6 @@ def signed_token(
     if audience is not None:
         payload["aud"] = audience
     if roles is not None:
-        resource_audience = audience if isinstance(audience, str) else "gemodo-backend"
         payload["resource_access"] = {
             resource_audience: {
                 "roles": list(roles),

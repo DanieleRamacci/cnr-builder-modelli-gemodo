@@ -153,8 +153,9 @@ conseguenza nella stessa sessione.
 - Q: Poiche' Keycloak e' gia' configurato, le API operative della `001` devono restare
   senza sicurezza applicativa fino alla `006`? -> A: No. La `001` deve implementare la
   protezione minima corretta delle proprie API con JWT Keycloak: validazione firma/JWKS,
-  issuer, audience `gemodo-backend`, scadenza, client chiamante (`geban-backend` per le
+  issuer, scadenza, client chiamante (`geban-backend` per le
   chiamate GEBAN) e ruolo client su `resource_access.gemodo-backend.roles`
+  (l'audience era in questo elenco fino al 2026-09-25: non lo e' piu')
   (`DOCUMENTI_GENERATORE` per validazione operativa, `DOCUMENTI_VIEWER` o
   `DOCUMENTI_GENERATORE` per consultazione catalogo/campi). Audit completo,
   autorizzazioni fini per profilo e workflow sicurezza restano nella `006`.
@@ -534,8 +535,12 @@ risposta distingua i due casi.
 - **FR-017**: Il servizio MUST mantenere il confine di responsabilita': GEBAN raccoglie i
   dati del processo, mentre il servizio modelli definisce contratto dati e validazione.
 - **FR-017a**: Le API operative della `001` MUST richiedere JWT Bearer Keycloak valido,
-  verificando firma tramite JWKS, issuer, audience, scadenza e ruoli client del client
-  `gemodo-backend`.
+  verificando firma tramite JWKS, issuer, scadenza e ruoli client del client
+  `gemodo-backend`. **L'audience non viene verificata** (2026-09-25,
+  `DEC-006-AUD-NON-VERIFICATA`, owner `006`): chi chiama da GEBAN porta solo il
+  contesto, e imporre `aud` rifiutava chiamanti legittimi. `gemodo-backend` resta
+  il client di cui si leggono i **ruoli diretti** in `resource_access`, che e' cosa
+  diversa dall'audience del token.
 - **FR-017b**: Le chiamate GEBAN alla `001` MUST identificare il client tecnico
   `geban-backend` nel token (`azp` o claim equivalente) e MUST avere ruolo
   `DOCUMENTI_GENERATORE` per la validazione payload; catalogo e contratto dati MAY
@@ -754,8 +759,8 @@ non confermata, verificare `backend/app/quality/readiness_gate.py` (vedi
 - Il servizio modelli e' la fonte del catalogo, del contratto dati e delle regole di
   validazione del payload.
 - La sicurezza dettagliata e l'audit completo vengono trattati nella `006`, ma le API
-  operative della `001` non sono pubbliche: validano gia' JWT Keycloak, audience, client
-  tecnico e ruoli applicativi minimi.
+  operative della `001` non sono pubbliche: validano gia' JWT Keycloak, client
+  tecnico e ruoli applicativi minimi (l'audience no, dal 2026-09-25).
 - La generazione PDF dettagliata viene trattata in una feature separata; questa specifica
   si ferma alla validazione del payload e alla preparazione del flusso verso la generazione.
 - Il builder frontend e le API amministrative di creazione modello sono fuori scope per

@@ -380,8 +380,10 @@
         <h2>Autenticazione Swagger</h2>
         <div class="body stack">
           <div class="warn">
-            Swagger usa login SSO con client pubblico <code>gemodo-frontend</code>. Per chiamare le API, il token
-            dell'utente deve avere audience <code>gemodo-backend</code> e ruoli client su <code>gemodo-backend</code>.
+            Swagger usa login SSO con client pubblico <code>gemodo-frontend</code>. Per le operazioni da
+            amministratore il token deve portare ruoli client su <code>gemodo-backend</code>. L'audience
+            <strong>non viene verificata</strong> (decisione 2026-09-25): chi chiama da GEBAN porta solo il
+            contesto, e i ruoli GEBAN arrivano in <code>contexts.geban.roles</code>.
           </div>
           <div class="step-grid">
             <div class="box">

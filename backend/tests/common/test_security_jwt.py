@@ -113,12 +113,25 @@ def test_decode_valid_token_with_required_claims():
     assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
 
 
-def test_decode_rejects_invalid_audience():
-    keys = JwtTestKeys()
-    token = signed_token(keys, audience="wrong-audience")
+def test_decode_ignora_l_audience_del_token():
+    """`aud` non si verifica (decisione del product owner, 2026-09-25).
 
-    with pytest.raises(AuthenticationError):
-        decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
+    Chi chiama da GEBAN - e dai servizi futuri - non porta `aud`: l'unico
+    segnale di destinazione e' il contesto nel token piu' l'allowlist dei
+    client. Verificarlo "solo se presente" rifiutava un chiamante legittimo per
+    come e' configurato il mapper del suo client, non per cio' che chiedeva.
+    """
+    keys = JwtTestKeys()
+    token = signed_token(keys, audience="oauth2-resource")
+
+    principal = decode_principal_from_token(
+        token, settings=_settings(), signing_key=keys.public_pem,
+    )
+
+    assert principal.client_id == "geban-backend"
+    # Il token resta valutato per cio' che dichiara: l'audience diversa non
+    # aggiunge ne' toglie permessi.
+    assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
 
 
 def test_decode_rejects_expired_token(monkeypatch):
@@ -243,11 +256,14 @@ def test_decode_accepts_ace_token_with_multiple_contexts_only_geban_configured(t
     assert dict(principal.ruoli_contesto)["geri"] == ("ROLE_ADMIN#geri",)
 
 
-def test_decode_rejects_ace_token_with_wrong_audience_even_if_context_valid(tmp_path):
-    """Se `aud` E' presente (non e' il caso ACE normale, ma puo' capitare con
-    client diretti mal configurati) e non contiene gemodo-backend, il token
-    resta rifiutato anche se porta un contesto valido - `aud` assente e' OK,
-    `aud` presente ma sbagliato non lo e'."""
+def test_un_token_ace_con_audience_diversa_resta_valido_per_il_suo_contesto(tmp_path):
+    """Il caso concreto per cui il controllo e' stato tolto.
+
+    Un client del realm cnr configurato con un audience mapper qualunque
+    (`oauth2-resource` e' quello di serie) veniva respinto pur portando un
+    contesto valido e i ruoli giusti. Ora conta cio' che il token dichiara -
+    client ammesso e ruoli di contesto mappati - non a chi era intestato.
+    """
     keys = JwtTestKeys()
     token = signed_token(
         keys,
@@ -257,12 +273,14 @@ def test_decode_rejects_ace_token_with_wrong_audience_even_if_context_valid(tmp_
         contexts={"geban": ["ROLE_COORDINATOR#geban"]},
     )
 
-    with pytest.raises(AuthenticationError):
-        decode_principal_from_token(
-            token,
-            settings=_settings(integration_profiles_path=_write_integration_profiles(tmp_path)),
-            signing_key=keys.public_pem,
-        )
+    principal = decode_principal_from_token(
+        token,
+        settings=_settings(integration_profiles_path=_write_integration_profiles(tmp_path)),
+        signing_key=keys.public_pem,
+    )
+
+    assert dict(principal.ruoli_contesto) == {"geban": ("ROLE_COORDINATOR#geban",)}
+    assert principal.ruoli_diretti == ()
 
 
 def test_decode_rejects_unconfigured_ace_client_with_context_role(tmp_path):
