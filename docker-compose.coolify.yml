@@ -70,6 +70,8 @@ services:
       # destinazioni che l'admin puo' configurare/verificare (vuoto di default).
       GEMODO_INTEGRAZIONI_ALLOWLIST: ${GEMODO_INTEGRAZIONI_ALLOWLIST:-}
       GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO: ${GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO:-}
+      # Origini browser autorizzate a chiamare direttamente il backend.
+      GEMODO_CORS_ALLOWED_ORIGINS: ${GEMODO_CORS_ALLOWED_ORIGINS:-}
     expose:
       - "8000"
     depends_on:

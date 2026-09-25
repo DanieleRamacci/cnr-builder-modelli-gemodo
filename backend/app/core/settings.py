@@ -25,6 +25,15 @@ def _tuple_env(name: str, default: str = "") -> tuple[str, ...]:
     return tuple(item.strip() for item in os.getenv(name, default).split(",") if item.strip())
 
 
+def _origin_tuple_env(name: str, default: str = "") -> tuple[str, ...]:
+    origins: list[str] = []
+    for origin in _tuple_env(name, default):
+        normalized = origin[:-1] if origin.endswith("/") else origin
+        if normalized and normalized not in origins:
+            origins.append(normalized)
+    return tuple(origins)
+
+
 @dataclass(frozen=True)
 class Settings:
     database_url: str
@@ -46,6 +55,7 @@ class Settings:
     gemodo_integrazioni_allowlist_privato: tuple[str, ...] = ()
     gemodo_storage_dir: str = ""
     gemodo_enforce_contesto_consumatore: bool = False
+    gemodo_cors_allowed_origins: tuple[str, ...] = ()
 
     @property
     def jwks_url(self) -> str:
@@ -83,4 +93,5 @@ def get_settings() -> Settings:
         gemodo_integrazioni_allowlist_privato=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO"),
         gemodo_storage_dir=os.getenv("GEMODO_STORAGE_DIR", str(repo_root / "data" / "documenti-generati")),
         gemodo_enforce_contesto_consumatore=_bool_env("GEMODO_ENFORCE_CONTESTO_CONSUMATORE", False),
+        gemodo_cors_allowed_origins=_origin_tuple_env("GEMODO_CORS_ALLOWED_ORIGINS"),
     )

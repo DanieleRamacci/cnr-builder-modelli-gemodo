@@ -13,16 +13,31 @@ implement them.
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.builder.api import router as builder_router
 from app.catalog.api import router as catalog_router
 from app.common.errors import install_error_handlers
 from app.configurazione.api import router as configurazione_router
 from app.configurazione.api import router_integrazioni as configurazione_integrazioni_router
+from app.core.settings import Settings, get_settings
 from app.generazione.api import router as generazione_router
 from app.quality.openapi_docs import router as openapi_docs_router
 from app.storage.api import router as storage_router
 from app.validation.api import router as validation_router
+
+
+def configure_cors(app: FastAPI, settings: Settings) -> None:
+    if not settings.gemodo_cors_allowed_origins:
+        return
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.gemodo_cors_allowed_origins),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
+    )
+
 
 app = FastAPI(
     title="GEMODO - Gestione Modelli e Generazione Documenti",
@@ -34,6 +49,8 @@ app = FastAPI(
     docs_url="/docs/runtime",
     redoc_url="/redoc",
 )
+
+configure_cors(app, get_settings())
 
 # Swagger UI / ReDoc per ogni contratto OpenAPI versionato di spec (GET /docs/{spec_id},
 # GET /redoc/{spec_id}), generati dalla stessa sorgente committata (FR-041).

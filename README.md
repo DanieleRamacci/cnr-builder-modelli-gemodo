@@ -213,3 +213,6 @@ Per far funzionare le chiamate API con token utente, il client Keycloak `gemodo-
 deve avere redirect URI e web origin per `https://dev-gemodo.concorsi.cnr.it/*`, audience
 `gemodo-backend` nel token, e l'utente deve avere ruoli client su `gemodo-backend`
 coerenti con l'endpoint (`DOCUMENTI_VIEWER` e, per validazione, `DOCUMENTI_GENERATORE`).
+Se le API sono chiamate direttamente dal browser di un'app esterna, aggiungere
+l'origine a `GEMODO_CORS_ALLOWED_ORIGINS` (es. `https://geban.test.si.cnr.it`;
+`http://localhost:4200` solo per collaudi locali).

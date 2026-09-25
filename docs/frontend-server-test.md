@@ -23,6 +23,10 @@ Nel backend configurare l'origine esatta del discovery approvato in
 `GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO`. Riavviare il backend dopo la
 modifica. Non usare gli URL localhost del collaudo locale sul server.
 
+Se una pagina esterna chiama direttamente le API GEMODO dal browser, configurare
+anche `GEMODO_CORS_ALLOWED_ORIGINS` con le origini esatte, separate da virgola
+e senza path, per esempio `https://geban.test.si.cnr.it`.
+
 ## Prova sulla pagina pubblicata
 
 L'header mostra nome utente e collegamento al profilo in alto a destra;
