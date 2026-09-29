@@ -175,7 +175,7 @@ def leggi_policy_dimensioni(
     service: BuilderService = Depends(get_builder_service),
 ):
     """Policy registrate e dimensioni ancora prive di policy (DEC-002-POLICY)."""
-    tipo, policy, non_configurate, conteggi, impatti = service.policy_dimensioni(
+    tipo, policy, non_configurate, conteggi, impatti, ripieghi = service.policy_dimensioni(
         principal, codiceTipoDocumento
     )
     return PolicyDimensioniResponse(
@@ -189,6 +189,20 @@ def leggi_policy_dimensioni(
                 modelli_pubblicati_senza_valore=impatti[p.nome_dimensione],
             )
             for p in policy
+        ] + [
+            # Le dimensioni senza riga registrata, col valore che il backend
+            # applica comunque: chi legge vede la regola vera, non deve
+            # ricostruirla. Restano segnalate anche in
+            # `dimensioni_non_configurate`, che e' il segnale per l'admin.
+            PolicyDimensioneResponse(
+                nome_dimensione=nome,
+                consente_valore_generico=ripieghi[nome],
+                valore_default=None,
+                modelli_pubblicati_che_la_valorizzano=conteggi[nome],
+                modelli_pubblicati_senza_valore=impatti[nome],
+                origine="ripiego",
+            )
+            for nome in non_configurate
         ],
         dimensioni_non_configurate=[
             {

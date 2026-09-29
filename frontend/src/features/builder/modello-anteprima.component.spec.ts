@@ -64,7 +64,19 @@ const struttura = {
   ],
 };
 
-const policy = {
+type RispostaPolicy = {
+  codice_tipo_documento: string;
+  policy: {
+    nome_dimensione: string;
+    consente_valore_generico: boolean;
+    // `ripiego` quando l'admin non ha ancora deciso: il backend restituisce
+    // comunque la regola che applica, e il builder la usa cosi' com'e'.
+    origine?: 'registrata' | 'ripiego';
+  }[];
+  dimensioni_non_configurate: { nome_dimensione: string }[];
+};
+
+const policy: RispostaPolicy = {
   codice_tipo_documento: 'BANDO_CONCORSO',
   policy: [{ nome_dimensione: 'lingua', consente_valore_generico: false }],
   dimensioni_non_configurate: [],
@@ -161,7 +173,7 @@ describe('2b ridotta: anteprima modello', () => {
   function flushDerivationConfig(
     http: HttpTestingController,
     strutturaResponse = struttura,
-    policyResponse = policy,
+    policyResponse: RispostaPolicy = policy,
   ): void {
     http
       .expectOne('/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile')
@@ -319,6 +331,58 @@ describe('2b ridotta: anteprima modello', () => {
         b.textContent?.includes('Crea modello derivato'),
       ),
     ).toBeUndefined();
+    http.verify();
+  });
+
+  it('offers derivation on a dimension whose policy is only the fallback', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    // Nessuna policy registrata: il backend risponde con la riga di ripiego,
+    // che per la lingua dice "biforca il modello". Prima il frontend guardava
+    // solo le righe registrate e nascondeva il pulsante, pur essendo la
+    // derivazione accettata dall'API.
+    flushDerivationConfig(http, struttura, {
+      ...policy,
+      policy: [{ nome_dimensione: 'lingua', consente_valore_generico: false, origine: 'ripiego' }],
+      dimensioni_non_configurate: [{ nome_dimensione: 'lingua' }],
+    });
+    fixture.detectChanges();
+
+    expect(
+      Array.from(root.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Crea modello derivato'),
+      ),
+    ).toBeTruthy();
+    expect(root.querySelector('[data-derivazione-ko]')).toBeNull();
+    http.verify();
+  });
+
+  it('says why derivation is unavailable instead of hiding the button silently', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    // La policy risponde, l'albero live no: e' il caso reale in cui
+    // l'integrazione e' configurata ma il servizio esterno non risponde.
+    // Si serve prima quella che riesce, altrimenti `forkJoin` annulla l'altra
+    // e resterebbe una richiesta pendente che `verify()` reclama.
+    http.expectOne('/api/v1/builder/tipi-documento/BANDO_CONCORSO/policy-dimensioni').flush(policy);
+    http.expectOne('/api/v1/builder/tipi-documento/BANDO_CONCORSO/struttura-disponibile').flush(
+      {
+        codice: 'DISCOVERY_NON_DISPONIBILE',
+        messaggio: 'Servizio di categorizzazione non raggiungibile',
+      },
+      { status: 503, statusText: 'Service Unavailable' },
+    );
+    fixture.detectChanges();
+
+    // "Non esiste" e "ora non si puo'" sono due cose diverse.
+    expect(root.querySelector('[data-derivazione-ko]')?.textContent).toContain(
+      'Derivazione non disponibile',
+    );
+    expect(root.querySelector('[data-derivazione-ko]')?.getAttribute('title')).toContain(
+      'non raggiungibile',
+    );
     http.verify();
   });
 

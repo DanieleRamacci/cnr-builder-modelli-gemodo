@@ -269,7 +269,17 @@ class BuilderService:
             ))
             for nome in tutte
         }
-        return tipo, registrate, non_configurate, conteggi, impatti
+        # La policy **effettiva**, non solo quella registrata. Dove non c'e' una
+        # riga, la creazione di un modello applica comunque POLICY_DI_RIPIEGO
+        # (`_verifica_dimensione`): se l'endpoint restituisse solo le righe
+        # registrate, l'interfaccia dedurrebbe una regola diversa da quella che
+        # l'API applica davvero - ed e' esattamente cosi' che il pulsante
+        # "Crea modello derivato" spariva su un tipo documento senza policy,
+        # mentre la derivazione sarebbe stata accettata.
+        ripieghi = {
+            nome: self.POLICY_DI_RIPIEGO.get(nome, False) for nome in non_configurate
+        }
+        return tipo, registrate, non_configurate, conteggi, impatti, ripieghi
 
     def _dimensioni_live(self, codice_tipo_documento: str, tipo) -> set[str]:
         """Le dimensioni che l'albero live dichiara, qualunque siano (011 FR-005).
@@ -535,6 +545,17 @@ class BuilderService:
                 "Il ramo del modello non e' piu' disponibile",
                 status_code=404,
             )
+        # La variante nasce da una **copia** dell'origine: e' lo stesso bando
+        # con una differenza dichiarata, e si parte da li' per applicarla.
+        # Crearla senza versione lasciava un modello che l'editor non poteva
+        # modificare - nessuna bozza da aprire - cioe' una variante inservibile.
+        sorgente = builder_repository.get_ultima_versione_con_campi(self.db, origine.id)
+        if sorgente is None:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_TROVATO,
+                "Il modello di origine non ha versioni da cui partire",
+                status_code=409,
+            )
         dimensioni = dict(origine.dimensioni)
         variante = self._variante_per_slot(
             tipo_documento_id=origine.tipo_documento_id,
@@ -575,12 +596,20 @@ class BuilderService:
                 "Una variante con questa descrizione e' stata creata nel frattempo",
                 status_code=409,
             ) from errore
+        versione = builder_repository.crea_versione(
+            self.db,
+            modello_documento_id=modello.id,
+            campi=builder_repository.clona_campi(sorgente),
+            sezioni=builder_repository.clona_sezioni(sorgente),
+            formato_documentale=sorgente.formato_documentale,
+            struttura_documentale=sorgente.struttura_documentale,
+        )
         registra_evento(
             self.db,
             tipo_evento="MODELLO_VARIANTE_CREATA",
             principal=principal,
             modello_documento_id=modello.id,
-            modello_versione_id=None,
+            modello_versione_id=versione.id,
             payload_minimo={
                 "origine_modello_id": str(origine.id),
                 "variante": variante,

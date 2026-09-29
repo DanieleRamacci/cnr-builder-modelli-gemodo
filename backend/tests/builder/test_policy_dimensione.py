@@ -161,6 +161,50 @@ def test_an_unconfigured_dimension_is_signalled_not_silently_ignored(
     non_configurate = {d["nome_dimensione"] for d in corpo["dimensioni_non_configurate"]}
     assert {"lingua", "livello_professionale"} <= non_configurate, corpo
 
+    # La stessa risposta dice anche **cosa si applica** nel frattempo: senza,
+    # chi legge dedurrebbe una regola diversa da quella che l'API usa davvero.
+    effettiva = {p["nome_dimensione"]: p for p in corpo["policy"]}
+    assert effettiva["lingua"]["origine"] == "ripiego"
+    # `lingua` non ammette il generico nemmeno senza riga registrata: e' la
+    # dimensione su cui si derivano le edizioni, e il builder deve poterlo
+    # sapere per offrire la derivazione.
+    assert effettiva["lingua"]["consente_valore_generico"] is False
+    # Il livello invece il generico lo ammette: "tutti i livelli" e' un modello
+    # legittimo, e infatti la creazione lo accetta senza valore.
+    assert effettiva["livello_professionale"]["consente_valore_generico"] is True
+    assert effettiva["livello_professionale"]["origine"] == "ripiego"
+
+
+@pytest.mark.integration
+def test_una_policy_registrata_resta_distinguibile_dal_ripiego(
+    builder_client, db_engine, catalogo_esterno, integrazione_connessa
+):
+    """Chi legge deve poter dire "deciso" da "non ancora deciso".
+
+    Il comportamento sta gia' in `consente_valore_generico`; `origine` serve a
+    non far passare per scelta dell'admin cio' che e' solo il ripiego.
+    """
+    client = builder_client
+    with Session(db_engine) as db:
+        db.execute(
+            sa.text("DELETE FROM policy_dimensione WHERE tipo_documento_id = :id"),
+            {"id": _tipo_id(db_engine)},
+        )
+        db.commit()
+    scritta = client.put(policy_url(integrazione_connessa), json={
+        "nome_dimensione": "lingua", "consente_valore_generico": True, "conferma_impatto": True})
+    assert scritta.status_code in {200, 201}, scritta.text
+
+    corpo = client.get(POLICY_READ_URL).json()
+    effettiva = {p["nome_dimensione"]: p for p in corpo["policy"]}
+
+    assert effettiva["lingua"]["origine"] == "registrata"
+    assert effettiva["lingua"]["consente_valore_generico"] is True
+    assert effettiva["livello_professionale"]["origine"] == "ripiego"
+    # Una dimensione registrata esce dall'elenco di quelle da configurare.
+    non_configurate = {d["nome_dimensione"] for d in corpo["dimensioni_non_configurate"]}
+    assert "lingua" not in non_configurate
+
 
 @pytest.mark.integration
 def test_policies_are_readable_by_the_manager_and_listed_per_type(builder_client, catalogo_esterno, integrazione_connessa):

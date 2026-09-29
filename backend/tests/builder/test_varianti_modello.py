@@ -142,6 +142,9 @@ def test_la_stessa_descrizione_di_variante_e_rifiutata(builder_client, catalogo_
 @pytest.mark.integration
 def test_la_variante_si_crea_anche_dal_modello_esistente(builder_client, catalogo_esterno, slot_pulito):
     origine = _crea(builder_client).json()
+    # La variante parte da una copia dell'origine: serve una versione da cui
+    # copiare.
+    _crea_versione(builder_client, origine["id"])
 
     risposta = builder_client.post(
         f"/api/v1/builder/modelli/{origine['id']}/varianti",
@@ -159,8 +162,82 @@ def test_la_variante_si_crea_anche_dal_modello_esistente(builder_client, catalog
 
 
 @pytest.mark.integration
+def test_la_variante_nasce_con_una_bozza_modificabile_copiata_dall_origine(
+    builder_client, catalogo_esterno, slot_pulito,
+):
+    """Il difetto che questo test chiude: la variante nasceva senza versione.
+
+    Senza bozza l'editor non ha nulla da aprire e mostra tutto in sola
+    lettura: una variante che non si puo' modificare non serve a niente, ed e'
+    il motivo per cui la si crea. Parte da una copia dell'origine perche' e' lo
+    stesso bando con una differenza dichiarata, non un documento nuovo.
+    """
+    origine = _crea(builder_client, nota="Origine con contenuto").json()
+    versione_origine = _crea_versione(builder_client, origine["id"])
+    builder_client.put(
+        f"/api/v1/builder/modelli/{origine['id']}/versioni/{versione_origine['id']}/sezioni",
+        json={"sezioni": [{"codice": "oggetto", "ordine": 0, "contenuto": [{
+            "id": "oggetto-p1", "tipo": "PARAGRAFO",
+            "contenuto": "Selezione per {{titolo_it}}", "posizionamento": "BODY",
+            "ordine": 0, "stile": None, "placeholder_usati": ["titolo_it"],
+            "regole_layout": {}, "asset_ref": None, "colonne": []}]}]},
+    )
+
+    variante = builder_client.post(
+        f"/api/v1/builder/modelli/{origine['id']}/varianti",
+        json={"nota": "Da modificare"},
+    ).json()
+
+    assert len(variante["versioni"]) == 1, variante
+    nuova = variante["versioni"][0]
+    assert nuova["stato"] == "BOZZA"
+
+    sezioni = builder_client.get(
+        f"/api/v1/builder/modelli/{variante['id']}/versioni/{nuova['id']}/sezioni"
+    )
+    assert sezioni.status_code == 200, sezioni.text
+    corpo = sezioni.json()
+    # Modificabile: e' la condizione da cui l'editor decide se la pagina e' in
+    # sola lettura.
+    assert corpo["modificabile"] is True
+    # E parte dal contenuto dell'origine, non da un foglio bianco.
+    assert corpo["sezioni"][0]["contenuto"][0]["contenuto"] == "Selezione per {{titolo_it}}"
+
+    # La copia e' indipendente: modificarla non tocca l'origine.
+    modifica = builder_client.put(
+        f"/api/v1/builder/modelli/{variante['id']}/versioni/{nuova['id']}/sezioni",
+        json={"sezioni": [{"codice": "oggetto", "ordine": 0, "contenuto": [{
+            "id": "oggetto-p1", "tipo": "PARAGRAFO",
+            "contenuto": "Selezione senza prova per {{titolo_it}}", "posizionamento": "BODY",
+            "ordine": 0, "stile": None, "placeholder_usati": ["titolo_it"],
+            "regole_layout": {}, "asset_ref": None, "colonne": []}]}]},
+    )
+    assert modifica.status_code == 200, modifica.text
+    originale = builder_client.get(
+        f"/api/v1/builder/modelli/{origine['id']}/versioni/{versione_origine['id']}/sezioni"
+    ).json()
+    assert originale["sezioni"][0]["contenuto"][0]["contenuto"] == "Selezione per {{titolo_it}}"
+
+
+@pytest.mark.integration
+def test_una_variante_senza_origine_da_cui_partire_e_rifiutata(
+    builder_client, catalogo_esterno, slot_pulito,
+):
+    """Un modello senza versioni non ha un contenuto da cui derivare la variante."""
+    origine = _crea(builder_client, nota="Senza versioni").json()
+
+    risposta = builder_client.post(
+        f"/api/v1/builder/modelli/{origine['id']}/varianti", json={"nota": "Impossibile"},
+    )
+
+    assert risposta.status_code == 409, risposta.text
+    assert risposta.json()["codice"] == "MODELLO_VERSIONE_NON_TROVATO"
+
+
+@pytest.mark.integration
 def test_la_numerazione_prosegue_oltre_la_prima_variante(builder_client, catalogo_esterno, slot_pulito):
     origine = _crea(builder_client).json()
+    _crea_versione(builder_client, origine["id"])
 
     prima = builder_client.post(
         f"/api/v1/builder/modelli/{origine['id']}/varianti", json={"nota": "Prima"},
@@ -184,6 +261,7 @@ def test_due_varianti_simultanee_non_ottengono_lo_stesso_codice(
     modelli con lo stesso codice di variante.
     """
     origine = _crea(builder_client).json()
+    _crea_versione(builder_client, origine["id"])
 
     def crea(nota: str):
         return builder_client.post(
@@ -233,13 +311,17 @@ def test_il_catalogo_distingue_le_varianti_nella_descrizione(
 ):
     """Per GEBAN la nota e' l'unico modo di distinguerle (T045)."""
     origine = _crea(builder_client).json()
+    versione_origine = _crea_versione(builder_client, origine["id"])
     variante = builder_client.post(
         f"/api/v1/builder/modelli/{origine['id']}/varianti", json={"nota": "Senza prova"},
     ).json()
 
-    for modello in (origine, variante):
-        versione = _crea_versione(builder_client, modello["id"])
-        _pubblica_fino_in_fondo(builder_client, modello["id"], versione["id"])
+    # Entrambe hanno gia' la loro versione: l'origine quella creata qui, la
+    # variante la copia ricevuta alla creazione.
+    _pubblica_fino_in_fondo(builder_client, origine["id"], versione_origine["id"])
+    _pubblica_fino_in_fondo(
+        builder_client, variante["id"], variante["versioni"][0]["id"],
+    )
 
     catalogo = builder_client.get(
         "/api/v1/catalogo/modelli",

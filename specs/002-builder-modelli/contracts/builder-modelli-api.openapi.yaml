@@ -271,6 +271,11 @@ paths:
         solo in cosa differisce. Il codice di variante (STANDARD, VARIANTE_1,
         VARIANTE_2...) lo assegna il sistema. Distinta da edizioni-derivate,
         che cambia il valore di una dimensione e non la variante.
+        Nasce con una versione 1 in BOZZA che **copia** campi e documento
+        dell'ultima versione dell'origine: e' lo stesso bando con una
+        differenza dichiarata, e si parte da li' per applicarla. Se l'origine
+        non ha versioni, la richiesta e' rifiutata: non c'e' nulla da cui
+        partire.
       x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del modello di origine)
       requestBody:
         required: true
@@ -280,7 +285,7 @@ paths:
             example: {nota: Senza prova preselettiva}
       responses:
         '201':
-          description: Variante creata, senza versioni
+          description: Variante creata, con la sua versione 1 in BOZZA
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ModelloGestione'}
@@ -519,11 +524,25 @@ components:
       type: object
       additionalProperties: false
       required: [nome_dimensione, consente_valore_generico, valore_default, modelli_pubblicati_che_la_valorizzano]
+      description: >
+        La policy **effettiva** della dimensione, non solo quella registrata.
+        Dove l'admin non ha ancora deciso, la riga riporta il ripiego che il
+        backend applica comunque alla creazione dei modelli, con
+        `origine: ripiego`: senza, chi legge dedurrebbe una regola diversa da
+        quella applicata davvero.
       properties:
         nome_dimensione: {type: string}
         consente_valore_generico: {type: boolean}
         valore_default: {type: string, nullable: true}
         modelli_pubblicati_che_la_valorizzano: {type: integer, minimum: 0}
+        origine:
+          type: string
+          enum: [registrata, ripiego]
+          default: registrata
+          description: >
+            `registrata` se la riga e' stata salvata dall'admin, `ripiego` se e'
+            il valore predefinito applicato in assenza di decisione. Il
+            comportamento sta comunque in `consente_valore_generico`.
     DimensioneNonConfigurata:
       type: object
       additionalProperties: false

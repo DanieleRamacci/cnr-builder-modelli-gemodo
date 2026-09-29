@@ -803,6 +803,33 @@ sistema integrato diventa inutilizzabile.
       modello di base della loro categorizzazione, mostrando per ciascuna la
       descrizione scritta dal gestore
 
+## Phase: Policy effettiva e derivazione (2026-09-25)
+
+**Origine**: trovato usando la 2b, non leggendo il codice. Il pulsante "Crea
+modello derivato" spariva su un tipo documento la cui policy non era mai stata
+registrata - ma l'API la derivazione l'avrebbe accettata, perche'
+`BuilderService.POLICY_DI_RIPIEGO` applica comunque `lingua: non ammette il
+generico`. Interfaccia e API dicevano due cose diverse sulla stessa regola.
+
+- [x] T131 [FR-019 di `002`] `GET /builder/tipi-documento/{codice}/policy-dimensioni`
+      restituisce la policy **effettiva**: alle righe registrate si aggiungono
+      quelle delle dimensioni non configurate, col valore che il backend
+      applica davvero e `origine: "ripiego"`. Chiuso 2026-09-25.
+      **Non e' stata duplicata la regola nel frontend**: copiare
+      `POLICY_DI_RIPIEGO` in TypeScript avrebbe creato la seconda copia di una
+      regola di dominio, che e' come il disallineamento e' nato. La regola
+      resta una, nel backend, e l'interfaccia la legge.
+      Effetto collaterale voluto: anche la schermata 2a smette di divergere -
+      chiedeva un valore obbligatorio dove il backend accettava l'assenza.
+      `dimensioni_non_configurate` resta invariato, perche' e' il segnale per
+      l'admin ("questa non l'hai ancora decisa"), diverso da "cosa si applica".
+- [x] T132 [FR-026] La derivazione non disponibile si dice, invece di far
+      sparire il pulsante in silenzio. Chiuso 2026-09-25: se la lettura
+      dell'albero live o della policy fallisce, la topbar mostra "Derivazione
+      non disponibile" col messaggio del backend nel `title`. Prima il
+      gestore vedeva sparire una funzione e non poteva distinguere "non esiste
+      per questo modello" da "ora il servizio esterno non risponde".
+
 ## Phase: Larghezza adattiva del contenitore (2026-09-23)
 
 - [x] T106 [FR-029] (`--mm-shell-larghezza` in `styles.scss`, usata dalle tre

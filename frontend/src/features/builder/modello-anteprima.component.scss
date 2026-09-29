@@ -721,3 +721,16 @@ dialog {
   margin-bottom: 4px;
   font-weight: 600;
 }
+
+// La derivazione non e' proponibile perche' una lettura e' fallita: il
+// pulsante manca per una ragione, e la ragione va detta.
+.topbar .derivazione-ko {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  background: rgb(220 53 69 / 26%);
+  color: #ffc2c7;
+  cursor: help;
+}

@@ -356,11 +356,18 @@ export interface components {
             consente_valore_generico: boolean;
             valore_default?: string | null;
         };
+        /** @description La policy **effettiva** della dimensione, non solo quella registrata. Dove l'admin non ha ancora deciso, la riga riporta il ripiego che il backend applica comunque alla creazione dei modelli, con `origine: ripiego`: senza, chi legge dedurrebbe una regola diversa da quella applicata davvero. */
         PolicyDimensione: {
             nome_dimensione: string;
             consente_valore_generico: boolean;
             valore_default: string | null;
             modelli_pubblicati_che_la_valorizzano: number;
+            /**
+             * @description `registrata` se la riga e' stata salvata dall'admin, `ripiego` se e' il valore predefinito applicato in assenza di decisione. Il comportamento sta comunque in `consente_valore_generico`.
+             * @default registrata
+             * @enum {string}
+             */
+            origine: "registrata" | "ripiego";
         };
         DimensioneNonConfigurata: {
             nome_dimensione: string;

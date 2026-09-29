@@ -147,6 +147,11 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
             Crea modello derivato
           </button>
         }
+        @if (derivazioneNonDisponibile(); as motivo) {
+          <span class="derivazione-ko" data-derivazione-ko [title]="motivo">
+            Derivazione non disponibile
+          </span>
+        }
         @if (modello()) {
           <button
             type="button"
@@ -666,8 +671,8 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
     <dialog #variante aria-labelledby="variante-titolo" data-create-variant-dialog>
       <h2 id="variante-titolo" class="h4">Creare una variante?</h2>
       <p>
-        Viene creato un modello sulla stessa categorizzazione, con una descrizione che lo
-        distingue dalle altre varianti.
+        Viene creato un modello sulla stessa categorizzazione, con una descrizione che lo distingue
+        dalle altre varianti.
       </p>
       <label for="nota-variante">In cosa differisce</label>
       <input
@@ -716,6 +721,8 @@ export class ModelloAnteprimaComponent {
   protected readonly pannelloAttivo = signal<PannelloBuilder>('segnaposto');
   protected readonly ricercaSegnaposto = signal('');
   protected readonly candidatiDerivazione = signal<CandidatoDerivazione[]>([]);
+  /** Perche' la derivazione non e' proponibile ora, quando la causa e' un errore. */
+  protected readonly derivazioneNonDisponibile = signal<string | null>(null);
   protected readonly dimensioneScelta = signal('');
   protected readonly valoreScelto = signal('');
   protected readonly notaVariante = signal('');
@@ -1315,9 +1322,16 @@ export class ModelloAnteprimaComponent {
             }))
             .filter((item) => item.valori.length > 0);
           this.candidatiDerivazione.set(candidati);
+          this.derivazioneNonDisponibile.set(null);
           this.scegliDimensione(candidati[0]?.nome ?? '');
         },
-        error: () => this.candidatiDerivazione.set([]),
+        error: (e: ApiError) => {
+          // Prima qui il pulsante spariva e basta: se discovery o policy non
+          // rispondono, la derivazione sembra non esistere invece di essere
+          // temporaneamente indisponibile. Sono due cose diverse e vanno dette.
+          this.candidatiDerivazione.set([]);
+          this.derivazioneNonDisponibile.set(e.messaggio);
+        },
       });
   }
 

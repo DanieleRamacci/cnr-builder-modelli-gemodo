@@ -241,11 +241,20 @@ non solo mai eseguiti.
       *Chiude il gap "solo applicativo" dichiarato dalla nota del 2026-09-16*
 - [x] T031 Registrazione di chi crea, approva, pubblica o archivia (FR-008)
       tramite `audit.registra_evento` su `audit_evento_modello`
-- [ ] T032 Route HTTP dedicate per `archivia` e `sospendi`: le transizioni
+- [x] T032 Route HTTP dedicate per `archivia` e `sospendi`: le transizioni
       PUBBLICATO -> ARCHIVIATO/SOSPESO sono ammesse da `TRANSIZIONI_VALIDE` e
-      raggiungibili dal service, ma nessun endpoint le espone
-- [ ] T033 Validazione esplicita di etichette-variante duplicate
-      (Edge Case dedicato in `spec.md`, mai implementato)
+      raggiungibili dal service, ma nessun endpoint le espone. Chiuso
+      2026-09-25 (`builder/api.py`): finche' non c'erano, l'unico modo di
+      togliere una versione dal catalogo era pubblicarne un'altra sullo stesso
+      slot, cioe' un effetto collaterale invece di una scelta. Coperto da
+      `test_varianti_modello.py`, incluso il rifiuto della transizione da
+      ARCHIVIATO.
+- [x] T033 Validazione esplicita di etichette-variante duplicate
+      (Edge Case dedicato in `spec.md`, mai implementato). Chiuso 2026-09-25:
+      il confronto ignora spazi e maiuscole - due etichette che l'utente legge
+      uguali sono uguali, anche se i byte no - e sotto c'e' l'indice parziale
+      `uq_modello_slot_nota`, perche' il controllo applicativo da solo non
+      chiude la corsa fra due richieste simultanee.
 
 ---
 
@@ -416,36 +425,85 @@ distinti, esattamente come accade oggi per la lingua.
 
 ## Phase: Identita' e distinguibilita' dei modelli (2026-09-23)
 
-- [ ] T042 [FR-019] Esporre `variante` in `CreaModelloRequest` e smettere di
+- [x] T042 [FR-019] Esporre `variante` in `CreaModelloRequest` e smettere di
       cablare `STANDARD` in `service.crea_modello:280`. Default `STANDARD`
-      quando assente, come gia' prevede FR-003a
-- [ ] T043 [FR-019] Rifiutare la creazione di un modello sulla stessa
+      quando assente, come gia' prevede FR-003a. Chiuso 2026-09-25 **in forma
+      diversa da come era scritto**, perche' T047 e' arrivato dopo: la
+      richiesta espone `nota`, non `variante`. Il gestore dice in cosa il
+      modello differisce, il codice lo assegna il sistema. Lo `STANDARD`
+      cablato non c'e' piu'.
+- [x] T043 [FR-019] Rifiutare la creazione di un modello sulla stessa
       categorizzazione (tipo, percorso, lingua, livello) quando manca la
       descrizione di variante, con errore funzionale dedicato che dica
       **quale** modello esiste gia': e' il messaggio su cui il frontend
       costruisce la proposta di creare una variante. Rifiutare anche una
       descrizione di variante duplicata sulla stessa categorizzazione. Mai
-      lasciare che la pubblicazione archivi in silenzio il modello precedente
-- [ ] T044 [FR-019] Includere la variante nel nome generato da
+      lasciare che la pubblicazione archivi in silenzio il modello precedente.
+      Chiuso 2026-09-25 (`_variante_per_slot`): 409 `MODELLO_VARIANTE_RICHIESTA`
+      con il modello occupante nei `dettagli` - codice, nome, variante e nota -
+      che e' quello su cui il frontend costruisce la proposta; 409
+      `MODELLO_VARIANTE_DUPLICATA` per la nota gia' usata.
+- [x] T044 [FR-019] Includere la variante nel nome generato da
       `_identita_modello`, cosi' che due modelli sulla stessa
-      categorizzazione non ricevano lo stesso nome
-- [ ] T045 [FR-019] Campo `nota` sul modello: testo libero, opzionale,
+      categorizzazione non ricevano lo stesso nome. Chiuso 2026-09-25: la
+      variante entra in codice e nome **solo quando c'e' davvero** - aggiungere
+      "standard" a ogni modello avrebbe reso illeggibili i codici di tutti per
+      distinguere i pochi con varianti.
+- [x] T045 [FR-019] Campo `nota` sul modello: testo libero, opzionale,
       scritto dal gestore, **distinto** da `nome` che resta generato e non
       modificabile. Obbligatorio solo quando il modello nasce come variante.
       Migration piu' campo in creazione e aggiornamento. In
       `_modello_catalogo_schema` il campo `descrizione` diventa `nome` senza
-      nota, `nome - nota` con nota: non sostituire `nome` con `nota`
-- [ ] T047 [FR-019] Generare il codice di variante lato sistema: il gestore
+      nota, `nome - nota` con nota: non sostituire `nome` con `nota`.
+      Chiuso 2026-09-25, migration `0023`. La migration **numera i duplicati
+      preesistenti** invece di fallire sulla creazione dell'indice: il piu'
+      vecchio resta STANDARD, gli altri diventano VARIANTE_n con una nota che
+      dice apertamente che l'ha scritta la migrazione, cosi' chi la legge sa
+      che va rivista.
+- [x] T047 [FR-019] Generare il codice di variante lato sistema: il gestore
       fornisce solo la nota, mai il codice. Base `STANDARD`, poi `VARIANTE_1`,
       `VARIANTE_2` progressivi **fra le varianti aggiunte** (la prima variante
       dopo lo standard e' `VARIANTE_1`). Maiuscoli, senza spazi: viaggiano
       verso GEBAN e nei log. La numerazione va calcolata sotto il lock gia'
       preso per tipo documento, altrimenti due creazioni simultanee
-      ottengono lo stesso codice
-- [ ] T048 [FR-019] `POST /builder/modelli/{id}/varianti`: creare una variante
+      ottengono lo stesso codice. Chiuso 2026-09-25: numerazione dal massimo
+      gia' assegnato, non dal conteggio - un modello eliminato non deve far
+      riusare un codice che puo' comparire in un log o in un documento gia'
+      generato. Corsa coperta da un test con due richieste simultanee.
+- [x] T048 [FR-019] `POST /builder/modelli/{id}/varianti`: creare una variante
       a partire da un modello esistente, ereditandone categorizzazione,
       lingua e livello, chiedendo la sola descrizione. Distinta da
-      `edizioni-derivate`, che cambia lingua e non variante
-- [ ] T046 [P] [FR-019] Test: due modelli stessa categorizzazione varianti
+      `edizioni-derivate`, che cambia lingua e non variante. Chiuso
+      2026-09-25, con l'`IntegrityError` tradotto in 409 invece che in 500.
+      **Corretto in giornata, segnalato dall'uso**: la variante nasceva senza
+      versione, quindi l'editor non aveva alcuna bozza da aprire e mostrava
+      tutto in sola lettura - una variante che non si puo' modificare non
+      serve a niente, ed e' il motivo per cui la si crea. Ora copia campi e
+      documento dall'ultima versione dell'origine in una BOZZA nuova, come gia'
+      faceva `edizioni-derivate`: e' lo stesso bando con una differenza
+      dichiarata, si parte da li' per applicarla. Se l'origine non ha versioni
+      la richiesta e' rifiutata (409), perche' non c'e' nulla da cui partire.
+      La copia e' indipendente: modificare la variante non tocca l'origine,
+      ed e' verificato.
+- [x] T046 [P] [FR-019] Test: due modelli stessa categorizzazione varianti
       diverse coesistono pubblicati; stessa variante viene rifiutata; i nomi
-      generati sono distinti
+      generati sono distinti. Chiuso 2026-09-25:
+      `backend/tests/builder/test_varianti_modello.py`, 9 test su PostgreSQL
+      reale via API HTTP.
+      **Ricaduta sui test esistenti, sistemata caso per caso e non in blocco**:
+      la regola cambia un comportamento, quindi diversi test creavano due
+      modelli sullo stesso slot dando per scontato che si potesse. Gli helper
+      ora passano una nota (in un database di prova la categorizzazione e' gia'
+      occupata dal modello demo del seed); due test asserivano invece proprio
+      la collisione che FR-019 elimina e sono stati **riscritti sul
+      comportamento nuovo**, non cancellati:
+      `test_publication_scope_keeps_language_and_level_independent` ora fa
+      sostituire una versione dalla successiva **dello stesso modello**, e
+      `test_due_creazioni_simultanee...` della `011` verifica che la seconda
+      creazione gemella sia rifiutata a monte invece di essere assorbita a
+      valle dallo slot di pubblicazione - garanzia piu' netta, stessa
+      proprieta'.
+      **Verificato anche fuori dai test**, il 2026-09-25, con un token
+      Keycloak vero e i soli ruoli ACE: sull'ambiente deployato convivono due
+      modelli pubblicati sulla stessa categorizzazione (STANDARD e VARIANTE_1).
+      Prima il secondo avrebbe archiviato il primo in silenzio.

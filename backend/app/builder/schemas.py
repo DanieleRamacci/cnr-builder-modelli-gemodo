@@ -271,6 +271,11 @@ class PolicyDimensioneRequest(BaseModel):
 class PolicyDimensioneResponse(BaseModel):
     nome_dimensione: str
     consente_valore_generico: bool
+    # Da dove viene il valore qui sopra: una riga salvata dall'admin, oppure il
+    # ripiego che il backend applica comunque quando la riga non c'e'. Serve a
+    # distinguere "deciso" da "non ancora deciso" senza costringere chi legge a
+    # conoscere il ripiego: il comportamento e' gia' in `consente_valore_generico`.
+    origine: Literal["registrata", "ripiego"] = "registrata"
     valore_default: str | None = None
     modelli_pubblicati_che_la_valorizzano: int = 0
     # Modelli pubblicati che NON la valorizzano: l'insieme che chiudere il
