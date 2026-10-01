@@ -14,6 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
+import { AnteprimaPdfComponent } from './anteprima-pdf.component';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
 import { forkJoin } from 'rxjs';
@@ -157,7 +158,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
  */
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, AnteprimaPdfComponent],
   styleUrl: './modello-anteprima.component.scss',
   template: `
     <header class="topbar">
@@ -213,7 +214,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               ? 'Il PDF della bozza, con valori fac-simile al posto dei segnaposto'
               : 'Anteprima disponibile solo sulle bozze: questa versione genera documenti veri'
           "
-          (click)="apriAnteprima(finestraAnteprima)"
+          (click)="apriAnteprima(anteprimaPdf.elemento())"
         >
           Anteprima
         </button>
@@ -968,63 +969,16 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
       </div>
     </dialog>
 
-    <dialog
-      #finestraAnteprima
-      class="preview-dialog"
-      aria-labelledby="anteprima-titolo"
-      data-preview-dialog
-      (close)="chiudiAnteprima()"
-    >
-      <header class="preview-header">
-        <div>
-          <h2 id="anteprima-titolo" class="h5 mb-1">Anteprima della bozza</h2>
-          <p class="mb-0">
-            Lo stesso PDF che verra' generato, con «etichetta del campo» al posto dei segnaposto.
-            Non e' un documento: non viene registrato.
-          </p>
-        </div>
-        <div class="d-flex gap-2">
-          @if (indirizzoAnteprima(); as indirizzo) {
-            <a
-              class="btn btn-sm btn-outline-primary"
-              [href]="indirizzo"
-              [download]="nomeAnteprima()"
-              >Scarica</a
-            >
-          }
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            (click)="finestraAnteprima.close()"
-          >
-            Chiudi
-          </button>
-        </div>
-      </header>
-      @if (caricandoAnteprima()) {
-        <p role="status" class="preview-state">Preparazione dell'anteprima...</p>
-      }
-      @if (erroreAnteprima(); as errore) {
-        <div class="alert alert-danger m-3" role="alert" data-preview-error>
-          {{ errore }}
-          @if (violazioniAnteprima().length) {
-            <ul class="mb-0">
-              @for (violazione of violazioniAnteprima(); track violazione) {
-                <li>{{ violazione }}</li>
-              }
-            </ul>
-          }
-        </div>
-      }
-      @if (documentoAnteprima(); as documento) {
-        <iframe
-          class="preview-frame"
-          title="Anteprima PDF della bozza"
-          data-preview-frame
-          [src]="documento"
-        ></iframe>
-      }
-    </dialog>
+    <app-anteprima-pdf
+      #anteprimaPdf
+      [caricando]="caricandoAnteprima()"
+      [errore]="erroreAnteprima()"
+      [violazioni]="violazioniAnteprima()"
+      [documento]="documentoAnteprima()"
+      [indirizzo]="indirizzoAnteprima()"
+      [nome]="nomeAnteprima()"
+      (chiusa)="chiudiAnteprima()"
+    />
 
     <dialog #variante aria-labelledby="variante-titolo" data-create-variant-dialog>
       <h2 id="variante-titolo" class="h4">Creare una variante?</h2>
