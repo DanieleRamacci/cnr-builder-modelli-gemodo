@@ -167,13 +167,18 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('main.app-main-editor')).toHaveCount(1);
   await expect(page.locator('.pannello [data-placeholder]').first()).toBeVisible();
 
-  // Editor centrale: sezione nuova, testo, segnaposto dal pannello e
-  // salvataggio automatico all'uscita dal blocco.
+  // Editor centrale: sezione nuova, testo, segnaposto col comando / (012
+  // T064) e salvataggio automatico all'uscita dal blocco.
   await page.locator('[data-add-section-inline]').click();
   const editor = page.locator('[data-section-text]').first();
   await editor.click();
   await editor.pressSequentially('Premesso che ');
-  await page.locator('.pannello [data-placeholder]').first().click();
+  await page.keyboard.type('/tit');
+  await expect(page.locator('[data-slash-menu]')).toBeVisible();
+  await expect(page.locator('[data-slash-item]')).toHaveText([/titolo_it/]);
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-slash.png') });
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-slash-menu]')).toHaveCount(0);
   await expect(page.locator('[data-save-state]')).toHaveText(/Modifiche non salvate/);
   await page.locator('.format-toolbar .hint').click();
   await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
@@ -215,8 +220,8 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   const intestazione = page.locator('[data-section-text="sezione-3"]').first();
   await intestazione.click();
   await page.keyboard.type('Art. 3 - Requisiti di ammissione');
-  await page.getByRole('tab', { name: 'Proprietà' }).click();
-  await page.locator('[data-block-type-select]').selectOption('TITOLO');
+  // T059: lo stile si sceglie dalla barra, dove sta il cursore.
+  await page.locator('[data-style-select]').selectOption('TITOLO');
   const titolo = page.locator('[data-section-text="sezione-3"][data-block-type="TITOLO"]');
   await expect(titolo).toBeFocused();
   await expect(titolo).toHaveCSS('text-align', 'center');
@@ -247,6 +252,22 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // I marcatori non sono nel testo: l'editor della voce contiene solo la frase.
   await expect(voce(1)).toHaveText('cittadinanza di uno degli Stati membri dell’Unione Europea;');
   await expect(voce(3)).toHaveCSS('text-align', 'justify');
+
+  // T063: scorrendo, la barra degli strumenti resta in cima.
+  await page.mouse.wheel(0, 1500);
+  await expect
+    .poll(async () => (await page.locator('.format-toolbar').boundingBox())?.y ?? 999)
+    .toBeLessThan(2);
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  // T062: la sezione prende un nome, che compare nella struttura a sinistra.
+  await titolo.click();
+  await page.getByRole('tab', { name: 'Proprietà' }).click();
+  await page.locator('[data-section-name]').fill('Art. 3 - Requisiti');
+  await page.locator('[data-section-name]').press('Tab');
+  await expect(
+    page.locator('.outline-item strong', { hasText: 'Art. 3 - Requisiti' }),
+  ).toBeVisible();
 
   await page.locator('.format-toolbar .hint').click();
   await page.locator('[data-save-sections]').click();

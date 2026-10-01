@@ -1,0 +1,62 @@
+// Fisso rispetto alla finestra, sotto il cursore: il foglio scorre, il menu no.
+.slash-menu {
+  position: fixed;
+  z-index: 30;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--td-border-300, #c5ced8);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(16 24 40 / 16%);
+  font-size: 13px;
+}
+
+.slash-head,
+.slash-aiuto,
+.slash-vuoto {
+  padding: 6px 12px;
+  color: #5c6f82;
+  font-size: 11.5px;
+}
+
+.slash-head {
+  border-bottom: 1px solid #eef1f4;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.slash-filtro {
+  margin-left: 6px;
+  color: #0066cc;
+  text-transform: none;
+}
+
+.slash-aiuto {
+  border-top: 1px solid #eef1f4;
+}
+
+.slash-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  cursor: pointer;
+
+  &.active,
+  &:hover {
+    background: #e8f1fb;
+  }
+}
+
+.slash-codice {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #17324d;
+}
+
+.slash-etichetta {
+  color: #5c6f82;
+  font-size: 12px;
+}

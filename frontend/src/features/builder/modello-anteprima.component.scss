@@ -87,6 +87,7 @@
   // Il codice generato e' lungo: a larghezza telefono la topbar va mandata a
   // capo, altrimenti la pagina scrolla in orizzontale (verificato dall'e2e).
   @media (max-width: 767px) {
+    position: static;
     flex-wrap: wrap;
     gap: 8px;
 
@@ -126,7 +127,12 @@
   }
 }
 
+// Resta in alto scorrendo un bando di 15 pagine (012 T063). Non sotto i
+// 768 px: li' va a capo su piu' righe e, fissa, coprirebbe meta' schermo.
 .format-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -181,6 +187,15 @@
 
   .underline {
     text-decoration: underline;
+  }
+
+  // Il menu Stile, largo quanto la voce piu' lunga ("Titolo d'articolo").
+  .style-select {
+    width: auto;
+    min-width: 150px;
+    height: 32px;
+    padding-block: 0;
+    font-size: 13px;
   }
 
   .separator {
@@ -718,32 +733,6 @@
   }
 }
 
-.snippet {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  margin-bottom: 9px;
-  padding: 11px 12px;
-  border: 1px solid #d9e4ef;
-  border-radius: 4px;
-  background: #fff;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  strong {
-    color: var(--td-ink-900);
-    font-size: 13.5px;
-  }
-
-  span {
-    color: var(--td-ink-500);
-    font-size: 12.5px;
-    line-height: 1.45;
-  }
-}
-
 .property-note {
   margin-top: 12px;
   padding-top: 12px;
@@ -766,7 +755,6 @@
 
 // Stato disabilitato, uguale su tutti i controlli della pagina.
 .campo:disabled,
-.snippet:disabled,
 .add-section-inline:disabled {
   opacity: 0.57;
   cursor: not-allowed;
@@ -841,10 +829,8 @@ dialog {
   color: #ffc2c7;
   cursor: help;
 }
-
-.insert-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-bottom: 16px;
+.nome-errore {
+  margin: 4px 0 0;
+  color: #b71918;
+  font-size: 12.5px;
 }

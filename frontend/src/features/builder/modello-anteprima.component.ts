@@ -15,6 +15,7 @@ import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import { AnteprimaPdfComponent } from './anteprima-pdf.component';
+import { MenuSegnapostoComponent, type VoceSegnaposto } from './menu-segnaposto.component';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
 import { forkJoin } from 'rxjs';
@@ -61,14 +62,7 @@ type StatoSalvataggio = {
   codice: 'salvato' | 'modificato' | 'salvataggio' | 'errore';
   etichetta: string;
 };
-type PannelloBuilder = 'segnaposto' | 'blocchi' | 'proprieta';
-type BloccoPredefinito = {
-  codice: string;
-  titolo: string;
-  descrizione: string;
-  contenuto: string;
-  stile: 'H1' | 'H2' | null;
-};
+type PannelloBuilder = 'segnaposto' | 'proprieta';
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
 };
@@ -158,7 +152,10 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
  */
 @Component({
   standalone: true,
-  imports: [RouterLink, AnteprimaPdfComponent],
+  imports: [RouterLink, AnteprimaPdfComponent, MenuSegnapostoComponent],
+  // Il menu `/` e' fisso rispetto alla finestra: se il foglio scorre non
+  // starebbe piu' sotto il cursore, quindi si chiude.
+  host: { '(window:scroll)': 'chiudiMenuSlash()', '(window:resize)': 'chiudiMenuSlash()' },
   styleUrl: './modello-anteprima.component.scss',
   template: `
     <header class="topbar">
@@ -297,22 +294,25 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           U
         </button>
         <span class="separator"></span>
-        <button
-          type="button"
-          class="tool"
-          (mousedown)="$event.preventDefault()"
-          (click)="applicaStileBlocco('H1')"
+        <!-- Un solo comando per cio' che un blocco e', come il menu Stili di
+             Word (012 T059): sostituisce H1/H2 e il "Tipo blocco" che stava
+             nelle Proprieta' e sembrava valere per tutta la sezione. -->
+        <label class="visually-hidden" for="stile-blocco">Stile del blocco</label>
+        <select
+          id="stile-blocco"
+          class="form-select form-select-sm style-select"
+          data-style-select
+          [value]="stileCorrente()"
+          [disabled]="!sezioni()?.modificabile || !bloccoCorrente() || stileCorrente() === ''"
+          (change)="applicaStile($any($event.target).value)"
         >
-          H1
-        </button>
-        <button
-          type="button"
-          class="tool"
-          (mousedown)="$event.preventDefault()"
-          (click)="applicaStileBlocco('H2')"
-        >
-          H2
-        </button>
+          @for (stile of stili; track stile.valore) {
+            <option [value]="stile.valore">{{ stile.etichetta }}</option>
+          }
+          @if (stileCorrente() === '') {
+            <option value="">Interruzione di pagina</option>
+          }
+        </select>
         <span class="separator"></span>
         <button
           type="button"
@@ -378,9 +378,19 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         >
           Tab
         </button>
-        <span class="hint"
-          >Clicca un segnaposto nel pannello laterale per inserirlo nella sezione selezionata</span
+        <button
+          type="button"
+          class="tool"
+          data-insert-block="INTERRUZIONE_PAGINA"
+          title="Interruzione di pagina: il testo dopo va sulla pagina seguente"
+          aria-label="Inserisci interruzione di pagina"
+          [disabled]="!sezioni()?.modificabile || !sezioneAttiva()"
+          (mousedown)="$event.preventDefault()"
+          (click)="inserisciBlocco('INTERRUZIONE_PAGINA')"
         >
+          ⤓
+        </button>
+        <span class="hint">Scrivi / nel testo per inserire un segnaposto</span>
       </div>
 
       <div class="corpo">
@@ -520,7 +530,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                     class="section-editor"
                     [class.selected]="sezione.codice === sezioneAttiva()"
                   >
-                    <span class="section-tag">{{ etichettaStile(stileSezione(sezione)) }}</span>
                     <h3>{{ sezione.codice }}</h3>
                     @for (blocco of sezione.contenuto; track blocco.id) {
                       @if (blocco.tipo === 'ELENCO') {
@@ -557,7 +566,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                                 [attr.data-item-index]="indice"
                                 (focus)="selezionaEditor(editor)"
                                 (blur)="autosalva($event)"
-                                (input)="aggiornaDaEditor(editor)"
+                                (input)="aggiornaDaEditor(editor, $event)"
                                 (keydown)="gestisciTastoEditor($event, editor)"
                                 (paste)="incolla($event, editor)"
                                 (dragover)="consentiDrop($event)"
@@ -603,7 +612,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                           [attr.data-block-id]="blocco.id"
                           (focus)="selezionaEditor(editor)"
                           (blur)="autosalva($event)"
-                          (input)="aggiornaDaEditor(editor)"
+                          (input)="aggiornaDaEditor(editor, $event)"
                           (keydown)="gestisciTastoEditor($event, editor)"
                           (paste)="incolla($event, editor)"
                           (dragover)="consentiDrop($event)"
@@ -707,15 +716,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
             <button
               type="button"
               role="tab"
-              [class.active]="pannelloAttivo() === 'blocchi'"
-              [attr.aria-selected]="pannelloAttivo() === 'blocchi'"
-              (click)="pannelloAttivo.set('blocchi')"
-            >
-              Blocchi
-            </button>
-            <button
-              type="button"
-              role="tab"
               [class.active]="pannelloAttivo() === 'proprieta'"
               [attr.aria-selected]="pannelloAttivo() === 'proprieta'"
               (click)="pannelloAttivo.set('proprieta')"
@@ -773,96 +773,27 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   </span>
                 </button>
               }
-            } @else if (pannelloAttivo() === 'blocchi') {
-              <h2>Nel testo</h2>
-              <p class="panel-hint">
-                Inserisce un blocco dopo quello selezionato, nella stessa sezione.
-              </p>
-              <div class="insert-grid">
-                @for (tipo of tipiInseribili; track tipo) {
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary"
-                    [attr.data-insert-block]="tipo"
-                    [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
-                    (mousedown)="$event.preventDefault()"
-                    (click)="inserisciBlocco(tipo)"
-                  >
-                    {{ etichettaTipo(tipo) }}
-                  </button>
-                }
-              </div>
-              <h2>Predefiniti</h2>
-              <p class="panel-hint">
-                Blocchi di testo predefiniti per la categoria scelta. Clicca per inserirli come
-                nuova sezione.
-              </p>
-              @for (blocco of blocchiPredefiniti(); track blocco.codice) {
-                <button
-                  type="button"
-                  class="snippet"
-                  [attr.data-block-template]="blocco.codice"
-                  [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
-                  (click)="inserisciBloccoPredefinito(blocco)"
-                >
-                  <strong>{{ blocco.titolo }}</strong>
-                  <span>{{ blocco.descrizione }}</span>
-                </button>
-              }
             } @else {
               @if (sezioneCorrente(); as sezione) {
-                <h2>Proprietà</h2>
-                <label for="proprieta-codice">Titolo sezione</label>
+                <h2>Sezione</h2>
+                <label for="proprieta-nome">Nome della sezione</label>
                 <input
-                  id="proprieta-codice"
+                  id="proprieta-nome"
                   class="form-control"
                   type="text"
+                  maxlength="128"
+                  data-section-name
                   [value]="sezione.codice"
-                  readonly
-                />
-                <label for="proprieta-stile">Stile blocco</label>
-                <select
-                  id="proprieta-stile"
-                  class="form-select"
-                  [value]="stileSezione(sezione)"
                   [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
-                  (change)="impostaStileSezione($any($event.target).value)"
-                >
-                  <option value="">Paragrafo</option>
-                  <option value="H1">Titolo H1</option>
-                  <option value="H2">Titolo H2</option>
-                </select>
-                @if (bloccoCorrente(); as blocco) {
-                  <label for="proprieta-tipo">Tipo blocco</label>
-                  <select
-                    id="proprieta-tipo"
-                    class="form-select"
-                    data-block-type-select
-                    [value]="blocco.tipo"
-                    [disabled]="
-                      !sezioni()?.modificabile ||
-                      salvandoSezioni() ||
-                      blocco.tipo === 'INTERRUZIONE_PAGINA'
-                    "
-                    (change)="cambiaTipoBlocco($any($event.target).value)"
-                  >
-                    @for (tipo of tipiConvertibili; track tipo) {
-                      <option [value]="tipo">{{ etichettaTipo(tipo) }}</option>
-                    }
-                    @if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
-                      <option value="INTERRUZIONE_PAGINA">Interruzione di pagina</option>
-                    }
-                  </select>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-danger w-100 mt-2"
-                    data-remove-block
-                    [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
-                    (click)="eliminaBlocco()"
-                  >
-                    Elimina questo blocco
-                  </button>
+                  (change)="rinominaSezione(sezione.codice, $any($event.target))"
+                />
+                @if (erroreNome(); as errore) {
+                  <p class="nome-errore" role="alert" data-section-name-error>{{ errore }}</p>
                 }
+                <p class="panel-hint">
+                  Il nome compare nella struttura a sinistra (per esempio "Premesse" o "Art. 1"). Lo
+                  stile del testo si cambia dalla barra in alto, dove sta il cursore.
+                </p>
                 <div class="property-note">
                   <strong>{{ placeholderSezione(sezione).length }}</strong>
                   segnaposto usati in questa sezione.
@@ -968,6 +899,17 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         <button class="btn btn-primary" (click)="creaEdizione(derivazione)">Crea</button>
       </div>
     </dialog>
+
+    @if (menuSlash(); as menu) {
+      <app-menu-segnaposto
+        [voci]="vociSlash()"
+        [indice]="menu.indice"
+        [filtro]="menu.filtro"
+        [x]="menu.x"
+        [y]="menu.y"
+        (scelto)="inserisciDaSlash($event)"
+      />
+    }
 
     <app-anteprima-pdf
       #anteprimaPdf
@@ -1119,8 +1061,34 @@ export class ModelloAnteprimaComponent {
     return !!this.azioneVersione()?.verificaDocumento && this.blocchiDocumento().length > 0;
   });
   protected readonly allineamenti = ALLINEAMENTI;
-  protected readonly tipiInseribili = TIPI_INSERIBILI;
-  protected readonly tipiConvertibili = TIPI_CONVERTIBILI;
+  protected readonly stili = STILI;
+  /**
+   * Il menu dei segnaposto aperto da `/` (012 T064): in quale editor, dove sta
+   * la `/` nel testo, cosa e' stato scritto dopo e dove disegnarlo.
+   */
+  protected readonly menuSlash = signal<{
+    editor: HTMLElement;
+    inizio: number;
+    filtro: string;
+    indice: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  protected readonly vociSlash = computed<VoceSegnaposto[]>(() => {
+    const filtro = this.menuSlash()?.filtro.toLocaleLowerCase() ?? '';
+    return (this.corrente()?.campi ?? [])
+      .filter((campo) => `${campo.codice} ${campo.etichetta}`.toLocaleLowerCase().includes(filtro))
+      .filter((campo, i, campi) => campi.findIndex((altro) => altro.codice === campo.codice) === i)
+      .slice(0, 8)
+      .map(({ codice, etichetta, tipo }) => ({ codice, etichetta, tipo }));
+  });
+  /** Perche' il nome scritto nelle Proprieta' non e' stato accettato. */
+  protected readonly erroreNome = signal<string | null>(null);
+  /** Lo stile del blocco col cursore, come lo mostra il menu Stile. */
+  protected readonly stileCorrente = computed(() => {
+    const blocco = this.bloccoCorrente();
+    return blocco ? stileDi(blocco) : 'PARAGRAFO';
+  });
   /** Il blocco su cui agiscono toolbar e pannello proprieta'. */
   protected readonly bloccoCorrente = computed(() => {
     const sezione = this.sezioneCorrente();
@@ -1134,29 +1102,6 @@ export class ModelloAnteprimaComponent {
     const codice = this.sezioneAttiva();
     return this.sezioniLocali().find((sezione) => sezione.codice === codice) ?? null;
   });
-  protected readonly blocchiPredefiniti = computed<BloccoPredefinito[]>(() => [
-    {
-      codice: 'oggetto',
-      titolo: 'Oggetto',
-      descrizione: 'Titolo sintetico con il segnaposto principale del modello.',
-      contenuto: `Oggetto: ${this.tokenDocumento(['titolo', 'oggetto'], 'titolo')}`,
-      stile: 'H1',
-    },
-    {
-      codice: 'premesse',
-      titolo: 'Premesse',
-      descrizione: "Paragrafo introduttivo per motivare l'atto.",
-      contenuto: 'Premesso che il procedimento richiede la predisposizione del presente atto.',
-      stile: 'H2',
-    },
-    {
-      codice: 'dettaglio',
-      titolo: 'Dettaglio',
-      descrizione: 'Blocco di testo operativo con i dati disponibili dal contratto.',
-      contenuto: `Sono disponibili ${this.tokenDocumento(['numero', 'posti'], 'numero_posti')} elementi secondo il contratto dati associato.`,
-      stile: null,
-    },
-  ]);
 
   private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
   private readonly cdr = inject(ChangeDetectorRef);
@@ -1239,11 +1184,6 @@ export class ModelloAnteprimaComponent {
       .join('\n');
   }
 
-  /** Lo stile del blocco su cui si lavora, o del primo blocco della sezione. */
-  protected stileSezione(sezione: SezioneDocumento): string {
-    return this.bloccoBersaglio(sezione)?.stile ?? '';
-  }
-
   protected placeholderSezione(sezione: SezioneDocumento): string[] {
     return [...new Set(sezione.contenuto.flatMap((blocco) => blocco.placeholder_usati))];
   }
@@ -1295,32 +1235,50 @@ export class ModelloAnteprimaComponent {
     this.posizioneAttiva.set(posizione);
   }
 
-  protected aggiungiSezione(
-    contenuto = '',
-    codiceBase = 'sezione',
-    stile: 'H1' | 'H2' | null = null,
-    apriProprieta = false,
-  ): void {
-    const codice =
-      codiceBase === 'sezione'
-        ? this.codiceSezioneLibero(`sezione-${this.sezioniLocali().length + 1}`)
-        : this.codiceSezioneLibero(codiceBase);
-    const blocco = {
-      ...this.nuovoBlocco(`${codice}-paragrafo`, contenuto ? [{ testo: contenuto }] : []),
-      stile,
-    };
+  /**
+   * Una sezione nuova con una riga vuota e il cursore dentro. La riga non ha
+   * ancora un ruolo: diventa cio' che si sceglie dal menu Stile (012 T060).
+   */
+  protected aggiungiSezione(): void {
+    const codice = this.codiceSezioneLibero(`sezione-${this.sezioniLocali().length + 1}`);
+    const blocco = this.nuovoBlocco(`${codice}-paragrafo`, []);
     this.sezioniLocali.update((sezioni) => [
       ...sezioni,
       { codice, ordine: sezioni.length, contenuto: [blocco] },
     ]);
     this.sezioneAttiva.set(codice);
-    this.posizioneAttiva.set({ sezione: codice, blocco: blocco.id, voce: null });
     this.documentoModificato.set(true);
-    if (apriProprieta) this.pannelloAttivo.set('proprieta');
+    this.mettiCursore({ sezione: codice, blocco: blocco.id, voce: null }, 0);
   }
 
-  protected inserisciBloccoPredefinito(blocco: BloccoPredefinito): void {
-    this.aggiungiSezione(blocco.contenuto, blocco.codice, blocco.stile, true);
+  /**
+   * Il nome della sezione (012 T062). E' il suo `codice`, che il servizio
+   * accetta libero fino a 128 caratteri e unico nella versione: nessun campo
+   * nuovo e nessuna migrazione.
+   */
+  protected rinominaSezione(attuale: string, campo: HTMLInputElement): void {
+    const nome = campo.value.trim();
+    this.erroreNome.set(null);
+    if (nome === attuale) return;
+    const errore = !nome
+      ? "Il nome della sezione non puo' essere vuoto."
+      : this.sezioniLocali().some((sezione) => sezione.codice === nome)
+        ? `Esiste gia' una sezione "${nome}".`
+        : null;
+    if (errore) {
+      this.erroreNome.set(errore);
+      campo.value = attuale;
+      return;
+    }
+    this.documentoModificato.set(true);
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) =>
+        sezione.codice === attuale ? { ...sezione, codice: nome } : sezione,
+      ),
+    );
+    if (this.sezioneAttiva() === attuale) this.sezioneAttiva.set(nome);
+    const posizione = this.posizioneAttiva();
+    if (posizione?.sezione === attuale) this.posizioneAttiva.set({ ...posizione, sezione: nome });
   }
 
   protected rimuoviSezione(codice: string): void {
@@ -1351,14 +1309,85 @@ export class ModelloAnteprimaComponent {
   }
 
   /** Ogni battuta: il DOM dell'editor torna frammenti, e i frammenti nel modello. */
-  protected aggiornaDaEditor(editor: HTMLElement): void {
+  protected aggiornaDaEditor(editor: HTMLElement, evento?: Event): void {
     const posizione = this.posizioneDi(editor);
     if (posizione) this.scriviFrammenti(posizione, leggiFrammentiDalDom(editor));
+    this.seguiMenuSlash(editor, evento);
+  }
+
+  /**
+   * Apre, filtra o chiude il menu `/`. Si apre solo se la `/` comincia una
+   * parola: "e/o" o "01/10" sono testo, non un comando. Dopo, cio' che si
+   * scrive filtra l'elenco; uno spazio, o il cursore che torna prima della
+   * `/`, lo chiude lasciando il testo com'e'.
+   */
+  private seguiMenuSlash(editor: HTMLElement, evento?: Event): void {
+    if (!this.sezioni()?.modificabile) return;
+    const selezione = this.selezioneIn(editor);
+    const testo = testoDiFrammenti(leggiFrammentiDalDom(editor));
+    const menu = this.menuSlash();
+    if (!selezione || selezione.inizio !== selezione.fine) {
+      this.chiudiMenuSlash();
+      return;
+    }
+    if (menu && menu.editor === editor) {
+      const filtro = testo.slice(menu.inizio + 1, selezione.inizio);
+      if (selezione.inizio <= menu.inizio || testo[menu.inizio] !== '/' || /\s/.test(filtro)) {
+        this.chiudiMenuSlash();
+      } else {
+        this.menuSlash.set({ ...menu, filtro, indice: 0 });
+      }
+      return;
+    }
+    const scritto = evento instanceof InputEvent ? evento.data : null;
+    const slash = selezione.inizio - 1;
+    if (scritto !== '/' || testo[slash] !== '/') return;
+    if (slash > 0 && !/[\s(«"“'’]/.test(testo[slash - 1])) return;
+    const { x, y } = this.coordinateCursore(editor);
+    this.menuSlash.set({ editor, inizio: slash, filtro: '', indice: 0, x, y });
+  }
+
+  protected chiudiMenuSlash(): void {
+    if (this.menuSlash()) this.menuSlash.set(null);
+  }
+
+  /** Sostituisce `/filtro` con il segnaposto scelto, con l'enfasi del testo intorno. */
+  protected inserisciDaSlash(codice: string): void {
+    const menu = this.menuSlash();
+    this.chiudiMenuSlash();
+    if (!menu) return;
+    const frammenti = leggiFrammentiDalDom(menu.editor);
+    const fine = menu.inizio + 1 + menu.filtro.length;
+    const token = `{{${codice}}}`;
+    const enfasi = taglia(frammenti, menu.inizio, menu.inizio + 1)[0];
+    this.riscriviEditor(
+      menu.editor,
+      sostituisci(frammenti, menu.inizio, fine, [{ ...(enfasi ?? {}), testo: token }]),
+      menu.inizio + token.length,
+    );
+  }
+
+  /** Dove disegnare il menu: sotto il cursore, o sotto l'editor se il browser non lo sa dire. */
+  private coordinateCursore(editor: HTMLElement): { x: number; y: number } {
+    const selezione = this.document.getSelection();
+    const range = selezione?.rangeCount ? selezione.getRangeAt(0) : null;
+    const rettangolo =
+      range && typeof range.getBoundingClientRect === 'function'
+        ? range.getBoundingClientRect()
+        : null;
+    const base =
+      rettangolo && (rettangolo.width || rettangolo.height)
+        ? rettangolo
+        : editor.getBoundingClientRect();
+    const larghezza = this.document.defaultView?.innerWidth ?? 1024;
+    return { x: Math.max(8, Math.min(base.left, larghezza - 316)), y: base.bottom + 4 };
   }
 
   protected gestisciTastoEditor(event: KeyboardEvent, editor: HTMLElement): void {
     const posizione = this.posizioneDi(editor);
     if (!posizione) return;
+    const menu = this.menuSlash();
+    if (menu && menu.editor === editor && this.tastoMenuSlash(event, menu.indice)) return;
     if (event.ctrlKey || event.metaKey) {
       const attributo = SCORCIATOIE_ENFASI[event.key.toLowerCase()];
       if (attributo && !event.altKey) {
@@ -1391,6 +1420,39 @@ export class ModelloAnteprimaComponent {
     }
   }
 
+  /** I tasti che il menu `/` usa per se'; `true` se il tasto e' stato consumato. */
+  private tastoMenuSlash(event: KeyboardEvent, indice: number): boolean {
+    const voci = this.vociSlash();
+    const menu = this.menuSlash()!;
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault();
+        const passo = event.key === 'ArrowDown' ? 1 : -1;
+        const totale = Math.max(voci.length, 1);
+        this.menuSlash.set({ ...menu, indice: (indice + passo + totale) % totale });
+        return true;
+      }
+      case 'Enter':
+      case 'Tab':
+        if (!voci.length) return false;
+        event.preventDefault();
+        this.inserisciDaSlash(voci[indice]?.codice ?? voci[0].codice);
+        return true;
+      case 'Escape':
+        // Chiude e basta: la `/` resta nel testo, era forse una barra vera.
+        event.preventDefault();
+        this.chiudiMenuSlash();
+        return true;
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        this.chiudiMenuSlash();
+        return false;
+      default:
+        return false;
+    }
+  }
+
   /** Un'interruzione di pagina si elimina con Canc o Backspace, come in Word. */
   protected gestisciTastoInterruzione(event: KeyboardEvent, sezione: string, blocco: string): void {
     if (event.key !== 'Backspace' && event.key !== 'Delete') return;
@@ -1398,6 +1460,25 @@ export class ModelloAnteprimaComponent {
     this.posizioneAttiva.set({ sezione, blocco, voce: null });
     this.sezioneAttiva.set(sezione);
     this.eliminaBlocco();
+  }
+
+  /** Il menu Stile: cambia cio' che il blocco col cursore e', tenendone il testo (T059). */
+  protected applicaStile(valore: string): void {
+    const stile = STILI.find((voce) => voce.valore === valore);
+    if (!stile) return;
+    this.modificaBloccoBersaglio((blocco) => {
+      if (stile.marcatore) {
+        const elenco = bloccoDiTipo(blocco, 'ELENCO');
+        return {
+          ...elenco,
+          elementi: (elenco.elementi ?? []).map((elemento) => ({
+            ...elemento,
+            marcatore: elemento.livello === 0 ? stile.marcatore! : sottoMarcatore(stile.marcatore!),
+          })),
+        };
+      }
+      return { ...bloccoDiTipo(blocco, stile.tipo), stile: stile.stile ?? null };
+    }, true);
   }
 
   protected applicaAllineamento(allineamento: Allineamento): void {
@@ -1411,32 +1492,39 @@ export class ModelloAnteprimaComponent {
    * centrato e la firma in basso a destra, come nel bando di riferimento;
    * il resto lo decide il gestore.
    */
-  protected inserisciBlocco(tipo: TipoBloccoInseribile): void {
+  /**
+   * Un'interruzione di pagina al cursore, come in Word (FR-012, T060): su una
+   * riga vuota va prima della riga, che resta pronta sulla pagina nuova;
+   * altrimenti va dopo il blocco, seguita da una riga vuota col cursore.
+   */
+  protected inserisciBlocco(tipo: 'INTERRUZIONE_PAGINA'): void {
     const sezione = this.sezioneCorrente();
     if (!sezione || !this.sezioni()?.modificabile) return;
-    const nuovo = bloccoDiTipo(this.nuovoBlocco(this.idBloccoLibero(sezione), []), tipo);
-    const dopo = this.bloccoBersaglio(sezione)?.id;
+    const usati = new Set(sezione.contenuto.map((blocco) => blocco.id));
+    const libero = (): string => {
+      const id = this.idBloccoLibero(sezione, usati);
+      usati.add(id);
+      return id;
+    };
+    const interruzione = bloccoDiTipo(this.nuovoBlocco(libero(), []), tipo);
+    const bersaglio = this.bloccoBersaglio(sezione);
+    const vuoto =
+      !!bersaglio &&
+      bersaglio.tipo !== 'ELENCO' &&
+      bersaglio.tipo !== 'INTERRUZIONE_PAGINA' &&
+      !testoDiFrammenti(bersaglio.frammenti);
+    const riga = vuoto ? bersaglio! : this.nuovoBlocco(libero(), []);
     this.modificaSezione(sezione.codice, (blocchi) => {
-      const indice = blocchi.findIndex((blocco) => blocco.id === dopo);
-      const aggiornati = [...blocchi];
-      aggiornati.splice(indice < 0 ? aggiornati.length : indice + 1, 0, nuovo);
-      return aggiornati;
+      if (!bersaglio) return [...blocchi, interruzione, riga];
+      return blocchi.flatMap((blocco) =>
+        blocco.id !== bersaglio.id
+          ? [blocco]
+          : vuoto
+            ? [interruzione, blocco]
+            : [blocco, interruzione, riga],
+      );
     });
-    const voce = nuovo.tipo === 'ELENCO' ? 0 : null;
-    if (nuovo.tipo === 'INTERRUZIONE_PAGINA') {
-      this.posizioneAttiva.set({ sezione: sezione.codice, blocco: nuovo.id, voce });
-    } else {
-      this.mettiCursore({ sezione: sezione.codice, blocco: nuovo.id, voce }, 0);
-    }
-  }
-
-  /** Cambia il tipo del blocco selezionato tenendone il testo. */
-  protected cambiaTipoBlocco(tipo: string): void {
-    if (!TIPI_CONVERTIBILI.includes(tipo as TipoBloccoInseribile)) return;
-    this.modificaBloccoBersaglio(
-      (blocco) => bloccoDiTipo(blocco, tipo as TipoBloccoInseribile),
-      true,
-    );
+    this.mettiCursore({ sezione: sezione.codice, blocco: riga.id, voce: null }, 0);
   }
 
   protected eliminaBlocco(): void {
@@ -1549,23 +1637,6 @@ export class ModelloAnteprimaComponent {
     if (testo) this.inserisciTestoNelEditor(posizione.sezione, testo, editor);
   }
 
-  protected applicaStileBlocco(stile: 'H1' | 'H2'): void {
-    this.modificaBloccoBersaglio((blocco) => ({
-      ...blocco,
-      stile: blocco.stile === stile ? null : stile,
-    }));
-  }
-
-  protected impostaStileSezione(stile: string): void {
-    const normalizzato = stile === 'H1' || stile === 'H2' ? stile : null;
-    this.modificaBloccoBersaglio((blocco) => ({ ...blocco, stile: normalizzato }));
-  }
-
-  /**
-   * Il paragrafo diventa un `ELENCO`, una voce per riga; su un elenco cambia
-   * il marcatore, e lo stesso marcatore lo riporta a paragrafo. Mai `1.`
-   * scritto nel testo: si sommerebbe alla numerazione calcolata (FR-015).
-   */
   protected applicaLista(marcatore: TipoMarcatore): void {
     this.modificaBloccoBersaglio((blocco) => {
       if (blocco.tipo !== 'ELENCO') {
@@ -1706,6 +1777,7 @@ export class ModelloAnteprimaComponent {
    * testo e' il primo momento in cui e' una versione completa.
    */
   protected autosalva(event?: FocusEvent): void {
+    this.chiudiMenuSlash();
     // Passare da un blocco all'altro dello stesso documento (Invio, frecce,
     // un clic sul capoverso dopo) non e' uscire dal blocco: salvare li'
     // manderebbe un PUT a ogni capoverso e bloccherebbe la toolbar a meta'
@@ -2489,17 +2561,51 @@ export class ModelloAnteprimaComponent {
 
 type TipoBloccoInseribile = 'PARAGRAFO' | 'TITOLO' | 'ELENCO' | 'FIRMA' | 'INTERRUZIONE_PAGINA';
 
-// I tipi che l'editor crea (FR-007). Fuori, per ora: `TABELLA` (fuori scope
-// della spec), `LOGO` (gli asset versionati non esistono ancora), `FOOTER` e
-// `INTESTAZIONE` (si ripetono su ogni pagina: sono la cornice, US3).
-const TIPI_INSERIBILI: TipoBloccoInseribile[] = [
-  'PARAGRAFO',
-  'TITOLO',
-  'ELENCO',
-  'FIRMA',
-  'INTERRUZIONE_PAGINA',
+/**
+ * Le voci del menu Stile. Fuori, per ora: `TABELLA` (fuori scope della spec),
+ * `LOGO` (gli asset versionati non esistono ancora), `FOOTER` e
+ * `INTESTAZIONE` (si ripetono su ogni pagina: sono la cornice, US3).
+ */
+const STILI: {
+  valore: string;
+  etichetta: string;
+  tipo: TipoBloccoInseribile;
+  stile?: 'H1' | 'H2';
+  marcatore?: TipoMarcatore;
+}[] = [
+  { valore: 'PARAGRAFO', etichetta: 'Paragrafo', tipo: 'PARAGRAFO' },
+  { valore: 'TITOLO', etichetta: "Titolo d'articolo", tipo: 'TITOLO' },
+  { valore: 'H1', etichetta: 'Titolo 1', tipo: 'PARAGRAFO', stile: 'H1' },
+  { valore: 'H2', etichetta: 'Titolo 2', tipo: 'PARAGRAFO', stile: 'H2' },
+  {
+    valore: 'ELENCO_NUMERICO',
+    etichetta: 'Elenco numerato',
+    tipo: 'ELENCO',
+    marcatore: 'NUMERICO',
+  },
+  {
+    valore: 'ELENCO_ALFABETICO',
+    etichetta: 'Elenco a lettere',
+    tipo: 'ELENCO',
+    marcatore: 'ALFABETICO',
+  },
+  { valore: 'ELENCO_PUNTATO', etichetta: 'Elenco puntato', tipo: 'ELENCO', marcatore: 'PUNTATO' },
+  { valore: 'FIRMA', etichetta: 'Firma', tipo: 'FIRMA' },
 ];
-const TIPI_CONVERTIBILI: TipoBloccoInseribile[] = ['PARAGRAFO', 'TITOLO', 'ELENCO', 'FIRMA'];
+
+/** La voce del menu Stile che descrive il blocco; vuota per l'interruzione di pagina. */
+function stileDi(blocco: BloccoDocumento): string {
+  if (blocco.tipo === 'INTERRUZIONE_PAGINA') return '';
+  if (blocco.tipo === 'ELENCO') {
+    const radice = (blocco.elementi ?? []).find((elemento) => elemento.livello === 0);
+    return `ELENCO_${radice?.marcatore ?? 'NUMERICO'}`;
+  }
+  if (blocco.tipo === 'PARAGRAFO' && (blocco.stile === 'H1' || blocco.stile === 'H2')) {
+    return blocco.stile;
+  }
+  return blocco.tipo;
+}
+
 const ETICHETTE_TIPO: Record<string, string> = {
   PARAGRAFO: 'Paragrafo',
   TITOLO: "Titolo d'articolo",

@@ -471,32 +471,42 @@ pubblicate, non dopo per confermare che sia andata bene.
 
 ## Da valutare: riscontri dall'uso sul server (2026-10-01)
 
-Osservazioni del product owner provando l'editor in test online. **Non sono
-ancora decisioni**: ogni voce va discussa e, se accolta, diventa un task con il
-suo test. Le prime cinque hanno una proposta gia' formulata in conversazione e
-in attesa di conferma.
+Osservazioni del product owner provando l'editor in test online. Accolte il
+2026-10-01 con le proposte indicate; per T062 scelto il nome libero, per T064
+il comando `/` (le colonne a scorrimento indipendente restano non fatte).
+
+*Fatto 2026-10-01*: menu "Stile" nella toolbar (Paragrafo, Titolo d'articolo,
+Titolo 1/2, tre elenchi, Firma) e pulsante interruzione di pagina; Proprieta'
+solo della sezione, con nome modificabile e controllo di unicita'; pannello
+Blocchi tolto; sezione nuova con una riga vuota e il cursore dentro;
+interruzione su riga vuota messa prima della riga, altrimenti dopo il blocco
+con una riga nuova; comando `/` in `MenuSegnapostoComponent` (non si apre dentro
+una parola, Esc lascia la `/`, il segnaposto eredita l'enfasi); toolbar fissa
+dai 768 px in su. Test di componente riscritti sulla nuova interfaccia (162);
+l'e2e inserisce il segnaposto con `/`, sceglie il titolo dal menu Stile,
+verifica la toolbar dopo lo scorrimento e rinomina la sezione.
 
 ### Sezioni e blocchi: cosa agisce su cosa
 
-- [ ] T058 **Proprieta' sembra della sezione ma agisce sul blocco.** In cima
+- [x] T058 **Proprieta' sembra della sezione ma agisce sul blocco.** In cima
       "Titolo sezione", sotto "Stile blocco" e "Tipo blocco", che cambiano
       solo il blocco col cursore senza dire quale. Proposta: Proprieta' solo
       della sezione (nome, segnaposto usati, elimina); tutto cio' che riguarda
       il testo nella toolbar.
-- [ ] T059 **Due modi di fare un titolo**: "Tipo: Titolo d'articolo" e lo
+- [x] T059 **Due modi di fare un titolo**: "Tipo: Titolo d'articolo" e lo
       "Stile H1/H2", in toolbar e nel pannello. Proposta: un solo menu "Stile"
       nella toolbar, come in Word (Paragrafo, Titolo d'articolo, Sottotitolo,
       Elenco numerato, Elenco puntato, Firma), che mostra lo stile del punto in
       cui si e' e lo cambia li'; accanto "Inserisci" per interruzione e firma.
-- [ ] T060 **La sezione nuova nasce con un paragrafo vuoto** che resta sopra se
+- [x] T060 **La sezione nuova nasce con un paragrafo vuoto** che resta sopra se
       si vuole iniziare con un titolo. Proposta: scegliere uno stile su una
       riga vuota la trasforma; inserire un blocco stando su una riga vuota la
       sostituisce invece di aggiungersi dopo.
-- [ ] T061 **Il pannello Blocchi ripete l'editor.** "Nel testo" duplica
+- [x] T061 **Il pannello Blocchi ripete l'editor.** "Nel testo" duplica
       l'inserimento; i "Predefiniti" (Oggetto, Premesse, Dettaglio) sono resti
       del prototipo 2b con testo d'esempio. Proposta: togliere entrambi e
       lasciare il pannello alla biblioteca dei "visti" (futura 013).
-- [ ] T062 **Nome della sezione personalizzabile** ("Premesse", "Art. 1 -
+- [x] T062 **Nome della sezione personalizzabile** ("Premesse", "Art. 1 -
       Oggetto del bando") al posto di `sezione-N`, mostrato nella struttura a
       sinistra. Il backend accetta gia' un `codice` libero fino a 128
       caratteri: basta renderlo modificabile con controllo di unicita', senza
@@ -505,12 +515,12 @@ in attesa di conferma.
 
 ### Ergonomia del foglio
 
-- [ ] T063 **Toolbar sempre visibile scorrendo.** Oggi pagina, toolbar e
+- [x] T063 **Toolbar sempre visibile scorrendo.** Oggi pagina, toolbar e
       colonne scorrono insieme: in un bando di 15 pagine la toolbar sparisce
       dopo il primo schermo. Da valutare `position: sticky` della topbar e
       della toolbar (va verificata la resa a 390 px, dove la toolbar va a capo
       su piu' righe e occuperebbe meta' schermo).
-- [ ] T064 **Segnaposto lontani dal punto in cui si scrive.** La lista sta
+- [x] T064 **Segnaposto lontani dal punto in cui si scrive.** La lista sta
       nella colonna destra, che scorre con la pagina: per inserire un
       segnaposto a fondo documento bisogna risalire. Due strade da valutare,
       non esclusive:
