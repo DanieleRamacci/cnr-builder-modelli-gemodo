@@ -1,85 +1,92 @@
 # Quickstart - Builder Modelli Documentali
 
-Questa guida descrive gli scenari minimi per validare la feature 002 dopo
-l'implementazione. Non sostituisce i test automatici.
+Gli scenari minimi per validare la feature 002 a mano, sull'ambiente di test o
+in locale. Non sostituisce i test automatici: ogni scenario indica quello che
+lo verifica a ogni esecuzione della suite.
+
+Aggiornato il 2026-10-01 (T036) al comportamento effettivo: varianti con nota
+(FR-019), dimensioni generiche (011), corpo a frammenti e anteprima (012),
+profilo calcolato dal backend (007 FR-034).
 
 ## Prerequisiti
 
-- backend avviato con database PostgreSQL migrato;
-- JWT Bearer Keycloak valido per audience `gemodo-backend`;
-- ruolo `GEMODO_MODELLI_GESTORE` per gli scenari modificativi;
-- seed minimo con tipo documento `BANDO_CONCORSO` e categoria `COLLABORATORE_TECNICO_ER`.
+- backend avviato con database PostgreSQL migrato (`alembic upgrade head`);
+- un'integrazione **CONNESSA** per il contesto, che dichiari `BANDO_CONCORSO`
+  nella sua discovery: i modelli si creano sui rami dell'albero dal vivo, non
+  su un catalogo locale;
+- token Keycloak di un utente con `ROLE_MANAGER#<contesto>` (permesso
+  `GEMODO_MODELLI_GESTORE` nel contesto); per gli scenari di generazione,
+  `DOCUMENTI_GENERATORE`.
 
-## Scenario 1 - Creazione modello con variante default
+Per sapere cosa concede il proprio token: `GET /api/v1/builder/profilo`, o la
+pagina **Profilo** dell'interfaccia.
 
-1. Creare un modello senza indicare `variante`.
-2. Verificare che la risposta contenga `variante: "STANDARD"`.
-3. Creare una prima versione del modello.
+## Scenario 1 - Il primo modello di una categorizzazione
 
-Expected:
+1. Creare un modello (`POST /api/v1/builder/modelli`, o "Nuovo modello"
+   dall'interfaccia) scegliendo tipologia, profilo e dimensioni.
+2. Creare la prima versione.
 
-- il modello viene creato;
-- la variante `STANDARD` e' persistita;
-- la versione parte in stato `BOZZA`.
-- l'audit registra il soggetto Keycloak che ha creato modello/versione.
+Atteso: il modello ha variante `STANDARD`, codice e nome generati dal backend;
+la versione parte in `BOZZA`; l'audit registra soggetto, client e ruoli.
+Test: `test_varianti_modello.py::test_il_primo_modello_della_categorizzazione_e_standard`.
 
-## Scenario 2 - Variante duplicata nello stesso contesto
+## Scenario 2 - Un secondo modello sulla stessa categorizzazione
 
-1. Creare un modello `BANDO_CTER_TI` con tipo `BANDO_CONCORSO`, categoria
-   `COLLABORATORE_TECNICO_ER`, tipologia `TI`, variante `STANDARD`.
-2. Provare a creare un secondo modello con la stessa combinazione
-   tipo/categoria/tipologia/variante.
+1. Creare un secondo modello con le stesse scelte, **senza** nota di variante.
+2. Ripetere indicando una nota ("Firma del Presidente").
 
-Expected:
+Atteso: il primo tentativo è rifiutato e dice quale modello occupa già la
+categorizzazione; il secondo crea `VARIANTE_1`, con la nota nel nome. Una nota
+uguale a una già usata è rifiutata. Due varianti si pubblicano insieme e il
+catalogo le distingue.
+Test: `test_un_secondo_modello_senza_nota_e_rifiutato_dicendo_quale_esiste`,
+`test_due_varianti_coesistono_pubblicate_con_nomi_distinti`,
+`test_la_stessa_descrizione_di_variante_e_rifiutata`.
 
-- la seconda richiesta fallisce con errore di conflitto;
-- il sistema evita ambiguita' nel catalogo operativo.
+## Scenario 3 - Comporre il corpo e vederlo prima di pubblicare
 
-## Scenario 3 - Modifica di versione pubblicata
+1. Aprire la versione in `BOZZA` nell'editor: scrivere un visto con una parola
+   in grassetto, un titolo d'articolo dal menu Stile, un elenco numerato con
+   una voce a lettere (Tab), un segnaposto scrivendo `/`.
+2. Cliccare "Anteprima".
 
-1. Portare una versione da `BOZZA` a `IN_REVISIONE`, poi `APPROVATO`, poi `PUBBLICATO`.
-2. Provare ad aggiornare direttamente il contenuto della versione pubblicata.
-3. Creare invece una bozza derivata dalla versione pubblicata.
+Atteso: il PDF della bozza mostra enfasi, titolo centrato, `1.` e `a)`, e
+«etichetta» al posto del segnaposto, con la marcatura di anteprima; nessun
+documento viene registrato.
+Test: `frontend/e2e/builder-lifecycle.spec.ts`, `test_anteprima_api.py`.
 
-Expected:
+## Scenario 4 - Il corpo pubblicato non cambia
 
-- l'update diretto della versione pubblicata fallisce;
-- la bozza derivata viene creata in stato `BOZZA`;
-- la versione pubblicata originale resta invariata.
+1. Portare la versione a `IN_REVISIONE`, `APPROVATO`, `PUBBLICATO`.
+2. Provare a riscrivere le sezioni (`PUT .../sezioni`).
+3. Creare una versione nuova del modello.
 
-## Scenario 4 - Pubblicazione nuova versione della stessa variante
+Atteso: la scrittura risponde 409; l'editor mostra la versione in sola
+lettura; la versione nuova parte in `BOZZA` con una **copia** delle sezioni
+della precedente, modificabile senza toccare l'originale.
+Test: `test_sezioni_api.py`,
+`test_sezioni_persistenza.py::test_una_versione_nuova_eredita_le_sezioni_senza_condividerle`.
 
-1. Partire da una versione `PUBBLICATO` della variante `STANDARD`.
-2. Creare bozza derivata, approvarla e pubblicarla.
-3. Verificare lo stato della versione precedente.
+## Scenario 5 - Una nuova versione sostituisce la precedente
 
-Expected:
+1. Pubblicare la versione nuova dello scenario 4.
 
-- la nuova versione diventa `PUBBLICATO`;
-- la precedente versione pubblicata della stessa variante passa automaticamente ad
-  `ARCHIVIATO`;
-- il catalogo operativo della 001 vede una sola versione pubblicata corrente per variante.
+Atteso: la versione precedente della stessa variante passa a `ARCHIVIATO`; il
+catalogo (001) vede una sola versione pubblicata corrente per variante e
+dimensioni. Una versione pubblicata si può anche sospendere o archiviare
+esplicitamente.
+Test: `test_una_versione_pubblicata_si_archivia_e_si_sospende_da_endpoint`.
 
-## Scenario 5 - Varianti diverse nello stesso contesto
+## Scenario 6 - Autorizzazione per contesto
 
-1. Creare una variante `STANDARD` e una variante `FIRMA_PRESIDENTE` per lo stesso
-   tipo/categoria/tipologia.
-2. Pubblicare una versione corrente per ciascuna variante.
+1. Chiamare una rotta builder senza token.
+2. Chiamarla con un token gestore di **un altro** contesto.
+3. Chiamarla con un token che sa solo generare (`DOCUMENTI_GENERATORE`).
 
-Expected:
-
-- entrambe le varianti possono essere pubblicate;
-- ogni variante ha una sola versione `PUBBLICATO` corrente;
-- la scelta operativa resta basata su `modello_versione_id`.
-
-## Scenario 6 - Autorizzazione builder
-
-1. Chiamare una route builder senza token.
-2. Chiamare una route modificativa con token valido ma senza `GEMODO_MODELLI_GESTORE`.
-3. Ripetere la route modificativa con token valido e ruolo `GEMODO_MODELLI_GESTORE`.
-
-Expected:
-
-- la prima richiesta fallisce con `ACCESSO_NON_AUTENTICATO`;
-- la seconda richiesta fallisce con `ACCESSO_NON_AUTORIZZATO`;
-- la terza richiesta viene eseguita e produce audit con soggetto, client e ruoli.
+Atteso: `ACCESSO_NON_AUTENTICATO` (401); per un altro contesto la versione
+risulta inesistente (404) dove non va rivelata (anteprima) o non autorizzata
+(403) altrove; chi sa solo generare riceve 403. L'interfaccia mostra le
+funzioni del builder solo a chi il profilo dichiara gestore.
+Test: `test_gestore_di_un_contesto_non_puo_scrivere_su_un_tipo_documento_di_un_altro_contesto`,
+`test_anteprima_api.py::test_t038_*`, `test_profilo_api.py`.

@@ -195,6 +195,29 @@ product owner nella feature 010. Non reintrodurre un catalogo locale come
 ponte per US1/US2; la documentazione di forma e' distinta dai dati operativi
 esterni. Il precedente prerequisito US2/T108 e' superato.
 
+## Coerenza Fra 001 (catalogo) E 002 (builder) - verificata 2026-10-01
+
+Esito del controllo chiesto da 002 T038, su variante, versione e sicurezza.
+
+- **Variante: coerente.** Il builder crea `STANDARD` e poi `VARIANTE_N` con
+  una nota obbligatoria (002 FR-019); il catalogo le espone distinte, con la
+  nota nella descrizione (`test_il_catalogo_distingue_le_varianti_nella_descrizione`).
+- **Versione: coerente.** Una sola versione pubblicata corrente per variante e
+  valori di dimensione: pubblicarne una nuova archivia la precedente. Il
+  catalogo espone solo versioni `PUBBLICATO`; `campi-richiesti` su una versione
+  non pubblicata risponde 409.
+- **Sicurezza: coerente nel builder, condizionata nel consumo.** Il builder
+  verifica sempre il contesto in scrittura (`verify_scrittura_su_contesto`), e
+  da 007 T115 l'interfaccia mostra solo cio' che il profilo calcolato dal
+  backend concede. Catalogo, validazione, generazione e download verificano il
+  contesto con `verifica_permesso_contesto`, che **controlla davvero solo se
+  `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` e' acceso**: di default e' spento, e
+  `docker-compose.coolify.yml` non lo imposta. In quell'ambiente un token con
+  `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` in un contesto legge e genera anche
+  sui modelli di altri contesti. E' un rilascio graduale voluto (001 FR-034..038),
+  non un difetto, ma **va acceso prima della produzione**: decisione del
+  product owner, da registrare nel registro decisioni quando presa.
+
 ## Ambito Individuato, Non Ancora Specificato
 
 ### Editor fedele al provvedimento reale -> diventata la spec 012 (2026-09-29)

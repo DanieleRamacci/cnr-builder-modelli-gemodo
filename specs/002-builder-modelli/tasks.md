@@ -142,8 +142,8 @@ davvero, con il percorso vero, e sono spuntati solo dove il file esiste.
 - [x] T004 Contratto OpenAPI in
       `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`,
       verificato da `backend/tests/builder/test_builder_modelli_contract.py`
-- [ ] T005 [P] Documentazione di modulo in `backend/app/builder/README.md`
-      (ancora assente; unico elemento della Phase 1 non realizzato)
+- [x] T005 [P] Documentazione di modulo in `backend/app/builder/README.md`
+      *Fatto 2026-10-01*: file, rotte, regole da non rompere, test.
 
 ---
 
@@ -264,12 +264,24 @@ non solo mai eseguiti.
       `test_builder_modelli_contract.py`
 - [x] T035 Suite builder eseguita su Postgres reale (parte dei 354 test
       backend verdi al 2026-09-22)
-- [ ] T036 [P] Aggiornare `specs/002-builder-modelli/quickstart.md` con le
+- [x] T036 [P] Aggiornare `specs/002-builder-modelli/quickstart.md` con le
       note di validazione effettive
-- [ ] T037 [P] Dati seed per una variante standard e una personalizzata in
+      *Fatto 2026-10-01*: sei scenari riscritti sul comportamento attuale
+      (varianti con nota, sezioni ereditate, anteprima, contesto), ognuno col
+      test che lo verifica.
+- [x] T037 [P] Dati seed per una variante standard e una personalizzata in
       `infra/local/postgres/seed-demo-catalog.yaml`
-- [ ] T038 Registrare in `docs/project-map.md` l'esito del controllo di
+      *Superato 2026-10-01, non eseguito*: quel file e' stato declassato a
+      fixture dell'adapter finto (001 tasks.md, T077-T079) e i modelli nascono
+      dall'albero dal vivo dell'integrazione connessa, non da un seed. Le due
+      varianti sono create e pubblicate dai test (`test_varianti_modello.py`),
+      che e' dove servono.
+- [x] T038 Registrare in `docs/project-map.md` l'esito del controllo di
       coerenza fra `001` e `002` su variante, versione e regole di sicurezza
+      *Fatto 2026-10-01*: coerenti variante e versione; la verifica del
+      contesto nel consumo (catalogo, generazione, download) e' attiva solo
+      con `GEMODO_ENFORCE_CONTESTO_CONSUMATORE`, spento di default: da
+      accendere prima della produzione.
 
 ---
 
