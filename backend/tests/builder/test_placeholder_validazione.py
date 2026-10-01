@@ -31,7 +31,7 @@ def blocco(identificativo: str, placeholder: list[str]) -> dict:
     return {
         "id": identificativo,
         "tipo": "PARAGRAFO",
-        "contenuto": f"testo con {', '.join(placeholder) or 'nessun segnaposto'}",
+        "frammenti": [{"testo": f"testo con {', '.join(placeholder) or 'nessun segnaposto'}"}],
         "posizionamento": "BODY",
         "ordine": 0,
         "placeholder_usati": placeholder,

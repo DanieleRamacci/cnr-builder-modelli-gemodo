@@ -75,20 +75,20 @@ finche' questa fase non e' chiusa.
 
 ### Formato
 
-- [ ] T004 [P] Aggiungere `FrammentoTesto`, `ElementoElenco`,
+- [x] T004 [P] Aggiungere `FrammentoTesto`, `ElementoElenco`,
       `AllineamentoTesto`, `TipoMarcatore` in
       `backend/app/documentale/schemas.py`.
-- [ ] T005 In `BloccoDocumento` (stesso file): **rimuovere** `contenuto`,
+- [x] T005 In `BloccoDocumento` (stesso file): **rimuovere** `contenuto`,
       aggiungere `frammenti`, `allineamento`, `elementi`; aggiungere `ELENCO` a
       `TipoBloccoDocumento`. `extra="forbid"` e' gia' attivo, quindi un blocco
       che porta ancora `contenuto` viene rifiutato senza scrivere altro codice.
-- [ ] T006 [P] Aggiungere `ELENCO` a `POSIZIONI_AMMESSE` in
+- [x] T006 [P] Aggiungere `ELENCO` a `POSIZIONI_AMMESSE` in
       `backend/app/quality/document_model.py` (`BODY`, `COLUMN_LEFT`,
       `COLUMN_RIGHT`).
 
 ### Validazione (FR-002, SC-005)
 
-- [ ] T007 In `backend/app/quality/document_model.py`, validare: markup nel
+- [x] T007 In `backend/app/quality/document_model.py`, validare: markup nel
       `testo` di un frammento; `livello` fuori da {0,1}; `elementi` su un blocco
       che non e' `ELENCO`; `collegamento` con schema diverso da
       `http`/`https`/`mailto`. Tutti producono
@@ -97,50 +97,61 @@ finche' questa fase non e' chiusa.
       **Nota**: questo controllo oggi non esiste - il divieto e' applicato solo
       al booleano auto-dichiarato `contiene_html_libero` (research.md R6).
       E' codice nuovo, non un adeguamento.
-- [ ] T008 [P] Test di T007 in `backend/tests/`: `<b>` nel testo,
+- [x] T008 [P] Test di T007 in `backend/tests/`: `<b>` nel testo,
       `javascript:` nel collegamento, `livello: 2`, `elementi` su `PARAGRAFO`.
       Copre SC-005.
 
 ### Migrazione (FR-016, SC-004)
 
-- [ ] T009 Migrazione Alembic su `sezione_modello.contenuto` (JSONB):
+- [x] T009 Migrazione Alembic su `sezione_modello.contenuto` (JSONB):
       `{"contenuto": "x"}` diventa `{"frammenti": [{"testo": "x"}]}`,
       `contenuto: null` diventa `frammenti: []`. `downgrade` concatena i
       `testo`.
-- [ ] T010 Test della migrazione su Postgres reale (Testcontainers): righe
+- [x] T010 Test della migrazione su Postgres reale (Testcontainers): righe
       prima, `upgrade`, righe dopo, `downgrade`, righe di nuovo come prima.
+      *Fatto 2026-10-01*: `tests/integration/test_migrazione_frammenti_0024.py`,
+      con un secondo test che documenta la perdita voluta al `downgrade`
+      (enfasi, `ELENCO` -> `PARAGRAFO`, `allineamento`).
 - [ ] T011 **SC-004, prima di eseguire la migrazione in qualunque ambiente**:
       generare il PDF di ogni versione pubblicata sullo stato precedente,
       conservarne il testo estratto, migrare, rigenerare, confrontare coppia per
       coppia. Si confronta il **testo estratto**, non i byte: un PDF contiene
       data di produzione e identificatori che cambiano a ogni generazione.
       Una differenza ferma la migrazione - non si corregge il confronto.
+      *Strumento pronto 2026-10-01*: `backend/scripts/sc004_confronto_migrazione.py`
+      (fasi `prima`/`dopo`). **Non ancora eseguito**: nessun ambiente con
+      versioni pubblicate e' stato ancora migrato. Il task si chiude solo con
+      l'esecuzione, ambiente per ambiente.
 
 ### Renderer
 
-- [ ] T012 In `backend/app/generazione/renderer.py`, registrare Titillium Web
+- [x] T012 In `backend/app/generazione/renderer.py`, registrare Titillium Web
       nelle quattro varianti e sostituire ogni `Helvetica`.
-- [ ] T013 [P] Test: un paragrafo con virgolette curve, apostrofo tipografico,
+- [x] T013 [P] Test: un paragrafo con virgolette curve, apostrofo tipografico,
       trattino lungo e lettere accentate arriva invariato nel testo estratto.
       Copre SC-006.
       **Questo test fallisce oggi, prima della feature**, e non con un carattere
       sbagliato: il core font solleva `FPDFUnicodeEncodingException`, che
       `GenerazioneDocumentiService.genera` cattura nel suo `except Exception`
       generico e trasforma in un documento `FALLITO` (research.md R1).
-- [ ] T014 Riscrivere `_rendi_blocco` sui frammenti: resa con
+- [x] T014 Riscrivere `_rendi_blocco` sui frammenti: resa con
       `text_columns()` + `paragraph.write()`, cambiando variante di font fra un
       frammento e l'altro (research.md R2).
-- [ ] T015 Applicare `allineamento` esplicito, `GIUSTIFICATO` incluso. La
+- [x] T015 Applicare `allineamento` esplicito, `GIUSTIFICATO` incluso. La
       tabella `_ALLINEAMENTO` che deriva l'allineamento dal posizionamento
       resta solo come default per i blocchi che non lo dichiarano.
-- [ ] T016 Far leggere al renderer il campo `stile` (`H1`/`H2`), che oggi
+- [x] T016 Far leggere al renderer il campo `stile` (`H1`/`H2`), che oggi
       **scrive il frontend e nessuno legge**. E' il difetto che la spec cita
       come gia' visibile; FR-008 non ammette che l'editor mostri un titolo e il
       PDF produca un paragrafo.
-- [ ] T017 Riscrivere `sostituisci_placeholder` per frammento invece che sulla
+- [x] T017 Riscrivere `sostituisci_placeholder` per frammento invece che sulla
       stringa del blocco (FR-005).
-- [ ] T018 [P] Test: un segnaposto dentro un frammento in grassetto produce un
+- [x] T018 [P] Test: un segnaposto dentro un frammento in grassetto produce un
       valore in grassetto, e il paragrafo non si spezza (US1 scenario 3).
+      *T004-T010, T012-T018 fatti 2026-10-01*: suite backend 463 test verdi su
+      Postgres reale. **Attenzione**: da qui il frontend scrive ancora
+      `contenuto` e il backend lo rifiuta (`extra="forbid"`): l'editor non
+      salva finche' non sono chiusi T019-T022.
 
 **Checkpoint**: il formato nuovo esiste, e' validato, migrato e reso. Le storie
 possono partire.

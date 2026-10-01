@@ -43,7 +43,7 @@ from app.discovery.schemas import CatalogoDiscovery
 # controllato e' di proprieta' della `009` e resta dove vive; `003` lo usa
 # invece di riscriverlo. E' una dipendenza su una **regola**, non sui dati che
 # il dominio persiste - quelli stanno in `app/documentale/schemas.py`.
-from app.quality.document_model import validate_document_model
+from app.quality.document_model import validate_document_model, violazioni_struttura_blocchi
 from app.quality.errors import ContrattoNonValidoError
 
 TRANSIZIONI_VALIDE: dict[str, set[str]] = {
@@ -850,10 +850,24 @@ class BuilderService:
 
         `ContrattoNonValidoError` raccoglie **tutte** le violazioni, non la
         prima: chi sta componendo deve poterle correggere in un giro solo.
+
+        La struttura si controlla **prima** dei segnaposto e con un codice
+        proprio (012 T007): markup nel testo o un `javascript:` in un
+        collegamento non sono un problema di contratto dati, sono un documento
+        che il formato non ammette.
         """
+        documento = builder_repository.composizione_documentale(versione)
+        struttura = violazioni_struttura_blocchi(documento.blocchi)
+        if struttura:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_DOCUMENTALE_NON_VALIDO,
+                "Struttura del modello documentale non valida",
+                status_code=422,
+                dettagli=[{"violazione": violazione} for violazione in struttura],
+            )
         try:
             validate_document_model(
-                builder_repository.composizione_documentale(versione),
+                documento,
                 placeholder_contratto_dati=self._placeholder_ammessi(versione),
             )
         except ContrattoNonValidoError as errore:

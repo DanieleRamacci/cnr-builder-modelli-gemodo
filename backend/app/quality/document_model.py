@@ -8,11 +8,14 @@ columns, and placeholders that are not declared by the model itself.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from app.quality.errors import ContrattoNonValidoError
 from app.quality.manifest_loader import load_yaml
+from app.documentale.schemas import FrammentoTesto
 from app.quality.schemas import BloccoDocumento, ModelloDocumentaleControllato, PosizionamentoBlocco, TipoBloccoDocumento
 
 # Compatible positions per block type (data-model.md: "il posizionamento deve essere
@@ -39,7 +42,22 @@ POSIZIONI_AMMESSE: dict[TipoBloccoDocumento, set[PosizionamentoBlocco]] = {
         PosizionamentoBlocco.BOTTOM_CENTER,
     },
     TipoBloccoDocumento.INTERRUZIONE_PAGINA: {PosizionamentoBlocco.BODY},
+    TipoBloccoDocumento.ELENCO: {
+        PosizionamentoBlocco.BODY,
+        PosizionamentoBlocco.COLUMN_LEFT,
+        PosizionamentoBlocco.COLUMN_RIGHT,
+    },
 }
+
+# Un tag (`<b>`, `</i>`, `<a href=...>`, `<br/>`) o un commento HTML. Il `<`
+# deve essere seguito subito da una lettera, `/` o `!`: "3 < 5" nel testo di un
+# bando non e' markup e non va rifiutato.
+_MARKUP = re.compile(r"</?[A-Za-z][A-Za-z0-9-]*(\s[^<>]*)?/?\s*>|<!--")
+_SCHEMI_COLLEGAMENTO = {"http", "https", "mailto"}
+_LIVELLI_ELENCO = {0, 1}
+# Blocchi che non portano testo proprio: l'elenco lo porta nei suoi elementi,
+# l'interruzione di pagina non ne ha.
+_SENZA_FRAMMENTI = {TipoBloccoDocumento.ELENCO, TipoBloccoDocumento.INTERRUZIONE_PAGINA}
 
 
 def load_document_model(path: Path) -> ModelloDocumentaleControllato:
@@ -66,6 +84,62 @@ def _validate_blocco(blocco: BloccoDocumento, asset_ids: set[str], violazioni: l
         violazioni.append(f"blocco {blocco.id}: asset_ref '{blocco.asset_ref}' non presente tra gli asset del modello")
 
 
+def _validate_frammenti(
+    dove: str, frammenti: list[FrammentoTesto], violazioni: list[str],
+) -> None:
+    for indice, frammento in enumerate(frammenti):
+        if _MARKUP.search(frammento.testo):
+            violazioni.append(f"{dove}, frammento {indice}: il testo contiene markup, non ammesso")
+        if frammento.collegamento is not None and not _collegamento_ammesso(frammento.collegamento):
+            violazioni.append(
+                f"{dove}, frammento {indice}: collegamento con schema non ammesso "
+                "(solo http, https, mailto)"
+            )
+
+
+def _collegamento_ammesso(collegamento: str) -> bool:
+    # Un carattere di controllo o uno spazio iniziale servono solo a far
+    # leggere `java\tscript:` diversamente a chi controlla e a chi apre.
+    if collegamento != collegamento.strip() or any(ord(c) < 32 for c in collegamento):
+        return False
+    parti = urlsplit(collegamento)
+    if parti.scheme.lower() not in _SCHEMI_COLLEGAMENTO:
+        return False
+    return parti.scheme.lower() == "mailto" or bool(parti.netloc)
+
+
+def violazioni_struttura_blocchi(blocchi: list[BloccoDocumento]) -> list[str]:
+    """Cio' che rende un blocco non ammesso nel formato, indipendentemente dai dati (012 T007).
+
+    Separato dalla validazione dei segnaposto perche' e' un errore diverso:
+    qui il documento **non e' un documento GEMODO** (`MODELLO_DOCUMENTALE_NON_VALIDO`),
+    li' e' un documento valido che cita campi che il modello non ha.
+
+    Prima della 012 il divieto di HTML era applicato solo al booleano
+    auto-dichiarato `contiene_html_libero`: nessuno guardava dentro il testo
+    (research.md R6). Ogni violazione e' un **rifiuto**, mai una bonifica.
+    """
+    violazioni: list[str] = []
+    for blocco in blocchi:
+        dove = f"blocco {blocco.id}"
+        _validate_frammenti(dove, blocco.frammenti, violazioni)
+        if blocco.tipo in _SENZA_FRAMMENTI and blocco.frammenti:
+            violazioni.append(f"{dove}: un blocco {blocco.tipo.value} non porta frammenti propri")
+        if blocco.tipo is not TipoBloccoDocumento.ELENCO:
+            if blocco.elementi:
+                violazioni.append(f"{dove}: elementi ammessi solo su un blocco ELENCO")
+            continue
+        if not blocco.elementi:
+            violazioni.append(f"{dove}: elenco senza elementi")
+        for indice, elemento in enumerate(blocco.elementi):
+            if elemento.livello not in _LIVELLI_ELENCO:
+                violazioni.append(
+                    f"{dove}, elemento {indice}: livello {elemento.livello} non ammesso (solo 0 o 1)"
+                )
+            _validate_frammenti(f"{dove}, elemento {indice}", elemento.frammenti, violazioni)
+    return violazioni
+
+
 def validate_document_model(
     modello: ModelloDocumentaleControllato,
     *,
@@ -88,6 +162,8 @@ def validate_document_model(
         violazioni.append("il modello contiene CSS libero, non ammesso")
     if modello.contiene_script:
         violazioni.append("il modello contiene script, non ammessi")
+
+    violazioni.extend(violazioni_struttura_blocchi(modello.blocchi))
 
     asset_ids = {asset.id for asset in modello.asset}
     stili_ammessi = set(modello.stili_ammessi)

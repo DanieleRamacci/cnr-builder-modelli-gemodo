@@ -36,6 +36,7 @@ from app.configurazione.models import EndpointIntegrazione, Integrazione
 from app.db.session import get_db
 from app.main import app
 from tests.support.postgres import postgres_database_url
+from tests.support.pdf import estrai_testo
 from tests.discovery.conftest import discovery_server
 
 
@@ -808,7 +809,7 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
     assert download.status_code == 200, download.text
     assert download.headers["content-type"] == "application/pdf"
     assert download.content == generazione.content
-    assert b"Bando pytest" in download.content
+    assert "Bando pytest" in estrai_testo(download.content)
 
     replay = builder_client.post("/api/v1/documenti/genera", json=payload)
     assert replay.status_code == 200, replay.text

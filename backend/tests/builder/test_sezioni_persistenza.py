@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.builder import repository as builder_repository
 from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione, SezioneModello, TipoDocumento
-from app.documentale.schemas import BloccoDocumento, PosizionamentoBlocco, TipoBloccoDocumento
+from app.documentale.schemas import BloccoDocumento, FrammentoTesto, PosizionamentoBlocco, TipoBloccoDocumento
 from tests.support.postgres import postgres_database_url  # noqa: F401  (fixture)
 from tests.builder.test_builder_flow_api import db_engine  # noqa: F401  (fixture)
 
@@ -24,7 +24,7 @@ def blocco(identificativo: str, *, ordine: int = 0, placeholder: list[str] | Non
     return BloccoDocumento(
         id=identificativo,
         tipo=TipoBloccoDocumento.PARAGRAFO,
-        contenuto=f"testo di {identificativo}",
+        frammenti=[FrammentoTesto(testo=f"testo di {identificativo}")],
         posizionamento=PosizionamentoBlocco.BODY,
         ordine=ordine,
         placeholder_usati=placeholder or [],

@@ -33,7 +33,8 @@ blocchi:
     tipo: INTESTAZIONE
     posizionamento: TOP
     ordine: 2
-    contenuto: "Consiglio Nazionale delle Ricerche"
+    frammenti:
+      - testo: "Consiglio Nazionale delle Ricerche"
     stile: title
 
   - id: titolo-bando

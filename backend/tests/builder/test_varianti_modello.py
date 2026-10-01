@@ -178,7 +178,7 @@ def test_la_variante_nasce_con_una_bozza_modificabile_copiata_dall_origine(
         f"/api/v1/builder/modelli/{origine['id']}/versioni/{versione_origine['id']}/sezioni",
         json={"sezioni": [{"codice": "oggetto", "ordine": 0, "contenuto": [{
             "id": "oggetto-p1", "tipo": "PARAGRAFO",
-            "contenuto": "Selezione per {{titolo_it}}", "posizionamento": "BODY",
+            "frammenti": [{"testo": "Selezione per {{titolo_it}}"}], "posizionamento": "BODY",
             "ordine": 0, "stile": None, "placeholder_usati": ["titolo_it"],
             "regole_layout": {}, "asset_ref": None, "colonne": []}]}]},
     )
@@ -201,14 +201,14 @@ def test_la_variante_nasce_con_una_bozza_modificabile_copiata_dall_origine(
     # sola lettura.
     assert corpo["modificabile"] is True
     # E parte dal contenuto dell'origine, non da un foglio bianco.
-    assert corpo["sezioni"][0]["contenuto"][0]["contenuto"] == "Selezione per {{titolo_it}}"
+    assert corpo["sezioni"][0]["contenuto"][0]["frammenti"][0]["testo"] == "Selezione per {{titolo_it}}"
 
     # La copia e' indipendente: modificarla non tocca l'origine.
     modifica = builder_client.put(
         f"/api/v1/builder/modelli/{variante['id']}/versioni/{nuova['id']}/sezioni",
         json={"sezioni": [{"codice": "oggetto", "ordine": 0, "contenuto": [{
             "id": "oggetto-p1", "tipo": "PARAGRAFO",
-            "contenuto": "Selezione senza prova per {{titolo_it}}", "posizionamento": "BODY",
+            "frammenti": [{"testo": "Selezione senza prova per {{titolo_it}}"}], "posizionamento": "BODY",
             "ordine": 0, "stile": None, "placeholder_usati": ["titolo_it"],
             "regole_layout": {}, "asset_ref": None, "colonne": []}]}]},
     )
@@ -216,7 +216,7 @@ def test_la_variante_nasce_con_una_bozza_modificabile_copiata_dall_origine(
     originale = builder_client.get(
         f"/api/v1/builder/modelli/{origine['id']}/versioni/{versione_origine['id']}/sezioni"
     ).json()
-    assert originale["sezioni"][0]["contenuto"][0]["contenuto"] == "Selezione per {{titolo_it}}"
+    assert originale["sezioni"][0]["contenuto"][0]["frammenti"][0]["testo"] == "Selezione per {{titolo_it}}"
 
 
 @pytest.mark.integration

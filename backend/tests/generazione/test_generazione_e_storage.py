@@ -21,6 +21,7 @@ from app.common.security import PrincipalGEMODO, require_principal
 from app.db.session import get_db
 from app.main import app
 from tests.support.postgres import postgres_database_url
+from tests.support.pdf import estrai_testo
 
 
 @pytest.fixture()
@@ -100,8 +101,8 @@ def test_generazione_reale_produce_pdf_scaricabile(db_engine, client):
     assert esito.status_code == 200, esito.text
     assert esito.headers["content-type"] == "application/pdf"
     assert esito.content.startswith(b"%PDF")
-    assert b"Bando reale" in esito.content
-    assert b"Prima nota" in esito.content
+    assert "Bando reale" in estrai_testo(esito.content)
+    assert "Prima nota" in estrai_testo(esito.content)
     riferimento = esito.headers["x-riferimento-documentale"]
     assert riferimento
 

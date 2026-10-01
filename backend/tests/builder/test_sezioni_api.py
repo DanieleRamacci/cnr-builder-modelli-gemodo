@@ -28,7 +28,7 @@ def blocco(identificativo: str, *, ordine: int = 0, placeholder: list[str] | Non
     return {
         "id": identificativo,
         "tipo": "PARAGRAFO",
-        "contenuto": f"testo di {identificativo}",
+        "frammenti": [{"testo": f"testo di {identificativo}"}],
         "posizionamento": "BODY",
         "ordine": ordine,
         "placeholder_usati": placeholder or [],

@@ -3,9 +3,10 @@
 Percorso intero su PostgreSQL reale e HTTP: compone le sezioni, pubblica,
 genera, e legge il PDF prodotto.
 
-Il testo si cerca nei **byte grezzi** del PDF: `renderer` usa `compress=False`
-proprio per restare ispezionabile, quindi non serve una libreria di lettura
-PDF in piu' solo per verificare cosa c'e' scritto.
+Il testo si **estrae** dal PDF con un parser vero (`tests/support/pdf.py`).
+Fino alla 012 bastava cercarlo nei byte grezzi; con il font incorporato il
+testo e' codificato come indici di glifo, e una ricerca sui byte non
+troverebbe nulla - mentre le asserzioni "non contiene" passerebbero sempre.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from tests.builder.test_builder_flow_api import (  # noqa: F401  (fixtures)
     _pubblica_fino_in_fondo,
 )
 from tests.discovery.conftest import discovery_server  # noqa: F401  (fixture)
+from tests.support.pdf import estrai_testo
 from tests.support.postgres import postgres_database_url  # noqa: F401  (fixture)
 
 
@@ -31,17 +33,17 @@ def sezioni_del_bando() -> list[dict]:
     return [
         {"codice": "intestazione", "ordine": 10, "contenuto": [
             {"id": "titolo", "tipo": "TITOLO",
-             "contenuto": "Bando di concorso {{codice_bando}}",
+             "frammenti": [{"testo": "Bando di concorso {{codice_bando}}"}],
              "posizionamento": "TOP", "ordine": 0,
              "placeholder_usati": ["codice_bando"]},
         ]},
         {"codice": "corpo", "ordine": 20, "contenuto": [
             {"id": "oggetto", "tipo": "PARAGRAFO",
-             "contenuto": "E' indetto il concorso {{titolo_it}} presso {{sede_prescelta_it}}.",
+             "frammenti": [{"testo": "E' indetto il concorso {{titolo_it}} presso {{sede_prescelta_it}}."}],
              "posizionamento": "BODY", "ordine": 0,
              "placeholder_usati": ["titolo_it", "sede_prescelta_it"]},
             {"id": "posti", "tipo": "PARAGRAFO",
-             "contenuto": "I posti messi a concorso sono {{numero_posti}}.",
+             "frammenti": [{"testo": "I posti messi a concorso sono {{numero_posti}}."}],
              "posizionamento": "BODY", "ordine": 1,
              "placeholder_usati": ["numero_posti"]},
         ]},
@@ -80,17 +82,17 @@ def test_il_pdf_contiene_il_testo_composto_con_i_valori_sostituiti(builder_clien
 
     assert generato.status_code == 200, generato.text
     assert generato.headers["content-type"] == "application/pdf"
-    pdf = generato.content
+    pdf = estrai_testo(generato.content)
 
     # Il testo del documento, non le etichette dei campi.
-    assert b"Bando di concorso BND-2026-0042" in pdf
-    assert b"Ricercatore in fisica applicata" in pdf
-    assert b"Area della Ricerca di Roma 1" in pdf
-    assert b"I posti messi a concorso sono 7." in pdf
+    assert "Bando di concorso BND-2026-0042" in pdf
+    assert "Ricercatore in fisica applicata" in pdf
+    assert "Area della Ricerca di Roma 1" in pdf
+    assert "I posti messi a concorso sono 7." in pdf
     # Nessun segnaposto sopravvive alla generazione.
-    assert b"{{" not in pdf
+    assert "{{" not in pdf
     # ADR 0002 / T020: comporre il corpo non rende ufficiale il documento.
-    assert b"NON UFFICIALE" in pdf
+    assert "NON UFFICIALE" in pdf
 
 
 @pytest.mark.integration
@@ -110,7 +112,7 @@ def test_un_valore_mancante_ferma_la_generazione_invece_di_lasciare_un_buco(
     sezioni = sezioni_del_bando()
     sezioni[1]["contenuto"].append({
         "id": "livello", "tipo": "PARAGRAFO",
-        "contenuto": "Livello professionale: {{livello}}.",
+        "frammenti": [{"testo": "Livello professionale: {{livello}}."}],
         "posizionamento": "BODY", "ordine": 2,
         "placeholder_usati": ["livello"],
     })
@@ -150,7 +152,7 @@ def test_un_modello_senza_sezioni_resta_l_elenco_di_prima(builder_client, catalo
     })
 
     assert generato.status_code == 200, generato.text
-    pdf = generato.content
+    pdf = estrai_testo(generato.content)
     # La forma vecchia: etichetta e valore, non un testo composto.
-    assert b"codice_bando" in pdf, "l'elenco riporta i campi"
-    assert b"I posti messi a concorso sono" not in pdf, "nessun testo composto"
+    assert "codice_bando" in pdf, "l'elenco riporta i campi"
+    assert "I posti messi a concorso sono" not in pdf, "nessun testo composto"

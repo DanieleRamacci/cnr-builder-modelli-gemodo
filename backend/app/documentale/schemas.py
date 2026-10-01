@@ -48,6 +48,7 @@ class TipoBloccoDocumento(str, Enum):
     FIRMA = "FIRMA"
     FOOTER = "FOOTER"
     INTERRUZIONE_PAGINA = "INTERRUZIONE_PAGINA"
+    ELENCO = "ELENCO"
 
 
 class PosizionamentoBlocco(str, Enum):
@@ -61,12 +62,62 @@ class PosizionamentoBlocco(str, Enum):
     COLUMN_RIGHT = "COLUMN_RIGHT"
 
 
+class AllineamentoTesto(str, Enum):
+    """Come si dispone il testo **dentro** il blocco (012 FR-004).
+
+    Distinto da `PosizionamentoBlocco`, che dice dove sta il blocco nella
+    pagina: un paragrafo nel `BODY` puo' essere giustificato o centrato, e il
+    posizionamento non sa dirlo.
+    """
+
+    SINISTRA = "SINISTRA"
+    CENTRO = "CENTRO"
+    DESTRA = "DESTRA"
+    GIUSTIFICATO = "GIUSTIFICATO"
+
+
+class TipoMarcatore(str, Enum):
+    NUMERICO = "NUMERICO"
+    ALFABETICO = "ALFABETICO"
+    PUNTATO = "PUNTATO"
+
+
+class FrammentoTesto(DocumentaleBaseModel):
+    """Porzione di paragrafo con la propria enfasi (012 FR-001).
+
+    `testo` e' testo puro: il formato non definisce alcun linguaggio di
+    marcatura, quindi nessun carattere vi ha significato speciale. Il markup e'
+    rifiutato alla scrittura (`quality/document_model.py`), non ripulito.
+    """
+
+    testo: str
+    grassetto: bool = False
+    corsivo: bool = False
+    sottolineato: bool = False
+    collegamento: str | None = None
+
+
+class ElementoElenco(DocumentaleBaseModel):
+    """Una voce di elenco. Il numero mostrato non e' un campo: lo calcola la resa (FR-015)."""
+
+    livello: int = 0
+    marcatore: TipoMarcatore = TipoMarcatore.NUMERICO
+    frammenti: list[FrammentoTesto] = Field(default_factory=list)
+
+
 class BloccoDocumento(DocumentaleBaseModel):
-    """Elemento visuale ammesso nel modello documentale controllato."""
+    """Elemento visuale ammesso nel modello documentale controllato.
+
+    Dalla 012 il testo e' una sequenza di `frammenti`, non una stringa: il
+    campo `contenuto` non esiste piu' e un blocco che lo porta e' rifiutato da
+    `extra="forbid"` (FR-016, una sola forma).
+    """
 
     id: str
     tipo: TipoBloccoDocumento
-    contenuto: str | None = None
+    frammenti: list[FrammentoTesto] = Field(default_factory=list)
+    allineamento: AllineamentoTesto | None = None
+    elementi: list[ElementoElenco] = Field(default_factory=list)
     posizionamento: PosizionamentoBlocco
     ordine: int = 0
     stile: str | None = None
