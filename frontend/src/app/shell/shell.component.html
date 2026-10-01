@@ -6,13 +6,13 @@
         <span>GEMODO</span>
       </a>
       <nav class="app-nav" aria-label="Navigazione principale">
-        @if (isManager || isAdmin) {
+        @if (isManager() || isAdmin()) {
           <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Contesti</a>
         }
-        @if (isManager) {
+        @if (isManager()) {
           <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Modelli</a>
         }
-        @if (isAdmin) {
+        @if (isAdmin()) {
           <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
             >Impostazioni</a
           >

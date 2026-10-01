@@ -4,6 +4,8 @@ import Keycloak from 'keycloak-js';
 import { provideDesignAngularKit } from 'design-angular-kit';
 import { ShellComponent } from './shell.component';
 import { RUNTIME_CONFIG } from '../runtime-config';
+import { ProfiloService } from '../auth/profilo.service';
+import { profiloFinto } from '../auth/profilo.testing';
 
 function setup(roles: string[], url = '/') {
   TestBed.configureTestingModule({
@@ -11,6 +13,7 @@ function setup(roles: string[], url = '/') {
       provideRouter([]),
       provideDesignAngularKit(),
       { provide: RUNTIME_CONFIG, useValue: { keycloakIssuerUrl: '', keycloakClientId: '' } },
+      { provide: ProfiloService, useValue: profiloFinto(roles) },
       {
         provide: Keycloak,
         useValue: {

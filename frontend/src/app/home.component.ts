@@ -1,15 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import Keycloak from 'keycloak-js';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { ApiClient } from '../shared/api-client';
 import type { ApiError } from '../shared/api-error';
 import type { components as Registry } from '../shared/api-types/integrazioni';
-import { hasClientRole, hasManagerAccess } from './auth/roles';
+import { ProfiloService } from './auth/profilo.service';
 
 type Integrazione = Registry['schemas']['IntegrazioneAdmin'];
 
@@ -23,14 +22,14 @@ const ETICHETTE_STATO: Record<string, string> = {
   standalone: true,
   imports: [DatePipe, RouterLink],
   template: `
-    @if (!admin && !manager) {
+    @if (profiloCaricato() && !admin() && !manager()) {
       <div class="alert alert-warning" role="alert">
         Non sei autorizzato ad accedere alle funzioni di GEMODO.
       </div>
     } @else {
       <section class="home-hero">
         <div>
-          <h1>{{ greeting }}</h1>
+          <h1>{{ greeting() }}</h1>
           <p>
             Un unico ingresso per amministrare le integrazioni e gestire i modelli dei contesti
             autorizzati.
@@ -42,7 +41,7 @@ const ETICHETTE_STATO: Record<string, string> = {
       <section class="home-actions" aria-labelledby="home-actions-title">
         <h2 id="home-actions-title">Cosa vuoi fare</h2>
         <div class="home-action-grid">
-          @if (admin) {
+          @if (admin()) {
             <a routerLink="/configurazione" class="home-action featured">
               <span>01</span>
               <strong>Integrazione servizi</strong>
@@ -54,14 +53,14 @@ const ETICHETTE_STATO: Record<string, string> = {
               <small>Registra una integrazione e genera l'esempio JSON.</small>
             </a>
           }
-          @if (manager) {
-            <a routerLink="/contesti" class="home-action" [class.featured]="!admin">
-              <span>{{ admin ? '03' : '01' }}</span>
+          @if (manager()) {
+            <a routerLink="/contesti" class="home-action" [class.featured]="!admin()">
+              <span>{{ admin() ? '03' : '01' }}</span>
               <strong>Contesti</strong>
               <small>Scegli un contesto e consulta i modelli disponibili.</small>
             </a>
             <a routerLink="/contesti" class="home-action">
-              <span>{{ admin ? '04' : '02' }}</span>
+              <span>{{ admin() ? '04' : '02' }}</span>
               <strong>Nuovo modello</strong>
               <small>Parti dal contesto e dalla categorizzazione live.</small>
             </a>
@@ -73,21 +72,23 @@ const ETICHETTE_STATO: Record<string, string> = {
         <section>
           <div class="section-title-row">
             <div>
-              <h2>{{ admin ? 'Integrazioni servizi' : 'Contesti assegnati' }}</h2>
+              <h2>{{ admin() ? 'Integrazioni servizi' : 'Contesti assegnati' }}</h2>
               <p>
                 {{
-                  admin ? 'Verifica endpoint, JSON e policy dati.' : 'Apri i modelli del contesto.'
+                  admin()
+                    ? 'Verifica endpoint, JSON e policy dati.'
+                    : 'Apri i modelli del contesto.'
                 }}
               </p>
             </div>
-            <a [routerLink]="admin ? '/configurazione' : '/contesti'">vedi tutti</a>
+            <a [routerLink]="admin() ? '/configurazione' : '/contesti'">vedi tutti</a>
           </div>
 
           @if (caricamento()) {
             <p class="home-stato" role="status">Lettura in corso...</p>
           } @else if (errore()) {
             <div class="alert alert-danger" role="alert">{{ errore() }}</div>
-          } @else if (admin) {
+          } @else if (admin()) {
             @if (integrazioni().length) {
               <div class="home-list">
                 @for (fonte of integrazioni(); track fonte.id) {
@@ -115,7 +116,7 @@ const ETICHETTE_STATO: Record<string, string> = {
                 <a routerLink="/configurazione/contesti/nuovo">Registrane una</a>.
               </p>
             }
-          } @else if (manager) {
+          } @else if (manager()) {
             @if (contesti().length) {
               <div class="home-list">
                 @for (contesto of contesti(); track contesto) {
@@ -123,7 +124,9 @@ const ETICHETTE_STATO: Record<string, string> = {
                     <span class="context-mark">{{ sigla(contesto) }}</span>
                     <div>
                       <h3>{{ contesto }}</h3>
-                      <p><code>{{ contesto }}</code> &middot; modelli del contesto</p>
+                      <p>
+                        <code>{{ contesto }}</code> &middot; modelli del contesto
+                      </p>
                     </div>
                     <a
                       class="btn btn-outline-primary btn-sm"
@@ -137,13 +140,12 @@ const ETICHETTE_STATO: Record<string, string> = {
               <p class="home-stato">Nessun contesto assegnato.</p>
             }
           }
-
         </section>
 
         <aside class="screen-aside">
           <h2>Tutte le schermate</h2>
           <p>Un solo ingresso per ciascuna. Le voci fuori dal tuo ruolo non compaiono.</p>
-          @if (admin) {
+          @if (admin()) {
             <a routerLink="/configurazione"><code>5b</code><span>Verifica endpoint</span></a>
             <a routerLink="/configurazione/contesti/nuovo"
               ><code>5a</code><span>Nuovo contesto</span></a
@@ -152,7 +154,7 @@ const ETICHETTE_STATO: Record<string, string> = {
               ><code>4a</code><span>Policy dati</span></a
             >
           }
-          @if (manager) {
+          @if (manager()) {
             <a routerLink="/contesti"><code>1a</code><span>Contesti</span></a>
             <a routerLink="/contesti"><code>1b</code><span>Modelli</span></a>
           }
@@ -162,14 +164,16 @@ const ETICHETTE_STATO: Record<string, string> = {
   `,
 })
 export class HomeComponent {
-  private readonly keycloak = inject(Keycloak);
   private readonly api = inject(ApiClient);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly admin = hasClientRole(this.keycloak, 'gemodo-backend', 'GEMODO_ADMIN');
-  protected readonly manager = hasManagerAccess(this.keycloak);
-  protected readonly greeting = this.admin
-    ? 'Ciao, configura le integrazioni'
-    : 'Ciao, scegli un contesto';
+  private readonly profili = inject(ProfiloService);
+  // Dal profilo calcolato dal backend, non dal token (007 T115).
+  protected readonly profiloCaricato = computed(() => this.profili.profilo() !== null);
+  protected readonly admin = computed(() => this.profili.ha('GEMODO_ADMIN'));
+  protected readonly manager = computed(() => this.profili.ha('GEMODO_MODELLI_GESTORE'));
+  protected readonly greeting = computed(() =>
+    this.admin() ? 'Ciao, configura le integrazioni' : 'Ciao, scegli un contesto',
+  );
   protected readonly oggi = new Date();
   protected readonly integrazioni = signal<Integrazione[]>([]);
   protected readonly contesti = signal<string[]>([]);
@@ -177,7 +181,13 @@ export class HomeComponent {
   protected readonly errore = signal<string | null>(null);
 
   constructor() {
-    this.carica();
+    this.profili
+      .carica()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.carica(),
+        error: (error: ApiError) => this.errore.set(error.messaggio),
+      });
   }
 
   /**
@@ -187,13 +197,13 @@ export class HomeComponent {
    * vuoto e' preferibile a un elenco inventato.
    */
   private carica(): void {
-    if (!this.admin && !this.manager) return;
+    if (!this.admin() && !this.manager()) return;
     this.caricamento.set(true);
     forkJoin({
-      integrazioni: this.admin
+      integrazioni: this.admin()
         ? this.api.get<Integrazione[]>('/api/v1/configurazione/integrazioni')
         : of<Integrazione[]>([]),
-      contesti: this.manager
+      contesti: this.manager()
         ? this.api.get<string[]>('/api/v1/builder/contesti')
         : of<string[]>([]),
     })

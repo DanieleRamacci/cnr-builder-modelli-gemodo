@@ -1,9 +1,8 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import Keycloak from 'keycloak-js';
 import { forkJoin } from 'rxjs';
-import { hasClientRole } from '../../app/auth/roles';
+import { ProfiloService } from '../../app/auth/profilo.service';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/integrazioni';
@@ -27,7 +26,7 @@ type Filtro = 'tutti' | 'con' | 'senza';
         <h1>Contesti</h1>
         <p>Scegli il contesto applicativo di cui gestire i modelli di documento.</p>
       </div>
-      @if (admin) {
+      @if (admin()) {
         <a class="btn btn-primary" routerLink="/configurazione/contesti/nuovo">+ Nuovo contesto</a>
       }
     </header>
@@ -90,7 +89,7 @@ type Filtro = 'tutti' | 'con' | 'senza';
           </footer>
         </article>
       }
-      @if (admin && !loading() && !error()) {
+      @if (admin() && !loading() && !error()) {
         <a class="card-nuovo" routerLink="/configurazione/contesti/nuovo">+ Nuovo contesto</a>
       }
     </div>
@@ -100,7 +99,8 @@ export class ContestiListaComponent {
   private readonly api = inject(ApiClient);
   private readonly destroyRef = inject(DestroyRef);
   // UI-only (FR-023): il backend resta l'autorita' sull'accesso amministrativo.
-  protected readonly admin = hasClientRole(inject(Keycloak), 'gemodo-backend', 'GEMODO_ADMIN');
+  private readonly profili = inject(ProfiloService);
+  protected readonly admin = computed(() => this.profili.ha('GEMODO_ADMIN'));
   protected readonly chips: { valore: Filtro; etichetta: string }[] = [
     { valore: 'tutti', etichetta: 'Tutti' },
     { valore: 'con', etichetta: 'Con integrazioni' },

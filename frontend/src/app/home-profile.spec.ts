@@ -5,6 +5,8 @@ import { provideRouter } from '@angular/router';
 import Keycloak from 'keycloak-js';
 import { HomeComponent } from './home.component';
 import { ProfileComponent } from './profile.component';
+import { ProfiloService } from './auth/profilo.service';
+import { profiloFinto } from './auth/profilo.testing';
 describe('home and profile', () => {
   it('shows an explicit denial without operational links', () => {
     TestBed.configureTestingModule({
@@ -12,6 +14,7 @@ describe('home and profile', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: ProfiloService, useValue: profiloFinto([]) },
         { provide: Keycloak, useValue: { tokenParsed: {} } },
       ],
     });
@@ -26,6 +29,10 @@ describe('home and profile', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: ProfiloService,
+          useValue: profiloFinto(['GEMODO_ADMIN', 'GEMODO_MODELLI_GESTORE']),
+        },
         {
           provide: Keycloak,
           useValue: {
@@ -58,6 +65,7 @@ describe('home and profile', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: ProfiloService, useValue: profiloFinto(['GEMODO_ADMIN']) },
         {
           provide: Keycloak,
           useValue: {
@@ -98,6 +106,7 @@ describe('home and profile', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: ProfiloService, useValue: profiloFinto(['GEMODO_ADMIN']) },
         {
           provide: Keycloak,
           useValue: {
@@ -133,5 +142,44 @@ describe('home and profile', () => {
     expect(fixture.nativeElement.textContent).toContain('TEST_TOKEN');
     fixture.nativeElement.querySelectorAll('button')[1].click();
     expect(logout).toHaveBeenCalledWith({ redirectUri: window.location.origin });
+  });
+
+  it('007 T114: shows each context with its roles and what they allow, explaining an unmapped one', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: Keycloak, useValue: { tokenParsed: { name: 'Maria Bianchi' } } },
+        {
+          provide: ProfiloService,
+          useValue: profiloFinto(
+            ['GEMODO_MODELLI_GESTORE'],
+            [
+              {
+                codice: 'geban',
+                ruoli: ['ROLE_MANAGER#geban'],
+                permessi: [
+                  {
+                    codice: 'GEMODO_MODELLI_GESTORE',
+                    descrizione: 'Crea e compone i modelli e li pubblica',
+                  },
+                ],
+              },
+              { codice: 'altro', ruoli: ['ROLE_MANAGER#altro'], permessi: [] },
+            ],
+          ),
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const geban = root.querySelector('[data-contesto="geban"]')!;
+    expect(geban.textContent).toContain('ROLE_MANAGER#geban');
+    expect(geban.textContent).toContain('Crea e compone i modelli e li pubblica');
+    const altro = root.querySelector('[data-contesto="altro"]')!;
+    expect(altro.querySelector('[data-nessun-permesso]')).toBeTruthy();
   });
 });

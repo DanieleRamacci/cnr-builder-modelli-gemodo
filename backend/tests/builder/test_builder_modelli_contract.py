@@ -71,6 +71,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
         "/modelli/{modelloId}/versioni/{versioneId}/sospendi",
         "/modelli/{modelloId}/versioni/{versioneId}/archivia",
         "/modelli/{modelloId}/versioni/{versioneId}/anteprima",
+        "/profilo",
     }
     assert contract["security"] == [{"KeycloakBearer": []}]
 

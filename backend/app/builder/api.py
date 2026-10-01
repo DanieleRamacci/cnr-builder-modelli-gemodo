@@ -14,6 +14,9 @@ from fastapi import APIRouter, Depends, Query, Response
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    ContestoProfilo,
+    PermessoProfilo,
+    ProfiloResponse,
     RichiestaAnteprima,
     SezioneResponse,
     SezioniResponse,
@@ -41,7 +44,12 @@ from app.builder import repository as builder_service_repository
 from app.builder.repository import NOME_LIVELLO
 from app.builder.service import BuilderService, get_builder_service
 from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione
-from app.common.security import PrincipalGEMODO, require_principal
+from app.common.security import (
+    DESCRIZIONI_PERMESSI,
+    PrincipalGEMODO,
+    permessi_nel_contesto,
+    require_principal,
+)
 
 router = APIRouter(prefix="/api/v1/builder", tags=["builder"])
 
@@ -343,6 +351,40 @@ def _sezioni_response(versione) -> SezioniResponse:
             for s in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice))
         ],
         documento=builder_service_repository.composizione_documentale(versione),
+    )
+
+
+@router.get("/profilo", response_model=ProfiloResponse)
+def profilo(principal: PrincipalGEMODO = Depends(require_principal)) -> ProfiloResponse:
+    """Contesti, ruoli e permessi dell'utente, per la pagina profilo e per l'interfaccia (007 FR-034).
+
+    Basta essere autenticati: dire a qualcuno cosa puo' fare non richiede
+    alcun permesso. Un contesto i cui ruoli non sono mappati compare con
+    nessun permesso, ed e' proprio cio' che l'utente deve poter vedere.
+    """
+    def descritto(codice: str) -> PermessoProfilo:
+        return PermessoProfilo(codice=codice, descrizione=DESCRIZIONI_PERMESSI.get(codice, codice))
+
+    contesti = [
+        ContestoProfilo(
+            codice=codice,
+            ruoli=list(ruoli),
+            permessi=[descritto(p) for p in sorted(permessi_nel_contesto(principal, codice))],
+        )
+        for codice, ruoli in principal.ruoli_contesto
+    ]
+    return ProfiloResponse(
+        soggetto=principal.subject,
+        client_id=principal.client_id,
+        permessi_diretti=[descritto(p) for p in principal.ruoli_diretti],
+        contesti=contesti,
+        # L'unione esplicita, non `principal.ruoli`: e' la stessa che
+        # verificano le rotte, contesto per contesto, qualunque sia il modo in
+        # cui il principale e' stato costruito.
+        permessi=sorted(
+            set(principal.ruoli)
+            | {p.codice for contesto in contesti for p in contesto.permessi}
+        ),
     )
 
 

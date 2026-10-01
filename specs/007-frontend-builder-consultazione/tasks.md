@@ -883,14 +883,29 @@ concordato con l'utente.
       toccate dalla scelta, prima del salvataggio. Chiuso 2026-09-24:
       `dimensioni.component` conta le foglie dall'albero live anche per
       dimensioni extra, coperto da `dimensioni.component.spec.ts`.
-- [ ] T114 [FR-034] Pagina profilo: contesti, ruoli per contesto e descrizione
+- [x] T114 [FR-034] Pagina profilo: contesti, ruoli per contesto e descrizione
       di cosa ciascun ruolo consente, derivata dalla mappatura reale
-- [ ] T115 [FR-034] Verifica della separazione per ruolo: confrontare cosa
+- [x] T115 [FR-034] Verifica della separazione per ruolo: confrontare cosa
       l'interfaccia mostra con cosa il backend autorizza davvero, ruolo per
       ruolo. Le guard lato UI sono dichiaratamente cosmetiche
       (`roles.ts`, `admin.guard.ts`); serve accertare che coincidano con
       `require_configurazione_admin` e `verify_scrittura_su_contesto` e che
       nessuna azione mostrata finisca in 403
+      *T114-T115 fatti 2026-10-01*. Esito della verifica: per l'**admin**
+      interfaccia e backend coincidevano (nessuna mappatura concede
+      `GEMODO_ADMIN`, conta solo il ruolo diretto). Per il **gestore** no:
+      `hasManagerAccess` riconosceva `ROLE_MANAGER#<qualunque contesto>`,
+      quindi per un contesto non mappato mostrava il builder che il backend
+      poi rifiutava, e non avrebbe seguito un cambio della mappatura.
+      Correzione: `GET /api/v1/builder/profilo` (contratto 002 0.9.0) calcola
+      contesti, ruoli e permessi con la stessa mappatura che autorizza le
+      rotte, con la descrizione di ogni permesso dichiarata nel backend
+      (`DESCRIZIONI_PERMESSI`). Menu, home, lista contesti e guardia admin
+      leggono `ProfiloService`; `roles.ts` e' stato rimosso. La pagina
+      profilo mostra per ogni contesto ruoli e permessi, e dice quando un
+      contesto non concede nulla. Test: `test_profilo_api.py` (contesto non
+      mappato = nessun permesso, e il backend lo tratta allo stesso modo),
+      `profilo.service.spec.ts`, profilo in `home-profile.spec.ts`.
 
 ## Phase — Comporre il documento dall'interfaccia (2026-09-24)
 

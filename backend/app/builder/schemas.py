@@ -350,3 +350,31 @@ class ModelloGestioneResponse(ModelloResponse):
     integrazione_id: uuid.UUID | None
     created_at: datetime
     versioni: list[VersioneResponse]
+
+
+class PermessoProfilo(BaseModel):
+    codice: str
+    descrizione: str
+
+
+class ContestoProfilo(BaseModel):
+    """Un contesto del token, i ruoli che vi si hanno e cio' che concedono (007 FR-034)."""
+
+    codice: str
+    ruoli: list[str]
+    permessi: list[PermessoProfilo]
+
+
+class ProfiloResponse(BaseModel):
+    """Chi e' l'utente per GEMODO, calcolato dal backend (007 T114, T115).
+
+    `permessi` e' l'unione di quelli diretti e di quelli dei contesti: e'
+    l'insieme su cui l'interfaccia decide cosa mostrare, lo stesso su cui il
+    backend decide cosa autorizzare.
+    """
+
+    soggetto: str
+    client_id: str
+    permessi_diretti: list[PermessoProfilo]
+    contesti: list[ContestoProfilo]
+    permessi: list[str]

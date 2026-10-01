@@ -4,6 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import Keycloak from 'keycloak-js';
 import { ContestiListaComponent } from './contesti-lista.component';
+import { ProfiloService } from '../../app/auth/profilo.service';
+import { profiloFinto } from '../../app/auth/profilo.testing';
 
 const integrazioni = [
   { id: 'a', codice: 'GEBAN', nome: 'Software GEBAN', codice_contesto: 'geban' },
@@ -21,6 +23,7 @@ describe('1a contexts list', () => {
           provide: Keycloak,
           useValue: { tokenParsed: { resource_access: { 'gemodo-backend': { roles } } } },
         },
+        { provide: ProfiloService, useValue: profiloFinto(roles) },
       ],
     });
     const fixture = TestBed.createComponent(ContestiListaComponent);

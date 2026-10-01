@@ -217,6 +217,27 @@ def _permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str, set
     )
 
 
+def permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str) -> set[str]:
+    """I permessi GEMODO che concede il solo `codice_contesto` (007 FR-034).
+
+    Stessa regola di `verify_scrittura_su_contesto`: e' cio' che il profilo
+    utente mostra, cosi' che l'interfaccia dica esattamente cio' che il backend
+    autorizza invece di ricostruirlo con regole proprie (007 T115).
+    """
+    return _permessi_nel_contesto(principal, codice_contesto, get_settings())
+
+
+# Cosa consente ciascun permesso applicativo: il significato e' del backend,
+# che e' l'unico a farlo rispettare, e lo dichiara qui una volta sola.
+DESCRIZIONI_PERMESSI = {
+    "GEMODO_ADMIN": "Configura integrazioni, tipi documento, policy delle dimensioni e cornice di pagina",
+    "GEMODO_MODELLI_GESTORE": "Crea e compone i modelli, ne chiede l'anteprima, li porta in revisione e li pubblica",
+    "DOCUMENTI_GENERATORE": "Genera documenti dai modelli pubblicati",
+    "DOCUMENTI_VIEWER": "Consulta il catalogo dei modelli e i documenti generati",
+    "GEMODO_CONSULTAZIONE": "Consulta i modelli in sola lettura",
+}
+
+
 def verify_scrittura_su_contesto(
     principal: PrincipalGEMODO,
     codice_contesto: str,
