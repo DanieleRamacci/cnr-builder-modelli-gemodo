@@ -1,7 +1,7 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/011-dimensioni-generiche-modello/plan.md
+at specs/012-editor-documento-fedele/plan.md
 <!-- SPECKIT END -->
 
 <!-- adev-standard:begin -->

@@ -197,6 +197,18 @@ esterni. Il precedente prerequisito US2/T108 e' superato.
 
 ## Ambito Individuato, Non Ancora Specificato
 
+### Editor fedele al provvedimento reale -> diventata la spec 012 (2026-09-29)
+
+Specificata in `specs/012-editor-documento-fedele/spec.md`, a partire da un
+bando CNR vero (367.501 CTER, 15 pagine). Il confronto col formato attuale ha
+mostrato che il documento **non e' rappresentabile**: manca l'enfasi dentro il
+paragrafo - i quaranta "visti" sono tutti "parola chiave in grassetto + titolo
+di legge in corsivo" - mancano gli elenchi annidati, l'allineamento
+giustificato, la cornice di pagina ricorrente e i collegamenti. Tre domande
+restano aperte nella spec: come rappresentare l'enfasi senza riaprire la porta
+a HTML libero, se la cornice di pagina appartenga al modello o al tipo
+documento, e se la numerazione degli elenchi la generi il sistema.
+
 ### Biblioteca di blocchi riutilizzabili - i "visti" (2026-09-24)
 
 Richiesta del product owner durante il completamento del builder, con
@@ -242,8 +254,9 @@ solo blocco per sezione** (`testoSezione` legge `contenuto[0]`) e sa creare
 solo paragrafi. Un blocco di biblioteca inserito come blocco proprio non
 sarebbe visibile finche' l'editor non gestisce sezioni multi-blocco.
 
-**Come procedere**: merita una spec propria (sarebbe la `012`), non un
-incremento di `003` o `007` - ha entita', interfaccia, versionamento e analisi
+**Come procedere**: merita una spec propria (la `012` e' stata nel frattempo
+assegnata all'editor fedele, quindi sarebbe la `013`), non un incremento di
+`003` o `007` - ha entita', interfaccia, versionamento e analisi
 d'impatto suoi. Da aprire con il processo Spec Kit quando il builder e' chiuso.
 
 ## Ordine Suggerito Di Approfondimento

@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: GEMODO - Anteprima documento (spec 012)
+  version: 0.1.0
+  description: |
+    Anteprima PDF di una versione modello in BOZZA (012 US4, FR-009/FR-010).
+
+    Estende il contratto del builder
+    (`specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`),
+    di cui condivide autenticazione, prefisso e catalogo errori. E' descritto a
+    parte perche' introdotto da questa spec; va fuso nel contratto del builder e
+    registrato in `PUBLISHED_CONTRACTS` prima dell'implementazione
+    (Principio II: contratto prima del runtime).
+
+    **L'anteprima non e' una generazione.** Non registra alcun documento
+    generato, non consuma l'idempotenza e non richiede i permessi di
+    generazione. E' un'azione di chi compone il modello.
+
+servers:
+  - url: /api/v1
+    description: Percorso applicativo GEMODO
+
+security:
+  - keycloakBearer: []
+
+paths:
+  /builder/modelli/{modelloId}/versioni/{versioneId}/anteprima:
+    post:
+      operationId: anteprimaVersioneModello
+      summary: Produce l'anteprima PDF di una versione in BOZZA
+      description: |
+        Compone le sezioni della versione con lo **stesso renderer** usato dalla
+        generazione ufficiale (FR-008: una sola implementazione, altrimenti
+        anteprima e PDF finale divergono), sostituendo ogni segnaposto con un
+        valore fac-simile derivato dall'etichetta del campo.
+
+        Il PDF restituito riporta la marcatura di test gia' presente su ogni
+        documento prodotto da questo servizio, piu' una marcatura di anteprima.
+
+        Autorizzazione: scrittura sul contesto del tipo documento del modello,
+        lo stesso controllo che protegge la scrittura delle sezioni. Non
+        `DOCUMENTI_GENERATORE`.
+      tags: [builder]
+      parameters:
+        - name: modelloId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: versioneId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RichiestaAnteprima'
+      responses:
+        '200':
+          description: Anteprima prodotta
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              example: inline; filename="anteprima-bando-cter-v3.pdf"
+            X-GEMODO-Anteprima:
+              description: Sempre presente e sempre `true`; marca la risposta come non ufficiale.
+              schema: { type: string, enum: ['true'] }
+        '401':
+          $ref: '#/components/responses/NonAutenticato'
+        '403':
+          $ref: '#/components/responses/NonAutorizzato'
+        '404':
+          $ref: '#/components/responses/NonTrovato'
+        '409':
+          description: |
+            La versione non e' in BOZZA. L'anteprima serve a controllare prima
+            di pubblicare; su una versione gia' pubblicata si chiede il
+            documento vero.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errore' }
+              example:
+                codice: MODELLO_VERSIONE_NON_MODIFICABILE
+                messaggio: "La versione e' in stato PUBBLICATO: l'anteprima si chiede sulle bozze"
+        '422':
+          description: |
+            Le sezioni della versione non sono componibili: struttura non valida
+            secondo il formato documentale.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errore' }
+              example:
+                codice: MODELLO_DOCUMENTALE_NON_VALIDO
+                messaggio: 'Struttura del modello documentale non valida'
+
+components:
+  securitySchemes:
+    keycloakBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RichiestaAnteprima:
+      type: object
+      additionalProperties: false
+      description: |
+        Corpo facoltativo. Omesso, i segnaposto assumono un valore fac-simile
+        derivato dall'etichetta del campo.
+      properties:
+        valori:
+          type: object
+          additionalProperties: { type: string }
+          description: |
+            Valori da usare al posto dei segnaposto, per provare il documento
+            con testi realistici. Non sono dati ufficiali e non vengono
+            conservati.
+          example:
+            numero_posti: '2'
+            sede: 'Roma'
+
+    Errore:
+      type: object
+      required: [codice, messaggio]
+      properties:
+        codice:
+          type: string
+          description: Codice dal catalogo condiviso `infra/openapi/errors.md`
+        messaggio: { type: string }
+        dettagli:
+          type: array
+          items: { type: string }
+
+  responses:
+    NonAutenticato:
+      description: Token mancante o non valido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Errore' }
+          example: { codice: ACCESSO_NON_AUTENTICATO, messaggio: 'Token mancante o non valido' }
+    NonAutorizzato:
+      description: Il token non autorizza la scrittura sul contesto del tipo documento
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Errore' }
+          example: { codice: ACCESSO_NON_AUTORIZZATO, messaggio: 'Operazione non autorizzata' }
+    NonTrovato:
+      description: |
+        Modello o versione inesistenti, oppure fuori dal contesto del chiamante.
+        Le due condizioni producono la stessa risposta: non si rivela
+        l'esistenza di cio' che il chiamante non puo' vedere.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Errore' }
+          example: { codice: MODELLO_VERSIONE_NON_TROVATO, messaggio: 'Versione non trovata' }

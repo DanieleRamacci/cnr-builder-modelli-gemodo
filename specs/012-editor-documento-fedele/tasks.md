@@ -1,0 +1,369 @@
+---
+
+description: "Task list per 012 - Editor documentale fedele al provvedimento reale"
+---
+
+# Tasks: Editor documentale fedele al provvedimento reale
+
+**Input**: documenti di progetto in `/specs/012-editor-documento-fedele/`
+
+**Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md),
+[research.md](./research.md), [data-model.md](./data-model.md),
+[contracts/](./contracts/)
+
+**Tests**: inclusi. Questo progetto non ammette test che simulano la logica di
+dominio: ogni verifica gira contro Postgres reale o contro il renderer reale.
+Due criteri di successo (SC-004, SC-006) sono **verificabili solo** con un test,
+quindi i task di test qui non sono accessori.
+
+**Organization**: raggruppati per user story, cosi' che ciascuna sia
+implementabile e collaudabile da sola.
+
+## Format: `[ID] [P?] [Story] Descrizione`
+
+- **[P]**: parallelizzabile (file diversi, nessuna dipendenza)
+- **[Story]**: a quale user story appartiene
+
+## Path Conventions
+
+Applicazione web: `backend/app/`, `frontend/src/`, come da
+[plan.md](./plan.md#source-code-repository-root).
+
+## Ordine delle fasi
+
+Le fasi **non** seguono la priorita' delle user story ma l'ordine di dipendenza
+stabilito nel plan: US4 (P2) arriva prima di US3 (P2) perche' e' cio' che rende
+verificabili US1 e US2, e senza di essa l'unico modo di guardare il risultato e'
+pubblicare.
+
+---
+
+## Phase 1: Setup
+
+**Purpose**: cio' che va messo a posto prima di toccare il dominio. Il contratto
+va pubblicato **prima** del codice, non dopo (Principio II).
+
+- [ ] T001 Copiare i quattro `.ttf` di Titillium Web (regular, 700, italic,
+      700italic) da `frontend/node_modules/bootstrap-italia/dist/fonts/Titillium_Web/`
+      in `backend/app/generazione/fonts/`, con `OFL.txt` accanto.
+      `node_modules/` non e' un percorso su cui il backend possa fare
+      affidamento a runtime e `frontend/dist/` e' un artefatto di build
+      (research.md R1).
+- [ ] T002 Fondere [`contracts/anteprima-api.openapi.yaml`](./contracts/anteprima-api.openapi.yaml)
+      in `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
+      e verificare che sia registrato in `PUBLISHED_CONTRACTS`
+      (`backend/app/quality/openapi_docs.py`), cosi' che compaia in Swagger
+      prima dell'implementazione.
+- [ ] T003 [P] Estendere la colonna `Condizione` di
+      `MODELLO_DOCUMENTALE_NON_VALIDO` in `infra/openapi/errors.md` per
+      nominare anche il testo dei frammenti. **Nessun codice di errore nuovo**:
+      quello esistente copre gia' questo caso (contracts/formato-documentale.md).
+
+---
+
+## Phase 2: Foundational (blocca tutte le storie)
+
+**Purpose**: la forma nuova del paragrafo. Nessuna user story ha dove salvare
+finche' questa fase non e' chiusa.
+
+### Formato
+
+- [ ] T004 [P] Aggiungere `FrammentoTesto`, `ElementoElenco`,
+      `AllineamentoTesto`, `TipoMarcatore` in
+      `backend/app/documentale/schemas.py`.
+- [ ] T005 In `BloccoDocumento` (stesso file): **rimuovere** `contenuto`,
+      aggiungere `frammenti`, `allineamento`, `elementi`; aggiungere `ELENCO` a
+      `TipoBloccoDocumento`. `extra="forbid"` e' gia' attivo, quindi un blocco
+      che porta ancora `contenuto` viene rifiutato senza scrivere altro codice.
+- [ ] T006 [P] Aggiungere `ELENCO` a `POSIZIONI_AMMESSE` in
+      `backend/app/quality/document_model.py` (`BODY`, `COLUMN_LEFT`,
+      `COLUMN_RIGHT`).
+
+### Validazione (FR-002, SC-005)
+
+- [ ] T007 In `backend/app/quality/document_model.py`, validare: markup nel
+      `testo` di un frammento; `livello` fuori da {0,1}; `elementi` su un blocco
+      che non e' `ELENCO`; `collegamento` con schema diverso da
+      `http`/`https`/`mailto`. Tutti producono
+      `MODELLO_DOCUMENTALE_NON_VALIDO` (422), **rifiuto** e mai bonifica
+      silenziosa.
+      **Nota**: questo controllo oggi non esiste - il divieto e' applicato solo
+      al booleano auto-dichiarato `contiene_html_libero` (research.md R6).
+      E' codice nuovo, non un adeguamento.
+- [ ] T008 [P] Test di T007 in `backend/tests/`: `<b>` nel testo,
+      `javascript:` nel collegamento, `livello: 2`, `elementi` su `PARAGRAFO`.
+      Copre SC-005.
+
+### Migrazione (FR-016, SC-004)
+
+- [ ] T009 Migrazione Alembic su `sezione_modello.contenuto` (JSONB):
+      `{"contenuto": "x"}` diventa `{"frammenti": [{"testo": "x"}]}`,
+      `contenuto: null` diventa `frammenti: []`. `downgrade` concatena i
+      `testo`.
+- [ ] T010 Test della migrazione su Postgres reale (Testcontainers): righe
+      prima, `upgrade`, righe dopo, `downgrade`, righe di nuovo come prima.
+- [ ] T011 **SC-004, prima di eseguire la migrazione in qualunque ambiente**:
+      generare il PDF di ogni versione pubblicata sullo stato precedente,
+      conservarne il testo estratto, migrare, rigenerare, confrontare coppia per
+      coppia. Si confronta il **testo estratto**, non i byte: un PDF contiene
+      data di produzione e identificatori che cambiano a ogni generazione.
+      Una differenza ferma la migrazione - non si corregge il confronto.
+
+### Renderer
+
+- [ ] T012 In `backend/app/generazione/renderer.py`, registrare Titillium Web
+      nelle quattro varianti e sostituire ogni `Helvetica`.
+- [ ] T013 [P] Test: un paragrafo con virgolette curve, apostrofo tipografico,
+      trattino lungo e lettere accentate arriva invariato nel testo estratto.
+      Copre SC-006.
+      **Questo test fallisce oggi, prima della feature**, e non con un carattere
+      sbagliato: il core font solleva `FPDFUnicodeEncodingException`, che
+      `GenerazioneDocumentiService.genera` cattura nel suo `except Exception`
+      generico e trasforma in un documento `FALLITO` (research.md R1).
+- [ ] T014 Riscrivere `_rendi_blocco` sui frammenti: resa con
+      `text_columns()` + `paragraph.write()`, cambiando variante di font fra un
+      frammento e l'altro (research.md R2).
+- [ ] T015 Applicare `allineamento` esplicito, `GIUSTIFICATO` incluso. La
+      tabella `_ALLINEAMENTO` che deriva l'allineamento dal posizionamento
+      resta solo come default per i blocchi che non lo dichiarano.
+- [ ] T016 Far leggere al renderer il campo `stile` (`H1`/`H2`), che oggi
+      **scrive il frontend e nessuno legge**. E' il difetto che la spec cita
+      come gia' visibile; FR-008 non ammette che l'editor mostri un titolo e il
+      PDF produca un paragrafo.
+- [ ] T017 Riscrivere `sostituisci_placeholder` per frammento invece che sulla
+      stringa del blocco (FR-005).
+- [ ] T018 [P] Test: un segnaposto dentro un frammento in grassetto produce un
+      valore in grassetto, e il paragrafo non si spezza (US1 scenario 3).
+
+**Checkpoint**: il formato nuovo esiste, e' validato, migrato e reso. Le storie
+possono partire.
+
+---
+
+## Phase 3: User Story 1 - Enfasi dentro il testo (P1)
+
+**Goal**: il gestore scrive un "visto" selezionando le porzioni come farebbe in
+Word.
+
+**Independent Test**: comporre un singolo "visto" del bando di riferimento,
+pubblicarlo, verificare grassetto e corsivo nel PDF. Vale da solo, senza elenchi
+e senza cornice.
+
+- [ ] T019 In `frontend/src/features/builder/modello-anteprima.component.ts`,
+      sostituire `contenteditable="plaintext-only"` (riga ~390) con un editor
+      ricco controllato. Quel `plaintext-only` era obbligato finche' il
+      paragrafo era una stringa sola: senza frammenti non c'era dove mettere il
+      grassetto, quindi conservarlo sarebbe stato inutile.
+- [ ] T020 Abilitare B/I/U, che oggi sono nel markup ma **disabilitati**, e
+      applicarli alla selezione (FR-006).
+- [ ] T021 [P] Modello dati lato frontend: un blocco porta frammenti, non una
+      stringa.
+- [ ] T022 Serializzazione DOM -> frammenti alla scrittura, e frammenti -> DOM
+      alla lettura. Unire i frammenti adiacenti con gli stessi attributi, per
+      non accumulare frammenti spuri a ogni modifica.
+- [ ] T023 **Incolla da elaboratore di testi** (FR-017): leggere la
+      rappresentazione HTML degli appunti, conservare enfasi, capoversi ed
+      elenchi, scartare colori, font, rientri, immagini e tabelle. La
+      conversione avviene **nel browser**: al servizio arrivano frammenti, mai
+      markup.
+      **Il dettaglio che non va dimenticato**: Word incolla spesso `1.`, `a)`
+      come testo dentro il paragrafo. Sommati alla numerazione calcolata in resa
+      darebbero `1. 1. Sono indetti...`. I marcatori scritti a mano vanno
+      riconosciuti e rimossi quando l'elenco viene convertito (research.md R8).
+- [ ] T024 [P] Test Vitest: applicazione dell'enfasi su selezione parziale,
+      enfasi annidate (grassetto e corsivo insieme), incolla da Word con
+      marcatori di lista da rimuovere.
+- [ ] T025 Test e2e Playwright contro lo stack reale: comporre un "visto" del
+      bando di riferimento, pubblicare, generare, verificare l'enfasi nel PDF
+      (US1 scenari 1 e 2).
+
+**Checkpoint**: la parte piu' voluminosa del bando - i quaranta paragrafi
+normativi - diventa componibile.
+
+---
+
+## Phase 4: User Story 2 - Struttura dell'articolato (P1)
+
+**Goal**: intestazione dell'articolo centrata, commi numerati, lettere annidate,
+testo giustificato.
+
+**Independent Test**: ricostruire l'art. 3 del bando di riferimento e
+verificarne la resa nel PDF. Dipende dalla Phase 2, non da US1.
+
+- [ ] T026 **Mostrare tutti i blocchi di una sezione** nell'editor, non solo il
+      primo (FR-007). Oggi `testoSezione` legge `contenuto[0]`: qualunque blocco
+      oltre il primo esiste nei dati e non si vede.
+      Questo task sblocca anche la futura biblioteca dei "visti"
+      (`docs/project-map.md:212`), che senza sezioni multi-blocco non potrebbe
+      mostrare cio' che inserisce.
+- [ ] T027 Permettere all'editor di creare **tutti** i tipi di blocco del
+      vocabolario, non solo paragrafi (FR-007).
+- [ ] T028 Blocco `ELENCO` nell'editor: due livelli, rientro e sporgenza con
+      Tab e Shift-Tab, scelta del marcatore.
+- [ ] T029 Numerazione calcolata in resa nel renderer, con azzeramento dei
+      contatori all'inizio di ogni sezione e a ogni blocco `TITOLO`
+      (research.md R3). Nessun numero viene mai salvato nei dati.
+- [ ] T030 [P] Allineamento nella toolbar, giustificato incluso (FR-004).
+- [ ] T031 [P] Test: inserito un comma in mezzo a un articolo di tre commi, la
+      numerazione resta coerente in tutto l'articolo (US2 scenario 1). E' la
+      prova che la numerazione e' calcolata e non scritta.
+- [ ] T032 [P] Test: un elenco che attraversa un'interruzione di pagina
+      prosegue la numerazione invece di ripartire (Edge Case).
+- [ ] T033 Test e2e: ricostruire l'art. 3 del bando di riferimento, generare,
+      verificare annidamento, rientri e intestazione centrata (US2 scenari 2 e 3).
+
+**Checkpoint**: articolato e parte normativa sono entrambi componibili. E' il
+grosso di SC-001.
+
+---
+
+## Phase 5: User Story 4 - Anteprima fedele del PDF (P2)
+
+**Goal**: prima di pubblicare, il gestore vede il PDF che verrebbe generato.
+
+**Independent Test**: aprire l'anteprima di una bozza e confrontarla col PDF
+generato dopo la pubblicazione.
+
+**Perche' qui e non dopo US3**: e' cio' che rende verificabile tutto quanto
+precede. Senza, l'unico modo di guardare il risultato e' pubblicare.
+
+- [ ] T034 Metodo di anteprima in `backend/app/builder/service.py`: compone i
+      blocchi e chiama `render_documento`, **senza importare lo storage**.
+      Percorso separato da `GenerazioneDocumentiService.genera`, non un
+      parametro `anteprima=True` su di esso: le tre negazioni di FR-010 nascono
+      tutte da quel metodo (`hash_dati`, `esistente_per_chiave`,
+      `registra_successo`), e un condizionale sbagliato li' produrrebbe un
+      documento ufficiale non voluto. Separando, le negazioni sono vere per
+      costruzione (research.md R4).
+- [ ] T035 Valori fac-simile per i segnaposto, derivati dall'etichetta del campo
+      nella forma `«etichetta»`, cosi' che nel PDF si distingua a colpo d'occhio
+      il segnaposto dal testo.
+- [ ] T036 Rotta `POST /builder/modelli/{modelloId}/versioni/{versioneId}/anteprima`
+      in `backend/app/builder/api.py`, come da contratto. Autorizzazione con
+      `verify_scrittura_su_contesto` - **non** `DOCUMENTI_GENERATORE`: e'
+      un'azione di chi compone.
+- [ ] T037 [P] Test di FR-010, che e' il cuore della storia: dopo un'anteprima,
+      nessun `DocumentoGenerato` risulta registrato, e una generazione
+      successiva con gli stessi dati **non** trova una chiave di idempotenza
+      gia' consumata.
+- [ ] T038 [P] Test di autorizzazione: un token con soli permessi di
+      generazione riceve 403; un gestore di un altro contesto riceve 404, non
+      403 (non si rivela l'esistenza di cio' che non puo' vedere).
+- [ ] T039 [P] Test: anteprima su versione `PUBBLICATO` risponde 409.
+- [ ] T040 Frontend: il pulsante "Anteprima", che oggi fa solo `scrollIntoView`
+      (riga ~1071), richiede e mostra il PDF vero.
+- [ ] T041 Test e2e SC-003: anteprima della bozza, pubblicazione, generazione
+      con dati veri, confronto - struttura, ordine, enfasi e numerazione
+      coincidono, differiscono solo i valori.
+
+**Checkpoint**: da qui in avanti ogni cosa e' verificabile senza pubblicare.
+
+---
+
+## Phase 6: User Story 3 - Cornice della pagina (P2)
+
+**Goal**: logo e numero di pagina su ogni pagina, interruzioni volute, blocco
+firma in chiusura.
+
+**Independent Test**: generare un documento di piu' pagine e verificare che logo
+e numero compaiano su tutte, non solo sulla prima.
+
+**Due attori distinti**: la cornice la configura l'amministratore sul tipo
+documento; interruzione di pagina e firma restano al gestore nell'editor.
+
+- [ ] T042 [P] `CornicePagina` in `backend/app/documentale/schemas.py`
+      (`logo_ref`, `intestazione`, `pie_pagina`, `numerazione_pagine`), con la
+      stessa grammatica a frammenti del resto del formato.
+- [ ] T043 Migrazione Alembic: colonna JSONB `cornice_pagina` su
+      `tipo_documento`.
+- [ ] T044 Renderer: intestazione e pie' di pagina ripetuti su **ogni** pagina,
+      con numerazione. E' una cornice ricorrente, non i blocchi `LOGO`/`FOOTER`
+      esistenti, che restano per i casi in cui compaiono una volta sola nel
+      corpo.
+- [ ] T045 [P] `INTERRUZIONE_PAGINA` creabile dall'editor (FR-012).
+- [ ] T046 [P] Blocco `FIRMA` creabile dall'editor, allineato a destra (US3
+      scenario 3).
+- [ ] T047 Configurazione della cornice in
+      `frontend/src/features/configurazione/tipo-documento-struttura.component.ts`.
+- [ ] T048 [P] Test: documento di tre pagine, logo e numero su ciascuna (US3
+      scenario 1); interruzione di pagina rispettata (scenario 2).
+
+---
+
+## Phase 7: User Story 5 - Collegamenti (P3)
+
+**Goal**: collegamenti a portali e indirizzi PEC.
+
+- [ ] T049 [P] Resa del `collegamento` del frammento nel PDF, con il `testo`
+      che resta leggibile dove il collegamento non e' cliccabile (FR-014).
+- [ ] T050 [P] Inserimento del collegamento dall'editor.
+- [ ] T051 [P] Test: collegamento cliccabile nel PDF; `javascript:` rifiutato
+      (gia' coperto da T007, qui verificato dal percorso dell'editor).
+
+---
+
+## Phase 8: Polish e trasversali
+
+- [ ] T052 Aggiornare la documentazione pubblica del formato documentale alla
+      forma a frammenti. Un riusante che legga la documentazione attuale
+      troverebbe descritta una struttura che non esiste piu' (Principio VI).
+- [ ] T053 Includere la licenza OFL del font nel repository e citarla dove si
+      elencano le dipendenze di terze parti (Principio VI).
+- [ ] T054 **Decidere se registrare un evento di audit per l'anteprima**
+      (Principio V). Non e' una generazione e non compare nell'elenco di eventi
+      della costituzione, quindi registrarla o no e' una scelta da prendere e
+      motivare, non un'omissione da lasciare implicita.
+- [ ] T055 [P] Aggiornare `docs/quality-coverage-matrix.yaml` per FR-001..FR-017.
+- [ ] T056 Eseguire [quickstart.md](./quickstart.md) per intero sullo stack
+      reale, database pulito, e registrare l'esito di ciascun SC.
+- [ ] T057 **SC-001, la verifica che non si automatizza**: ricomporre nell'editor
+      le tre parti del bando 367.501 CTER indicate nel quickstart e confrontarle
+      col bando reale, che resta agli atti dell'ente. Non ne esiste una versione
+      nel repository, ed e' corretto cosi': e' materiale illustrativo.
+
+---
+
+## Dependencies
+
+```text
+Phase 1 Setup
+    v
+Phase 2 Foundational  ← blocca tutto
+    v
+    +-- Phase 3 US1 (enfasi) ---+
+    |                           |
+    +-- Phase 4 US2 (articolato)+--> Phase 5 US4 (anteprima)
+    |                           |
+    +-- Phase 6 US3 (cornice) --+   indipendente, parallelizzabile
+                                v
+                            Phase 7 US5 (collegamenti)
+                                v
+                            Phase 8 Polish
+```
+
+- **US1 e US2 non dipendono l'una dall'altra**: entrambe dipendono dalla Phase 2.
+- **US3 e' il percorso piu' indipendente**: tocca il tipo documento, non
+  l'editor del modello. Puo' procedere in parallelo a US1/US2.
+- **US4 dipende da cio' che c'e' da vedere**, quindi conviene dopo US1+US2, ma
+  tecnicamente ha bisogno solo della Phase 2.
+
+## Parallel execution
+
+- Phase 2: T004+T006 insieme; poi T008, T012 (test), T018 sono `[P]`.
+- Phase 3: T021 e T024 in parallelo al lavoro su T019/T020/T022.
+- Phase 4 e Phase 6 sono due filoni che possono procedere in parallelo, su file
+  diversi (`builder/` contro `configurazione/`).
+
+## Implementation Strategy
+
+**Il primo momento in cui si vede qualcosa** e' la fine della Phase 3: un
+"visto" reale, con la sua enfasi, che arriva nel PDF. E' l'MVP di questa
+feature e vale da solo.
+
+**Il primo momento in cui si puo' giudicare** e' la fine della Phase 5: da li'
+l'anteprima rende visibile il risultato senza dover pubblicare, e SC-001
+diventa una verifica che si puo' ripetere invece di un collaudo finale.
+
+**Una regola per la Phase 2**: T011 (il confronto SC-004) va eseguito **prima**
+di applicare la migrazione in qualunque ambiente che contenga versioni
+pubblicate, non dopo per confermare che sia andata bene.
