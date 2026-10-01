@@ -815,6 +815,48 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  it('012 T029: a published document restarts list numbering at every section, like the PDF', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    const elenco = (id: string, ordine: number, testi: string[]) => ({
+      id,
+      tipo: 'ELENCO',
+      frammenti: [],
+      elementi: testi.map((testo) => ({
+        livello: 0,
+        marcatore: 'NUMERICO',
+        frammenti: [{ testo }],
+      })),
+      posizionamento: 'BODY',
+      ordine,
+      stile: null,
+      placeholder_usati: [],
+    });
+    const art1 = [elenco('a1', 0, ['primo', 'secondo'])];
+    const art2 = [elenco('a2', 0, ['terzo'])];
+    flushSections(http, {
+      ...sezioniResponse,
+      modificabile: false,
+      sezioni: [
+        { codice: 'art-1', ordine: 0, contenuto: art1 },
+        { codice: 'art-2', ordine: 1, contenuto: art2 },
+      ],
+      documento: {
+        blocchi: [
+          { ...art1[0], ordine: 0 },
+          { ...art2[0], ordine: 1 },
+        ],
+        placeholder_usati: [],
+      },
+    } as unknown as typeof sezioniResponse);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) => m.textContent);
+    expect(marcatori).toEqual(['1.', '2.', '1.']);
+    http.verify();
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

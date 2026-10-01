@@ -42,6 +42,13 @@ from pypdf import PdfReader
 from sqlalchemy import select
 
 from app.builder.repository import composizione_documentale
+
+try:
+    from app.builder.repository import inizi_sezione
+except ImportError:
+    # Fase `prima`: il codice precedente alla 012 non conosce le sezioni in
+    # resa, e prima della 012 non esistevano elenchi da numerare.
+    inizi_sezione = None
 from app.catalog.models import ModelloDocumentoVersione
 from app.db.session import SessionLocal
 from app.generazione.renderer import render_documento, sostituisci_placeholder
@@ -67,7 +74,10 @@ def _rendi_pubblicate() -> dict[str, dict[str, str]]:
                 continue
             dati = {nome: f"VALORE-{nome}" for nome in documento.placeholder_usati}
             try:
-                pdf = render_documento(titolo=_TITOLO, blocchi=sostituisci_placeholder(documento.blocchi, dati))
+                extra = {} if inizi_sezione is None else {"inizi_sezione": inizi_sezione(versione)}
+                pdf = render_documento(
+                    titolo=_TITOLO, blocchi=sostituisci_placeholder(documento.blocchi, dati), **extra,
+                )
             except Exception as errore:  # noqa: BLE001 - e' proprio cio' che si vuole registrare
                 esiti[str(versione.id)] = {"errore": f"{type(errore).__name__}: {errore}"}
             else:

@@ -67,6 +67,14 @@ Chi compone vede un titolo e ottiene un paragrafo qualunque.
   gestore? → A: **Automatica**. L'elemento di lista porta solo il livello e il
   tipo di marcatore; il numero lo calcola il renderer, e riparte dentro ogni
   articolo.
+- Q: Il numero dell'articolo ("Art. 1", "Art. 2") si aggiorna da solo se si
+  inserisce un articolo in mezzo? (2026-10-01) → A: **No, per ora resta scritto
+  a mano** nel testo del `TITOLO`; si valuta dopo l'uso. La numerazione
+  automatica copre commi e lettere (FR-015), non gli articoli. Aggiungerla dopo
+  e' additivo: le intestazioni hanno la forma regolare `Art. N - Rubrica`, che
+  una migrazione puo' riconoscere e convertire. Restano fuori in ogni caso i
+  rinvii nel testo ("ai sensi dell'art. 4 comma 2"), che sono testo e non
+  seguono una rinumerazione.
 - Q: Che peso ha l'incolla da Word, dato che il bando oggi si compone a mano in
   Word? → A: **Incolla di base dentro US1**, non rifinitura. Si conservano
   enfasi, capoversi ed elenchi; colori, font, rientri, immagini e tabelle si

@@ -951,6 +951,22 @@ export class ModelloAnteprimaComponent {
     }
     return blocchi;
   });
+  /**
+   * I marcatori del documento composto. Il servizio lo restituisce come
+   * sequenza piatta, e i confini di sezione si ricostruiscono dalle sezioni,
+   * come fa la resa (`inizi_sezione` in `builder/repository.py`).
+   */
+  protected readonly marcatoriDocumento = computed(() => {
+    const risposta = this.sezioni();
+    if (!risposta) return new Map<BloccoDocumento, string[]>();
+    const inizi = new Set<number>();
+    let progressivo = 0;
+    for (const sezione of [...risposta.sezioni].sort((a, b) => a.ordine - b.ordine)) {
+      if (sezione.contenuto.length) inizi.add(progressivo);
+      progressivo += sezione.contenuto.length;
+    }
+    return numeraElenchi(risposta.documento.blocchi, inizi);
+  });
   protected readonly bloccoModificheNonSalvate = computed(
     () => !!this.sezioni()?.modificabile && this.documentoModificato(),
   );
@@ -1087,12 +1103,12 @@ export class ModelloAnteprimaComponent {
     blocco: BloccoDocumento,
     indice: number,
   ): string {
-    return numeraElenchi(sezione.contenuto).get(blocco.id)?.[indice] ?? '';
+    return numeraElenchi(sezione.contenuto).get(blocco)?.[indice] ?? '';
   }
 
-  /** In sola lettura i blocchi arrivano gia' concatenati: si numera blocco per blocco. */
+  /** In sola lettura: il documento composto, con le sezioni dove ripartire. */
   protected marcatoreInBlocco(blocco: BloccoDocumento, indice: number): string {
-    return numeraElenchi([blocco]).get(blocco.id)?.[indice] ?? '';
+    return this.marcatoriDocumento().get(blocco)?.[indice] ?? '';
   }
 
   protected selezionaSezione(codice: string): void {
@@ -2040,18 +2056,26 @@ function sottoMarcatore(radice: TipoMarcatore): TipoMarcatore {
 
 /**
  * I marcatori di ogni voce degli elenchi di una sequenza di blocchi. Il
- * contatore del primo livello prosegue fra elenchi e si azzera a ogni `TITOLO`;
- * quello del secondo si azzera a ogni voce di primo livello.
+ * contatore del primo livello prosegue fra elenchi e si azzera a ogni `TITOLO`
+ * e a ogni blocco il cui `ordine` apre una sezione (`inizi`); quello del
+ * secondo si azzera a ogni voce di primo livello. E' la regola di
+ * `marcatori_elenchi` nel renderer: l'editor mostra cio' che il PDF scrive.
  */
-function numeraElenchi(blocchi: BloccoDocumento[]): Map<string, string[]> {
-  const marcatori = new Map<string, string[]>();
+function numeraElenchi(
+  blocchi: BloccoDocumento[],
+  inizi: Set<number> = new Set(),
+): Map<BloccoDocumento, string[]> {
+  const marcatori = new Map<BloccoDocumento, string[]>();
   let primo = 0;
   let secondo = 0;
   for (const blocco of blocchi) {
-    if (blocco.tipo === 'TITOLO') primo = 0;
+    if (blocco.tipo === 'TITOLO' || inizi.has(blocco.ordine)) {
+      primo = 0;
+      secondo = 0;
+    }
     if (blocco.tipo !== 'ELENCO') continue;
     marcatori.set(
-      blocco.id,
+      blocco,
       (blocco.elementi ?? []).map((elemento) => {
         if (elemento.livello === 0) {
           secondo = 0;

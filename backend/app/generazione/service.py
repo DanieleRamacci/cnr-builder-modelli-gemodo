@@ -72,7 +72,10 @@ class GenerazioneDocumentiService:
         try:
             if documentale.blocchi:
                 blocchi = sostituisci_placeholder(documentale.blocchi, request.dati)
-                contenuto = render_documento(titolo=titolo, blocchi=blocchi)
+                contenuto = render_documento(
+                    titolo=titolo, blocchi=blocchi,
+                    inizi_sezione=builder_repository.inizi_sezione(version),
+                )
             else:
                 righe = [
                     (campo.etichetta, request.dati[campo.codice])

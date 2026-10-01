@@ -241,15 +241,25 @@ verificarne la resa nel PDF. Dipende dalla Phase 2, non da US1.
       vocabolario, non solo paragrafi (FR-007).
 - [ ] T028 Blocco `ELENCO` nell'editor: due livelli, rientro e sporgenza con
       Tab e Shift-Tab, scelta del marcatore.
-- [ ] T029 Numerazione calcolata in resa nel renderer, con azzeramento dei
+- [x] T029 Numerazione calcolata in resa nel renderer, con azzeramento dei
       contatori all'inizio di ogni sezione e a ogni blocco `TITOLO`
       (research.md R3). Nessun numero viene mai salvato nei dati.
 - [ ] T030 [P] Allineamento nella toolbar, giustificato incluso (FR-004).
-- [ ] T031 [P] Test: inserito un comma in mezzo a un articolo di tre commi, la
+- [x] T031 [P] Test: inserito un comma in mezzo a un articolo di tre commi, la
       numerazione resta coerente in tutto l'articolo (US2 scenario 1). E' la
       prova che la numerazione e' calcolata e non scritta.
-- [ ] T032 [P] Test: un elenco che attraversa un'interruzione di pagina
+- [x] T032 [P] Test: un elenco che attraversa un'interruzione di pagina
       prosegue la numerazione invece di ripartire (Edge Case).
+      *T029, T031, T032 fatti 2026-10-01*: `marcatori_elenchi` nel renderer,
+      voci con rientro sporgente (marcatore a sinistra, testo allineato dopo),
+      marcatore e prima riga sempre sulla stessa pagina. I confini di sezione
+      arrivano al renderer con `inizi_sezione(versione)` in
+      `builder/repository.py`, senza cambiare `ModelloDocumentaleControllato`.
+      L'editor usa la stessa regola anche in sola lettura. Test in
+      `tests/generazione/test_numerazione_elenchi.py`; l'e2e verifica
+      `1. ... a) ...` nel PDF generato. Chiusa la divergenza FR-008 aperta in
+      Phase 3. Il numero dell'**articolo** resta scritto a mano (chiarimento
+      del 2026-10-01 in spec.md).
 - [ ] T033 Test e2e: ricostruire l'art. 3 del bando di riferimento, generare,
       verificare annidamento, rientri e intestazione centrata (US2 scenari 2 e 3).
 

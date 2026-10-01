@@ -23,8 +23,10 @@ from fpdf import FPDF
 from app.documentale.schemas import (
     AllineamentoTesto,
     BloccoDocumento,
+    ElementoElenco,
     FrammentoTesto,
     TipoBloccoDocumento,
+    TipoMarcatore,
 )
 
 _MARCA_TEST = "DOCUMENTO DI TEST - NON UFFICIALE"
@@ -66,8 +68,12 @@ _ALLINEAMENTO_ESPLICITO = {
 # l'editor mostrava un titolo e il PDF un paragrafo (FR-008, T016).
 _STILI_TITOLO = {"H1": 14, "H2": 12}
 
-# Rientro per livello di elenco, in mm (FR-003: due livelli).
+# Rientro per livello di elenco e spazio riservato al marcatore, in mm
+# (FR-003: due livelli). Il testo della voce va a capo allineato dopo il
+# marcatore, non sotto di esso: e' il rientro sporgente dei bandi.
 _RIENTRO_ELENCO = 8
+_LARGHEZZA_MARCATORE = 7
+_DIMENSIONE_ELENCO = 11
 
 
 def _intestazione(pdf: FPDF, titolo: str) -> None:
@@ -137,7 +143,66 @@ def _scrivi_frammenti(
     pdf.set_font(_FONT, "", dimensione)
 
 
-def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento) -> None:
+def marcatori_elenchi(
+    blocchi: list[BloccoDocumento], *, inizi_sezione: frozenset[int] = frozenset(),
+) -> dict[int, list[str]]:
+    """Il marcatore di ogni voce, per `ordine` del blocco (012 FR-015, T029).
+
+    Il numero non e' nel contenuto: lo si calcola qui, cosi' che un comma
+    inserito in mezzo rinumeri quelli che seguono. Il contatore del primo
+    livello prosegue fra elenchi della stessa sezione e riparte a ogni sezione
+    e a ogni `TITOLO` (research.md R3); quello del secondo riparte a ogni voce
+    di primo livello. E' la stessa regola dell'editor (`numeraElenchi` in
+    `modello-anteprima.component.ts`), perche' l'editor deve mostrare cio' che
+    il PDF scrive (FR-008).
+    """
+    marcatori: dict[int, list[str]] = {}
+    primo = secondo = 0
+    for blocco in sorted(blocchi, key=lambda b: b.ordine):
+        if blocco.ordine in inizi_sezione or blocco.tipo is TipoBloccoDocumento.TITOLO:
+            primo = secondo = 0
+        if blocco.tipo is not TipoBloccoDocumento.ELENCO:
+            continue
+        voci: list[str] = []
+        for elemento in blocco.elementi:
+            if elemento.livello == 0:
+                primo += 1
+                secondo = 0
+                voci.append(_formatta_marcatore(elemento, primo))
+            else:
+                secondo += 1
+                voci.append(_formatta_marcatore(elemento, secondo))
+        marcatori[blocco.ordine] = voci
+    return marcatori
+
+
+def _formatta_marcatore(elemento: ElementoElenco, numero: int) -> str:
+    if elemento.marcatore is TipoMarcatore.NUMERICO:
+        return f"{numero}."
+    if elemento.marcatore is TipoMarcatore.ALFABETICO:
+        return f"{chr(ord('a') + (numero - 1) % 26)})"
+    return "\u2022" if elemento.livello == 0 else "\u2013"
+
+
+def _rendi_voce(pdf: FPDF, elemento: ElementoElenco, marcatore: str, allineamento: str) -> None:
+    """Marcatore a sinistra, testo a destra con il rientro sporgente."""
+    rientro = _RIENTRO_ELENCO * (elemento.livello + 1)
+    altezza_riga = _DIMENSIONE_ELENCO * 1.35 * 25.4 / 72
+    # Il marcatore e il testo devono stare sulla stessa pagina: se la prima
+    # riga non ci sta, si va a capo pagina prima di scrivere il marcatore.
+    if pdf.get_y() + altezza_riga > pdf.page_break_trigger:
+        pdf.add_page()
+    inizio = pdf.get_y()
+    pdf.set_font(_FONT, "", _DIMENSIONE_ELENCO)
+    pdf.set_xy(pdf.l_margin + rientro, inizio)
+    pdf.cell(_LARGHEZZA_MARCATORE, altezza_riga, marcatore)
+    pdf.set_xy(pdf.l_margin, inizio)
+    _scrivi_frammenti(pdf, elemento.frammenti or [FrammentoTesto(testo="")],
+                      allineamento=allineamento, dimensione=_DIMENSIONE_ELENCO,
+                      rientro=rientro + _LARGHEZZA_MARCATORE, spazio_dopo=1)
+
+
+def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | None = None) -> None:
     allineamento = (
         _ALLINEAMENTO_ESPLICITO[blocco.allineamento]
         if blocco.allineamento is not None
@@ -180,11 +245,9 @@ def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento) -> None:
         return
 
     if blocco.tipo is TipoBloccoDocumento.ELENCO:
-        # Gli elementi con il loro rientro. Il marcatore calcolato (`1.`, `a)`)
-        # e il suo azzeramento per sezione e per titolo sono 012 T029.
-        for elemento in blocco.elementi:
-            _scrivi_frammenti(pdf, elemento.frammenti, allineamento=allineamento, dimensione=11,
-                              rientro=_RIENTRO_ELENCO * (elemento.livello + 1), spazio_dopo=1)
+        marcatori = marcatori or marcatori_elenchi([blocco])[blocco.ordine]
+        for elemento, marcatore in zip(blocco.elementi, marcatori, strict=True):
+            _rendi_voce(pdf, elemento, marcatore, allineamento)
         pdf.ln(1)
         return
 
@@ -256,12 +319,19 @@ def sostituisci_placeholder(
     return resi
 
 
-def render_documento(*, titolo: str, blocchi: list[BloccoDocumento]) -> bytes:
-    """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018)."""
+def render_documento(
+    *, titolo: str, blocchi: list[BloccoDocumento], inizi_sezione: frozenset[int] = frozenset(),
+) -> bytes:
+    """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
+
+    `inizi_sezione` sono gli `ordine` dei blocchi che aprono una sezione: li'
+    la numerazione degli elenchi riparte (012 T029).
+    """
     pdf = _nuovo_pdf()
     _intestazione(pdf, titolo)
+    marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):
-        _rendi_blocco(pdf, blocco)
+        _rendi_blocco(pdf, blocco, marcatori.get(blocco.ordine))
     return bytes(pdf.output())
 
 

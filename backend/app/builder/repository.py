@@ -463,6 +463,33 @@ def clona_sezioni(versione: ModelloDocumentoVersione) -> list[SezioneModello]:
     ) for sezione in versione.sezioni]
 
 
+def _blocchi_per_sezione(versione: ModelloDocumentoVersione) -> list[list[BloccoDocumento]]:
+    """I blocchi di ogni sezione, in ordine, con `ordine` progressivo sull'intero documento."""
+    sezioni: list[list[BloccoDocumento]] = []
+    progressivo = 0
+    for sezione in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice)):
+        blocchi: list[BloccoDocumento] = []
+        for blocco in sorted(
+            (BloccoDocumento.model_validate(b) for b in sezione.contenuto or ()),
+            key=lambda b: b.ordine,
+        ):
+            blocchi.append(blocco.model_copy(update={"ordine": progressivo}))
+            progressivo += 1
+        sezioni.append(blocchi)
+    return sezioni
+
+
+def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:
+    """L'`ordine` del primo blocco di ogni sezione, nella numerazione di `composizione_documentale`.
+
+    Il documento composto e' una sequenza piatta e non dice dove finisce una
+    sezione; la resa pero' ne ha bisogno, perche' li' la numerazione degli
+    elenchi riparte (012 FR-015, research.md R3). Resta un'informazione per la
+    resa e non entra nel formato.
+    """
+    return frozenset(sezione[0].ordine for sezione in _blocchi_per_sezione(versione) if sezione)
+
+
 def composizione_documentale(versione: ModelloDocumentoVersione) -> ModelloDocumentaleControllato:
     """Assembla il documento completo dalle sezioni ordinate (003 T003).
 
@@ -475,13 +502,7 @@ def composizione_documentale(versione: ModelloDocumentoVersione) -> ModelloDocum
     `placeholder_usati` raccoglie l'unione di quelli dei blocchi: e' l'insieme
     che la validazione (003 US2) confronta con i campi del modello.
     """
-    blocchi: list[BloccoDocumento] = []
-    for sezione in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice)):
-        for blocco in sorted(
-            (BloccoDocumento.model_validate(b) for b in sezione.contenuto or ()),
-            key=lambda b: b.ordine,
-        ):
-            blocchi.append(blocco.model_copy(update={"ordine": len(blocchi)}))
+    blocchi = [blocco for sezione in _blocchi_per_sezione(versione) for blocco in sezione]
     placeholder: list[str] = []
     for blocco in blocchi:
         for nome in blocco.placeholder_usati:

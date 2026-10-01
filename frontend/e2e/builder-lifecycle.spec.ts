@@ -263,7 +263,10 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     // segnaposto prende il posto del segnaposto.
     expect(testo).toContain('Premesso che Ricercatore in fisica applicata');
     expect(testo).toContain('“Riordino del Consiglio Nazionale delle Ricerche”');
-    expect(testo).toContain('Sono indetti i seguenti concorsi:');
+    // T029: i marcatori li scrive la resa, non il testo incollato.
+    expect(testo).toContain(
+      '1. Sono indetti i seguenti concorsi: a) un posto presso la sede di Roma;',
+    );
     expect(testo).not.toContain('{{');
   } finally {
     await generatore.rimuovi();

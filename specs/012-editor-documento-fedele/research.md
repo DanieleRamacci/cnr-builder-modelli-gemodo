@@ -112,6 +112,12 @@ pagina prosegue: i contatori appartengono alla composizione, non alla pagina.
 
 ---
 
+**Limite accettato (2026-10-01)**: il numero dell'articolo non e' calcolato.
+Inserire un articolo fra l'1 e il 2 lascia "Art. 2" com'e', e il gestore
+rinumera a mano. Alternativa tenuta per dopo: una sezione marcata come articolo,
+con "Art. N" calcolato dalla posizione e il gestore che scrive solo la rubrica.
+Spostare una sezione con Su/Giu' rinumererebbe tutto.
+
 ## R4 - L'anteprima non deve poter diventare una generazione
 
 **Decisione**: un percorso separato che condivide il **renderer** ma non il

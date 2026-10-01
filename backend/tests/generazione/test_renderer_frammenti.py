@@ -104,4 +104,4 @@ def test_un_elenco_si_rende_con_tutte_le_sue_voci():
         {"livello": 0, "frammenti": [{"testo": "Roma"}]},
         {"livello": 1, "marcatore": "ALFABETICO", "frammenti": [{"testo": "Area della Ricerca"}]},
     ]))
-    assert "Roma Area della Ricerca" in estrai_testo(pdf)
+    assert "1. Roma a) Area della Ricerca" in estrai_testo(pdf)
