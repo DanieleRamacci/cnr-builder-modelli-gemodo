@@ -146,21 +146,24 @@ RIGHE_MASSIME_INTESTAZIONE = 3
 
 
 def violazioni_cornice(cornice: CornicePagina) -> list[str]:
-    """Cio' che rende una cornice di pagina non ammessa (012 T042).
+    """Cio' che rende una cornice di pagina non ammessa (012 T042, T065).
 
-    Le stesse regole dei blocchi per il testo, piu' un limite che dipende
-    dalla resa: l'intestazione sta in uno spazio fisso in cima a ogni pagina.
+    Le stesse regole dei blocchi per il testo, piu' i limiti che dipendono
+    dalla resa: l'intestazione ha al massimo tre righe, il pie' di pagina una.
     """
     violazioni: list[str] = []
-    _validate_frammenti("intestazione", cornice.intestazione, violazioni)
-    _validate_frammenti("pie' di pagina", cornice.pie_pagina, violazioni)
-    righe = "".join(f.testo for f in cornice.intestazione).count("\n") + 1
-    if righe > RIGHE_MASSIME_INTESTAZIONE:
-        violazioni.append(
-            f"intestazione: {righe} righe, al massimo {RIGHE_MASSIME_INTESTAZIONE}"
-        )
-    if "\n" in "".join(f.testo for f in cornice.pie_pagina):
-        violazioni.append("pie' di pagina: una sola riga")
+    if cornice.intestazione is not None:
+        testo = cornice.intestazione.testo
+        _validate_frammenti("intestazione", testo, violazioni)
+        righe = "".join(f.testo for f in testo).count("\n") + 1
+        if righe > RIGHE_MASSIME_INTESTAZIONE:
+            violazioni.append(
+                f"intestazione: {righe} righe, al massimo {RIGHE_MASSIME_INTESTAZIONE}"
+            )
+    if cornice.pie_pagina is not None:
+        _validate_frammenti("pie' di pagina", cornice.pie_pagina.testo, violazioni)
+        if "\n" in "".join(f.testo for f in cornice.pie_pagina.testo):
+            violazioni.append("pie' di pagina: una sola riga")
     return violazioni
 
 

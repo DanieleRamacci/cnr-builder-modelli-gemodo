@@ -134,27 +134,42 @@ della generazione e non registra alcun documento.
 
 ## Cornice di pagina
 
-Appartiene al **tipo documento**, non al modello: la configura
-l'amministratore (`PUT /api/v1/configurazione/integrazioni/{id}/tipi-documento/{codice}/cornice`)
-e vale per tutti i documenti di quel tipo.
+Appartiene al **tipo documento**, non al modello: vale per tutti i modelli di
+quel tipo, nell'anteprima e nei documenti generati. La impostano il gestore del
+contesto e l'amministratore, da *Contesti -> <contesto> -> Impostazioni modelli*
+(`PUT /api/v1/builder/integrazioni/{id}/tipi-documento/{codice}/cornice`).
+
+Intestazione e piè di pagina sono **indipendenti**: ciascuno può mancare, e
+ciascuno ha la sua maschera.
 
 ```json
 {
-  "logo_ref": "logo-ente",
-  "intestazione": [
-    { "testo": "Consiglio Nazionale delle Ricerche", "grassetto": true },
-    { "testo": "\nUfficio Reclutamento del Personale" }
-  ],
-  "pie_pagina": [{ "testo": "Piazzale Aldo Moro 7 - 00185 Roma" }],
-  "numerazione_pagine": true
+  "intestazione": {
+    "maschera": "LOGO_CENTRO_TESTO_SOTTO",
+    "con_logo": true,
+    "testo": [
+      { "testo": "Consiglio Nazionale delle Ricerche", "grassetto": true },
+      { "testo": "\nUfficio Reclutamento del Personale" }
+    ]
+  },
+  "pie_pagina": {
+    "maschera": "TESTO_SINISTRA_NUMERO_DESTRA",
+    "testo": [{ "testo": "Piazzale Aldo Moro 7 - 00185 Roma" }],
+    "numerazione_pagine": true
+  }
 }
 ```
 
-- Intestazione di al massimo tre righe, accanto al logo; piè di pagina di una
-  riga; numero "Pagina N di M" in basso a destra.
-- `logo_ref` nomina un logo fra quelli noti al servizio
-  (`backend/app/generazione/loghi/`). Il logo non si carica dall'interfaccia:
-  è un file fornito dall'ente.
+| Maschera | Resa |
+|---|---|
+| `LOGO_CENTRO_TESTO_SOTTO` | logo centrato, fino a tre righe centrate sotto, una linea a separare dal corpo |
+| `TESTO_SINISTRA_NUMERO_DESTRA` | una riga di testo a sinistra, "Pagina N di M" a destra |
+
+- La testata non ha un'altezza fissa: il corpo comincia sotto ciò che contiene.
+- Il **logo** non sta nel JSON: è un'immagine per tipo documento, caricata con
+  `PUT .../cornice/logo` (PNG o JPEG, al massimo 1 MB). Il servizio la apre come
+  immagine e ne conserva una copia PNG ricodificata, così che metadati o
+  contenuti accodati non arrivino al PDF. `con_logo` dice solo se usarla.
 
 ## Errori
 

@@ -49,10 +49,28 @@ quale posizione della sequenza si trova.
 ### `CornicePagina`
 
 Cio' che si ripete su ogni pagina. Appartiene al **tipo documento**, non al
-modello (FR-011).
+modello (FR-011). Forma rivista il 2026-10-01 (spec.md, chiarimento "Chi
+imposta la cornice"): intestazione e pie' di pagina indipendenti, ciascuno con
+la propria maschera.
 
 | Campo | Tipo | Regole |
 |---|---|---|
+| `intestazione` | `IntestazionePagina \| None` | assente = nessuna intestazione |
+| `pie_pagina` | `PiePagina \| None` | assente = nessun pie' di pagina |
+
+`IntestazionePagina`: `maschera` (`LOGO_CENTRO_TESTO_SOTTO`), `con_logo`
+(`bool`, usa il logo caricato per il tipo documento), `testo`
+(`list[FrammentoTesto]`, al massimo 3 righe).
+
+`PiePagina`: `maschera` (`TESTO_SINISTRA_NUMERO_DESTRA`), `testo`
+(`list[FrammentoTesto]`, una riga), `numerazione_pagine` (`bool`, default
+`true`).
+
+Il **logo** non sta nel JSON: e' un'immagine per tipo documento
+(`tipo_documento.logo_cornice`), caricata dall'interfaccia, verificata e
+ricodificata in PNG dal servizio.
+
+---|---|---|
 | `logo_ref` | `str \| None` | riferimento al logo istituzionale |
 | `intestazione` | `list[FrammentoTesto]` | i testi di testata, che possono differire fra tipi documento |
 | `pie_pagina` | `list[FrammentoTesto]` | testo fisso del pie' di pagina |

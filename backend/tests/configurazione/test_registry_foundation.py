@@ -61,8 +61,6 @@ def test_registry_is_empty_and_ownership_is_scoped(postgres_database_url, monkey
                 Integrazione(codice=" ", nome="Demo", codice_contesto="geban"),
                 Integrazione(codice="BAD_REV", nome="Demo", codice_contesto="geban", revisione=0),
                 Integrazione(codice="BAD_MODE", nome="Demo", codice_contesto="geban", modalita="PER_NODI"),
-                TipoDocumento(codice="BAD_CTX", nome="Demo", stato="BOZZA", spec_owner="010",
-                              codice_contesto="altro", integrazione_id=source.id),
                 AuditEventoIntegrazione(integrazione_id=uuid.uuid4(), tipo_evento="CREATA",
                                         soggetto_id="admin", client_id="demo", payload_minimo={}),
                 AuditEventoIntegrazione(integrazione_id=source.id, tipo_evento="CREATA",
@@ -73,6 +71,15 @@ def test_registry_is_empty_and_ownership_is_scoped(postgres_database_url, monkey
                     with db.begin_nested():
                         db.add(row)
                         db.flush()
+            # Un tipo documento il cui contesto non e' quello dell'integrazione.
+            # In SQL e non con l'ORM: questo test gira sullo schema 0012, e l'ORM
+            # di oggi scriverebbe anche colonne nate dopo (cornice, logo, 012).
+            with pytest.raises(IntegrityError):
+                with db.begin_nested():
+                    db.execute(sa.text("""
+                        INSERT INTO tipo_documento (id, codice, nome, stato, spec_owner, codice_contesto, integrazione_id)
+                        VALUES (gen_random_uuid(), 'BAD_CTX', 'Demo', 'BOZZA', '010', 'altro', :integrazione)
+                    """), {"integrazione": source.id})
             legacy.integrazione_id = source.id
             db.add(AuditEventoIntegrazione(integrazione_id=source.id, tipo_evento="ASSOCIATA",
                                           soggetto_id="admin", client_id="demo", payload_minimo={"tipo_id": str(legacy.id)}))

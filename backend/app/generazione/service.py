@@ -76,6 +76,7 @@ class GenerazioneDocumentiService:
                     titolo=titolo, blocchi=blocchi,
                     inizi_sezione=builder_repository.inizi_sezione(version),
                     cornice=builder_repository.cornice_del_tipo(version),
+                    logo=builder_repository.logo_del_tipo(version),
                 )
             else:
                 righe = [
@@ -84,6 +85,7 @@ class GenerazioneDocumentiService:
                 ]
                 contenuto = render_pdf(
                     titolo=titolo, righe=righe, cornice=builder_repository.cornice_del_tipo(version),
+                    logo=builder_repository.logo_del_tipo(version),
                 )
         except PlaceholderSenzaValore as mancanti:
             # Un segnaposto senza valore non e' un errore di produzione del

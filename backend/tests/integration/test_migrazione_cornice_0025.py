@@ -13,7 +13,6 @@ import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
 
-from app.documentale.schemas import CornicePagina
 from tests.support.postgres import postgres_database_url  # noqa: F401  (fixture)
 
 CORNICE = {
@@ -49,7 +48,8 @@ def test_upgrade_e_downgrade_0025_cornice(postgres_database_url, monkeypatch):
                     {"c": json.dumps(CORNICE)},
                 )
                 letta = connection.scalar(sa.text("SELECT cornice_pagina FROM tipo_documento LIMIT 1"))
-                assert CornicePagina.model_validate(letta).logo_ref == "logo-ente"
+                # La forma di quel giorno: la 0026 la converte (test_migrazione_cornice_0026).
+                assert letta["logo_ref"] == "logo-ente"
 
         command.downgrade(config, "0024")
         assert "cornice_pagina" not in _colonne(engine)

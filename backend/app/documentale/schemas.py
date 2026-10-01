@@ -105,23 +105,41 @@ class ElementoElenco(DocumentaleBaseModel):
     frammenti: list[FrammentoTesto] = Field(default_factory=list)
 
 
+class MascheraIntestazione(str, Enum):
+    """Le impaginazioni dell'intestazione che si possono scegliere (012 T065)."""
+
+    LOGO_CENTRO_TESTO_SOTTO = "LOGO_CENTRO_TESTO_SOTTO"
+
+
+class MascheraPiePagina(str, Enum):
+    TESTO_SINISTRA_NUMERO_DESTRA = "TESTO_SINISTRA_NUMERO_DESTRA"
+
+
+class IntestazionePagina(DocumentaleBaseModel):
+    maschera: MascheraIntestazione = MascheraIntestazione.LOGO_CENTRO_TESTO_SOTTO
+    # Il logo e' quello caricato per il tipo documento: qui si dice solo se usarlo.
+    con_logo: bool = True
+    testo: list[FrammentoTesto] = Field(default_factory=list)
+
+
+class PiePagina(DocumentaleBaseModel):
+    maschera: MascheraPiePagina = MascheraPiePagina.TESTO_SINISTRA_NUMERO_DESTRA
+    testo: list[FrammentoTesto] = Field(default_factory=list)
+    numerazione_pagine: bool = True
+
+
 class CornicePagina(DocumentaleBaseModel):
-    """Cio' che si ripete su **ogni** pagina (012 FR-011, T042).
+    """Cio' che si ripete su **ogni** pagina (012 FR-011).
 
-    Appartiene al tipo documento, non al modello: la configura una volta
-    l'amministratore, e il gestore che compone un bando non la vede ne' la
-    puo' sbagliare. Usa la stessa grammatica a frammenti dei blocchi, quindi
-    le stesse regole: niente markup nel testo.
-
-    `logo_ref` nomina il logo dell'ente fra quelli che il servizio conosce
-    (`generazione/renderer.py`, `LOGHI`): non e' un URL ne' un file caricato,
-    perche' gli asset versionati non esistono ancora (research.md).
+    Appartiene al tipo documento, non al modello: vale per tutti i modelli di
+    quel tipo. La impostano il gestore del contesto e l'amministratore
+    (chiarimento del 2026-10-01). Intestazione e pie' di pagina sono
+    indipendenti: si puo' averne uno solo. Il testo usa la grammatica a
+    frammenti dei blocchi, con le stesse regole: niente markup.
     """
 
-    logo_ref: str | None = Field(default=None, pattern=r"^[a-z0-9-]{1,64}$")
-    intestazione: list[FrammentoTesto] = Field(default_factory=list)
-    pie_pagina: list[FrammentoTesto] = Field(default_factory=list)
-    numerazione_pagine: bool = True
+    intestazione: IntestazionePagina | None = None
+    pie_pagina: PiePagina | None = None
 
 
 class BloccoDocumento(DocumentaleBaseModel):

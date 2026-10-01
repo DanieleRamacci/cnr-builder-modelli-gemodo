@@ -956,7 +956,7 @@ coverage:
     scenario_id: SCENARIO-12
     contract_ref: backend/tests/generazione/test_cornice_pagina.py
     stato: COPERTO
-    note: logo, intestazione e numero su ogni pagina (T048); configurata dall'admin (test_cornice_pagina_api) e verificata nel PDF dall'e2e. Il file del logo dell'ente va ancora fornito
+    note: logo, intestazione e numero su ogni pagina (T048, T068); impostata dal gestore del contesto o dall'admin (tests/builder/test_cornice_api.py, T065-T067) e verificata nel PDF dall'e2e con un logo caricato
 
   - id: COV-113
     spec_owner: specs/012-editor-documento-fedele

@@ -13,11 +13,13 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, type SafeResourceUrl, type SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import { AnteprimaPdfComponent } from './anteprima-pdf.component';
 import { MenuSegnapostoComponent, type VoceSegnaposto } from './menu-segnaposto.component';
+import { CorniceAnteprimaComponent } from './cornice-anteprima.component';
+import { NOMI_MASCHERE, urlCornice, type CorniceModello } from './cornice.model';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
 import { forkJoin } from 'rxjs';
@@ -66,7 +68,7 @@ type StatoSalvataggio = {
   codice: 'salvato' | 'modificato' | 'salvataggio' | 'errore';
   etichetta: string;
 };
-type PannelloBuilder = 'segnaposto' | 'proprieta';
+type PannelloBuilder = 'segnaposto' | 'pagina' | 'proprieta';
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
 };
@@ -156,7 +158,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
  */
 @Component({
   standalone: true,
-  imports: [RouterLink, AnteprimaPdfComponent, MenuSegnapostoComponent],
+  imports: [RouterLink, AnteprimaPdfComponent, MenuSegnapostoComponent, CorniceAnteprimaComponent],
   // Il menu `/` e' fisso rispetto alla finestra: se il foglio scorre non
   // starebbe piu' sotto il cursore, quindi si chiude.
   host: { '(window:scroll)': 'chiudiMenuSlash()', '(window:resize)': 'chiudiMenuSlash()' },
@@ -560,24 +562,20 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
 
         <section class="foglio">
           <div class="pagina" id="anteprima-documento" data-document-preview>
-            <div class="document-header">
-              <div class="logo-box" aria-hidden="true"></div>
-              <div class="document-heading">
-                <strong
-                  >Comune di
-                  <span class="inline-token">{{ tokenDocumento(['ente', 'comune'], 'ente') }}</span>
-                </strong>
-                <span>Area appalti e contratti</span>
-              </div>
-              <div class="document-meta">
-                Det. n.
-                <span class="inline-token">{{
-                  tokenDocumento(['numero', 'determina'], 'numero_atto')
-                }}</span>
-                <br />
-                del
-                <span class="inline-token">{{ tokenDocumento(['data'], 'data_atto') }}</span>
-              </div>
+            <!-- La cornice vera del tipo documento, come nel PDF (012 T070, FR-008):
+                 prima qui c'erano un'intestazione e una firma finte del prototipo. -->
+            <div class="document-frame" data-sheet-intestazione>
+              @if (cornice()?.cornice?.intestazione) {
+                <app-cornice-anteprima
+                  [cornice]="cornice()!.cornice"
+                  parte="intestazione"
+                  [logoUrl]="logoCornice()"
+                />
+              } @else if (linkCornice(); as link) {
+                <a class="frame-add" data-sheet-add-intestazione [routerLink]="link"
+                  >+ Aggiungi intestazione</a
+                >
+              }
             </div>
 
             <div class="document-body">
@@ -748,15 +746,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 }
               }
 
-              <div class="document-signature">
-                <div>
-                  <strong>Il Responsabile del procedimento</strong>
-                  <span class="inline-token">{{
-                    tokenDocumento(['rup', 'responsabile'], 'rup')
-                  }}</span>
-                </div>
-              </div>
-
               @if (sezioni()?.modificabile) {
                 <button
                   type="button"
@@ -767,6 +756,15 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 >
                   Inserisci una nuova sezione di testo
                 </button>
+              }
+            </div>
+            <div class="document-frame" data-sheet-piede>
+              @if (cornice()?.cornice?.pie_pagina) {
+                <app-cornice-anteprima [cornice]="cornice()!.cornice" parte="piede" />
+              } @else if (linkCornice(); as link) {
+                <a class="frame-add" data-sheet-add-piede [routerLink]="link"
+                  >+ Aggiungi piè di pagina</a
+                >
               }
             </div>
           </div>
@@ -782,6 +780,16 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               (click)="pannelloAttivo.set('segnaposto')"
             >
               Segnaposto
+            </button>
+            <button
+              type="button"
+              role="tab"
+              data-tab-pagina
+              [class.active]="pannelloAttivo() === 'pagina'"
+              [attr.aria-selected]="pannelloAttivo() === 'pagina'"
+              (click)="pannelloAttivo.set('pagina')"
+            >
+              Pagina
             </button>
             <button
               type="button"
@@ -842,6 +850,71 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                     </span>
                   </span>
                 </button>
+              }
+            } @else if (pannelloAttivo() === 'pagina') {
+              <h2>Intestazione e piè di pagina</h2>
+              @if (cornice(); as c) {
+                <p class="panel-hint">
+                  Valgono per tutti i modelli di tipo <code>{{ c.codice_tipo_documento }}</code
+                  >: si impostano una volta e qui si vedono già pronte.
+                </p>
+                <div class="property-note" data-pagina-intestazione>
+                  <strong>Intestazione</strong><br />
+                  @if (c.cornice?.intestazione; as testa) {
+                    {{ nomeMaschera(testa.maschera) }}{{ testa.con_logo ? '' : ', senza logo' }}
+                    @if (testa.con_logo && !c.logo_presente) {
+                      <br /><span class="text-danger">Logo non ancora caricato</span>
+                    }
+                  } @else {
+                    Nessuna
+                  }
+                </div>
+                <div class="property-note" data-pagina-piede>
+                  <strong>Piè di pagina</strong><br />
+                  @if (c.cornice?.pie_pagina; as piede) {
+                    {{ piede.testo.length ? 'Testo' : 'Senza testo'
+                    }}{{ piede.numerazione_pagine ? ' e numero di pagina' : '' }}
+                  } @else {
+                    Nessuno
+                  }
+                </div>
+                @if (linkCornice(); as link) {
+                  <div class="d-grid gap-2 mt-3">
+                    @if (!c.cornice?.intestazione) {
+                      <a
+                        class="btn btn-sm btn-outline-primary"
+                        data-aggiungi-intestazione
+                        [routerLink]="link"
+                        >Aggiungi intestazione</a
+                      >
+                    }
+                    @if (!c.cornice?.pie_pagina) {
+                      <a
+                        class="btn btn-sm btn-outline-primary"
+                        data-aggiungi-piede
+                        [routerLink]="link"
+                        >Aggiungi piè di pagina</a
+                      >
+                    }
+                    @if (c.cornice?.intestazione || c.cornice?.pie_pagina) {
+                      <a
+                        class="btn btn-sm btn-outline-secondary"
+                        data-modifica-cornice
+                        [routerLink]="link"
+                        >Modifica intestazione e piè di pagina</a
+                      >
+                    }
+                  </div>
+                } @else {
+                  <p class="panel-hint">
+                    Questo tipo documento non appartiene a un'integrazione: la cornice non si può
+                    impostare da qui.
+                  </p>
+                }
+              } @else if (erroreCornice(); as messaggio) {
+                <p class="vuoto-sezioni">{{ messaggio }}</p>
+              } @else {
+                <p role="status">Caricamento...</p>
               }
             } @else {
               @if (sezioneCorrente(); as sezione) {
@@ -1132,6 +1205,18 @@ export class ModelloAnteprimaComponent {
   });
   protected readonly allineamenti = ALLINEAMENTI;
   protected readonly stili = STILI;
+  /** La cornice che il modello eredita dal suo tipo documento (012 T070). */
+  protected readonly cornice = signal<CorniceModello | null>(null);
+  protected readonly erroreCornice = signal<string | null>(null);
+  protected readonly logoCornice = signal<SafeUrl | null>(null);
+  private indirizzoLogoCornice: string | null = null;
+  /** Dove si imposta la cornice: la pagina del contesto, per quel tipo documento. */
+  protected readonly linkCornice = computed(() => {
+    const c = this.cornice();
+    return c?.integrazione_id
+      ? ['/contesti', c.codice_contesto, 'impostazioni', c.integrazione_id, c.codice_tipo_documento]
+      : null;
+  });
   /**
    * Il collegamento che si sta inserendo (012 T050). La selezione si ricorda
    * qui: quando il fuoco passa al campo dell'indirizzo, quella del browser e'
@@ -1220,6 +1305,9 @@ export class ModelloAnteprimaComponent {
       }
     });
     this.carica();
+    this.destroyRef.onDestroy(() => {
+      if (this.indirizzoLogoCornice) URL.revokeObjectURL(this.indirizzoLogoCornice);
+    });
   }
 
   protected contesto(): string {
@@ -1248,6 +1336,7 @@ export class ModelloAnteprimaComponent {
           this.caricamento.set(false);
           this.caricaSezioni();
           this.caricaCandidati(dettaglio);
+          this.caricaCornice();
         },
         error: (e: ApiError) => {
           this.errore.set(e.messaggio);
@@ -1982,14 +2071,6 @@ export class ModelloAnteprimaComponent {
     return 'paragrafo';
   }
 
-  protected tokenDocumento(indizi: string[], fallback: string): string {
-    const campo = this.corrente()?.campi.find((item) => {
-      const testo = `${item.codice} ${item.etichetta}`.toLocaleLowerCase();
-      return indizi.some((indizio) => testo.includes(indizio));
-    });
-    return `{{${campo?.codice ?? fallback}}}`;
-  }
-
   protected creaEdizione(dialog: HTMLDialogElement): void {
     if (this.salvando() || !this.dimensioneScelta() || !this.valoreScelto()) return;
     dialog.close();
@@ -2616,6 +2697,37 @@ export class ModelloAnteprimaComponent {
           this.derivazioneNonDisponibile.set(e.messaggio);
         },
       });
+  }
+
+  private caricaCornice(): void {
+    this.api
+      .get<CorniceModello>(`/api/v1/builder/modelli/${this.id}/cornice`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cornice) => {
+          this.cornice.set(cornice);
+          if (cornice.logo_presente && cornice.integrazione_id) {
+            this.api
+              .getBlob(`${urlCornice(cornice.integrazione_id, cornice.codice_tipo_documento)}/logo`)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: (immagine) => {
+                  this.indirizzoLogoCornice = URL.createObjectURL(immagine);
+                  this.logoCornice.set(
+                    this.sanitizer.bypassSecurityTrustUrl(this.indirizzoLogoCornice),
+                  );
+                },
+                // Senza logo l'anteprima mostra il segnaposto: non e' un errore da bloccare.
+                error: () => undefined,
+              });
+          }
+        },
+        error: (e: ApiError) => this.erroreCornice.set(e.messaggio),
+      });
+  }
+
+  protected nomeMaschera(maschera: string): string {
+    return NOMI_MASCHERE[maschera] ?? maschera;
   }
 
   private caricaSezioni(): void {

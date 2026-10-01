@@ -132,6 +132,12 @@ finche' questa fase non e' chiusa.
       strumento e' quindi provato; resta da **eseguire in produzione prima
       del redeploy** (il container migra da solo all'avvio). Il test online
       e' gia' migrato senza confronto: dati sacrificabili (011 T004b).
+      **Come eseguirla in produzione**: la fase `prima` gira col codice
+      precedente alla 012, la cui immagine non ha `pypdf`: si lancia da una
+      macchina di sviluppo con il worktree pre-012 e `DATABASE_URL` verso il
+      database di produzione, come nella prova generale; la fase `dopo` puo'
+      girare nel container nuovo (`uv run --no-dev python
+      scripts/sc004_confronto_migrazione.py dopo --file ...`), verificato.
 
 ### Renderer
 
@@ -582,3 +588,41 @@ verifica la toolbar dopo lo scorrimento e rinomina la sezione.
         laterali restano ferme e scorrono per conto loro. Risolve anche
         T063 per la struttura a sinistra; su schermi stretti le colonne sono
         gia' impilate e il problema resta.
+
+### Cornice rivista (riscontro del 2026-10-01 dopo la prova sul server)
+
+Decisione del product owner (spec.md, chiarimento "Chi imposta la cornice").
+
+- [x] T065 Formato: `IntestazionePagina` e `PiePagina` indipendenti con
+      `maschera`; migrazione 0026 che converte la forma precedente e aggiunge
+      `tipo_documento.logo_cornice`.
+- [x] T066 Logo caricato dall'interfaccia: PNG/JPEG, al massimo 1 MB,
+      verificato e ricodificato in PNG; lettura e rimozione.
+- [x] T067 Rotte sotto `/builder/integrazioni/{id}/tipi-documento/{codice}/cornice`
+      per il gestore del contesto e l'amministratore; quelle solo-admin sotto
+      `/configurazione` si tolgono.
+- [x] T068 Renderer: maschera "logo al centro, testo sotto"; spazio della
+      testata calcolato da cio' che contiene.
+- [x] T069 Pagina *Contesti -> <contesto> -> Impostazioni modelli*: tipi
+      documento del contesto, e per ciascuno intestazione e pie' di pagina con
+      scelta della maschera, logo, testo.
+- [x] T070 Editor: scheda laterale "Intestazione e pie' di pagina" con la
+      cornice del tipo del modello, o "Aggiungi intestazione/pie' di pagina";
+      sul foglio la cornice vera al posto dell'intestazione e della firma finte
+      del prototipo (FR-008).
+      *T065-T070 fatti 2026-10-01*. Migrazione 0026 (conversione della forma
+      precedente, colonna `logo_cornice`), logo verificato e ricodificato
+      (`app/documentale/logo.py`: PNG/JPEG, 1 MB, 4000 px), rotte nel builder
+      per gestore del contesto e admin (contratto 002 0.10.0; tolte da 010,
+      ora 0.5.0), renderer con testata ad altezza calcolata. Interfaccia:
+      *Contesti -> <contesto> -> Impostazioni modelli*, pagina con maschere,
+      logo, testi e anteprima dal vivo (la stessa raggiunta dall'admin da
+      Impostazioni); nell'editor scheda "Pagina" e cornice vera sul foglio,
+      con "+ Aggiungi intestazione/pie' di pagina" se manca. Test: backend
+      `test_cornice_api.py` (gestore sì, altro contesto no, logo nel PDF,
+      file non immagine rifiutato), `test_cornice_pagina.py`,
+      `test_migrazione_cornice_0026.py`; frontend `cornice-tipo`,
+      `impostazioni-modelli`, editor; e2e con logo caricato e verificato nel
+      PDF. `pillow` e `pypdf` diventano dipendenze dichiarate: `pypdf` mancava
+      nell'immagine di produzione (`--no-dev`) e lo script di SC-004 non
+      sarebbe partito.

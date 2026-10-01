@@ -11,10 +11,7 @@ from app.builder.schemas import (
     StrutturaTipoDocumentoResponse,
 )
 from app.common.security import PrincipalGEMODO
-from app.documentale.schemas import CornicePagina
-from app.generazione.renderer import LOGHI, percorso_logo
 from app.configurazione.schemas import (
-    CorniceResponse,
     IntegrazioneAdmin,
     IntegrazioneCreate,
     IntegrazioneUpdate,
@@ -110,38 +107,6 @@ def struttura_tipo_documento_live(
     integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni
 ):
     return service.struttura_live(integrazione_id, codice, principal)
-
-
-@router_integrazioni.get(
-    "/{integrazione_id}/tipi-documento/{codice}/cornice",
-    response_model=CorniceResponse,
-)
-def cornice_tipo_documento(
-    integrazione_id: uuid.UUID, codice: str, principal: Admin, service: ServiceIntegrazioni,
-):
-    """Cornice di pagina del tipo documento (012 FR-011)."""
-    return CorniceResponse(
-        cornice=service.cornice_live(integrazione_id, codice, principal),
-        loghi_disponibili=[ref for ref in LOGHI if percorso_logo(ref) is not None],
-    )
-
-
-@router_integrazioni.put(
-    "/{integrazione_id}/tipi-documento/{codice}/cornice",
-    response_model=CorniceResponse,
-)
-def imposta_cornice_tipo_documento(
-    integrazione_id: uuid.UUID,
-    codice: str,
-    request: CornicePagina,
-    principal: Admin,
-    service: ServiceIntegrazioni,
-):
-    """Registra la cornice: vale per tutti i documenti di quel tipo, da subito."""
-    return CorniceResponse(
-        cornice=service.imposta_cornice_live(integrazione_id, codice, request, principal),
-        loghi_disponibili=[ref for ref in LOGHI if percorso_logo(ref) is not None],
-    )
 
 
 @router_integrazioni.get(

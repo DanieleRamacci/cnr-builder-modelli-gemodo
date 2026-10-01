@@ -19,6 +19,10 @@ il Decreto Legislativo 4 giugno 2003, n. 127, recante <i>“Riordino del Consigl
 <p class=MsoListParagraph style='mso-list:l0 level2 lfo1'><![if !supportLists]><span style='mso-list:Ignore'>a)<span>&nbsp;&nbsp; </span></span><![endif]>un posto presso la sede di Roma;<o:p></o:p></p>
 <!--EndFragment--></body></html>`;
 
+// Un logo di prova: il servizio lo ricodifica in PNG e lo mette nella testata.
+const LOGO_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAHgAAAA8CAYAAACtrX6oAAABIElEQVR42u3dQQ6CMBQGYXjhbh7Ic3ggT4crEjesFO37+83KhVHCZEo1tKz7vi/IpZyCbLbjxXp7SDmI/XlfFWyIBsHocQ0+G8PRg7M5lIIN0SAYBINg/HIWnT67nOUXwzar1LP3p8neZpU6i+wi9/efq+CBBBzf0bXmIje75iI3W3KRmy25yM2W7J+sxV+V6m1csYIVrJbOFStYwSB44mFw9ONTsIJBMAgGwSAYcYJHv5Ni9ONTsIJB8KTDYIcb8RSsYLV0Xu6iYAWrpvNiteq6/xO5wUP0v05yx+Ur1X0nN3KX3MVnx0m/8q6K7ktIK2lfRnKDF4C/y/ikaCv8A2Xbo8Pw7RoMgkEwCMZ3Jlme4aBgEAyCcSmrJ58pGI15AcLOeofe1LUoAAAAAElFTkSuQmCC';
+
 /** Incolla come fa il browser: un `ClipboardEvent` vero, con l'HTML negli appunti. */
 async function incolla(editor: Locator, html: string, testo: string): Promise<void> {
   await editor.evaluate(
@@ -63,6 +67,7 @@ function fontPerParola(pdf: string): {
   testo: string;
   x: Record<string, number>;
   collegamenti: string[];
+  immagini: number[];
 } {
   const backend = resolve(__dirname, '../../backend');
   const script = `
@@ -91,7 +96,9 @@ collegamenti = [
     for pagina in PdfReader(BytesIO(contenuto)).pages
     for annotazione in pagina.get("/Annots", [])
 ]
-print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x, "collegamenti": collegamenti}))
+immagini = [len(pagina.images) for pagina in PdfReader(BytesIO(contenuto)).pages]
+print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x, "collegamenti": collegamenti,
+                  "immagini": immagini}))
 `;
   return JSON.parse(
     execFileSync('uv', ['run', 'python', '-c', script, pdf], { cwd: backend, encoding: 'utf-8' }),
@@ -142,24 +149,36 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // fondo al path (la 010 ha aggiunto i tab alla pagina di configurazione).
   const sourceId = new URL(page.url()).pathname.split('/').at(-2)!;
 
-  // 012 T047: l'amministratore configura una volta la cornice del tipo
-  // documento; vale per anteprima e generazione di ogni modello di quel tipo.
-  await page.goto('/configurazione/tipi-documento');
+  // 012 T069: chi gestisce i modelli del contesto imposta intestazione e pie'
+  // di pagina del tipo documento, da Contesti -> geban -> Impostazioni modelli.
+  // Valgono per anteprima e generazione di ogni modello di quel tipo.
+  await page.goto(`/contesti/${contesto}/impostazioni`);
   await page
     .getByRole('row')
     .filter({ hasText: 'Discovery lifecycle' })
     .filter({ hasText: 'BANDO_CONCORSO' })
-    .locator('[data-cornice-link]')
+    .locator('[data-imposta-cornice]')
     .click();
-  // Il logo dell'ente non e' nel repository: la pagina lo dice.
-  await expect(page.locator('[data-cornice-no-logo]')).toBeVisible();
+  await page.locator('[data-aggiungi-intestazione]').click();
+  await page.locator('[data-maschera="LOGO_CENTRO_TESTO_SOTTO"]').click();
+  await page.locator('[data-logo-file]').setInputFiles({
+    name: 'logo.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(LOGO_PNG, 'base64'),
+  });
+  await expect(page.locator('[data-cornice-testata] img')).toBeVisible();
   await page
-    .locator('[data-cornice-intestazione]')
+    .locator('[data-testo-intestazione]')
     .fill('Consiglio Nazionale delle Ricerche\nUfficio Reclutamento del Personale');
-  await page.locator('[data-cornice-piede]').fill('Piazzale Aldo Moro 7 - 00185 Roma');
-  await page.locator('[data-cornice-salva]').click();
+  await page.locator('[data-aggiungi-piede]').click();
+  await page.locator('[data-testo-piede]').fill('Piazzale Aldo Moro 7 - 00185 Roma');
+  await page.locator('[data-salva-cornice]').click();
   await expect(page.locator('[data-cornice-salvata]')).toBeVisible();
-  await page.getByRole('link', { name: 'Contesti', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('cornice-tipo.png'), fullPage: true });
+  await page
+    .getByRole('navigation', { name: 'Navigazione principale' })
+    .getByRole('link', { name: 'Contesti', exact: true })
+    .click();
   // Schermata 1a: card del contesto autorizzato, poi lista modelli 1b.
   await page.locator(`a[href="/contesti/${contesto}/modelli"]`).click();
   await page.locator(`a[href^="/builder/${sourceId}"]`).click();
@@ -238,6 +257,17 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('[data-item-index="0"]')).toHaveText(
     'Sono indetti i seguenti concorsi:',
   );
+
+  // 012 T070: il foglio mostra la cornice del tipo documento, e la scheda
+  // Pagina dice cosa c'e' e dove si imposta.
+  await expect(page.locator('[data-sheet-intestazione] [data-cornice-testata]')).toContainText(
+    'Ufficio Reclutamento del Personale',
+  );
+  await expect(page.locator('[data-sheet-intestazione] img')).toBeVisible();
+  await page.getByRole('tab', { name: 'Pagina' }).click();
+  await expect(page.locator('[data-pagina-intestazione]')).toContainText('Logo al centro');
+  await expect(page.locator('[data-modifica-cornice]')).toBeVisible();
+  await page.getByRole('tab', { name: 'Segnaposto' }).click();
 
   // 012 T050: un collegamento dalla toolbar, sulla parola selezionata.
   await visto.click();
@@ -379,7 +409,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     expect(generato.status(), await generato.text()).toBe(200);
     const percorsoPdf = testInfo.outputPath('bando-012.pdf');
     writeFileSync(percorsoPdf, await generato.body());
-    const { font, testo, x, collegamenti } = fontPerParola(percorsoPdf);
+    const { font, testo, x, collegamenti, immagini } = fontPerParola(percorsoPdf);
     expect(font['Premesso']).toBe('TitilliumWebBold');
     expect(font['che']).toBe('TitilliumWebItalic');
     expect(font['VISTO']).toBe('TitilliumWebBold');
@@ -401,6 +431,9 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     );
     expect(testo).toContain('Piazzale Aldo Moro 7 - 00185 Roma');
     expect(testo).toMatch(/Pagina 1 di \d/);
+    // T066: il logo caricato e' su ogni pagina.
+    expect(immagini.length).toBeGreaterThan(0);
+    expect(immagini.every((n) => n === 1)).toBe(true);
     // T049: il collegamento e' cliccabile, e il suo testo resta nel documento.
     expect(collegamenti).toEqual(['https://www.normattiva.it']);
     expect(testo).toContain('VISTO il Decreto Legislativo');

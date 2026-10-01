@@ -486,6 +486,11 @@ def cornice_del_tipo(versione: ModelloDocumentoVersione) -> CornicePagina | None
     return CornicePagina.model_validate(grezza) if grezza else None
 
 
+def logo_del_tipo(versione: ModelloDocumentoVersione) -> bytes | None:
+    """Il logo caricato per il tipo documento della versione (012 T066), se c'e'."""
+    return versione.modello.tipo_documento.logo_cornice
+
+
 def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:
     """L'`ordine` del primo blocco di ogni sezione, nella numerazione di `composizione_documentale`.
 

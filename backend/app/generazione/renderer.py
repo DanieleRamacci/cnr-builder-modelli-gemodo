@@ -16,9 +16,11 @@ document official.
 
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 from fpdf import FPDF
+from PIL import Image
 
 from app.documentale.schemas import (
     AllineamentoTesto,
@@ -99,90 +101,97 @@ def _intestazione(pdf: FPDF, titolo: str, *, anteprima: bool = False) -> None:
     pdf.ln(4)
 
 
-# I loghi che una cornice puo' nominare (012 FR-011: lo stesso logo per tutti i
-# documenti dell'ente). Non e' un caricamento libero: gli asset versionati non
-# esistono ancora, e un logo e' identita' istituzionale, non contenuto. Il file
-# lo fornisce l'ente; finche' manca, la cornice si rende senza logo.
-_CARTELLA_LOGHI = Path(__file__).parent / "loghi"
-LOGHI = {"logo-ente": "logo-ente.png"}
-
-# Spazio della testata sopra il corpo, in mm: il logo e fino a tre righe di
-# intestazione (`RIGHE_MASSIME_INTESTAZIONE` in `quality/document_model.py`).
-_ALTEZZA_TESTATA = 30
-_ALTEZZA_LOGO = 14
+# Misure della cornice, in mm (012 T068). La testata non ha un'altezza fissa:
+# la si calcola da cio' che contiene, e il corpo comincia sotto.
+_ALTO_TESTATA = 8
+_ALTEZZA_LOGO = 16
+_RIGA_TESTATA = 4.5
 _MARGINE_PIEDE = 22
 
 
-def percorso_logo(logo_ref: str | None) -> Path | None:
-    """Il file del logo, se la cornice lo nomina e l'ente l'ha fornito."""
-    if logo_ref not in LOGHI:
-        return None
-    percorso = _CARTELLA_LOGHI / LOGHI[logo_ref]
-    return percorso if percorso.is_file() else None
+def _righe_testata(frammenti: list[FrammentoTesto]) -> list[list[FrammentoTesto]]:
+    """Le righe dell'intestazione, ciascuna con i suoi frammenti."""
+    righe: list[list[FrammentoTesto]] = [[]]
+    for frammento in frammenti:
+        for i, pezzo in enumerate(frammento.testo.split("\n")):
+            if i:
+                righe.append([])
+            if pezzo:
+                righe[-1].append(frammento.model_copy(update={"testo": pezzo}))
+    return [riga for riga in righe if riga]
 
 
 class _PdfConCornice(FPDF):
-    """Un PDF che disegna la cornice su **ogni** pagina (012 T044).
+    """Un PDF che disegna la cornice su **ogni** pagina (012 T044, T068).
 
     `header` e `footer` li chiama fpdf2 a ogni pagina nuova, comprese quelle
     aperte dall'a capo automatico in mezzo a un elenco: e' per questo che la
     cornice sta qui e non in un blocco, che comparirebbe una volta sola.
     """
 
-    def __init__(self, cornice: CornicePagina | None) -> None:
+    def __init__(self, cornice: CornicePagina | None, logo: bytes | None) -> None:
         super().__init__(format="A4")
         self.cornice = cornice
+        self.intestazione = cornice.intestazione if cornice else None
+        self.logo = logo if self.intestazione and self.intestazione.con_logo else None
+        self.righe = _righe_testata(self.intestazione.testo) if self.intestazione else []
+
+    def altezza_testata(self) -> float:
+        """Dove comincia il corpo: sotto logo, righe e linea di separazione."""
+        if self.intestazione is None or not (self.logo or self.righe):
+            return 0
+        altezza = _ALTO_TESTATA + (_ALTEZZA_LOGO + 2 if self.logo else 0)
+        return altezza + len(self.righe) * _RIGA_TESTATA + 6
 
     def header(self) -> None:
-        cornice = self.cornice
-        if cornice is None or not (cornice.intestazione or percorso_logo(cornice.logo_ref)):
+        # Maschera LOGO_CENTRO_TESTO_SOTTO, la sola per ora: logo centrato,
+        # righe centrate sotto, una linea a separare dal corpo.
+        if not self.altezza_testata():
             return
-        alto = 8
-        x = self.l_margin
-        logo = percorso_logo(cornice.logo_ref)
-        if logo is not None:
-            immagine = self.image(str(logo), x=x, y=alto, h=_ALTEZZA_LOGO)
-            x += immagine.rendered_width + 5
-        if cornice.intestazione:
-            # Le righe dell'intestazione vanno a capo accanto al logo, non sotto.
-            margine = self.l_margin
-            self.set_left_margin(x)
-            self.set_xy(x, alto + 1)
-            for frammento in cornice.intestazione:
-                self.set_font(_FONT, _variante(frammento, grassetto_base=False, corsivo_base=False), 9)
-                self.write(4.5, frammento.testo)
-            self.set_left_margin(margine)
-        linea = alto + _ALTEZZA_LOGO + 3
+        y = _ALTO_TESTATA
+        if self.logo:
+            with Image.open(BytesIO(self.logo)) as immagine:
+                larghezza = _ALTEZZA_LOGO * immagine.width / immagine.height
+            self.image(BytesIO(self.logo), x=(self.w - larghezza) / 2, y=y, h=_ALTEZZA_LOGO)
+            y += _ALTEZZA_LOGO + 2
+        for riga in self.righe:
+            # L'enfasi di una riga e' quella dei suoi frammenti; se sono misti
+            # la riga resta in tondo: l'intestazione si centra riga per riga.
+            varianti = {_variante(f, grassetto_base=False, corsivo_base=False) for f in riga}
+            self.set_font(_FONT, varianti.pop() if len(varianti) == 1 else "", 9)
+            self.set_xy(self.l_margin, y)
+            self.cell(0, _RIGA_TESTATA, "".join(f.testo for f in riga), align="C")
+            y += _RIGA_TESTATA
+        linea = y + 2
         self.set_draw_color(160, 160, 160)
         self.line(self.l_margin, linea, self.w - self.r_margin, linea)
         self.set_draw_color(0, 0, 0)
         self.set_xy(self.l_margin, self.t_margin)
 
     def footer(self) -> None:
-        cornice = self.cornice
-        if cornice is None:
+        piede = self.cornice.pie_pagina if self.cornice else None
+        if piede is None:
             return
         self.set_y(-14)
-        if cornice.pie_pagina:
-            for frammento in cornice.pie_pagina:
-                self.set_font(_FONT, _variante(frammento, grassetto_base=False, corsivo_base=False), 8)
-                self.write(4, frammento.testo)
-        if cornice.numerazione_pagine:
+        for frammento in piede.testo:
+            self.set_font(_FONT, _variante(frammento, grassetto_base=False, corsivo_base=False), 8)
+            self.write(4, frammento.testo)
+        if piede.numerazione_pagine:
             self.set_y(-14)
             self.set_font(_FONT, "", 8)
             # `{nb}` e' il totale delle pagine, che fpdf2 conosce solo alla fine.
             self.cell(0, 4, f"Pagina {self.page_no()} di {{nb}}", align="R")
 
 
-def _nuovo_pdf(cornice: CornicePagina | None = None) -> FPDF:
-    pdf = _PdfConCornice(cornice)
+def _nuovo_pdf(cornice: CornicePagina | None = None, logo: bytes | None = None) -> FPDF:
+    pdf = _PdfConCornice(cornice, logo)
     pdf.compress = False  # Simple, inspectable TEST output; not a size-sensitive path.
     for variante, file in _VARIANTI_FONT.items():
         pdf.add_font(_FONT, variante, str(_CARTELLA_FONT / file))
-    con_testata = cornice is not None and bool(cornice.intestazione or percorso_logo(cornice.logo_ref))
-    if con_testata:
-        pdf.set_top_margin(_ALTEZZA_TESTATA)
-    pdf.set_auto_page_break(auto=True, margin=_MARGINE_PIEDE if cornice is not None else 15)
+    if pdf.altezza_testata():
+        pdf.set_top_margin(pdf.altezza_testata())
+    con_piede = cornice is not None and cornice.pie_pagina is not None
+    pdf.set_auto_page_break(auto=True, margin=_MARGINE_PIEDE if con_piede else 15)
     pdf.add_page()
     return pdf
 
@@ -439,6 +448,7 @@ def render_documento(
     inizi_sezione: frozenset[int] = frozenset(),
     anteprima: bool = False,
     cornice: CornicePagina | None = None,
+    logo: bytes | None = None,
 ) -> bytes:
     """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
 
@@ -448,7 +458,7 @@ def render_documento(
     generazione, che usa questa stessa funzione (FR-008). `cornice` e' quella
     del tipo documento (FR-011): testata e pie' di pagina su ogni pagina.
     """
-    pdf = _nuovo_pdf(cornice)
+    pdf = _nuovo_pdf(cornice, logo)
     _intestazione(pdf, titolo, anteprima=anteprima)
     marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):
@@ -457,10 +467,14 @@ def render_documento(
 
 
 def render_pdf(
-    *, titolo: str, righe: list[tuple[str, str]], cornice: CornicePagina | None = None,
+    *,
+    titolo: str,
+    righe: list[tuple[str, str]],
+    cornice: CornicePagina | None = None,
+    logo: bytes | None = None,
 ) -> bytes:
     """L'elenco etichetta/valore: cio' che e' un modello senza sezioni."""
-    pdf = _nuovo_pdf(cornice)
+    pdf = _nuovo_pdf(cornice, logo)
     _intestazione(pdf, titolo)
     for etichetta, valore in righe:
         pdf.set_font(_FONT, "B", 11)

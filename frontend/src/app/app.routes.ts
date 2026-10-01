@@ -24,6 +24,18 @@ export const routes: Routes = [
       import('../features/builder/contesti-lista.component').then((m) => m.ContestiListaComponent),
   },
   {
+    path: 'contesti/:ctxId/impostazioni',
+    loadComponent: () =>
+      import('../features/builder/impostazioni-modelli.component').then(
+        (m) => m.ImpostazioniModelliComponent,
+      ),
+  },
+  {
+    path: 'contesti/:ctxId/impostazioni/:integrazioneId/:codice',
+    loadComponent: () =>
+      import('../features/builder/cornice-tipo.component').then((m) => m.CorniceTipoComponent),
+  },
+  {
     path: 'contesti/:ctxId/modelli',
     loadComponent: () =>
       import('../features/builder/integrazioni-manager.component').then(
@@ -92,7 +104,7 @@ export const routes: Routes = [
       {
         path: 'tipi-documento/:codice/cornice',
         loadComponent: () =>
-          import('../features/configurazione/cornice.component').then((m) => m.CorniceComponent),
+          import('../features/builder/cornice-tipo.component').then((m) => m.CorniceTipoComponent),
       },
       {
         path: 'tipi-documento/:codice/dimensioni',

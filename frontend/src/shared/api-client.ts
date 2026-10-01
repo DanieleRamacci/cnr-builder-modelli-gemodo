@@ -25,29 +25,23 @@ export class ApiClient {
     return this.http.post<T>(path, body).pipe(catchError(mapError));
   }
 
-  /**
-   * POST che risponde con un file (l'anteprima PDF della 012). Con
-   * `responseType: 'blob'` anche il corpo di un errore arriva come Blob: lo si
-   * rilegge come JSON, altrimenti codice e messaggio del servizio andrebbero
-   * persi e l'utente vedrebbe solo un errore generico.
-   */
+  /** POST che risponde con un file (l'anteprima PDF della 012). */
   postBlob(path: string, body: unknown): Observable<Blob> {
-    return this.http.post(path, body, { responseType: 'blob' }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (!(error.error instanceof Blob)) return mapError(error);
-        return from(error.error.text()).pipe(
-          switchMap((testo) => {
-            let corpo: unknown = null;
-            try {
-              corpo = JSON.parse(testo);
-            } catch {
-              // Non era JSON: resta l'errore generico.
-            }
-            return mapError(new HttpErrorResponse({ error: corpo, status: error.status }));
-          }),
-        );
-      }),
-    );
+    return this.http
+      .post(path, body, { responseType: 'blob' })
+      .pipe(catchError(mapBlobError));
+  }
+
+  /** GET di un file (il logo della cornice, 012 T069). */
+  getBlob(path: string): Observable<Blob> {
+    return this.http.get(path, { responseType: 'blob' }).pipe(catchError(mapBlobError));
+  }
+
+  /** PUT di un file come corpo della richiesta, con il suo tipo (il logo, 012 T066). */
+  putFile(path: string, file: Blob): Observable<void> {
+    return this.http
+      .put<void>(path, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } })
+      .pipe(catchError(mapError));
   }
 
   put<T>(path: string, body: unknown): Observable<T> {
@@ -57,6 +51,26 @@ export class ApiClient {
   delete<T>(path: string): Observable<T> {
     return this.http.delete<T>(path).pipe(catchError(mapError));
   }
+}
+
+/**
+ * Con `responseType: 'blob'` anche il corpo di un errore arriva come Blob: lo
+ * si rilegge come JSON, altrimenti codice e messaggio del servizio andrebbero
+ * persi e l'utente vedrebbe solo un errore generico.
+ */
+function mapBlobError(error: HttpErrorResponse): Observable<never> {
+  if (!(error.error instanceof Blob)) return mapError(error);
+  return from(error.error.text()).pipe(
+    switchMap((testo) => {
+      let corpo: unknown = null;
+      try {
+        corpo = JSON.parse(testo);
+      } catch {
+        // Non era JSON: resta l'errore generico.
+      }
+      return mapError(new HttpErrorResponse({ error: corpo, status: error.status }));
+    }),
+  );
 }
 
 function mapError(error: HttpErrorResponse): Observable<never> {

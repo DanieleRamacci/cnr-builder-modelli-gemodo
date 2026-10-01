@@ -964,6 +964,7 @@ class BuilderService:
             inizi_sezione=builder_repository.inizi_sezione(versione),
             anteprima=True,
             cornice=builder_repository.cornice_del_tipo(versione),
+            logo=builder_repository.logo_del_tipo(versione),
         )
         return pdf, f"anteprima-{modello.codice}-v{versione.versione}.pdf"
 

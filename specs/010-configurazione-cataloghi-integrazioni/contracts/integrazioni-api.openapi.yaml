@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Registro Software E Discovery Autorizzato
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Contratto T078, implementato (T081 registro/configurazione/verifica admin,
     T082 resolver builder dal registro, T083 letture manager). La matrice di
@@ -204,65 +204,6 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
-        '502': {$ref: '#/components/responses/SourceError'}
-        '504': {$ref: '#/components/responses/SourceTimeout'}
-  /configurazione/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice:
-    parameters:
-      - {$ref: '#/components/parameters/IntegrazioneId'}
-      - {$ref: '#/components/parameters/CodiceTipoDocumento'}
-    get:
-      operationId: getCornicePaginaAdmin
-      summary: Cornice di pagina del tipo documento (012 FR-011)
-      description: >
-        Logo, intestazione e pie' di pagina ripetuti su ogni pagina di ogni
-        documento di questo tipo. `cornice` e' null finche' non la si configura.
-        `loghi_disponibili` elenca solo i loghi il cui file l'ente ha fornito.
-      x-required-role: GEMODO_ADMIN
-      responses:
-        '200':
-          description: Cornice attuale e loghi selezionabili
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CorniceTipoDocumento'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '502': {$ref: '#/components/responses/SourceError'}
-        '504': {$ref: '#/components/responses/SourceTimeout'}
-    put:
-      operationId: setCornicePaginaAdmin
-      summary: Registra la cornice di pagina del tipo documento
-      description: >
-        Vale subito per la generazione e l'anteprima di tutti i modelli del
-        tipo. Testo a frammenti come i blocchi: il markup e' rifiutato, mai
-        ripulito. Intestazione di al massimo tre righe, pie' di pagina di una.
-      x-required-role: GEMODO_ADMIN
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/CornicePagina'}
-      responses:
-        '200':
-          description: Cornice salvata
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CorniceTipoDocumento'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422':
-          description: Markup nel testo, logo sconosciuto o troppe righe
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/ErroreConViolazioni'}
-              example:
-                codice: MODELLO_DOCUMENTALE_NON_VALIDO
-                messaggio: Cornice di pagina non valida
-                dettagli:
-                  - {violazione: "intestazione, frammento 0: il testo contiene markup, non ammesso"}
         '502': {$ref: '#/components/responses/SourceError'}
         '504': {$ref: '#/components/responses/SourceTimeout'}
   /builder/integrazioni:
@@ -524,54 +465,6 @@ components:
         timeout_ms: 5000
         stato: DEFINITO
         ultima_verifica: null
-    FrammentoTesto:
-      type: object
-      additionalProperties: false
-      required: [testo]
-      properties:
-        testo: {type: string}
-        grassetto: {type: boolean, default: false}
-        corsivo: {type: boolean, default: false}
-        sottolineato: {type: boolean, default: false}
-        collegamento: {type: string, nullable: true}
-    CornicePagina:
-      type: object
-      additionalProperties: false
-      properties:
-        logo_ref: {type: string, nullable: true, pattern: '^[a-z0-9-]{1,64}$', example: logo-ente}
-        intestazione:
-          type: array
-          items: {$ref: '#/components/schemas/FrammentoTesto'}
-        pie_pagina:
-          type: array
-          items: {$ref: '#/components/schemas/FrammentoTesto'}
-        numerazione_pagine: {type: boolean, default: true}
-    CorniceTipoDocumento:
-      type: object
-      additionalProperties: false
-      required: [cornice, loghi_disponibili]
-      properties:
-        cornice:
-          allOf: [{$ref: '#/components/schemas/CornicePagina'}]
-          nullable: true
-        loghi_disponibili:
-          type: array
-          items: {type: string}
-    ErroreConViolazioni:
-      type: object
-      additionalProperties: false
-      required: [codice, messaggio]
-      properties:
-        codice: {type: string}
-        messaggio: {type: string}
-        dettagli:
-          type: array
-          items:
-            type: object
-            additionalProperties: false
-            required: [violazione]
-            properties:
-              violazione: {type: string}
     Errore:
       type: object
       additionalProperties: false

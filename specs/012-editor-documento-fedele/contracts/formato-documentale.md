@@ -83,19 +83,13 @@ si dispone il testo al suo interno.
 ## Cornice di pagina
 
 Non viaggia su questo contratto: appartiene al tipo documento (FR-011) e si
-configura dove gia' si configura la struttura del tipo documento. E' qui solo
-per dire esplicitamente che **non** e' un blocco: `LOGO` e `FOOTER` restano
-tipi di blocco per i casi in cui compaiono una volta sola nel corpo, mentre
-cio' che si ripete su ogni pagina e' la cornice.
-
-```json
-{
-  "logo_ref": "logo-cnr",
-  "intestazione": [{ "testo": "Consiglio Nazionale delle Ricerche", "grassetto": true }],
-  "pie_pagina": [],
-  "numerazione_pagine": true
-}
-```
+imposta con le rotte `.../tipi-documento/{codice}/cornice` del builder
+(contratto 002). E' qui solo per dire esplicitamente che **non** e' un blocco:
+`LOGO` e `FOOTER` restano tipi di blocco per i casi in cui compaiono una volta
+sola nel corpo, mentre cio' che si ripete su ogni pagina e' la cornice.
+Forma (rivista il 2026-10-01): intestazione e pie' di pagina indipendenti, con
+maschera; il logo e' un'immagine per tipo documento, non un campo del JSON.
+Descrizione completa in `docs/formato-documentale.md`.
 
 ## Errori
 

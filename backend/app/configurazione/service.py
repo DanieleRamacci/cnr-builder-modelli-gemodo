@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.builder import repository as builder_repository
 from app.catalog.models import TipoDocumento
 from app.common.errors import DomainError, ErrorCode
-from app.common.security import PrincipalGEMODO, ensure_roles
+from app.common.security import PrincipalGEMODO, ensure_roles, verify_scrittura_su_contesto
 from app.configurazione import repository
 from app.configurazione.models import AttributoProfilo, AuditEventoConfigurazione, AuditEventoIntegrazione, DefinizioneStruttura, EndpointIntegrazione, Integrazione, SchemaDiscoveryGenerato
 from app.configurazione.schemas import (
@@ -33,7 +33,7 @@ from app.discovery.egress import valida_destinazione_approvata
 from app.discovery.errors import DiscoveryError
 from app.discovery.schemas import VERSIONE_CONTRATTO_DISCOVERY, CatalogoDiscovery, MappaDiscovery
 from app.documentale.schemas import CornicePagina
-from app.generazione.renderer import LOGHI
+from app.documentale.logo import ricodifica_logo
 from app.quality.document_model import violazioni_cornice
 
 # Verification runs synchronously inside one request; this margin above the endpoint's
@@ -298,10 +298,17 @@ class IntegrazioniService:
         ))
 
     def _mappa_live(
-        self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO
+        self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO, *, consenti_gestore: bool = False,
     ) -> tuple[Integrazione, MappaDiscovery]:
-        ensure_roles(principal, (ROLE_GEMODO_ADMIN,))
-        source = self._integrazione(integrazione_id)
+        """L'albero dal vivo dell'integrazione. Di regola solo per l'amministratore;
+        con `consenti_gestore` anche per chi gestisce i modelli nel contesto
+        dell'integrazione (la cornice di pagina, 012 T067)."""
+        if not consenti_gestore or principal.has_any_role((ROLE_GEMODO_ADMIN,)):
+            ensure_roles(principal, (ROLE_GEMODO_ADMIN,))
+            source = self._integrazione(integrazione_id)
+        else:
+            source = self._integrazione(integrazione_id)
+            verify_scrittura_su_contesto(principal, source.codice_contesto)
         endpoint = repository.endpoint(self.db, source.id)
         if endpoint is None or endpoint.stato != "CONNESSO":
             raise DomainError(
@@ -520,24 +527,22 @@ class IntegrazioniService:
         self.db.commit()
         return policy
 
+    # --- Cornice di pagina (012 FR-011, T065-T067) --------------------------------
+
     def cornice_live(self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO):
-        """La cornice di pagina del tipo documento (012 FR-011), o nessuna."""
-        source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=False)
-        grezza = tipo.cornice_pagina if tipo is not None else None
-        return CornicePagina.model_validate(grezza) if grezza else None
+        """La cornice del tipo documento e se un logo e' stato caricato."""
+        _, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=False)
+        if tipo is None:
+            return None, False
+        grezza = tipo.cornice_pagina
+        cornice = CornicePagina.model_validate(grezza) if grezza else None
+        return cornice, tipo.logo_cornice is not None
 
     def imposta_cornice_live(
         self, integrazione_id: uuid.UUID, codice: str, cornice: CornicePagina, principal: PrincipalGEMODO,
-    ) -> CornicePagina:
-        """Registra la cornice di pagina del tipo documento (012 T047).
-
-        Le regole sono quelle del testo dei blocchi (niente markup) piu' il
-        limite di righe che la testata puo' contenere; il logo si sceglie fra
-        quelli che il servizio conosce, non si carica.
-        """
+    ) -> tuple[CornicePagina, bool]:
+        """Registra la cornice: vale da subito per tutti i modelli del tipo."""
         violazioni = violazioni_cornice(cornice)
-        if cornice.logo_ref is not None and cornice.logo_ref not in LOGHI:
-            violazioni.append(f"logo '{cornice.logo_ref}' non disponibile")
         if violazioni:
             raise DomainError(
                 ErrorCode.MODELLO_DOCUMENTALE_NON_VALIDO,
@@ -546,21 +551,50 @@ class IntegrazioniService:
                 dettagli=[{"violazione": violazione} for violazione in violazioni],
             )
         source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=True)
-        tipo.cornice_pagina = cornice.model_dump(mode="json", exclude_defaults=False)
-        self._audit(
-            source.id,
-            principal,
-            "CORNICE_PAGINA_CONFIGURATA",
-            {"codice_tipo_documento": codice, "logo_ref": cornice.logo_ref,
-             "numerazione_pagine": cornice.numerazione_pagine},
-        )
+        tipo.cornice_pagina = cornice.model_dump(mode="json")
+        self._audit(source.id, principal, "CORNICE_PAGINA_CONFIGURATA", {
+            "codice_tipo_documento": codice,
+            "intestazione": cornice.intestazione is not None,
+            "pie_pagina": cornice.pie_pagina is not None,
+        })
         self.db.commit()
-        return cornice
+        return cornice, tipo.logo_cornice is not None
+
+    def logo_cornice(self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO) -> bytes:
+        _, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=False)
+        if tipo is None or tipo.logo_cornice is None:
+            raise DomainError("RISORSA_NON_TROVATA", "Nessun logo caricato", status_code=404)
+        return tipo.logo_cornice
+
+    def carica_logo_cornice(
+        self, integrazione_id: uuid.UUID, codice: str, contenuto: bytes, principal: PrincipalGEMODO,
+    ) -> None:
+        """Il logo dell'intestazione (012 T066): verificato e ricodificato in PNG.
+
+        Non si conserva il file ricevuto: lo si apre come immagine e se ne salva
+        una copia PNG nuova. Un file che si dichiara immagine ma non lo e', o che
+        porta altro accanto ai pixel, non arriva mai al PDF.
+        """
+        png = ricodifica_logo(contenuto)
+        source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=True)
+        tipo.logo_cornice = png
+        self._audit(source.id, principal, "CORNICE_LOGO_CARICATO",
+                    {"codice_tipo_documento": codice, "byte": len(png)})
+        self.db.commit()
+
+    def rimuovi_logo_cornice(self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO) -> None:
+        source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=False)
+        if tipo is None or tipo.logo_cornice is None:
+            return
+        tipo.logo_cornice = None
+        self._audit(source.id, principal, "CORNICE_LOGO_RIMOSSO", {"codice_tipo_documento": codice})
+        self.db.commit()
 
     def _tipo_per_cornice(
         self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO, *, associa: bool,
     ):
-        source, mappa = self._mappa_live(integrazione_id, principal)
+        """Il tipo documento, per chi lo puo' configurare: l'admin o il gestore del suo contesto."""
+        source, mappa = self._mappa_live(integrazione_id, principal, consenti_gestore=True)
         if codice not in mappa.cataloghi:
             raise DomainError(
                 "RISORSA_NON_TROVATA",

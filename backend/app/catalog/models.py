@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import LargeBinary, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -40,6 +40,9 @@ class TipoDocumento(Base):
     # portarsi dietro il JSON. Effetto collaterale voluto: l'ORM resta usabile
     # sugli schemi precedenti alla 0025 (test delle migrazioni storiche).
     cornice_pagina: Mapped[dict | None] = mapped_column(JSONB, nullable=True, deferred=True)
+    # Il logo dell'intestazione, PNG ricodificato dal servizio (012 T066). Anche
+    # questo si carica solo per il PDF o per mostrarlo nella configurazione.
+    logo_cornice: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

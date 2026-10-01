@@ -4,6 +4,12 @@
 <header class="testata-1b">
   <h1>Modelli</h1>
   <span class="badge-contesto">{{ selected() }}</span>
+  <a
+    class="btn btn-sm btn-outline-primary ms-auto"
+    data-impostazioni-modelli
+    [routerLink]="['/contesti', selected(), 'impostazioni']"
+    >Impostazioni modelli</a
+  >
 </header>
 @if (error()) {
   <div class="alert alert-danger" role="alert">{{ error() }}</div>

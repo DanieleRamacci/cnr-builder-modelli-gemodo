@@ -35,6 +35,8 @@ Spec di riferimento: `002-builder-modelli` (modelli, versioni, varianti),
 | `GET/PUT /modelli/{id}/versioni/{id}/sezioni` | il corpo del documento |
 | `POST /modelli/{id}/versioni/{id}/anteprima` | il PDF della bozza con valori fac-simile |
 | `POST .../invia-revisione`, `/approva`, `/pubblica`, `/sospendi`, `/archivia` | ciclo di vita |
+| `GET/PUT /integrazioni/{id}/tipi-documento/{codice}/cornice`, `GET/PUT/DELETE .../cornice/logo` | intestazione, piè di pagina e logo del tipo documento (gestore del contesto o admin) |
+| `GET /modelli/{id}/cornice` | la cornice che il modello eredita, per la scheda "Pagina" dell'editor |
 
 Contratto: `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`.
 `tests/builder/test_builder_modelli_contract.py` verifica che il contratto
@@ -62,6 +64,10 @@ descriva solo rotte che esistono: una rotta nuova entra con il suo contratto.
   usa solo il renderer e non importa lo storage: niente documento registrato,
   niente idempotenza, niente audit. Non trasformarla in un parametro di
   `GenerazioneDocumentiService.genera`.
+- **La cornice è del tipo documento, non del modello.** La scrivono il gestore
+  del contesto dell'integrazione e l'amministratore
+  (`IntegrazioniService._mappa_live(..., consenti_gestore=True)`). Il logo si
+  conserva solo ricodificato (`app/documentale/logo.py`): mai il file ricevuto.
 - **Il profilo è la fonte dei permessi per l'interfaccia** (007 T115). Se cambia
   la mappatura ruoli -> permessi, l'interfaccia la segue senza modifiche; non
   ricostruire regole sui ruoli nel frontend.

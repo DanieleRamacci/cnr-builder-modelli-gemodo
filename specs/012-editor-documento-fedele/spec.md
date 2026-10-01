@@ -67,6 +67,17 @@ Chi compone vede un titolo e ottiene un paragrafo qualunque.
   gestore? → A: **Automatica**. L'elemento di lista porta solo il livello e il
   tipo di marcatore; il numero lo calcola il renderer, e riparte dentro ogni
   articolo.
+- Q: Chi imposta la cornice, e come? (2026-10-01, dopo la prova sul server)
+  → A: Resta **del tipo documento**, ma la imposta **il gestore del contesto**
+  (e l'amministratore), da *Contesti -> <contesto> -> Impostazioni modelli*,
+  non solo l'amministratore da Impostazioni. Intestazione e pie' di pagina
+  sono **indipendenti** (si puo' aggiungerne uno solo) e si scelgono da
+  **maschere** pronte; la prima e' "logo al centro, testo sotto". Il **logo si
+  carica dall'interfaccia**, uno per tipo documento, verificato e ricodificato
+  dal servizio. Nell'editor una scheda laterale mostra la cornice del tipo del
+  modello e, se manca, offre "Aggiungi intestazione" / "Aggiungi pie' di
+  pagina" verso la pagina di impostazione. Supera la forma del 2026-10-01
+  mattina (logo da file sul server, solo admin, impaginazione fissa).
 - Q: Il numero dell'articolo ("Art. 1", "Art. 2") si aggiorna da solo se si
   inserisce un articolo in mezzo? (2026-10-01) → A: **No, per ora resta scritto
   a mano** nel testo del `TITOLO`; si valuta dopo l'uso. La numerazione

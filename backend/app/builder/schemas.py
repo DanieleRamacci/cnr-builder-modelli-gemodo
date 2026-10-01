@@ -9,7 +9,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.builder.repository import NOME_LIVELLO
 from app.discovery.schemas import CatalogoDiscovery
-from app.documentale.schemas import BloccoDocumento, ModelloDocumentaleControllato
+from app.documentale.schemas import (
+    BloccoDocumento,
+    CornicePagina,
+    MascheraIntestazione,
+    MascheraPiePagina,
+    ModelloDocumentaleControllato,
+)
 
 StrutturaDisponibileResponse = CatalogoDiscovery
 StrutturaTipoDocumentoResponse = CatalogoDiscovery
@@ -378,3 +384,23 @@ class ProfiloResponse(BaseModel):
     permessi_diretti: list[PermessoProfilo]
     contesti: list[ContestoProfilo]
     permessi: list[str]
+
+
+class CorniceTipoDocumento(BaseModel):
+    """La cornice di un tipo documento, per la pagina che la imposta (012 T067)."""
+
+    cornice: CornicePagina | None = None
+    logo_presente: bool = False
+    maschere_intestazione: list[str] = Field(default_factory=list)
+    maschere_pie_pagina: list[str] = Field(default_factory=list)
+
+
+class CorniceModello(CorniceTipoDocumento):
+    """La cornice che il modello eredita dal suo tipo documento, per l'editor (012 T070).
+
+    Porta anche dove si imposta: l'editor la mostra e, se manca, rimanda li'.
+    """
+
+    integrazione_id: str | None = None
+    codice_tipo_documento: str
+    codice_contesto: str

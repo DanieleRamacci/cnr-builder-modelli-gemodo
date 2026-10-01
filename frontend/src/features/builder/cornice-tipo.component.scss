@@ -1,0 +1,126 @@
+:host {
+  display: block;
+  max-width: 760px;
+}
+
+h1 {
+  font-size: 26px;
+}
+
+h2 {
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+.nota {
+  margin: 4px 0;
+  color: #5a6772;
+  font-size: 13.5px;
+
+  &.troppe {
+    color: #b71918;
+    font-weight: 700;
+  }
+}
+
+.parte {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #dbe2e8;
+  border-radius: 6px;
+
+  label:not(.form-check):not(.btn) {
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  textarea,
+  input[type='text'] {
+    width: 100%;
+  }
+}
+
+.logo-riga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.maschere {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.maschera {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: 180px;
+  padding: 12px;
+  border: 1px solid #c5ced8;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+
+  &:hover {
+    border-color: #0066cc;
+  }
+}
+
+// Lo schizzo della maschera: logo al centro, due righe sotto.
+.schizzo {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  width: 100%;
+
+  .s-logo {
+    width: 40px;
+    height: 20px;
+    background: #9fb7cf;
+    border-radius: 2px;
+  }
+
+  .s-riga {
+    width: 80%;
+    height: 5px;
+    background: #c5ced8;
+
+    &.corta {
+      width: 55%;
+    }
+  }
+}
+
+.foglio-prova {
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px solid #dbe2e8;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(16 24 40 / 8%);
+
+  .corpo-finto {
+    margin: 24px 0;
+    color: #9aa5af;
+    font-size: 13px;
+  }
+}
+
+.azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.salvata {
+  color: #00703c;
+  font-size: 14px;
+}

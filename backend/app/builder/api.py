@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    CorniceModello,
+    CorniceTipoDocumento,
     ContestoProfilo,
     PermessoProfilo,
     ProfiloResponse,
@@ -41,6 +43,8 @@ from app.builder.schemas import (
     VersioneResponse,
 )
 from app.builder import repository as builder_service_repository
+from app.configurazione.service import IntegrazioniService, get_integrazioni_service
+from app.documentale.schemas import CornicePagina, MascheraIntestazione, MascheraPiePagina
 from app.builder.repository import NOME_LIVELLO
 from app.builder.service import BuilderService, get_builder_service
 from app.catalog.models import ModelloDocumento, ModelloDocumentoVersione
@@ -351,6 +355,93 @@ def _sezioni_response(versione) -> SezioniResponse:
             for s in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice))
         ],
         documento=builder_service_repository.composizione_documentale(versione),
+    )
+
+
+_MASCHERE = {
+    "maschere_intestazione": [m.value for m in MascheraIntestazione],
+    "maschere_pie_pagina": [m.value for m in MascheraPiePagina],
+}
+_CORNICE = "/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice"
+
+
+@router.get(_CORNICE, response_model=CorniceTipoDocumento)
+def cornice_tipo_documento(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniService = Depends(get_integrazioni_service),
+) -> CorniceTipoDocumento:
+    """Intestazione e pie' di pagina del tipo documento (012 FR-011, T067).
+
+    Per il gestore del contesto dell'integrazione e per l'amministratore.
+    """
+    cornice, logo = service.cornice_live(integrazioneId, codice, principal)
+    return CorniceTipoDocumento(cornice=cornice, logo_presente=logo, **_MASCHERE)
+
+
+@router.put(_CORNICE, response_model=CorniceTipoDocumento)
+def imposta_cornice_tipo_documento(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    request: CornicePagina,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniService = Depends(get_integrazioni_service),
+) -> CorniceTipoDocumento:
+    """Registra la cornice: vale da subito per tutti i modelli del tipo, anteprima compresa."""
+    cornice, logo = service.imposta_cornice_live(integrazioneId, codice, request, principal)
+    return CorniceTipoDocumento(cornice=cornice, logo_presente=logo, **_MASCHERE)
+
+
+@router.get(_CORNICE + "/logo", response_class=Response, responses={200: {"content": {"image/png": {}}}})
+def logo_cornice(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniService = Depends(get_integrazioni_service),
+) -> Response:
+    return Response(service.logo_cornice(integrazioneId, codice, principal), media_type="image/png")
+
+
+@router.put(_CORNICE + "/logo", status_code=204)
+async def carica_logo_cornice(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    richiesta: Request,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniService = Depends(get_integrazioni_service),
+) -> Response:
+    """Il logo dell'intestazione, come corpo della richiesta (PNG o JPEG, al massimo 1 MB)."""
+    service.carica_logo_cornice(integrazioneId, codice, await richiesta.body(), principal)
+    return Response(status_code=204)
+
+
+@router.delete(_CORNICE + "/logo", status_code=204)
+def rimuovi_logo_cornice(
+    integrazioneId: uuid.UUID,
+    codice: str,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: IntegrazioniService = Depends(get_integrazioni_service),
+) -> Response:
+    service.rimuovi_logo_cornice(integrazioneId, codice, principal)
+    return Response(status_code=204)
+
+
+@router.get("/modelli/{modelloId}/cornice", response_model=CorniceModello)
+def cornice_modello(
+    modelloId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> CorniceModello:
+    """La cornice che il modello eredita dal suo tipo documento, per l'editor (012 T070)."""
+    tipo = service.dettaglio(principal, modelloId).tipo_documento
+    return CorniceModello(
+        cornice=CornicePagina.model_validate(tipo.cornice_pagina) if tipo.cornice_pagina else None,
+        logo_presente=tipo.logo_cornice is not None,
+        integrazione_id=str(tipo.integrazione_id) if tipo.integrazione_id else None,
+        codice_tipo_documento=tipo.codice,
+        codice_contesto=tipo.codice_contesto,
+        **_MASCHERE,
     )
 
 

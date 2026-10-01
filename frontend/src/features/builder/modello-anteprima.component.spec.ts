@@ -165,6 +165,16 @@ const sezioniResponse = {
   },
 };
 
+const CORNICE_ASSENTE = {
+  cornice: null,
+  logo_presente: false,
+  maschere_intestazione: ['LOGO_CENTRO_TESTO_SOTTO'],
+  maschere_pie_pagina: ['TESTO_SINISTRA_NUMERO_DESTRA'],
+  integrazione_id: 'int-1',
+  codice_tipo_documento: 'BANDO_CONCORSO',
+  codice_contesto: 'geban',
+};
+
 describe('2b ridotta: anteprima modello', () => {
   function setup(id = 'model') {
     TestBed.configureTestingModule({
@@ -198,10 +208,15 @@ describe('2b ridotta: anteprima modello', () => {
     response = sezioniResponse,
     modelId = 'model',
     versionId = 'v2',
+    cornice: object = CORNICE_ASSENTE,
   ): void {
     http
       .expectOne(`/api/v1/builder/modelli/${modelId}/versioni/${versionId}/sezioni`)
       .flush(response);
+    // La cornice del tipo documento parte insieme alle sezioni (012 T070).
+    http
+      .match(`/api/v1/builder/modelli/${modelId}/cornice`)
+      .forEach((richiesta) => richiesta.flush(cornice));
   }
 
   it('shows the contract fields returned by the API, with type and obligation', () => {
@@ -425,21 +440,68 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  it('renders the 2b document frame with header, signature and inline add command', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
+  it('012 T070: without a frame the sheet and the Pagina tab offer to add header and footer', () => {
+    const { fixture, http, root } = caricaBozza();
 
-    expect(root.querySelector('.document-header')?.textContent).toContain('Comune di');
-    expect(root.querySelector('.document-header')?.textContent).toContain('Det. n.');
-    expect(root.querySelector('.document-signature')?.textContent).toContain(
-      'Il Responsabile del procedimento',
+    // Niente piu' intestazione e firma finte del prototipo (FR-008).
+    expect(root.textContent).not.toContain('Comune di');
+    expect(root.textContent).not.toContain('Il Responsabile del procedimento');
+    const aggiungi = root.querySelector('[data-sheet-add-intestazione]') as HTMLAnchorElement;
+    expect(aggiungi.getAttribute('href')).toBe('/contesti/geban/impostazioni/int-1/BANDO_CONCORSO');
+    expect(root.querySelector('[data-sheet-add-piede]')).toBeTruthy();
+
+    apriPannello(root, 'Pagina');
+    fixture.detectChanges();
+    expect(root.querySelector('[data-pagina-intestazione]')?.textContent).toContain('Nessuna');
+    expect(root.querySelector('[data-aggiungi-intestazione]')?.getAttribute('href')).toBe(
+      '/contesti/geban/impostazioni/int-1/BANDO_CONCORSO',
     );
+    expect(root.querySelector('[data-aggiungi-piede]')).toBeTruthy();
     expect(root.querySelector('[data-add-section-inline]')?.textContent).toContain(
       'Inserisci una nuova sezione di testo',
     );
+    http.verify();
+  });
+
+  it('012 T070: the frame of the document type shows on the sheet as in the PDF', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http, sezioniResponse, 'model', 'v2', {
+      ...CORNICE_ASSENTE,
+      logo_presente: false,
+      cornice: {
+        intestazione: {
+          maschera: 'LOGO_CENTRO_TESTO_SOTTO',
+          con_logo: true,
+          testo: [
+            { testo: 'Consiglio Nazionale delle Ricerche', grassetto: true },
+            { testo: '\nUfficio Reclutamento' },
+          ],
+        },
+        pie_pagina: {
+          maschera: 'TESTO_SINISTRA_NUMERO_DESTRA',
+          testo: [{ testo: 'Roma' }],
+          numerazione_pagine: true,
+        },
+      },
+    });
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const testata = root.querySelector('[data-cornice-testata]')!;
+    expect(testata.querySelector('.b')?.textContent).toBe('Consiglio Nazionale delle Ricerche');
+    expect(testata.textContent).toContain('Ufficio Reclutamento');
+    // Logo richiesto ma non ancora caricato: lo si dice, non lo si inventa.
+    expect(testata.textContent).toContain('logo da caricare');
+    expect(root.querySelector('[data-cornice-piede]')?.textContent).toContain('Pagina 1 di N');
+    expect(root.querySelector('[data-sheet-add-intestazione]')).toBeNull();
+
+    apriPannello(root, 'Pagina');
+    fixture.detectChanges();
+    expect(root.querySelector('[data-pagina-intestazione]')?.textContent).toContain(
+      'Logo non ancora caricato',
+    );
+    expect(root.querySelector('[data-modifica-cornice]')).toBeTruthy();
     http.verify();
   });
 
@@ -455,7 +517,7 @@ describe('2b ridotta: anteprima modello', () => {
     const schede = Array.from(root.querySelectorAll('.panel-tabs button')).map((b) =>
       b.textContent?.trim(),
     );
-    expect(schede).toEqual(['Segnaposto', 'Proprietà']);
+    expect(schede).toEqual(['Segnaposto', 'Pagina', 'Proprietà']);
     http.verify();
   });
 
