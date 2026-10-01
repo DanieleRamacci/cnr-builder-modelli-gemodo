@@ -43,18 +43,25 @@ pubblicare.
 **Purpose**: cio' che va messo a posto prima di toccare il dominio. Il contratto
 va pubblicato **prima** del codice, non dopo (Principio II).
 
-- [ ] T001 Copiare i quattro `.ttf` di Titillium Web (regular, 700, italic,
+- [x] T001 Copiare i quattro `.ttf` di Titillium Web (regular, 700, italic,
       700italic) da `frontend/node_modules/bootstrap-italia/dist/fonts/Titillium_Web/`
       in `backend/app/generazione/fonts/`, con `OFL.txt` accanto.
       `node_modules/` non e' un percorso su cui il backend possa fare
       affidamento a runtime e `frontend/dist/` e' un artefatto di build
       (research.md R1).
+      *Fatto 2026-10-01*: salvati come `TitilliumWeb-{Regular,Bold,Italic,BoldItalic}.ttf`;
+      verificato con fontTools che tutte e quattro le varianti contengano
+      virgolette curve, apostrofo tipografico, trattini, lettere accentate, `€`, `§`, `«»`.
 - [ ] T002 Fondere [`contracts/anteprima-api.openapi.yaml`](./contracts/anteprima-api.openapi.yaml)
       in `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
       e verificare che sia registrato in `PUBLISHED_CONTRACTS`
       (`backend/app/quality/openapi_docs.py`), cosi' che compaia in Swagger
       prima dell'implementazione.
-- [ ] T003 [P] Estendere la colonna `Condizione` di
+      **Rinviato a T036 (decisione 2026-10-01)**: `test_builder_modelli_contract.py`
+      impone che il contratto descriva solo rotte che il router espone davvero
+      (difesa contro il contratto 0.2.0). Contratto e rotta entrano quindi
+      **insieme**, nello stesso commit di T036; il test resta com'e'.
+- [x] T003 [P] Estendere la colonna `Condizione` di
       `MODELLO_DOCUMENTALE_NON_VALIDO` in `infra/openapi/errors.md` per
       nominare anche il testo dei frammenti. **Nessun codice di errore nuovo**:
       quello esistente copre gia' questo caso (contracts/formato-documentale.md).
@@ -242,6 +249,11 @@ precede. Senza, l'unico modo di guardare il risultato e' pubblicare.
       in `backend/app/builder/api.py`, come da contratto. Autorizzazione con
       `verify_scrittura_su_contesto` - **non** `DOCUMENTI_GENERATORE`: e'
       un'azione di chi compone.
+      **Assorbe T002**: nello stesso commit fondere
+      `contracts/anteprima-api.openapi.yaml` nel contratto del builder (002,
+      OpenAPI 3.0.3: adattare a `NotFound`/`Conflict`/`Errore` chiuso gia'
+      presenti) e aggiungere il path all'elenco atteso in
+      `test_builder_modelli_contract.py`.
 - [ ] T037 [P] Test di FR-010, che e' il cuore della storia: dopo un'anteprima,
       nessun `DocumentoGenerato` risulta registrato, e una generazione
       successiva con gli stessi dati **non** trova una chiave di idempotenza
