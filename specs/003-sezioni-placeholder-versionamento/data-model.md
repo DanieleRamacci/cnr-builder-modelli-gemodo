@@ -62,7 +62,9 @@ Fields:
 - `posizionamento`: `TOP`, `BODY`, `INLINE`, `COLUMN_LEFT`, `COLUMN_RIGHT`,
   `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `BOTTOM_CENTER`.
 - `ordine`
-- `contenuto`: opzionale.
+- `contenuto`: opzionale. **Superato dalla spec 012** (2026-10-01): il testo sta in
+  `frammenti`, e un blocco con `contenuto` e' rifiutato. Forma attuale:
+  `docs/formato-documentale.md`.
 - `stile`: opzionale, deve appartenere a `stili_ammessi`.
 - `asset_ref`: opzionale.
 - `colonne`: obbligatorie per `TABELLA` e `COLONNE`.

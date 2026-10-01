@@ -25,6 +25,23 @@ pubblicazione pubblica.
 - Changelog e note di release.
 - Verifica assenza di secret, token, credenziali, dati personali reali e URL sensibili.
 
+## Componenti Di Terze Parti Inclusi
+
+Componenti distribuiti **dentro** il repository, e non solo dichiarati come
+dipendenza, con la loro licenza accanto ai file.
+
+| Componente | Uso | Licenza | Dove |
+|---|---|---|---|
+| Titillium Web (regular, bold, italic, bold italic) | font dei PDF generati: il core font precedente non sapeva scrivere virgolette curve e lettere accentate (012 research.md R1) | SIL Open Font License 1.1 | `backend/app/generazione/fonts/`, testo integrale in `OFL.txt` |
+
+La OFL consente di incorporare il font nei documenti prodotti e di
+ridistribuirlo insieme al software, a condizione di mantenere il file di
+licenza e di non venderlo da solo.
+
+Le dipendenze installate dai gestori di pacchetti sono dichiarate in
+`backend/pyproject.toml` (con `uv.lock`) e in `frontend/package.json` (con
+`package-lock.json`).
+
 ## Principi Di Pubblicazione
 
 - La documentazione deve essere in formato testuale versionabile.

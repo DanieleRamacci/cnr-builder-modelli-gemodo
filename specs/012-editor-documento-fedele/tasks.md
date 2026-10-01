@@ -410,11 +410,18 @@ documento; interruzione di pagina e firma restano al gestore nell'editor.
 
 ## Phase 8: Polish e trasversali
 
-- [ ] T052 Aggiornare la documentazione pubblica del formato documentale alla
+- [x] T052 Aggiornare la documentazione pubblica del formato documentale alla
       forma a frammenti. Un riusante che legga la documentazione attuale
       troverebbe descritta una struttura che non esiste piu' (Principio VI).
-- [ ] T053 Includere la licenza OFL del font nel repository e citarla dove si
+- [x] T053 Includere la licenza OFL del font nel repository e citarla dove si
       elencano le dipendenze di terze parti (Principio VI).
+      *T052-T053 fatti 2026-10-01*: pagina pubblica `docs/formato-documentale.md`
+      (nel menu MkDocs) con la forma attuale, la 003 rimanda li' dove
+      descrive `contenuto`; la licenza OFL e' gia' in
+      `backend/app/generazione/fonts/OFL.txt` ed e' citata nella tabella dei
+      componenti di terze parti di `docs/open-source-pa-readiness.md`.
+      Nota: `mkdocs build --strict` (pages.yml) fallisce per 15 link relativi
+      preesistenti delle spec verso `../../docs/`, non introdotti qui.
 - [x] T054 **Decidere se registrare un evento di audit per l'anteprima**
       (Principio V). Non e' una generazione e non compare nell'elenco di eventi
       della costituzione, quindi registrarla o no e' una scelta da prendere e
