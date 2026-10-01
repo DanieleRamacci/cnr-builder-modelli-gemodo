@@ -492,21 +492,27 @@
   // Il marcatore e' calcolato, fuori dal testo modificabile: non si puo'
   // cancellare ne' riscrivere a mano (012 FR-015).
   .editor-item {
+    // Rientri predefiniti di Word, gli stessi del PDF (`renderer.py`):
+    // marcatore a 0,63 cm, testo a 1,27 cm, +1,27 cm per livello.
     display: flex;
-    gap: 8px;
-    padding-left: 8mm;
+    padding-left: 6.35mm;
 
     &.level-1 {
-      padding-left: 16mm;
+      padding-left: 19.05mm;
     }
 
     .item-marker {
-      flex: 0 0 auto;
-      min-width: 1.5em;
+      flex: 0 0 6.35mm;
       color: #1c2024;
       font-size: 13.5px;
       line-height: 1.75;
       user-select: none;
+
+      // Il pallino di Word e' un cerchio di circa 1,5 mm, non il `•` minuto.
+      &.marker-puntato {
+        font-size: 8px;
+        line-height: 23.6px;
+      }
     }
 
     .editor-text {

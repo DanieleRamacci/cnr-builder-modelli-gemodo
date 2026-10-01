@@ -520,9 +520,12 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                             let indice = $index
                           ) {
                             <div class="editor-item" [class.level-1]="elemento.livello === 1">
-                              <span class="item-marker" aria-hidden="true">{{
-                                marcatoreVoce(sezione, blocco, indice)
-                              }}</span>
+                              <span
+                                class="item-marker"
+                                [class.marker-puntato]="elemento.marcatore === 'PUNTATO'"
+                                aria-hidden="true"
+                                >{{ marcatoreVoce(sezione, blocco, indice) }}</span
+                              >
                               <div
                                 #editor
                                 class="editor-text"
@@ -605,7 +608,11 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                     @if (blocco.tipo === 'ELENCO') {
                       @for (elemento of blocco.elementi ?? []; track $index; let indice = $index) {
                         <div class="editor-item" [class.level-1]="elemento.livello === 1">
-                          <span class="item-marker">{{ marcatoreInBlocco(blocco, indice) }}</span>
+                          <span
+                            class="item-marker"
+                            [class.marker-puntato]="elemento.marcatore === 'PUNTATO'"
+                            >{{ marcatoreInBlocco(blocco, indice) }}</span
+                          >
                           <div class="editor-text" [style.text-align]="allineamentoCss(blocco)">
                             @for (frammento of elemento.frammenti; track $index) {
                               <span
@@ -2536,12 +2543,14 @@ function numeraElenchi(
     marcatori.set(
       blocco,
       (blocco.elementi ?? []).map((elemento) => {
+        // Un punto elenco non consuma numeri, come in Word.
+        const conta = elemento.marcatore === 'PUNTATO' ? 0 : 1;
         if (elemento.livello === 0) {
           secondo = 0;
-          primo += 1;
+          primo += conta;
           return formattaMarcatore(elemento.marcatore, primo, 0);
         }
-        secondo += 1;
+        secondo += conta;
         return formattaMarcatore(elemento.marcatore, secondo, 1);
       }),
     );
@@ -2552,5 +2561,6 @@ function numeraElenchi(
 function formattaMarcatore(marcatore: TipoMarcatore, numero: number, livello: 0 | 1): string {
   if (marcatore === 'NUMERICO') return `${numero}.`;
   if (marcatore === 'ALFABETICO') return `${String.fromCharCode(96 + ((numero - 1) % 26) + 1)})`;
-  return livello === 0 ? '•' : '–';
+  // Gli stessi simboli della resa, che li disegna come cerchi (pieno, vuoto).
+  return livello === 0 ? '●' : '○';
 }

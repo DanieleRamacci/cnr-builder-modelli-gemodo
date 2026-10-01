@@ -81,9 +81,47 @@ def test_la_numerazione_riparte_a_ogni_sezione_e_a_ogni_titolo():
     assert "Art. 3 - Domande 1. art3-c1" in testo
 
 
-def test_un_elenco_puntato_non_ha_numeri():
-    testo = resa_testo(elenco(0, voce("cittadinanza", 0, "PUNTATO"), voce("eta", 1, "PUNTATO")))
-    assert "• cittadinanza – eta" in testo
+def test_un_elenco_puntato_non_ha_numeri_e_disegna_i_punti():
+    blocchi = [elenco(0, voce("cittadinanza", 0, "PUNTATO"), voce("eta", 1, "PUNTATO"))]
+    assert marcatori_elenchi(blocchi) == {0: ["●", "○"]}
+    # Il punto e' un disegno, non testo: nel testo estratto restano le voci.
+    assert "cittadinanza eta" in resa_testo(*blocchi)
+
+
+def test_un_elenco_numerato_dopo_uno_puntato_riparte_da_uno():
+    """Visto nel PDF del 2026-10-01: i punti consumavano numeri e il comma partiva da 3."""
+    testo = resa_testo(
+        elenco(0, voce("primo punto", 0, "PUNTATO"), voce("secondo punto", 0, "PUNTATO")),
+        elenco(1, voce("primo comma"), voce("lettera", 1)),
+    )
+    assert "1. primo comma a) lettera" in testo
+
+
+def test_rientri_come_word_marcatore_a_0_63_cm_testo_a_1_27_cm():
+    pdf = render_documento(titolo="Prova", blocchi=[
+        paragrafo(0, "margine"),
+        elenco(1, voce("comma"), voce("lettera", 1)),
+    ])
+    x = posizioni(pdf)
+    mm = 72 / 25.4
+    assert abs((x["1."] - x["margine"]) - 6.35 * mm) < 1
+    assert abs((x["comma"] - x["margine"]) - 12.7 * mm) < 1
+    # Il secondo livello sposta marcatore e testo di altri 1,27 cm.
+    assert abs((x["a)"] - x["1."]) - 12.7 * mm) < 1
+    assert abs((x["lettera"] - x["comma"]) - 12.7 * mm) < 1
+
+
+def posizioni(pdf: bytes) -> dict[str, float]:
+    """L'ascissa, in punti, del primo pezzo di testo che comincia con ciascuna parola."""
+    x: dict[str, float] = {}
+
+    def visita(testo, cm, tm, _font, _dimensione):
+        parole = testo.split()
+        if parole:
+            x.setdefault(parole[0], cm[4] + tm[4])
+
+    PdfReader(BytesIO(pdf)).pages[0].extract_text(visitor_text=visita)
+    return x
 
 
 def test_t032_un_elenco_che_attraversa_il_cambio_pagina_continua_la_numerazione():

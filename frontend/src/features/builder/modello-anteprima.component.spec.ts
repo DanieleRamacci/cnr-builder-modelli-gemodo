@@ -1029,6 +1029,22 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  it('012: a numbered list after a bulleted one starts again from 1, like Word', () => {
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(root);
+    (root.querySelector('[data-list="PUNTATO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    apriPannello(root, 'Blocchi');
+    fixture.detectChanges();
+    (root.querySelector('[data-insert-block="ELENCO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const marcatori = Array.from(root.querySelectorAll('.item-marker'));
+    expect(marcatori.map((m) => m.textContent?.trim())).toEqual(['●', '1.']);
+    expect(marcatori[0].classList).toContain('marker-puntato');
+    http.verify();
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

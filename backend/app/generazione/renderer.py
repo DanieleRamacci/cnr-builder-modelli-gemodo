@@ -68,12 +68,18 @@ _ALLINEAMENTO_ESPLICITO = {
 # l'editor mostrava un titolo e il PDF un paragrafo (FR-008, T016).
 _STILI_TITOLO = {"H1": 14, "H2": 12}
 
-# Rientro per livello di elenco e spazio riservato al marcatore, in mm
-# (FR-003: due livelli). Il testo della voce va a capo allineato dopo il
-# marcatore, non sotto di esso: e' il rientro sporgente dei bandi.
-_RIENTRO_ELENCO = 8
-_LARGHEZZA_MARCATORE = 7
+# Rientri di elenco, in mm, quelli predefiniti di Word: marcatore a 0,63 cm,
+# testo a 1,27 cm, e ogni livello (FR-003: due) sposta entrambi di 1,27 cm.
+# Il testo della voce va a capo allineato al testo, non al marcatore: e' il
+# rientro sporgente dei bandi.
+_RIENTRO_MARCATORE = 6.35
+_RIENTRO_TESTO = 12.7
+_PASSO_LIVELLO = 12.7
 _DIMENSIONE_ELENCO = 11
+# Il punto elenco si disegna invece di scriverlo: il carattere `•` di
+# Titillium e' minuscolo, quello di Word e' un cerchio pieno di circa 1,5 mm.
+# Al secondo livello Word usa un cerchio vuoto.
+_RAGGIO_PUNTO = 0.75
 
 
 def _intestazione(pdf: FPDF, titolo: str) -> None:
@@ -165,12 +171,15 @@ def marcatori_elenchi(
             continue
         voci: list[str] = []
         for elemento in blocco.elementi:
+            # Un punto elenco non consuma numeri: un elenco numerato dopo uno
+            # puntato riparte da 1, come in Word.
+            conta = elemento.marcatore is not TipoMarcatore.PUNTATO
             if elemento.livello == 0:
-                primo += 1
+                primo += conta
                 secondo = 0
                 voci.append(_formatta_marcatore(elemento, primo))
             else:
-                secondo += 1
+                secondo += conta
                 voci.append(_formatta_marcatore(elemento, secondo))
         marcatori[blocco.ordine] = voci
     return marcatori
@@ -181,25 +190,36 @@ def _formatta_marcatore(elemento: ElementoElenco, numero: int) -> str:
         return f"{numero}."
     if elemento.marcatore is TipoMarcatore.ALFABETICO:
         return f"{chr(ord('a') + (numero - 1) % 26)})"
-    return "\u2022" if elemento.livello == 0 else "\u2013"
+    # Per il puntato non c'e' testo da scrivere: la resa disegna un cerchio
+    # (`_rendi_voce`). Il simbolo resta come identita' del marcatore, lo stesso
+    # che mostra l'editor.
+    return "\u25cf" if elemento.livello == 0 else "\u25cb"
 
 
 def _rendi_voce(pdf: FPDF, elemento: ElementoElenco, marcatore: str, allineamento: str) -> None:
     """Marcatore a sinistra, testo a destra con il rientro sporgente."""
-    rientro = _RIENTRO_ELENCO * (elemento.livello + 1)
+    spostamento = _PASSO_LIVELLO * elemento.livello
+    x_marcatore = pdf.l_margin + _RIENTRO_MARCATORE + spostamento
     altezza_riga = _DIMENSIONE_ELENCO * 1.35 * 25.4 / 72
     # Il marcatore e il testo devono stare sulla stessa pagina: se la prima
     # riga non ci sta, si va a capo pagina prima di scrivere il marcatore.
     if pdf.get_y() + altezza_riga > pdf.page_break_trigger:
         pdf.add_page()
     inizio = pdf.get_y()
-    pdf.set_font(_FONT, "", _DIMENSIONE_ELENCO)
-    pdf.set_xy(pdf.l_margin + rientro, inizio)
-    pdf.cell(_LARGHEZZA_MARCATORE, altezza_riga, marcatore)
+    if elemento.marcatore is TipoMarcatore.PUNTATO:
+        # A meta' dell'altezza delle minuscole della prima riga, come in Word.
+        centro_y = inizio + altezza_riga * 0.55
+        pdf.set_line_width(0.2)
+        pdf.circle(x_marcatore + _RAGGIO_PUNTO, centro_y, _RAGGIO_PUNTO,
+                   style="F" if elemento.livello == 0 else "D")
+    else:
+        pdf.set_font(_FONT, "", _DIMENSIONE_ELENCO)
+        pdf.set_xy(x_marcatore, inizio)
+        pdf.cell(_RIENTRO_TESTO - _RIENTRO_MARCATORE, altezza_riga, marcatore)
     pdf.set_xy(pdf.l_margin, inizio)
     _scrivi_frammenti(pdf, elemento.frammenti or [FrammentoTesto(testo="")],
                       allineamento=allineamento, dimensione=_DIMENSIONE_ELENCO,
-                      rientro=rientro + _LARGHEZZA_MARCATORE, spazio_dopo=1)
+                      rientro=_RIENTRO_TESTO + spostamento, spazio_dopo=1)
 
 
 def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | None = None) -> None:
