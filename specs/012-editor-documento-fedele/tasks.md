@@ -231,20 +231,20 @@ testo giustificato.
 **Independent Test**: ricostruire l'art. 3 del bando di riferimento e
 verificarne la resa nel PDF. Dipende dalla Phase 2, non da US1.
 
-- [ ] T026 **Mostrare tutti i blocchi di una sezione** nell'editor, non solo il
+- [x] T026 **Mostrare tutti i blocchi di una sezione** nell'editor, non solo il
       primo (FR-007). Oggi `testoSezione` legge `contenuto[0]`: qualunque blocco
       oltre il primo esiste nei dati e non si vede.
       Questo task sblocca anche la futura biblioteca dei "visti"
       (`docs/project-map.md:212`), che senza sezioni multi-blocco non potrebbe
       mostrare cio' che inserisce.
-- [ ] T027 Permettere all'editor di creare **tutti** i tipi di blocco del
+- [x] T027 Permettere all'editor di creare **tutti** i tipi di blocco del
       vocabolario, non solo paragrafi (FR-007).
-- [ ] T028 Blocco `ELENCO` nell'editor: due livelli, rientro e sporgenza con
+- [x] T028 Blocco `ELENCO` nell'editor: due livelli, rientro e sporgenza con
       Tab e Shift-Tab, scelta del marcatore.
 - [x] T029 Numerazione calcolata in resa nel renderer, con azzeramento dei
       contatori all'inizio di ogni sezione e a ogni blocco `TITOLO`
       (research.md R3). Nessun numero viene mai salvato nei dati.
-- [ ] T030 [P] Allineamento nella toolbar, giustificato incluso (FR-004).
+- [x] T030 [P] Allineamento nella toolbar, giustificato incluso (FR-004).
 - [x] T031 [P] Test: inserito un comma in mezzo a un articolo di tre commi, la
       numerazione resta coerente in tutto l'articolo (US2 scenario 1). E' la
       prova che la numerazione e' calcolata e non scritta.
@@ -260,8 +260,28 @@ verificarne la resa nel PDF. Dipende dalla Phase 2, non da US1.
       `1. ... a) ...` nel PDF generato. Chiusa la divergenza FR-008 aperta in
       Phase 3. Il numero dell'**articolo** resta scritto a mano (chiarimento
       del 2026-10-01 in spec.md).
-- [ ] T033 Test e2e: ricostruire l'art. 3 del bando di riferimento, generare,
+- [x] T033 Test e2e: ricostruire l'art. 3 del bando di riferimento, generare,
       verificare annidamento, rientri e intestazione centrata (US2 scenari 2 e 3).
+      *T026-T028, T030, T033 fatti 2026-10-01* (e T045, T046 di Phase 6, che
+      erano lo stesso lavoro). L'editor crea paragrafo, titolo d'articolo
+      (centrato), elenco, firma (`BOTTOM_RIGHT`, a destra) e interruzione di
+      pagina, inseriti dopo il blocco selezionato dal pannello Blocchi; il
+      pannello Proprieta' cambia tipo ed elimina. Invio apre un capoverso
+      (Maiusc+Invio va a capo dentro), Backspace a inizio blocco lo riunisce
+      al precedente. Allineamento e marcatore `a)` nella toolbar. Fuori dai
+      tipi creabili: `TABELLA` (fuori scope), `LOGO` (niente asset),
+      `FOOTER`/`INTESTAZIONE` (sono cornice, US3).
+      L'e2e compone l'art. 3 del bando di riferimento solo da tastiera e
+      pulsanti e verifica nel PDF numerazione, rientri e titolo centrato.
+      **Tre difetti veri trovati dall'e2e, non dai test unitari**: (1) dopo un
+      salvataggio automatico la selezione tornava alla prima sezione e il
+      comando successivo colpiva il blocco sbagliato; (2) ogni passaggio fra
+      blocchi faceva partire un salvataggio, che disabilitava la toolbar; (3)
+      dopo Invio il cursore passava al blocco nuovo solo al disegno
+      successivo, e i tasti battuti nel frattempo finivano nel blocco prima.
+      **Limite noto**: il capoverso che nel bando continua un comma dopo le sue
+      lettere ("Ai sensi dell'art. 38 comma 3...", art. 3 comma 1) diventa un
+      paragrafo al margine: la numerazione regge, il rientro sotto il comma no.
 
 **Checkpoint**: articolato e parte normativa sono entrambi componibili. E' il
 grosso di SC-001.
@@ -336,8 +356,8 @@ documento; interruzione di pagina e firma restano al gestore nell'editor.
       con numerazione. E' una cornice ricorrente, non i blocchi `LOGO`/`FOOTER`
       esistenti, che restano per i casi in cui compaiono una volta sola nel
       corpo.
-- [ ] T045 [P] `INTERRUZIONE_PAGINA` creabile dall'editor (FR-012).
-- [ ] T046 [P] Blocco `FIRMA` creabile dall'editor, allineato a destra (US3
+- [x] T045 [P] `INTERRUZIONE_PAGINA` creabile dall'editor (FR-012).
+- [x] T046 [P] Blocco `FIRMA` creabile dall'editor, allineato a destra (US3
       scenario 3).
 - [ ] T047 Configurazione della cornice in
       `frontend/src/features/configurazione/tipo-documento-struttura.component.ts`.

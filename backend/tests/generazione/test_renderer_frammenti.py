@@ -23,6 +23,18 @@ def rendi(*blocchi: BloccoDocumento) -> bytes:
     return render_documento(titolo="Prova", blocchi=list(blocchi))
 
 
+def ascissa(pdf: bytes, cerca: str) -> float:
+    """Dove comincia, in orizzontale, il primo pezzo di testo che contiene `cerca`."""
+    posizioni = []
+
+    def visita(testo, _cm, tm, _font, _dimensione):
+        if cerca in testo:
+            posizioni.append(tm[4])
+
+    PdfReader(BytesIO(pdf)).pages[0].extract_text(visitor_text=visita)
+    return posizioni[0]
+
+
 def test_sc006_i_caratteri_tipografici_italiani_arrivano_invariati():
     """Prima della 012 questo paragrafo non produceva un PDF sbagliato: non ne produceva nessuno.
 
@@ -84,16 +96,6 @@ def test_lo_stile_h1_scritto_dall_editor_arriva_nel_pdf():
 
 def test_l_allineamento_dichiarato_prevale_su_quello_del_posizionamento():
     """T015: un paragrafo nel BODY, che di suo andrebbe a sinistra, si centra se lo dichiara."""
-    def ascissa(pdf: bytes, cerca: str) -> float:
-        posizioni = []
-
-        def visita(testo, _cm, tm, _font, _dimensione):
-            if cerca in testo:
-                posizioni.append(tm[4])
-
-        PdfReader(BytesIO(pdf)).pages[0].extract_text(visitor_text=visita)
-        return posizioni[0]
-
     sinistra = ascissa(rendi(blocco(frammenti=[{"testo": "centrami"}])), "centrami")
     centro = ascissa(rendi(blocco(allineamento="CENTRO", frammenti=[{"testo": "centrami"}])), "centrami")
     assert centro > sinistra + 50
@@ -105,3 +107,25 @@ def test_un_elenco_si_rende_con_tutte_le_sue_voci():
         {"livello": 1, "marcatore": "ALFABETICO", "frammenti": [{"testo": "Area della Ricerca"}]},
     ]))
     assert "1. Roma a) Area della Ricerca" in estrai_testo(pdf)
+
+
+def test_t046_la_firma_creata_dall_editor_si_allinea_a_destra():
+    """L'editor crea la firma in `BOTTOM_RIGHT` senza allineamento: lo deduce la resa (US3 scenario 3)."""
+    pdf = rendi(
+        blocco(id="p", ordine=0, frammenti=[{"testo": "Corpo del bando."}]),
+        blocco(id="f", tipo="FIRMA", posizionamento="BOTTOM_RIGHT", ordine=1,
+               frammenti=[{"testo": "IL DIRIGENTE"}]),
+    )
+    assert ascissa(pdf, "IL DIRIGENTE") > ascissa(pdf, "Corpo") + 80
+
+
+def test_t045_un_interruzione_di_pagina_porta_il_testo_dopo_sulla_pagina_seguente():
+    pdf = rendi(
+        blocco(id="a", ordine=0, frammenti=[{"testo": "Prima pagina."}]),
+        blocco(id="i", tipo="INTERRUZIONE_PAGINA", ordine=1),
+        blocco(id="b", ordine=2, frammenti=[{"testo": "Seconda pagina."}]),
+    )
+    pagine = PdfReader(BytesIO(pdf)).pages
+    assert len(pagine) == 2
+    assert "Seconda pagina." in pagine[1].extract_text()
+    assert "Seconda pagina." not in pagine[0].extract_text()

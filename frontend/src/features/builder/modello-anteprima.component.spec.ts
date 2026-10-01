@@ -857,6 +857,178 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  function apriEditor(root: HTMLElement, sezione = 'intro'): HTMLElement {
+    const editor = root.querySelector(`[data-section-text="${sezione}"]`) as HTMLElement;
+    editor.focus();
+    editor.dispatchEvent(new Event('focus'));
+    return editor;
+  }
+
+  function apriPannello(root: HTMLElement, nome: string): void {
+    (
+      Array.from(root.querySelectorAll('.panel-tabs button')).find((button) =>
+        button.textContent?.includes(nome),
+      ) as HTMLButtonElement
+    ).click();
+  }
+
+  function caricaBozza() {
+    const contesto = setup();
+    contesto.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(contesto.http);
+    flushDerivationConfig(contesto.http);
+    contesto.fixture.detectChanges();
+    return contesto;
+  }
+
+  it('012 T027: inserts a centred article heading after the selected block', () => {
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(root);
+    apriPannello(root, 'Blocchi');
+    fixture.detectChanges();
+    (root.querySelector('[data-insert-block="TITOLO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const titolo = root.querySelector('[data-block-type="TITOLO"]') as HTMLElement;
+    expect(titolo.classList).toContain('block-titolo');
+    expect(titolo.style.textAlign).toBe('center');
+    const request = salva(root, http);
+    const blocchi = request.request.body.sezioni[0].contenuto;
+    expect(blocchi.map((b: { tipo: string }) => b.tipo)).toEqual(['PARAGRAFO', 'TITOLO']);
+    expect(blocchi[1]).toMatchObject({ posizionamento: 'BODY', allineamento: 'CENTRO', ordine: 1 });
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 T027: turning a paragraph into a signature moves it where the format allows a signature', () => {
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(root);
+    apriPannello(root, 'Proprietà');
+    fixture.detectChanges();
+    const select = root.querySelector('[data-block-type-select]') as HTMLSelectElement;
+    select.value = 'FIRMA';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const request = salva(root, http);
+    const blocco = request.request.body.sezioni[0].contenuto[0];
+    expect(blocco).toMatchObject({ tipo: 'FIRMA', posizionamento: 'BOTTOM_RIGHT' });
+    expect(blocco.frammenti).toEqual([{ testo: 'Introduzione {{titolo_it}}' }]);
+    expect((root.querySelector('[data-block-type="FIRMA"]') as HTMLElement).style.textAlign).toBe(
+      'right',
+    );
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 T030: justifies the selected block from the toolbar', () => {
+    const { fixture, http, root } = caricaBozza();
+    const editor = apriEditor(root);
+    const giustifica = root.querySelector('[data-align="GIUSTIFICATO"]') as HTMLButtonElement;
+    expect(giustifica.getAttribute('aria-pressed')).toBe('false');
+    giustifica.click();
+    fixture.detectChanges();
+
+    expect(editor.style.textAlign).toBe('justify');
+    expect(giustifica.getAttribute('aria-pressed')).toBe('true');
+    const request = salva(root, http);
+    expect(request.request.body.sezioni[0].contenuto[0].allineamento).toBe('GIUSTIFICATO');
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012: Enter opens a new paragraph at the caret and Backspace at its start joins it back', () => {
+    const { fixture, http, root } = caricaBozza();
+    const editor = apriEditor(root);
+    seleziona(editor.firstChild!, 'Introduzione'.length, 'Introduzione'.length);
+    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+    fixture.detectChanges();
+
+    let editori = root.querySelectorAll<HTMLElement>('[data-section-text="intro"]');
+    expect(Array.from(editori).map((e) => e.textContent)).toEqual([
+      'Introduzione',
+      ' {{titolo_it}}',
+    ]);
+
+    const secondo = editori[1];
+    secondo.focus();
+    secondo.dispatchEvent(new Event('focus'));
+    seleziona(secondo.firstChild!, 0, 0);
+    secondo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', cancelable: true }));
+    fixture.detectChanges();
+
+    editori = root.querySelectorAll<HTMLElement>('[data-section-text="intro"]');
+    expect(editori.length).toBe(1);
+    const request = salva(root, http);
+    expect(request.request.body.sezioni[0].contenuto[0].frammenti).toEqual([
+      { testo: 'Introduzione {{titolo_it}}' },
+    ]);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 T027: a page break is inserted and removed with Delete like in a word processor', () => {
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(root);
+    apriPannello(root, 'Blocchi');
+    fixture.detectChanges();
+    (root.querySelector('[data-insert-block="INTERRUZIONE_PAGINA"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const interruzione = root.querySelector('.page-break[data-block-id]') as HTMLElement;
+    expect(interruzione.textContent).toContain('Interruzione di pagina');
+    interruzione.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    fixture.detectChanges();
+
+    expect(root.querySelector('.page-break[data-block-id]')).toBeNull();
+    const request = salva(root, http);
+    expect(request.request.body.sezioni[0].contenuto.length).toBe(1);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 T029: list numbering restarts after an article heading, as in the PDF', () => {
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(root);
+    (root.querySelector('[data-list="NUMERICO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    apriPannello(root, 'Blocchi');
+    fixture.detectChanges();
+    (root.querySelector('[data-insert-block="TITOLO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (root.querySelector('[data-insert-block="ELENCO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) => m.textContent);
+    expect(marcatori).toEqual(['1.', '1.']);
+    http.verify();
+  });
+
+  it('012: after an autosave the next command still applies to the block being edited', () => {
+    const { fixture, http, root } = caricaBozza();
+    const editor = apriEditor(root, 'dettagli');
+    editor.textContent = 'Posti disponibili: {{numero_posti}}';
+    editor.dispatchEvent(new Event('input'));
+    editor.dispatchEvent(new FocusEvent('blur'));
+    const autosave = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    autosave.flush({ ...sezioniResponse, sezioni: autosave.request.body.sezioni });
+    fixture.detectChanges();
+
+    apriPannello(root, 'Proprietà');
+    fixture.detectChanges();
+    const select = root.querySelector('[data-block-type-select]') as HTMLSelectElement;
+    select.value = 'TITOLO';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const request = salva(root, http);
+    const [intro, dettagli] = request.request.body.sezioni;
+    expect(intro.contenuto[0].tipo).toBe('PARAGRAFO');
+    expect(dettagli.contenuto[0].tipo).toBe('TITOLO');
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

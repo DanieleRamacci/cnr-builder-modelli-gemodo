@@ -4,8 +4,7 @@ import {
   DestroyRef,
   ElementRef,
   computed,
-  Injector,
-  afterNextRender,
+  ChangeDetectorRef,
   effect,
   inject,
   signal,
@@ -321,6 +320,43 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         <button
           type="button"
           class="tool"
+          data-list="ALFABETICO"
+          title="Elenco a lettere"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaLista('ALFABETICO')"
+        >
+          a)
+        </button>
+        <span class="separator"></span>
+        @for (allineamento of allineamenti; track allineamento.valore) {
+          <button
+            type="button"
+            class="tool"
+            [attr.data-align]="allineamento.valore"
+            [title]="allineamento.etichetta"
+            [attr.aria-label]="allineamento.etichetta"
+            [attr.aria-pressed]="allineamentoAttivo() === allineamento.valore"
+            [class.pressed]="allineamentoAttivo() === allineamento.valore"
+            [disabled]="!sezioni()?.modificabile"
+            (mousedown)="$event.preventDefault()"
+            (click)="applicaAllineamento(allineamento.valore)"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              @for (riga of allineamento.righe; track $index) {
+                <rect
+                  [attr.x]="riga[0]"
+                  [attr.y]="2 + $index * 4"
+                  [attr.width]="riga[1]"
+                  height="1.6"
+                />
+              }
+            </svg>
+          </button>
+        }
+        <span class="separator"></span>
+        <button
+          type="button"
+          class="tool"
           title="In un elenco: sposta la voce al secondo livello"
           (mousedown)="$event.preventDefault()"
           (click)="inserisciTab()"
@@ -502,7 +538,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                                 [attr.data-block-id]="blocco.id"
                                 [attr.data-item-index]="indice"
                                 (focus)="selezionaEditor(editor)"
-                                (blur)="autosalva()"
+                                (blur)="autosalva($event)"
                                 (input)="aggiornaDaEditor(editor)"
                                 (keydown)="gestisciTastoEditor($event, editor)"
                                 (paste)="incolla($event, editor)"
@@ -511,6 +547,21 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                               ></div>
                             </div>
                           }
+                        </div>
+                      } @else if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
+                        <!-- Non e' testo: si seleziona per spostarci attorno o eliminarla. -->
+                        <div
+                          class="page-break"
+                          role="button"
+                          tabindex="0"
+                          aria-label="Interruzione di pagina: Canc per eliminarla"
+                          [class.block-active]="bloccoAttivo(sezione.codice, blocco.id)"
+                          [attr.data-section-text]="sezione.codice"
+                          [attr.data-block-id]="blocco.id"
+                          (focus)="selezionaEditor($any($event.target))"
+                          (keydown)="gestisciTastoInterruzione($event, sezione.codice, blocco.id)"
+                        >
+                          <span>Interruzione di pagina</span>
                         </div>
                       } @else {
                         <div
@@ -522,13 +573,18 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                           spellcheck="true"
                           [class.style-h1]="blocco.stile === 'H1'"
                           [class.style-h2]="blocco.stile === 'H2'"
+                          [class.block-titolo]="blocco.tipo === 'TITOLO'"
+                          [class.block-firma]="blocco.tipo === 'FIRMA'"
                           [class.block-active]="bloccoAttivo(sezione.codice, blocco.id)"
                           [style.text-align]="allineamentoCss(blocco)"
-                          [attr.aria-label]="'Testo sezione ' + sezione.codice"
+                          [attr.data-block-type]="blocco.tipo"
+                          [attr.aria-label]="
+                            etichettaTipo(blocco.tipo) + ' - sezione ' + sezione.codice
+                          "
                           [attr.data-section-text]="sezione.codice"
                           [attr.data-block-id]="blocco.id"
                           (focus)="selezionaEditor(editor)"
-                          (blur)="autosalva()"
+                          (blur)="autosalva($event)"
                           (input)="aggiornaDaEditor(editor)"
                           (keydown)="gestisciTastoEditor($event, editor)"
                           (paste)="incolla($event, editor)"
@@ -563,11 +619,15 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                           </div>
                         </div>
                       }
+                    } @else if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
+                      <div class="page-break"><span>Interruzione di pagina</span></div>
                     } @else {
                       <div
                         class="editor-text"
                         [class.style-h1]="blocco.stile === 'H1'"
                         [class.style-h2]="blocco.stile === 'H2'"
+                        [class.block-titolo]="blocco.tipo === 'TITOLO'"
+                        [class.block-firma]="blocco.tipo === 'FIRMA'"
                         [style.text-align]="allineamentoCss(blocco)"
                       >
                         @for (frammento of blocco.frammenti; track $index) {
@@ -692,6 +752,25 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 </button>
               }
             } @else if (pannelloAttivo() === 'blocchi') {
+              <h2>Nel testo</h2>
+              <p class="panel-hint">
+                Inserisce un blocco dopo quello selezionato, nella stessa sezione.
+              </p>
+              <div class="insert-grid">
+                @for (tipo of tipiInseribili; track tipo) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    [attr.data-insert-block]="tipo"
+                    [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="inserisciBlocco(tipo)"
+                  >
+                    {{ etichettaTipo(tipo) }}
+                  </button>
+                }
+              </div>
+              <h2>Predefiniti</h2>
               <p class="panel-hint">
                 Blocchi di testo predefiniti per la categoria scelta. Clicca per inserirli come
                 nuova sezione.
@@ -731,6 +810,37 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   <option value="H1">Titolo H1</option>
                   <option value="H2">Titolo H2</option>
                 </select>
+                @if (bloccoCorrente(); as blocco) {
+                  <label for="proprieta-tipo">Tipo blocco</label>
+                  <select
+                    id="proprieta-tipo"
+                    class="form-select"
+                    data-block-type-select
+                    [value]="blocco.tipo"
+                    [disabled]="
+                      !sezioni()?.modificabile ||
+                      salvandoSezioni() ||
+                      blocco.tipo === 'INTERRUZIONE_PAGINA'
+                    "
+                    (change)="cambiaTipoBlocco($any($event.target).value)"
+                  >
+                    @for (tipo of tipiConvertibili; track tipo) {
+                      <option [value]="tipo">{{ etichettaTipo(tipo) }}</option>
+                    }
+                    @if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
+                      <option value="INTERRUZIONE_PAGINA">Interruzione di pagina</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger w-100 mt-2"
+                    data-remove-block
+                    [disabled]="!sezioni()?.modificabile || salvandoSezioni()"
+                    (click)="eliminaBlocco()"
+                  >
+                    Elimina questo blocco
+                  </button>
+                }
                 <div class="property-note">
                   <strong>{{ placeholderSezione(sezione).length }}</strong>
                   segnaposto usati in questa sezione.
@@ -975,6 +1085,18 @@ export class ModelloAnteprimaComponent {
     if (this.bloccoModificheNonSalvate()) return true;
     return !!this.azioneVersione()?.verificaDocumento && this.blocchiDocumento().length > 0;
   });
+  protected readonly allineamenti = ALLINEAMENTI;
+  protected readonly tipiInseribili = TIPI_INSERIBILI;
+  protected readonly tipiConvertibili = TIPI_CONVERTIBILI;
+  /** Il blocco su cui agiscono toolbar e pannello proprieta'. */
+  protected readonly bloccoCorrente = computed(() => {
+    const sezione = this.sezioneCorrente();
+    return sezione ? (this.bloccoBersaglio(sezione) ?? null) : null;
+  });
+  protected readonly allineamentoAttivo = computed(() => {
+    const blocco = this.bloccoCorrente();
+    return blocco ? allineamentoEffettivo(blocco) : null;
+  });
   protected readonly sezioneCorrente = computed(() => {
     const codice = this.sezioneAttiva();
     return this.sezioniLocali().find((sezione) => sezione.codice === codice) ?? null;
@@ -1004,7 +1126,7 @@ export class ModelloAnteprimaComponent {
   ]);
 
   private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
-  private readonly injector = inject(Injector);
+  private readonly cdr = inject(ChangeDetectorRef);
   /** Il blocco (e la voce) su cui sta lavorando il gestore. */
   protected readonly posizioneAttiva = signal<PosizioneEditor | null>(null);
 
@@ -1090,7 +1212,7 @@ export class ModelloAnteprimaComponent {
   }
 
   protected allineamentoCss(blocco: BloccoDocumento): string {
-    return ALLINEAMENTO_CSS[blocco.allineamento ?? 'SINISTRA'];
+    return ALLINEAMENTO_CSS[allineamentoEffettivo(blocco)];
   }
 
   /**
@@ -1209,22 +1331,95 @@ export class ModelloAnteprimaComponent {
       if (posizione.voce !== null) this.cambiaLivelloVoce(posizione, event.shiftKey ? 0 : 1);
       return;
     }
+    // Come in Word: Invio apre un capoverso nuovo, Maiusc+Invio va a capo
+    // dentro lo stesso. Un capoverso e' un blocco: e' cio' che il PDF spazia.
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (posizione.voce !== null && !event.shiftKey) {
-        this.dividiVoce(editor, posizione);
-      } else {
-        this.inserisciNelEditor(editor, '\n');
-      }
+      if (event.shiftKey) this.inserisciNelEditor(editor, '\n');
+      else if (posizione.voce !== null) this.dividiVoce(editor, posizione);
+      else this.dividiBlocco(editor, posizione);
       return;
     }
-    if (event.key === 'Backspace' && posizione.voce !== null) {
+    if (event.key === 'Backspace') {
       const selezione = this.selezioneIn(editor);
-      if (selezione && selezione.inizio === 0 && selezione.fine === 0) {
-        event.preventDefault();
-        this.rimuoviVoce(posizione);
-      }
+      if (!selezione || selezione.inizio !== 0 || selezione.fine !== 0) return;
+      event.preventDefault();
+      if (posizione.voce !== null) this.rimuoviVoce(posizione);
+      else this.unisciAlPrecedente(editor, posizione);
     }
+  }
+
+  /** Un'interruzione di pagina si elimina con Canc o Backspace, come in Word. */
+  protected gestisciTastoInterruzione(event: KeyboardEvent, sezione: string, blocco: string): void {
+    if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+    event.preventDefault();
+    this.posizioneAttiva.set({ sezione, blocco, voce: null });
+    this.sezioneAttiva.set(sezione);
+    this.eliminaBlocco();
+  }
+
+  protected applicaAllineamento(allineamento: Allineamento): void {
+    this.modificaBloccoBersaglio((blocco) =>
+      blocco.tipo === 'INTERRUZIONE_PAGINA' ? blocco : { ...blocco, allineamento },
+    );
+  }
+
+  /**
+   * Un blocco nuovo dopo quello selezionato (FR-007). Il titolo nasce
+   * centrato e la firma in basso a destra, come nel bando di riferimento;
+   * il resto lo decide il gestore.
+   */
+  protected inserisciBlocco(tipo: TipoBloccoInseribile): void {
+    const sezione = this.sezioneCorrente();
+    if (!sezione || !this.sezioni()?.modificabile) return;
+    const nuovo = bloccoDiTipo(this.nuovoBlocco(this.idBloccoLibero(sezione), []), tipo);
+    const dopo = this.bloccoBersaglio(sezione)?.id;
+    this.modificaSezione(sezione.codice, (blocchi) => {
+      const indice = blocchi.findIndex((blocco) => blocco.id === dopo);
+      const aggiornati = [...blocchi];
+      aggiornati.splice(indice < 0 ? aggiornati.length : indice + 1, 0, nuovo);
+      return aggiornati;
+    });
+    const voce = nuovo.tipo === 'ELENCO' ? 0 : null;
+    if (nuovo.tipo === 'INTERRUZIONE_PAGINA') {
+      this.posizioneAttiva.set({ sezione: sezione.codice, blocco: nuovo.id, voce });
+    } else {
+      this.mettiCursore({ sezione: sezione.codice, blocco: nuovo.id, voce }, 0);
+    }
+  }
+
+  /** Cambia il tipo del blocco selezionato tenendone il testo. */
+  protected cambiaTipoBlocco(tipo: string): void {
+    if (!TIPI_CONVERTIBILI.includes(tipo as TipoBloccoInseribile)) return;
+    this.modificaBloccoBersaglio(
+      (blocco) => bloccoDiTipo(blocco, tipo as TipoBloccoInseribile),
+      true,
+    );
+  }
+
+  protected eliminaBlocco(): void {
+    const sezione = this.sezioneCorrente();
+    const bersaglio = sezione && this.bloccoBersaglio(sezione);
+    if (!sezione || !bersaglio || !this.sezioni()?.modificabile) return;
+    const indice = sezione.contenuto.indexOf(bersaglio);
+    this.modificaSezione(sezione.codice, (blocchi) =>
+      blocchi.filter((blocco) => blocco.id !== bersaglio.id),
+    );
+    const vicino = sezione.contenuto[indice - 1] ?? sezione.contenuto[indice + 1];
+    this.posizioneAttiva.set(
+      vicino
+        ? {
+            sezione: sezione.codice,
+            blocco: vicino.id,
+            voce: vicino.tipo === 'ELENCO' ? 0 : null,
+          }
+        : null,
+    );
+    this.editorAttivo = null;
+  }
+
+  protected etichettaTipo(tipo: string): string {
+    return ETICHETTE_TIPO[tipo] ?? tipo;
   }
 
   /** Grassetto, corsivo, sottolineato sulla porzione selezionata (FR-006). */
@@ -1407,14 +1602,20 @@ export class ModelloAnteprimaComponent {
   }
 
   /**
-   * Salvataggio automatico all'uscita dal blocco.
+   * Salvataggio automatico quando il fuoco esce dal testo del documento.
    *
    * Non e' un autosave a timer: il PUT sostituisce l'intero insieme di
    * sezioni, quindi salvare a meta' di una frase manderebbe al backend un
-   * documento che l'utente non ha ancora finito di scrivere. L'uscita dal
-   * blocco e' il primo momento in cui il testo e' una versione completa.
+   * documento che l'utente non ha ancora finito di scrivere. Uscire dal
+   * testo e' il primo momento in cui e' una versione completa.
    */
-  protected autosalva(): void {
+  protected autosalva(event?: FocusEvent): void {
+    // Passare da un blocco all'altro dello stesso documento (Invio, frecce,
+    // un clic sul capoverso dopo) non e' uscire dal blocco: salvare li'
+    // manderebbe un PUT a ogni capoverso e bloccherebbe la toolbar a meta'
+    // di una scrittura.
+    const verso = event?.relatedTarget;
+    if (verso instanceof HTMLElement && verso.hasAttribute('data-section-text')) return;
     if (!this.documentoModificato() || !this.sezioni()?.modificabile) return;
     this.salvaSezioni();
   }
@@ -1703,10 +1904,28 @@ export class ModelloAnteprimaComponent {
         ? blocchi.map((blocco) => (blocco.id === bersaglio.id ? trasformato : blocco))
         : [trasformato],
     );
-    const voce = trasformato.tipo === 'ELENCO' ? 0 : null;
+    // Se il blocco resta dello stesso tipo (un allineamento, uno stile) il
+    // cursore resta sulla voce dov'era; se cambia tipo, l'editor e' un altro.
+    const precedente = this.posizioneAttiva();
+    const voce =
+      trasformato.tipo !== 'ELENCO'
+        ? null
+        : bersaglio.tipo === 'ELENCO' && precedente?.blocco === bersaglio.id
+          ? precedente.voce
+          : 0;
     this.posizioneAttiva.set({ sezione: sezione.codice, blocco: trasformato.id, voce });
-    if (rimettiCursore)
-      this.mettiCursore({ sezione: sezione.codice, blocco: trasformato.id, voce }, 0);
+    // Il cursore torna in fondo al testo: dopo aver cambiato tipo o
+    // marcatore si continua a scrivere, non si riparte dall'inizio.
+    if (rimettiCursore) {
+      const testo =
+        voce === null
+          ? trasformato.frammenti
+          : (trasformato.elementi?.[voce ?? 0]?.frammenti ?? []);
+      this.mettiCursore(
+        { sezione: sezione.codice, blocco: trasformato.id, voce },
+        testoDiFrammenti(testo).length,
+      );
+    }
   }
 
   private cambiaLivelloVoce(posizione: PosizioneEditor, livello: 0 | 1): void {
@@ -1729,6 +1948,101 @@ export class ModelloAnteprimaComponent {
         };
       }),
     );
+  }
+
+  private bloccoIn(posizione: PosizioneEditor): BloccoDocumento | undefined {
+    return this.sezioniLocali()
+      .find((sezione) => sezione.codice === posizione.sezione)
+      ?.contenuto.find((blocco) => blocco.id === posizione.blocco);
+  }
+
+  /**
+   * Invio in un blocco di testo: il capoverso si divide al cursore. Dopo un
+   * titolo o una firma si torna a scrivere corpo del testo, quindi il blocco
+   * nuovo e' un paragrafo; dopo un paragrafo e' un paragrafo uguale.
+   */
+  private dividiBlocco(editor: HTMLElement, posizione: PosizioneEditor): void {
+    const blocco = this.bloccoIn(posizione);
+    const sezione = this.sezioniLocali().find((item) => item.codice === posizione.sezione);
+    if (!blocco || !sezione) return;
+    const frammenti = leggiFrammentiDalDom(editor);
+    const fine = testoDiFrammenti(frammenti).length;
+    const selezione = this.selezioneIn(editor) ?? { inizio: fine, fine };
+    const id = this.idBloccoLibero(sezione);
+
+    // Invio all'inizio di un testo non vuoto: come in Word, una riga vuota
+    // prima, e il cursore resta dov'e'.
+    if (selezione.inizio === 0 && selezione.fine === 0 && fine > 0) {
+      this.modificaSezione(posizione.sezione, (blocchi) =>
+        blocchi.flatMap((item) =>
+          item.id === blocco.id ? [this.nuovoBlocco(id, []), item] : [item],
+        ),
+      );
+      return;
+    }
+    const prima = taglia(frammenti, 0, selezione.inizio);
+    const dopo = taglia(frammenti, selezione.fine);
+    const nuovo =
+      blocco.tipo === 'PARAGRAFO' ? { ...blocco, id, frammenti: dopo } : this.nuovoBlocco(id, dopo);
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.flatMap((item) =>
+        item.id === blocco.id ? [{ ...item, frammenti: prima }, nuovo] : [item],
+      ),
+    );
+    scriviFrammentiNelDom(editor, prima);
+    this.mettiCursore({ sezione: posizione.sezione, blocco: id, voce: null }, 0);
+  }
+
+  /** Backspace all'inizio di un blocco: si unisce a quello prima, come due capoversi in Word. */
+  private unisciAlPrecedente(editor: HTMLElement, posizione: PosizioneEditor): void {
+    const sezione = this.sezioniLocali().find((item) => item.codice === posizione.sezione);
+    const indice = sezione?.contenuto.findIndex((blocco) => blocco.id === posizione.blocco) ?? -1;
+    if (!sezione || indice <= 0) return;
+    const precedente = sezione.contenuto[indice - 1];
+    const frammenti = leggiFrammentiDalDom(editor);
+    const senzaCorrente = (blocchi: BloccoDocumento[]) =>
+      blocchi.filter((blocco) => blocco.id !== posizione.blocco);
+
+    if (precedente.tipo === 'INTERRUZIONE_PAGINA') {
+      this.modificaSezione(posizione.sezione, (blocchi) =>
+        blocchi.filter((blocco) => blocco.id !== precedente.id),
+      );
+      return;
+    }
+    if (precedente.tipo === 'ELENCO') {
+      const ultima = (precedente.elementi ?? []).length - 1;
+      if (ultima < 0) return;
+      const voce = precedente.elementi![ultima];
+      const lunghezza = testoDiFrammenti(voce.frammenti).length;
+      this.modificaSezione(posizione.sezione, (blocchi) =>
+        senzaCorrente(blocchi).map((blocco) =>
+          blocco.id !== precedente.id
+            ? blocco
+            : {
+                ...blocco,
+                elementi: blocco.elementi!.map((elemento, i) =>
+                  i === ultima
+                    ? {
+                        ...elemento,
+                        frammenti: normalizzaFrammenti([...elemento.frammenti, ...frammenti]),
+                      }
+                    : elemento,
+                ),
+              },
+        ),
+      );
+      this.mettiCursore({ ...posizione, blocco: precedente.id, voce: ultima }, lunghezza);
+      return;
+    }
+    const lunghezza = testoDiFrammenti(precedente.frammenti).length;
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      senzaCorrente(blocchi).map((blocco) =>
+        blocco.id === precedente.id
+          ? { ...blocco, frammenti: normalizzaFrammenti([...blocco.frammenti, ...frammenti]) }
+          : blocco,
+      ),
+    );
+    this.mettiCursore({ ...posizione, blocco: precedente.id, voce: null }, lunghezza);
   }
 
   /** Invio in una voce: la voce si divide al cursore. Su una voce vuota si esce dall'elenco. */
@@ -1879,30 +2193,44 @@ export class ModelloAnteprimaComponent {
     );
   }
 
-  /** Dopo il prossimo disegno, il cursore in un editor che forse ancora non esiste. */
+  /**
+   * Il cursore in un editor che forse ancora non esiste (un capoverso appena
+   * aperto con Invio).
+   *
+   * La vista si aggiorna **subito**, dentro lo stesso evento del tasto: con
+   * un'attesa fino al disegno successivo, i tasti che arrivano nel frattempo
+   * finivano nel blocco precedente (visto nell'e2e del 2026-10-01: meta' di
+   * un comma scritta dentro il titolo dell'articolo). Il testo dell'editor
+   * nuovo si scrive qui, prima del fuoco: la sincronizzazione generale salta
+   * l'editor attivo.
+   */
   private mettiCursore(posizione: PosizioneEditor, offset: number): void {
     this.posizioneAttiva.set(posizione);
-    afterNextRender(
-      () => {
-        const selettore =
-          `[data-section-text="${CSS.escape(posizione.sezione)}"][data-block-id="${CSS.escape(posizione.blocco)}"]` +
-          (posizione.voce === null
-            ? ':not([data-item-index])'
-            : `[data-item-index="${posizione.voce}"]`);
-        const editor = this.document.querySelector<HTMLElement>(`.editor-text${selettore}`);
-        if (!editor) return;
-        editor.focus();
-        this.selezionaEditor(editor);
-        const punto = puntoDaOffset(editor, offset);
-        const range = this.document.createRange();
-        range.setStart(punto.nodo, punto.offset);
-        range.collapse(true);
-        const selezione = this.document.getSelection();
-        selezione?.removeAllRanges();
-        selezione?.addRange(range);
-      },
-      { injector: this.injector },
-    );
+    this.cdr.detectChanges();
+    const editor = this.editors()
+      .map((riferimento) => riferimento.nativeElement)
+      .find((elemento) => {
+        const trovata = this.posizioneDi(elemento);
+        return (
+          trovata?.sezione === posizione.sezione &&
+          trovata.blocco === posizione.blocco &&
+          trovata.voce === posizione.voce
+        );
+      });
+    if (!editor) return;
+    const frammenti = this.frammentiIn(this.sezioniLocali(), posizione) ?? [];
+    if (JSON.stringify(leggiFrammentiDalDom(editor)) !== JSON.stringify(frammenti)) {
+      scriviFrammentiNelDom(editor, frammenti);
+    }
+    editor.focus();
+    this.selezionaEditor(editor);
+    const punto = puntoDaOffset(editor, offset);
+    const range = this.document.createRange();
+    range.setStart(punto.nodo, punto.offset);
+    range.collapse(true);
+    const selezione = this.document.getSelection();
+    selezione?.removeAllRanges();
+    selezione?.addRange(range);
   }
 
   private codiceSezioneLibero(base: string): string {
@@ -1991,8 +2319,21 @@ export class ModelloAnteprimaComponent {
     if (mantieniLocali) return;
     const locali = this.riordina(response.sezioni.map((sezione) => this.clonaSezione(sezione)));
     this.sezioniLocali.set(locali);
-    this.sezioneAttiva.set(locali[0]?.codice ?? null);
     this.documentoModificato.set(false);
+    // Dopo un salvataggio la selezione resta dov'era: tornare alla prima
+    // sezione farebbe applicare il comando successivo (un tipo, uno stile) al
+    // blocco sbagliato. Si riparte dalla prima solo se quella scelta non c'e' piu'.
+    const attiva = locali.find((sezione) => sezione.codice === this.sezioneAttiva());
+    if (!attiva) {
+      this.posizioneAttiva.set(null);
+      this.sezioneAttiva.set(null);
+      if (locali[0]) this.selezionaSezione(locali[0].codice);
+      return;
+    }
+    const posizione = this.posizioneAttiva();
+    if (posizione && !attiva.contenuto.some((blocco) => blocco.id === posizione.blocco)) {
+      this.posizioneAttiva.set(null);
+    }
   }
 
   private clonaSezione(sezione: SezioneDocumento): SezioneDocumento {
@@ -2040,6 +2381,124 @@ export class ModelloAnteprimaComponent {
     let progressivo = occupati.size + 1;
     while (occupati.has(`${sezione.codice}-b${progressivo}`)) progressivo += 1;
     return `${sezione.codice}-b${progressivo}`;
+  }
+}
+
+type TipoBloccoInseribile = 'PARAGRAFO' | 'TITOLO' | 'ELENCO' | 'FIRMA' | 'INTERRUZIONE_PAGINA';
+
+// I tipi che l'editor crea (FR-007). Fuori, per ora: `TABELLA` (fuori scope
+// della spec), `LOGO` (gli asset versionati non esistono ancora), `FOOTER` e
+// `INTESTAZIONE` (si ripetono su ogni pagina: sono la cornice, US3).
+const TIPI_INSERIBILI: TipoBloccoInseribile[] = [
+  'PARAGRAFO',
+  'TITOLO',
+  'ELENCO',
+  'FIRMA',
+  'INTERRUZIONE_PAGINA',
+];
+const TIPI_CONVERTIBILI: TipoBloccoInseribile[] = ['PARAGRAFO', 'TITOLO', 'ELENCO', 'FIRMA'];
+const ETICHETTE_TIPO: Record<string, string> = {
+  PARAGRAFO: 'Paragrafo',
+  TITOLO: "Titolo d'articolo",
+  ELENCO: 'Elenco',
+  FIRMA: 'Firma',
+  INTERRUZIONE_PAGINA: 'Interruzione di pagina',
+};
+const ALLINEAMENTI: { valore: Allineamento; etichetta: string; righe: [number, number][] }[] = [
+  {
+    valore: 'SINISTRA',
+    etichetta: 'Allinea a sinistra',
+    righe: [
+      [1, 14],
+      [1, 9],
+      [1, 12],
+    ],
+  },
+  {
+    valore: 'CENTRO',
+    etichetta: 'Centra',
+    righe: [
+      [1, 14],
+      [3.5, 9],
+      [2, 12],
+    ],
+  },
+  {
+    valore: 'DESTRA',
+    etichetta: 'Allinea a destra',
+    righe: [
+      [1, 14],
+      [6, 9],
+      [3, 12],
+    ],
+  },
+  {
+    valore: 'GIUSTIFICATO',
+    etichetta: 'Giustifica',
+    righe: [
+      [1, 14],
+      [1, 14],
+      [1, 14],
+    ],
+  },
+];
+// L'allineamento che il renderer deduce dal posizionamento quando il blocco
+// non lo dichiara (`_ALLINEAMENTO` in `renderer.py`): l'editor mostra lo stesso.
+const ALLINEAMENTO_DA_POSIZIONAMENTO: Record<string, Allineamento> = {
+  TOP: 'CENTRO',
+  BODY: 'SINISTRA',
+  BOTTOM_LEFT: 'SINISTRA',
+  BOTTOM_RIGHT: 'DESTRA',
+  BOTTOM_CENTER: 'CENTRO',
+  INLINE: 'SINISTRA',
+  COLUMN_LEFT: 'SINISTRA',
+  COLUMN_RIGHT: 'DESTRA',
+};
+
+function allineamentoEffettivo(blocco: BloccoDocumento): Allineamento {
+  return blocco.allineamento ?? ALLINEAMENTO_DA_POSIZIONAMENTO[blocco.posizionamento] ?? 'SINISTRA';
+}
+
+/**
+ * Il blocco con il tipo nuovo e lo stesso testo. Il posizionamento segue il
+ * tipo, perche' il formato ne ammette solo alcuni per tipo
+ * (`POSIZIONI_AMMESSE` in `quality/document_model.py`): la firma sta in basso.
+ */
+function bloccoDiTipo(blocco: BloccoDocumento, tipo: TipoBloccoInseribile): BloccoDocumento {
+  if (blocco.tipo === tipo) return blocco;
+  const testo =
+    blocco.tipo === 'ELENCO'
+      ? unisciRighe((blocco.elementi ?? []).map((elemento) => elemento.frammenti))
+      : blocco.frammenti;
+  const base: BloccoDocumento = {
+    ...blocco,
+    tipo,
+    posizionamento: 'BODY',
+    frammenti: testo,
+    elementi: [],
+    stile: null,
+  };
+  switch (tipo) {
+    case 'TITOLO':
+      return { ...base, allineamento: 'CENTRO' };
+    case 'FIRMA':
+      return { ...base, posizionamento: 'BOTTOM_RIGHT', allineamento: null };
+    case 'INTERRUZIONE_PAGINA':
+      return { ...base, frammenti: [], allineamento: null };
+    case 'ELENCO': {
+      const righe = dividiPerRighe(testo);
+      return {
+        ...base,
+        frammenti: [],
+        elementi: (righe.length ? righe : [[]]).map((frammenti) => ({
+          livello: 0,
+          marcatore: 'NUMERICO',
+          frammenti,
+        })),
+      };
+    }
+    default:
+      return base;
   }
 }
 

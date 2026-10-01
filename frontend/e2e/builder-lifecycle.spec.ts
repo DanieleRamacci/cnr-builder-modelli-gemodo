@@ -58,18 +58,33 @@ async function selezionaParola(page: Page, editor: Locator, parola: string): Pro
  * del testo estratto ma la variante di font: lo legge lo stesso helper
  * `pypdf` dei test del renderer (`backend/tests/support/pdf.py`).
  */
-function fontPerParola(pdf: string): { font: Record<string, string>; testo: string } {
+function fontPerParola(pdf: string): {
+  font: Record<string, string>;
+  testo: string;
+  x: Record<string, number>;
+} {
   const backend = resolve(__dirname, '../../backend');
   const script = `
 import json, sys
 from pathlib import Path
 from tests.support.pdf import estrai_font_e_testo, estrai_testo
 contenuto = Path(sys.argv[1]).read_bytes()
+from io import BytesIO
+from pypdf import PdfReader
 font = {}
 for nome, pezzo in estrai_font_e_testo(contenuto):
     for parola in pezzo.split():
         font.setdefault(parola.strip(';:,.'), nome)
-print(json.dumps({"font": font, "testo": estrai_testo(contenuto)}))
+# Ascissa del primo pezzo di testo che inizia con una certa parola: dice se
+# un titolo e' centrato e se le lettere rientrano rispetto ai commi.
+x = {}
+def visita(testo, cm, tm, _font, _dimensione):
+    parole = testo.split()
+    if parole:
+        x.setdefault(parole[0], cm[4] + tm[4])
+for pagina in PdfReader(BytesIO(contenuto)).pages:
+    pagina.extract_text(visitor_text=visita)
+print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x}))
 `;
   return JSON.parse(
     execFileSync('uv', ['run', 'python', '-c', script, pdf], { cwd: backend, encoding: 'utf-8' }),
@@ -193,6 +208,46 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('[data-item-index="0"]')).toHaveText(
     'Sono indetti i seguenti concorsi:',
   );
+
+  // 012 T033: l'art. 3 del bando di riferimento, composto solo con tastiera e
+  // pulsanti: nessun `1.` o `a)` scritto a mano (SC-002).
+  await page.locator('[data-add-section-inline]').click();
+  const intestazione = page.locator('[data-section-text="sezione-3"]').first();
+  await intestazione.click();
+  await page.keyboard.type('Art. 3 - Requisiti di ammissione');
+  await page.getByRole('tab', { name: 'Proprietà' }).click();
+  await page.locator('[data-block-type-select]').selectOption('TITOLO');
+  const titolo = page.locator('[data-section-text="sezione-3"][data-block-type="TITOLO"]');
+  await expect(titolo).toBeFocused();
+  await expect(titolo).toHaveCSS('text-align', 'center');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(
+    'Per la partecipazione al concorso sono richiesti i seguenti requisiti:',
+  );
+  await page.locator('[data-list="NUMERICO"]').click();
+  const voce = (indice: number) =>
+    page.locator(`[data-section-text="sezione-3"][data-item-index="${indice}"]`);
+  await expect(voce(0)).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(voce(1)).toBeFocused();
+  await page.keyboard.type('cittadinanza di uno degli Stati membri dell’Unione Europea;');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(voce(2)).toBeFocused();
+  await page.keyboard.type('età non inferiore a 18 anni;');
+  await page.keyboard.press('Enter');
+  await expect(voce(3)).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.type(
+    'I requisiti richiesti devono essere posseduti alla data di scadenza del termine per la presentazione della domanda.',
+  );
+  await page.locator('[data-align="GIUSTIFICATO"]').click();
+  const sezione3 = page.locator('article', { has: titolo });
+  await expect(sezione3.locator('.item-marker')).toHaveText(['1.', 'a)', 'b)', '2.']);
+  // I marcatori non sono nel testo: l'editor della voce contiene solo la frase.
+  await expect(voce(1)).toHaveText('cittadinanza di uno degli Stati membri dell’Unione Europea;');
+  await expect(voce(3)).toHaveCSS('text-align', 'justify');
+
   await page.locator('.format-toolbar .hint').click();
   await page.locator('[data-save-sections]').click();
   await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
@@ -253,7 +308,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     expect(generato.status(), await generato.text()).toBe(200);
     const percorsoPdf = testInfo.outputPath('bando-012.pdf');
     writeFileSync(percorsoPdf, await generato.body());
-    const { font, testo } = fontPerParola(percorsoPdf);
+    const { font, testo, x } = fontPerParola(percorsoPdf);
     expect(font['Premesso']).toBe('TitilliumWebBold');
     expect(font['che']).toBe('TitilliumWebItalic');
     expect(font['VISTO']).toBe('TitilliumWebBold');
@@ -268,6 +323,20 @@ test('ACE manager creates a draft and publishes from the context list', async ({
       '1. Sono indetti i seguenti concorsi: a) un posto presso la sede di Roma;',
     );
     expect(testo).not.toContain('{{');
+
+    // T033: l'art. 3 com'e' nel bando, con numerazione calcolata in resa.
+    expect(testo).toContain(
+      'Art. 3 - Requisiti di ammissione 1. Per la partecipazione al concorso sono richiesti i seguenti requisiti: ' +
+        'a) cittadinanza di uno degli Stati membri dell’Unione Europea; b) età non inferiore a 18 anni; ' +
+        '2. I requisiti richiesti',
+    );
+    expect(font['Requisiti']).toBe('TitilliumWebBold');
+    // Intestazione centrata: comincia ben oltre il margine dove stanno i commi.
+    expect(x['Art.']).toBeGreaterThan(x['1.'] + 40);
+    // Le lettere rientrano rispetto ai commi, e il testo rientra rispetto al marcatore.
+    expect(x['a)']).toBeGreaterThan(x['1.'] + 5);
+    expect(x['cittadinanza']).toBeGreaterThan(x['a)']);
+    expect(x['2.']).toBeCloseTo(x['1.'], 0);
   } finally {
     await generatore.rimuovi();
   }

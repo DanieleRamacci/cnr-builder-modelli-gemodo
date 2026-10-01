@@ -160,6 +160,15 @@
       color: #9aa5af;
       cursor: not-allowed;
     }
+
+    &.pressed {
+      background: #dde7f2;
+      color: var(--td-ink-900);
+    }
+
+    svg {
+      fill: currentColor;
+    }
   }
 
   .strong {
@@ -415,6 +424,42 @@
     &:empty::before {
       content: 'Scrivi qui il testo della sezione';
       color: #9aa5af;
+    }
+  }
+
+  // Proporzioni del PDF (corpo 11pt, titolo 13pt, firma con spazio sopra),
+  // sulla scala del corpo dell'editor (FR-008).
+  .editor-text.block-titolo {
+    color: var(--td-ink-900);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .editor-text.block-firma {
+    margin-top: 20px;
+  }
+
+  .page-break {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    color: var(--td-ink-500);
+    font-size: 11px;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      border-top: 1px dashed #b7c2cc;
+    }
+
+    &:focus-visible,
+    &.block-active {
+      color: var(--td-primary-dark);
+      outline: 0;
     }
   }
 
@@ -789,4 +834,11 @@ dialog {
   background: rgb(220 53 69 / 26%);
   color: #ffc2c7;
   cursor: help;
+}
+
+.insert-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 16px;
 }
