@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
 
 import type { ApiError } from './api-error';
 
@@ -23,6 +23,31 @@ export class ApiClient {
 
   post<T>(path: string, body: unknown): Observable<T> {
     return this.http.post<T>(path, body).pipe(catchError(mapError));
+  }
+
+  /**
+   * POST che risponde con un file (l'anteprima PDF della 012). Con
+   * `responseType: 'blob'` anche il corpo di un errore arriva come Blob: lo si
+   * rilegge come JSON, altrimenti codice e messaggio del servizio andrebbero
+   * persi e l'utente vedrebbe solo un errore generico.
+   */
+  postBlob(path: string, body: unknown): Observable<Blob> {
+    return this.http.post(path, body, { responseType: 'blob' }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (!(error.error instanceof Blob)) return mapError(error);
+        return from(error.error.text()).pipe(
+          switchMap((testo) => {
+            let corpo: unknown = null;
+            try {
+              corpo = JSON.parse(testo);
+            } catch {
+              // Non era JSON: resta l'errore generico.
+            }
+            return mapError(new HttpErrorResponse({ error: corpo, status: error.status }));
+          }),
+        );
+      }),
+    );
   }
 
   put<T>(path: string, body: unknown): Observable<T> {

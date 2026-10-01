@@ -70,6 +70,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
         "/modelli/{modelloId}/versioni/{versioneId}/pubblica",
         "/modelli/{modelloId}/versioni/{versioneId}/sospendi",
         "/modelli/{modelloId}/versioni/{versioneId}/archivia",
+        "/modelli/{modelloId}/versioni/{versioneId}/anteprima",
     }
     assert contract["security"] == [{"KeycloakBearer": []}]
 
@@ -83,10 +84,15 @@ def test_success_and_error_examples_match_their_schemas(contract):
             for response in operation["responses"].values():
                 if "$ref" in response or "content" not in response:
                     continue
-                media = response["content"]["application/json"]
+                # L'anteprima (012) risponde con un PDF: non c'e' un esempio
+                # JSON da confrontare.
+                media = response["content"].get("application/json")
+                if media is None or "example" not in media:
+                    continue
                 schema = media["schema"]
-                if "$ref" not in schema and "example" in media:
-                    OAS30Validator(schema).validate(media["example"])
+                if "$ref" in schema:
+                    schema = schemas[schema["$ref"].removeprefix("#/components/schemas/")]
+                OAS30Validator(schema).validate(media["example"])
     error_validator = OAS30Validator(schemas["Errore"])
     for response in contract["components"]["responses"].values():
         media = response["content"]["application/json"]

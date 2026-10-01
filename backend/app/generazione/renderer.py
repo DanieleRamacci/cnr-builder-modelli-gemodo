@@ -30,6 +30,7 @@ from app.documentale.schemas import (
 )
 
 _MARCA_TEST = "DOCUMENTO DI TEST - NON UFFICIALE"
+_MARCA_ANTEPRIMA = "ANTEPRIMA DELLA BOZZA - VALORI FAC-SIMILE"
 
 # Titillium Web (OFL), il font delle linee guida di design della PA. Non e'
 # estetica: il core font usato prima e' limitato a latin-1 e una virgoletta
@@ -82,10 +83,12 @@ _DIMENSIONE_ELENCO = 11
 _RAGGIO_PUNTO = 0.75
 
 
-def _intestazione(pdf: FPDF, titolo: str) -> None:
+def _intestazione(pdf: FPDF, titolo: str, *, anteprima: bool = False) -> None:
     pdf.set_font(_FONT, "B", 10)
     pdf.set_text_color(180, 0, 0)
     pdf.cell(0, 8, _MARCA_TEST, new_x="LMARGIN", new_y="NEXT")
+    if anteprima:
+        pdf.cell(0, 6, _MARCA_ANTEPRIMA, new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
     pdf.set_font(_FONT, "B", 14)
@@ -340,15 +343,21 @@ def sostituisci_placeholder(
 
 
 def render_documento(
-    *, titolo: str, blocchi: list[BloccoDocumento], inizi_sezione: frozenset[int] = frozenset(),
+    *,
+    titolo: str,
+    blocchi: list[BloccoDocumento],
+    inizi_sezione: frozenset[int] = frozenset(),
+    anteprima: bool = False,
 ) -> bytes:
     """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
 
     `inizi_sezione` sono gli `ordine` dei blocchi che aprono una sezione: li'
-    la numerazione degli elenchi riparte (012 T029).
+    la numerazione degli elenchi riparte (012 T029). `anteprima` aggiunge la
+    marcatura di anteprima (012 FR-009): e' l'unica differenza rispetto alla
+    generazione, che usa questa stessa funzione (FR-008).
     """
     pdf = _nuovo_pdf()
-    _intestazione(pdf, titolo)
+    _intestazione(pdf, titolo, anteprima=anteprima)
     marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):
         _rendi_blocco(pdf, blocco, marcatori.get(blocco.ordine))

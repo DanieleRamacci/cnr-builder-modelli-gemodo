@@ -11,6 +11,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
@@ -202,7 +203,20 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
             Crea variante
           </button>
         }
-        <button type="button" class="btn btn-sm" (click)="scorriAnteprima()">Anteprima</button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          data-preview-open
+          [disabled]="!sezioni()?.modificabile || caricandoAnteprima()"
+          [title]="
+            sezioni()?.modificabile
+              ? 'Il PDF della bozza, con valori fac-simile al posto dei segnaposto'
+              : 'Anteprima disponibile solo sulle bozze: questa versione genera documenti veri'
+          "
+          (click)="apriAnteprima(finestraAnteprima)"
+        >
+          Anteprima
+        </button>
         <button
           type="button"
           class="btn btn-sm"
@@ -954,6 +968,64 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
       </div>
     </dialog>
 
+    <dialog
+      #finestraAnteprima
+      class="preview-dialog"
+      aria-labelledby="anteprima-titolo"
+      data-preview-dialog
+      (close)="chiudiAnteprima()"
+    >
+      <header class="preview-header">
+        <div>
+          <h2 id="anteprima-titolo" class="h5 mb-1">Anteprima della bozza</h2>
+          <p class="mb-0">
+            Lo stesso PDF che verra' generato, con «etichetta del campo» al posto dei segnaposto.
+            Non e' un documento: non viene registrato.
+          </p>
+        </div>
+        <div class="d-flex gap-2">
+          @if (indirizzoAnteprima(); as indirizzo) {
+            <a
+              class="btn btn-sm btn-outline-primary"
+              [href]="indirizzo"
+              [download]="nomeAnteprima()"
+              >Scarica</a
+            >
+          }
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="finestraAnteprima.close()"
+          >
+            Chiudi
+          </button>
+        </div>
+      </header>
+      @if (caricandoAnteprima()) {
+        <p role="status" class="preview-state">Preparazione dell'anteprima...</p>
+      }
+      @if (erroreAnteprima(); as errore) {
+        <div class="alert alert-danger m-3" role="alert" data-preview-error>
+          {{ errore }}
+          @if (violazioniAnteprima().length) {
+            <ul class="mb-0">
+              @for (violazione of violazioniAnteprima(); track violazione) {
+                <li>{{ violazione }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (documentoAnteprima(); as documento) {
+        <iframe
+          class="preview-frame"
+          title="Anteprima PDF della bozza"
+          data-preview-frame
+          [src]="documento"
+        ></iframe>
+      }
+    </dialog>
+
     <dialog #variante aria-labelledby="variante-titolo" data-create-variant-dialog>
       <h2 id="variante-titolo" class="h4">Creare una variante?</h2>
       <p>
@@ -1134,6 +1206,15 @@ export class ModelloAnteprimaComponent {
 
   private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly sanitizer = inject(DomSanitizer);
+  /** Azioni che aspettano la fine del salvataggio in corso (l'anteprima). */
+  private readonly dopoSalvataggio: (() => void)[] = [];
+  protected readonly caricandoAnteprima = signal(false);
+  protected readonly erroreAnteprima = signal<string | null>(null);
+  protected readonly violazioniAnteprima = signal<string[]>([]);
+  protected readonly indirizzoAnteprima = signal<string | null>(null);
+  protected readonly nomeAnteprima = signal('anteprima.pdf');
+  protected readonly documentoAnteprima = signal<SafeResourceUrl | null>(null);
   /** Il blocco (e la voce) su cui sta lavorando il gestore. */
   protected readonly posizioneAttiva = signal<PosizioneEditor | null>(null);
 
@@ -1575,8 +1656,62 @@ export class ModelloAnteprimaComponent {
     this.cambiaLivelloVoce(posizione, voce?.livello === 1 ? 0 : 1);
   }
 
-  protected scorriAnteprima(): void {
-    this.document.getElementById('anteprima-documento')?.scrollIntoView({ block: 'center' });
+  /**
+   * Il PDF della bozza (012 US4). L'anteprima legge le sezioni **salvate**:
+   * se ci sono modifiche, o un salvataggio automatico e' in corso (il clic sul
+   * pulsante toglie il fuoco all'editor e lo fa partire), la si chiede dopo,
+   * altrimenti mostrerebbe il testo di prima.
+   */
+  protected apriAnteprima(finestra: HTMLDialogElement): void {
+    const versione = this.corrente();
+    if (!versione || !this.sezioni()?.modificabile) return;
+    this.liberaAnteprima();
+    this.erroreAnteprima.set(null);
+    this.violazioniAnteprima.set([]);
+    this.caricandoAnteprima.set(true);
+    if (!finestra.open) finestra.showModal();
+    const richiedi = () => this.richiediAnteprima(versione.id);
+    if (this.salvandoSezioni()) {
+      this.dopoSalvataggio.push(richiedi);
+    } else if (this.documentoModificato()) {
+      this.dopoSalvataggio.push(richiedi);
+      this.salvaSezioni();
+    } else {
+      richiedi();
+    }
+  }
+
+  protected chiudiAnteprima(): void {
+    this.liberaAnteprima();
+    this.caricandoAnteprima.set(false);
+  }
+
+  private richiediAnteprima(versioneId: string): void {
+    this.api
+      .postBlob(`/api/v1/builder/modelli/${this.id}/versioni/${versioneId}/anteprima`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (pdf) => {
+          this.caricandoAnteprima.set(false);
+          const indirizzo = URL.createObjectURL(pdf);
+          this.indirizzoAnteprima.set(indirizzo);
+          this.nomeAnteprima.set(`anteprima-${this.modello()?.codice ?? 'modello'}.pdf`);
+          this.documentoAnteprima.set(this.sanitizer.bypassSecurityTrustResourceUrl(indirizzo));
+        },
+        error: (e: ApiError) => {
+          this.caricandoAnteprima.set(false);
+          this.erroreAnteprima.set(e.messaggio);
+          this.violazioniAnteprima.set((e.dettagli ?? []).flatMap((d) => d['violazione'] ?? []));
+        },
+      });
+  }
+
+  /** Il PDF resta in memoria finche' l'URL non viene revocato. */
+  private liberaAnteprima(): void {
+    const indirizzo = this.indirizzoAnteprima();
+    if (indirizzo) URL.revokeObjectURL(indirizzo);
+    this.indirizzoAnteprima.set(null);
+    this.documentoAnteprima.set(null);
   }
 
   protected cambiaStatoVersione(azione: AzioneVersione, dialog?: HTMLDialogElement): void {
@@ -1647,12 +1782,19 @@ export class ModelloAnteprimaComponent {
         next: (response) => {
           this.salvandoSezioni.set(false);
           this.applicaSezioni(response, this.documentoModificato());
+          for (const azione of this.dopoSalvataggio.splice(0)) azione();
         },
         error: (e: ApiError) => {
           this.salvandoSezioni.set(false);
           this.documentoModificato.set(true);
           this.erroreSezioni.set(e.messaggio);
           this.violazioniSezioni.set((e.dettagli ?? []).flatMap((d) => d['violazione'] ?? []));
+          // Cio' che aspettava il salvataggio non ha piu' senso: l'anteprima
+          // mostrerebbe un documento diverso da quello sullo schermo.
+          if (this.dopoSalvataggio.splice(0).length) {
+            this.caricandoAnteprima.set(false);
+            this.erroreAnteprima.set(`Il documento non e' stato salvato: ${e.messaggio}`);
+          }
         },
       });
   }

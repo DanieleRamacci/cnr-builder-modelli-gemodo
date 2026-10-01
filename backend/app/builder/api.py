@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    RichiestaAnteprima,
     SezioneResponse,
     SezioniResponse,
     SostituisciSezioniRequest,
@@ -382,6 +383,36 @@ def sostituisci_sezioni(
     """
     versione = service.sostituisci_sezioni(principal, modelloId, versioneId, request.sezioni)
     return _sezioni_response(versione)
+
+
+@router.post(
+    "/modelli/{modelloId}/versioni/{versioneId}/anteprima",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def anteprima_versione(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    request: RichiestaAnteprima | None = None,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> Response:
+    """Anteprima PDF di una versione in BOZZA, con valori fac-simile (012 US4).
+
+    Non e' una generazione: niente documento registrato, niente idempotenza,
+    niente permessi di generazione (FR-010). Autorizza chi compone.
+    """
+    pdf, nome_file = service.anteprima(
+        principal, modelloId, versioneId, (request.valori if request else {}),
+    )
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{nome_file}"',
+            "X-GEMODO-Anteprima": "true",
+        },
+    )
 
 
 @router.post("/modelli/{modelloId}/versioni/{versioneId}/invia-revisione", response_model=VersioneResponse)

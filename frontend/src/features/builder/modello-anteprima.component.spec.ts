@@ -1045,6 +1045,106 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  describe('012 US4: anteprima della bozza', () => {
+    const URL_ANTEPRIMA = '/api/v1/builder/modelli/model/versioni/v2/anteprima';
+    let creati: string[];
+    let revocati: string[];
+    const originali = { crea: URL.createObjectURL, revoca: URL.revokeObjectURL };
+
+    afterEach(() => {
+      URL.createObjectURL = originali.crea;
+      URL.revokeObjectURL = originali.revoca;
+    });
+
+    beforeEach(() => {
+      creati = [];
+      revocati = [];
+      URL.createObjectURL = () => {
+        creati.push(`blob:anteprima-${creati.length}`);
+        return creati[creati.length - 1];
+      };
+      URL.revokeObjectURL = (url: string) => revocati.push(url);
+      // jsdom non disegna dialog modali: basta che si apra e si chiuda.
+      HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+        this.open = true;
+      };
+    });
+
+    it('shows the PDF of the saved draft in the preview dialog', () => {
+      const { fixture, http, root } = caricaBozza();
+      (root.querySelector('[data-preview-open]') as HTMLButtonElement).click();
+
+      const richiesta = http.expectOne(URL_ANTEPRIMA);
+      expect(richiesta.request.method).toBe('POST');
+      expect(richiesta.request.responseType).toBe('blob');
+      richiesta.flush(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+      fixture.detectChanges();
+
+      const cornice = root.querySelector('[data-preview-frame]') as HTMLIFrameElement;
+      expect(cornice.getAttribute('src')).toBe('blob:anteprima-0');
+      expect(root.querySelector('[data-preview-dialog] a[download]')?.getAttribute('href')).toBe(
+        'blob:anteprima-0',
+      );
+      http.verify();
+    });
+
+    it('saves unsaved edits first, so the preview shows what is on screen', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      editor.textContent = 'Testo appena scritto';
+      editor.dispatchEvent(new Event('input'));
+      (root.querySelector('[data-preview-open]') as HTMLButtonElement).click();
+
+      // Nessuna anteprima prima che il salvataggio sia concluso.
+      const salvataggio = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+      http.expectNone(URL_ANTEPRIMA);
+      salvataggio.flush({ ...sezioniResponse, sezioni: salvataggio.request.body.sezioni });
+      http.expectOne(URL_ANTEPRIMA).flush(new Blob(['%PDF-1.4']));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-preview-frame]')).toBeTruthy();
+      http.verify();
+    });
+
+    it('reads the service error out of the binary response instead of a generic failure', async () => {
+      const { fixture, http, root } = caricaBozza();
+      (root.querySelector('[data-preview-open]') as HTMLButtonElement).click();
+      http.expectOne(URL_ANTEPRIMA).flush(
+        new Blob(
+          [
+            JSON.stringify({
+              codice: 'MODELLO_DOCUMENTALE_NON_VALIDO',
+              messaggio: 'Struttura del modello documentale non valida',
+              dettagli: [{ violazione: 'blocco b1: il testo contiene markup, non ammesso' }],
+            }),
+          ],
+          { type: 'application/json' },
+        ),
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const errore = root.querySelector('[data-preview-error]')?.textContent ?? '';
+      expect(errore).toContain('Struttura del modello documentale non valida');
+      expect(errore).toContain('il testo contiene markup');
+      http.verify();
+    });
+
+    it('frees the PDF from memory when the dialog closes', () => {
+      const { fixture, http, root } = caricaBozza();
+      (root.querySelector('[data-preview-open]') as HTMLButtonElement).click();
+      http.expectOne(URL_ANTEPRIMA).flush(new Blob(['%PDF-1.4']));
+      fixture.detectChanges();
+      root.querySelector('[data-preview-dialog]')!.dispatchEvent(new Event('close'));
+      fixture.detectChanges();
+
+      expect(revocati).toEqual(['blob:anteprima-0']);
+      expect(root.querySelector('[data-preview-frame]')).toBeNull();
+      http.verify();
+    });
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

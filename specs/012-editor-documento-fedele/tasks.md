@@ -52,7 +52,7 @@ va pubblicato **prima** del codice, non dopo (Principio II).
       *Fatto 2026-10-01*: salvati come `TitilliumWeb-{Regular,Bold,Italic,BoldItalic}.ttf`;
       verificato con fontTools che tutte e quattro le varianti contengano
       virgolette curve, apostrofo tipografico, trattini, lettere accentate, `€`, `§`, `«»`.
-- [ ] T002 Fondere [`contracts/anteprima-api.openapi.yaml`](./contracts/anteprima-api.openapi.yaml)
+- [x] T002 Fondere [`contracts/anteprima-api.openapi.yaml`](./contracts/anteprima-api.openapi.yaml)
       in `specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml`
       e verificare che sia registrato in `PUBLISHED_CONTRACTS`
       (`backend/app/quality/openapi_docs.py`), cosi' che compaia in Swagger
@@ -298,7 +298,7 @@ generato dopo la pubblicazione.
 **Perche' qui e non dopo US3**: e' cio' che rende verificabile tutto quanto
 precede. Senza, l'unico modo di guardare il risultato e' pubblicare.
 
-- [ ] T034 Metodo di anteprima in `backend/app/builder/service.py`: compone i
+- [x] T034 Metodo di anteprima in `backend/app/builder/service.py`: compone i
       blocchi e chiama `render_documento`, **senza importare lo storage**.
       Percorso separato da `GenerazioneDocumentiService.genera`, non un
       parametro `anteprima=True` su di esso: le tre negazioni di FR-010 nascono
@@ -306,10 +306,10 @@ precede. Senza, l'unico modo di guardare il risultato e' pubblicare.
       `registra_successo`), e un condizionale sbagliato li' produrrebbe un
       documento ufficiale non voluto. Separando, le negazioni sono vere per
       costruzione (research.md R4).
-- [ ] T035 Valori fac-simile per i segnaposto, derivati dall'etichetta del campo
+- [x] T035 Valori fac-simile per i segnaposto, derivati dall'etichetta del campo
       nella forma `«etichetta»`, cosi' che nel PDF si distingua a colpo d'occhio
       il segnaposto dal testo.
-- [ ] T036 Rotta `POST /builder/modelli/{modelloId}/versioni/{versioneId}/anteprima`
+- [x] T036 Rotta `POST /builder/modelli/{modelloId}/versioni/{versioneId}/anteprima`
       in `backend/app/builder/api.py`, come da contratto. Autorizzazione con
       `verify_scrittura_su_contesto` - **non** `DOCUMENTI_GENERATORE`: e'
       un'azione di chi compone.
@@ -318,19 +318,32 @@ precede. Senza, l'unico modo di guardare il risultato e' pubblicare.
       OpenAPI 3.0.3: adattare a `NotFound`/`Conflict`/`Errore` chiuso gia'
       presenti) e aggiungere il path all'elenco atteso in
       `test_builder_modelli_contract.py`.
-- [ ] T037 [P] Test di FR-010, che e' il cuore della storia: dopo un'anteprima,
+- [x] T037 [P] Test di FR-010, che e' il cuore della storia: dopo un'anteprima,
       nessun `DocumentoGenerato` risulta registrato, e una generazione
       successiva con gli stessi dati **non** trova una chiave di idempotenza
       gia' consumata.
-- [ ] T038 [P] Test di autorizzazione: un token con soli permessi di
+- [x] T038 [P] Test di autorizzazione: un token con soli permessi di
       generazione riceve 403; un gestore di un altro contesto riceve 404, non
       403 (non si rivela l'esistenza di cio' che non puo' vedere).
-- [ ] T039 [P] Test: anteprima su versione `PUBBLICATO` risponde 409.
-- [ ] T040 Frontend: il pulsante "Anteprima", che oggi fa solo `scrollIntoView`
+- [x] T039 [P] Test: anteprima su versione `PUBBLICATO` risponde 409.
+- [x] T040 Frontend: il pulsante "Anteprima", che oggi fa solo `scrollIntoView`
       (riga ~1071), richiede e mostra il PDF vero.
-- [ ] T041 Test e2e SC-003: anteprima della bozza, pubblicazione, generazione
+- [x] T041 Test e2e SC-003: anteprima della bozza, pubblicazione, generazione
       con dati veri, confronto - struttura, ordine, enfasi e numerazione
       coincidono, differiscono solo i valori.
+      *T034-T041 fatti 2026-10-01* (e T002, fuso in questo commit come
+      deciso). `BuilderService.anteprima` usa solo il renderer, mai lo
+      storage; fac-simile `«etichetta»`, `valori` facoltativi; 409 fuori
+      bozza, 422 struttura non valida, 400 corpo non valido (convenzione del
+      servizio). Autorizzazione: 403 a chi non e' gestore da nessuna parte,
+      404 a chi e' gestore di un altro contesto. Frontend: il pulsante
+      "Anteprima" salva prima, se serve (anche un salvataggio automatico in
+      corso), poi mostra il PDF in una finestra con "Scarica"; verificato in
+      Google Chrome che il visualizzatore lo rende (il Chromium headless di
+      Playwright non ha il visualizzatore, l'e2e scarica il PDF e lo confronta).
+      SC-003: a parita' di valori il corpo di anteprima e documento generato
+      coincide frammento per frammento (test di backend), e l'e2e confronta
+      anteprima e PDF finale differenti solo nei valori.
 
 **Checkpoint**: da qui in avanti ogni cosa e' verificabile senza pubblicare.
 
@@ -385,11 +398,21 @@ documento; interruzione di pagina e firma restano al gestore nell'editor.
       troverebbe descritta una struttura che non esiste piu' (Principio VI).
 - [ ] T053 Includere la licenza OFL del font nel repository e citarla dove si
       elencano le dipendenze di terze parti (Principio VI).
-- [ ] T054 **Decidere se registrare un evento di audit per l'anteprima**
+- [x] T054 **Decidere se registrare un evento di audit per l'anteprima**
       (Principio V). Non e' una generazione e non compare nell'elenco di eventi
       della costituzione, quindi registrarla o no e' una scelta da prendere e
       motivare, non un'omissione da lasciare implicita.
-- [ ] T055 [P] Aggiornare `docs/quality-coverage-matrix.yaml` per FR-001..FR-017.
+      *Deciso 2026-10-01: nessun evento.* L'anteprima non cambia stato, non
+      produce un documento e non lascia nulla da ricostruire; registrarla
+      mescolerebbe consultazioni ai fatti del modello. Motivato nella
+      docstring di `BuilderService.anteprima`, verificato da T037 (nessun
+      evento in `audit_evento_modello`). Rivedibile se l'ente vuole sapere chi
+      ha guardato cosa.
+- [x] T055 [P] Aggiornare `docs/quality-coverage-matrix.yaml` per FR-001..FR-017.
+      *Fatto 2026-10-01*: COV-102..118, COPERTO solo con un test eseguito;
+      FR-011, FR-013, FR-014 DA_COPRIRE con il task che li chiude. Aggiunte
+      anche COV-119/120 per 007 FR-035/FR-036, scoperti dal 2026-09-24: la
+      CI (`check-coverage-matrix.py`) era gia' rossa per quei due.
 - [ ] T056 Eseguire [quickstart.md](./quickstart.md) per intero sullo stack
       reale, database pulito, e registrare l'esito di ciascun SC.
 - [ ] T057 **SC-001, la verifica che non si automatizza**: ricomporre nell'editor

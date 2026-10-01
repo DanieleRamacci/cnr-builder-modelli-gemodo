@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Builder Modelli
-  version: 0.7.0
+  version: 0.8.0
   description: >
     Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
     integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
@@ -454,6 +454,61 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /modelli/{modelloId}/versioni/{versioneId}/anteprima:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+      - {$ref: '#/components/parameters/VersioneId'}
+    post:
+      operationId: anteprimaVersioneModello
+      summary: Anteprima PDF di una versione in BOZZA (012 US4)
+      description: >
+        Compone le sezioni con lo stesso renderer della generazione ufficiale
+        (012 FR-008), sostituendo ogni segnaposto con un valore fac-simile nella
+        forma «etichetta del campo», o con il valore passato in `valori`. Il PDF
+        porta la marcatura di test e una marcatura di anteprima.
+        **Non e' una generazione** (012 FR-010): non registra alcun documento,
+        non consuma l'idempotenza e non richiede DOCUMENTI_GENERATORE. Chi e'
+        gestore di un altro contesto riceve 404, non 403: non si rivela
+        l'esistenza di cio' che non puo' vedere.
+      x-required-role: GEMODO_MODELLI_GESTORE (nel contesto del tipo documento del modello)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RichiestaAnteprima'}
+      responses:
+        '200':
+          description: Anteprima prodotta
+          headers:
+            Content-Disposition:
+              schema: {type: string}
+              example: inline; filename="anteprima-bando-cter-v3.pdf"
+            X-GEMODO-Anteprima:
+              description: Sempre `true`; marca la risposta come non ufficiale.
+              schema: {type: string, enum: ['true']}
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: La versione non e' in BOZZA; su una versione pubblicata si chiede il documento vero
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Errore'}
+              example: {codice: MODELLO_VERSIONE_NON_MODIFICABILE, messaggio: "La versione e' in stato PUBBLICATO: l'anteprima si chiede sulle bozze"}
+        '422':
+          description: Le sezioni non sono componibili secondo il formato documentale
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroreConViolazioni'}
+              example:
+                codice: MODELLO_DOCUMENTALE_NON_VALIDO
+                messaggio: Struttura del modello documentale non valida
+                dettagli:
+                  - {violazione: "blocco b1, frammento 0: il testo contiene markup, non ammesso"}
 components:
   securitySchemes:
     KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
@@ -716,6 +771,33 @@ components:
         numero_versione: {type: integer}
         stato: {type: string, enum: [BOZZA, IN_REVISIONE, APPROVATO, PUBBLICATO, ARCHIVIATO, SOSPESO]}
         pubblicato_at: {type: string, format: date-time, nullable: true}
+    RichiestaAnteprima:
+      type: object
+      additionalProperties: false
+      description: >
+        Corpo facoltativo. Omesso, ogni segnaposto assume il fac-simile
+        «etichetta del campo». I valori non sono dati ufficiali e non vengono
+        conservati.
+      properties:
+        valori:
+          type: object
+          additionalProperties: {type: string}
+          example: {numero_posti: '2', sede: Roma}
+    ErroreConViolazioni:
+      type: object
+      additionalProperties: false
+      required: [codice, messaggio]
+      properties:
+        codice: {type: string}
+        messaggio: {type: string}
+        dettagli:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [violazione]
+            properties:
+              violazione: {type: string}
     Errore:
       type: object
       additionalProperties: false

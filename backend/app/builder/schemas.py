@@ -205,6 +205,18 @@ class SezioneRequest(BaseModel):
     contenuto: list[BloccoDocumento] = Field(default_factory=list)
 
 
+class RichiestaAnteprima(BaseModel):
+    """Corpo facoltativo dell'anteprima (012 FR-009).
+
+    `valori` sostituisce il fac-simile di alcuni segnaposto con testi
+    realistici. Non sono dati ufficiali e non vengono conservati.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    valori: dict[str, str] = Field(default_factory=dict)
+
+
 class SostituisciSezioniRequest(BaseModel):
     """L'insieme completo delle sezioni della versione.
 

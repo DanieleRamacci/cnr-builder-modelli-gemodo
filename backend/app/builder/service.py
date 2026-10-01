@@ -33,7 +33,7 @@ from app.builder.schemas import (
 from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
-from app.common.errors import BuilderDomainError, DomainError, ErrorCode
+from app.common.errors import AuthorizationError, BuilderDomainError, DomainError, ErrorCode
 from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto, contesti_con_permesso, ROLE_GEMODO_MODELLI_GESTORE
 from app.db.session import get_db
 from app.discovery.configuration import discovery_per_tipo
@@ -45,6 +45,8 @@ from app.discovery.schemas import CatalogoDiscovery
 # il dominio persiste - quelli stanno in `app/documentale/schemas.py`.
 from app.quality.document_model import validate_document_model, violazioni_struttura_blocchi
 from app.quality.errors import ContrattoNonValidoError
+# Solo il renderer, mai lo storage: l'anteprima non e' una generazione (012 FR-010).
+from app.generazione.renderer import render_documento, sostituisci_placeholder
 
 TRANSIZIONI_VALIDE: dict[str, set[str]] = {
     "BOZZA": {"IN_REVISIONE"},
@@ -905,6 +907,85 @@ class BuilderService:
     ) -> ModelloDocumentoVersione:
         """Le sezioni della versione, leggibili in qualunque stato (003 T006)."""
         return self._versione_del_modello(principal, modello_id, versione_id)
+
+    def anteprima(
+        self,
+        principal: PrincipalGEMODO,
+        modello_id: uuid.UUID,
+        versione_id: uuid.UUID,
+        valori: dict[str, str],
+    ) -> tuple[bytes, str]:
+        """Il PDF che la versione in bozza produrrebbe, con valori fac-simile (012 FR-009).
+
+        **Non e' una generazione** (FR-010, research.md R4). Condivide con
+        `GenerazioneDocumentiService.genera` il solo renderer - cosi' che
+        anteprima e documento finale non possano divergere (FR-008) - e nulla
+        del resto: questo metodo non importa lo storage, non calcola l'hash dei
+        dati e non conosce la chiave di idempotenza. Le tre negazioni di FR-010
+        sono vere perche' qui quel codice non c'e', non perche' un
+        condizionale lo salta.
+
+        Nessun evento di audit (012 T054): l'anteprima non cambia stato, non
+        produce un documento e non lascia nulla da ricostruire; registrarla
+        mescolerebbe ai fatti del modello delle semplici consultazioni.
+        """
+        versione = self._versione_per_anteprima(principal, modello_id, versione_id)
+        if versione.stato != "BOZZA":
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_MODIFICABILE,
+                f"La versione e' in stato {versione.stato}: l'anteprima si chiede sulle bozze",
+                status_code=409,
+            )
+        documento = builder_repository.composizione_documentale(versione)
+        struttura = violazioni_struttura_blocchi(documento.blocchi)
+        if struttura:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_DOCUMENTALE_NON_VALIDO,
+                "Struttura del modello documentale non valida",
+                status_code=422,
+                dettagli=[{"violazione": violazione} for violazione in struttura],
+            )
+        etichette = {
+            campo.codice: campo.etichetta
+            for campo in catalog_repository.list_required_fields(self.db, versione.id)
+        }
+        # «etichetta» si riconosce a colpo d'occhio come segnaposto e non come
+        # testo (research.md R4). Un segnaposto che non e' fra i campi della
+        # versione mostra il proprio nome: la pubblicazione lo rifiutera', ma
+        # l'anteprima serve proprio a vederlo prima.
+        dati = {
+            nome: valori.get(nome) or f"\u00ab{etichette.get(nome, nome)}\u00bb"
+            for nome in documento.placeholder_usati
+        }
+        modello = versione.modello
+        pdf = render_documento(
+            titolo=f"{modello.tipo_documento.nome} - {modello.nome}",
+            blocchi=sostituisci_placeholder(documento.blocchi, dati),
+            inizi_sezione=builder_repository.inizi_sezione(versione),
+            anteprima=True,
+        )
+        return pdf, f"anteprima-{modello.codice}-v{versione.versione}.pdf"
+
+    def _versione_per_anteprima(
+        self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
+    ) -> ModelloDocumentoVersione:
+        """Come `_versione_del_modello`, ma chi compone altrove riceve 404 (012 T038).
+
+        A un gestore di un altro contesto si risponde come se la versione non
+        esistesse: un 403 confermerebbe che c'e'. Chi non e' gestore da
+        nessuna parte - per esempio un client che sa solo generare - riceve
+        invece 403: non sta cercando qualcosa che non puo' vedere, sta usando
+        un'azione che non e' sua (FR-010).
+        """
+        try:
+            return self._versione_del_modello(principal, modello_id, versione_id)
+        except AuthorizationError:
+            contesti = [codice for codice, _ruoli in principal.ruoli_contesto]
+            if contesti_con_permesso(principal, ROLE_GEMODO_MODELLI_GESTORE, contesti):
+                raise BuilderDomainError(
+                    ErrorCode.MODELLO_VERSIONE_NON_TROVATO, "Versione non trovata", status_code=404,
+                ) from None
+            raise
 
     def sostituisci_sezioni(
         self,

@@ -866,3 +866,160 @@ coverage:
     contract_ref: specs/011-dimensioni-generiche-modello/spec.md
     stato: DA_COPRIRE
     note: "edizione derivata resta definita sulla lingua: deroga dichiarata al principio generale, non svista"
+
+  # --- 012 editor documentale fedele (T055, 2026-10-01) ---
+  # COPERTO solo dove un test eseguito lo verifica; il resto e' DA_COPRIRE
+  # con il task che lo chiude, non una copertura dichiarata in anticipo.
+  - id: COV-102
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-001
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_renderer_frammenti.py
+    stato: COPERTO
+    note: test_l_enfasi_di_ogni_frammento_diventa_la_sua_variante_di_font; e2e builder-lifecycle verifica i font nel PDF
+
+  - id: COV-103
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-002
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/builder/test_formato_frammenti.py
+    stato: COPERTO
+    note: SC-005, markup nel testo e collegamenti javascript rifiutati con MODELLO_DOCUMENTALE_NON_VALIDO
+
+  - id: COV-104
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-003
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_numerazione_elenchi.py
+    stato: COPERTO
+    note: due livelli, numerati, a lettere e puntati; terzo livello rifiutato in test_formato_frammenti
+
+  - id: COV-105
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-004
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_renderer_frammenti.py
+    stato: COPERTO
+    note: test_l_allineamento_dichiarato_prevale_su_quello_del_posizionamento; toolbar in modello-anteprima.component.spec.ts (T030)
+
+  - id: COV-106
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-005
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_renderer_frammenti.py
+    stato: COPERTO
+    note: test_un_segnaposto_in_un_frammento_in_grassetto_produce_un_valore_in_grassetto
+
+  - id: COV-107
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-006
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/src/features/builder/frammenti.spec.ts
+    stato: COPERTO
+    note: enfasi su selezione parziale e annidata; e2e builder-lifecycle compone l'art. 3 solo con pulsanti (SC-002)
+
+  - id: COV-108
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-007
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/src/features/builder/modello-anteprima.component.spec.ts
+    stato: COPERTO
+    note: tutti i blocchi della sezione visibili; paragrafo, titolo, elenco, firma, interruzione creabili. TABELLA, LOGO, FOOTER esclusi per scelta (tasks.md T027)
+
+  - id: COV-109
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-008
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/builder/test_anteprima_api.py
+    stato: COPERTO
+    note: test_fr008_anteprima_e_documento_finale_escono_dallo_stesso_renderer; numerazione editor/PDF con la stessa regola (test_editor_e_renderer_usano_la_stessa_regola)
+
+  - id: COV-110
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-009
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/builder/test_anteprima_api.py
+    stato: COPERTO
+    note: anteprima marcata, valori fac-simile «etichetta»; e2e builder-lifecycle la apre dall'editor (T040, T041)
+
+  - id: COV-111
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-010
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/builder/test_anteprima_api.py
+    stato: COPERTO
+    note: T037 nessun DocumentoGenerato ne' evento, idempotenza intatta; T038 403 al solo generatore
+
+  - id: COV-112
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-011
+    scenario_id: SCENARIO-12
+    contract_ref: specs/012-editor-documento-fedele/tasks.md
+    stato: DA_COPRIRE
+    note: cornice di pagina sul tipo documento, Phase 6 T042-T044, T047-T048
+
+  - id: COV-113
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-012
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_renderer_frammenti.py
+    stato: COPERTO
+    note: test_t045_un_interruzione_di_pagina_porta_il_testo_dopo_sulla_pagina_seguente; creabile dall'editor
+
+  - id: COV-114
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-013
+    scenario_id: SCENARIO-12
+    contract_ref: backend/scripts/sc004_confronto_migrazione.py
+    stato: DA_COPRIRE
+    note: SC-004 si prova eseguendo lo script prima della 0024 in ogni ambiente con versioni pubblicate (T011), non ancora fatto
+
+  - id: COV-115
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-014
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/builder/test_formato_frammenti.py
+    stato: DA_COPRIRE
+    note: schema e rifiuto degli schemi non ammessi coperti; resa cliccabile nel PDF e inserimento dall'editor sono T049-T051
+
+  - id: COV-116
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-015
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_numerazione_elenchi.py
+    stato: COPERTO
+    note: T031 comma inserito in mezzo, T032 cambio pagina, ripartenza per sezione e per titolo
+
+  - id: COV-117
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-016
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/integration/test_migrazione_frammenti_0024.py
+    stato: COPERTO
+    note: upgrade e downgrade su Postgres reale; la forma vecchia e' rifiutata (test_la_forma_vecchia_con_contenuto_stringa_non_entra)
+
+  - id: COV-118
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-017
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/src/features/builder/frammenti.spec.ts
+    stato: COPERTO
+    note: Word desktop, Google Docs, testo semplice, marcatori a mano rimossi; e2e builder-lifecycle incolla HTML di Word
+
+  # Buco preesistente (007 FR-035/FR-036, aggiunti il 2026-09-24 senza riga):
+  # i requisiti erano gia' soddisfatti dall'editor 2b e ora anche dalla 012.
+  - id: COV-119
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-035
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/e2e/builder-lifecycle.spec.ts
+    stato: COPERTO
+    note: il corpo si compone dall'editor (sezioni, blocchi, enfasi, elenchi) e si salva via PUT sezioni; e2e su stack reale
+
+  - id: COV-120
+    spec_owner: specs/007-frontend-builder-consultazione
+    requirement_id: FR-036
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/src/features/builder/modello-anteprima.component.spec.ts
+    stato: COPERTO
+    note: la versione in sola lettura mostra il documento composto; dalla 012 l'anteprima produce anche il PDF della bozza (T040)

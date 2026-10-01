@@ -253,6 +253,22 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
   await page.screenshot({ path: testInfo.outputPath('builder-2b-enfasi.png'), fullPage: true });
 
+  // 012 T040: l'anteprima della bozza, dall'editor, senza pubblicare.
+  await page.locator('[data-preview-open]').click();
+  const cornice = page.locator('[data-preview-frame]');
+  await expect(cornice).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-anteprima.png') });
+  const pdfAnteprima = testInfo.outputPath('anteprima-012.pdf');
+  const base64 = await cornice.evaluate(async (elemento: HTMLIFrameElement) => {
+    const byte = new Uint8Array(await (await fetch(elemento.src)).arrayBuffer());
+    let binario = '';
+    for (const b of byte) binario += String.fromCharCode(b);
+    return btoa(binario);
+  });
+  writeFileSync(pdfAnteprima, Buffer.from(base64, 'base64'));
+  await page.getByRole('button', { name: 'Chiudi', exact: true }).click();
+  await expect(page.locator('[data-preview-dialog]')).not.toBeVisible();
+
   // Ricaricata la pagina, l'enfasi torna dal servizio e non dalla memoria del browser.
   await page.reload();
   await expect(
@@ -337,6 +353,20 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     expect(x['a)']).toBeGreaterThan(x['1.'] + 5);
     expect(x['cittadinanza']).toBeGreaterThan(x['a)']);
     expect(x['2.']).toBeCloseTo(x['1.'], 0);
+
+    // T041, SC-003: anteprima e documento generato coincidono per struttura,
+    // ordine, enfasi e numerazione; differiscono solo i valori.
+    const anteprima = fontPerParola(pdfAnteprima);
+    expect(anteprima.testo).toContain('ANTEPRIMA DELLA BOZZA');
+    expect(anteprima.testo).toContain('Premesso che «Titolo»');
+    const corpo = (testo: string) => testo.slice(testo.indexOf('Premesso'));
+    expect(corpo(anteprima.testo).replace('«Titolo»', 'Ricercatore in fisica applicata')).toBe(
+      corpo(testo),
+    );
+    for (const parola of ['Premesso', 'che', 'VISTO', '“Riordino', 'Requisiti', 'cittadinanza']) {
+      expect(anteprima.font[parola], parola).toBe(font[parola]);
+    }
+    expect(anteprima.x['a)']).toBeCloseTo(x['a)'], 0);
   } finally {
     await generatore.rimuovi();
   }
