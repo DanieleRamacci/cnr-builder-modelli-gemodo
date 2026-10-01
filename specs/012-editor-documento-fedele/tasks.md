@@ -122,6 +122,16 @@ finche' questa fase non e' chiusa.
       (fasi `prima`/`dopo`). **Non ancora eseguito**: nessun ambiente con
       versioni pubblicate e' stato ancora migrato. Il task si chiude solo con
       l'esecuzione, ambiente per ambiente.
+      *Prova generale 2026-10-01, in locale*: codice a `a915a0a` (prima della
+      012), database alla 0023 con tre versioni pubblicate nella forma
+      vecchia; fase `prima`; migrazione 0024-0025 col codice nuovo; fase
+      `dopo`. Esito: **2 versioni confrontate, 0 differenze**; la terza,
+      con virgolette curve, elencata a parte come "prima non si rendeva"
+      (`FPDFUnicodeEncodingException`, research.md R1). Con un testo atteso
+      alterato lo script segnala la differenza ed esce con codice 1. Lo
+      strumento e' quindi provato; resta da **eseguire in produzione prima
+      del redeploy** (il container migra da solo all'avvio). Il test online
+      e' gia' migrato senza confronto: dati sacrificabili (011 T004b).
 
 ### Renderer
 
@@ -437,8 +447,24 @@ documento; interruzione di pagina e firma restano al gestore nell'editor.
       FR-011, FR-013, FR-014 DA_COPRIRE con il task che li chiude. Aggiunte
       anche COV-119/120 per 007 FR-035/FR-036, scoperti dal 2026-09-24: la
       CI (`check-coverage-matrix.py`) era gia' rossa per quei due.
-- [ ] T056 Eseguire [quickstart.md](./quickstart.md) per intero sullo stack
+- [x] T056 Eseguire [quickstart.md](./quickstart.md) per intero sullo stack
       reale, database pulito, e registrare l'esito di ciascun SC.
+      *Esito 2026-10-01, stack reale e database pulito (e2e 4/4, backend 496,
+      frontend 172)*:
+      - **SC-001** (bando ricomponibile): parti automatizzate verdi - visto
+        con enfasi, art. 3 con commi e lettere, firma; il confronto a occhio
+        col bando reale e' T057, del product owner.
+      - **SC-002** (nessuna sintassi): verde - l'e2e compone l'art. 3 solo con
+        tastiera e pulsanti; T031 prova la rinumerazione.
+      - **SC-003** (anteprima = PDF finale): verde - corpo identico frammento
+        per frammento (backend), anteprima e documento differiscono solo nei
+        valori (e2e).
+      - **SC-004** (migrazione senza cambi di testo): verde in prova generale
+        (T011); da eseguire in produzione.
+      - **SC-005** (markup rifiutato): verde - `test_formato_frammenti.py`,
+        anche dal percorso dell'editor per i collegamenti (T051).
+      - **SC-006** (caratteri tipografici): verde - `test_sc006...` e l'e2e
+        con le virgolette curve di Word.
 - [ ] T057 **SC-001, la verifica che non si automatizza**: ricomporre nell'editor
       le tre parti del bando 367.501 CTER indicate nel quickstart e confrontarle
       col bando reale, che resta agli atti dell'ente. Non ne esiste una versione
