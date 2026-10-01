@@ -5,6 +5,8 @@ import {
   ElementRef,
   computed,
   ChangeDetectorRef,
+  Injector,
+  afterNextRender,
   effect,
   inject,
   signal,
@@ -20,11 +22,13 @@ import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
 import { forkJoin } from 'rxjs';
 import {
+  applicaCollegamento,
   applicaEnfasi,
   convertiAppunti,
   dividiPerRighe,
   leggiFrammentiDalDom,
   normalizzaFrammenti,
+  normalizzaIndirizzo,
   offsetNelTesto,
   placeholderNeiFrammenti,
   puntoDaOffset,
@@ -293,6 +297,26 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         >
           U
         </button>
+        <button
+          type="button"
+          class="tool"
+          data-link-open
+          title="Collegamento: seleziona il testo, poi scrivi l'indirizzo"
+          aria-label="Collegamento"
+          [disabled]="!sezioni()?.modificabile"
+          (mousedown)="$event.preventDefault()"
+          (click)="apriCollegamento()"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
         <span class="separator"></span>
         <!-- Un solo comando per cio' che un blocco e', come il menu Stili di
              Word (012 T059): sostituisce H1/H2 e il "Tipo blocco" che stava
@@ -391,6 +415,52 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           ⤓
         </button>
         <span class="hint">Scrivi / nel testo per inserire un segnaposto</span>
+        @if (collegamento(); as stato) {
+          <div class="link-bar" data-link-bar>
+            @if (stato.editor) {
+              <label for="indirizzo-collegamento">Indirizzo</label>
+              <input
+                #indirizzo
+                id="indirizzo-collegamento"
+                class="form-control form-control-sm"
+                type="text"
+                placeholder="https://..., www.... o un indirizzo email"
+                data-link-input
+                [value]="stato.valore"
+                (keydown.enter)="$event.preventDefault(); confermaCollegamento(indirizzo.value)"
+                (keydown.escape)="chiudiCollegamento()"
+              />
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                data-link-apply
+                (click)="confermaCollegamento(indirizzo.value)"
+              >
+                Applica
+              </button>
+              @if (stato.valore) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  data-link-remove
+                  (click)="confermaCollegamento(null)"
+                >
+                  Rimuovi
+                </button>
+              }
+            }
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              (click)="chiudiCollegamento()"
+            >
+              Annulla
+            </button>
+            @if (stato.errore) {
+              <span class="link-errore" role="alert" data-link-error>{{ stato.errore }}</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="corpo">
@@ -1063,6 +1133,18 @@ export class ModelloAnteprimaComponent {
   protected readonly allineamenti = ALLINEAMENTI;
   protected readonly stili = STILI;
   /**
+   * Il collegamento che si sta inserendo (012 T050). La selezione si ricorda
+   * qui: quando il fuoco passa al campo dell'indirizzo, quella del browser e'
+   * gia' persa.
+   */
+  protected readonly collegamento = signal<{
+    editor: HTMLElement | null;
+    inizio: number;
+    fine: number;
+    valore: string;
+    errore: string | null;
+  } | null>(null);
+  /**
    * Il menu dei segnaposto aperto da `/` (012 T064): in quale editor, dove sta
    * la `/` nel testo, cosa e' stato scritto dopo e dove disegnarlo.
    */
@@ -1105,6 +1187,7 @@ export class ModelloAnteprimaComponent {
 
   private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
   private readonly sanitizer = inject(DomSanitizer);
   /** Azioni che aspettano la fine del salvataggio in corso (l'anteprima). */
   private readonly dopoSalvataggio: (() => void)[] = [];
@@ -1460,6 +1543,65 @@ export class ModelloAnteprimaComponent {
     this.posizioneAttiva.set({ sezione, blocco, voce: null });
     this.sezioneAttiva.set(sezione);
     this.eliminaBlocco();
+  }
+
+  protected apriCollegamento(): void {
+    const editor = this.editorAttivo;
+    const selezione = editor ? this.selezioneIn(editor) : null;
+    if (!editor || !selezione || selezione.fine <= selezione.inizio) {
+      this.collegamento.set({
+        editor: null,
+        inizio: 0,
+        fine: 0,
+        valore: '',
+        errore: 'Seleziona prima il testo da collegare.',
+      });
+      return;
+    }
+    const esistente = taglia(leggiFrammentiDalDom(editor), selezione.inizio, selezione.fine).find(
+      (frammento) => frammento.collegamento,
+    );
+    this.collegamento.set({
+      editor,
+      ...selezione,
+      valore: esistente?.collegamento ?? '',
+      errore: null,
+    });
+    afterNextRender(
+      () => this.document.querySelector<HTMLInputElement>('[data-link-input]')?.focus(),
+      {
+        injector: this.injector,
+      },
+    );
+  }
+
+  /** Applica l'indirizzo alla porzione ricordata; `null` toglie il collegamento. */
+  protected confermaCollegamento(scritto: string | null): void {
+    const stato = this.collegamento();
+    if (!stato?.editor) return;
+    const indirizzo = scritto === null ? null : normalizzaIndirizzo(scritto);
+    if (scritto !== null && indirizzo === null) {
+      this.collegamento.set({
+        ...stato,
+        valore: scritto,
+        errore: 'Indirizzo non valido: usa https://..., www.... o un indirizzo email.',
+      });
+      return;
+    }
+    this.collegamento.set(null);
+    stato.editor.focus();
+    this.riscriviEditor(
+      stato.editor,
+      applicaCollegamento(leggiFrammentiDalDom(stato.editor), stato.inizio, stato.fine, indirizzo),
+      stato.inizio,
+      stato.fine,
+    );
+  }
+
+  protected chiudiCollegamento(): void {
+    const editor = this.collegamento()?.editor;
+    this.collegamento.set(null);
+    editor?.focus();
   }
 
   /** Il menu Stile: cambia cio' che il blocco col cursore e', tenendone il testo (T059). */

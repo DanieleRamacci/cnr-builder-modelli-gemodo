@@ -7,6 +7,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.discovery.schemas import CampoDiscovery
+from app.documentale.schemas import CornicePagina
 
 
 Codice = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^\S+$")]
@@ -168,3 +169,14 @@ class IntegrazioneAdmin(BaseModel):
     timeout_ms: int
     stato: str
     ultima_verifica: UltimaVerifica | None
+
+
+class CorniceResponse(BaseModel):
+    """La cornice del tipo documento e i loghi che si possono scegliere (012 T047).
+
+    `loghi_disponibili` elenca solo quelli il cui file c'e' davvero: proporre
+    un logo che poi non si vede sarebbe peggio di non proporlo.
+    """
+
+    cornice: CornicePagina | None = None
+    loghi_disponibili: list[str] = Field(default_factory=list)

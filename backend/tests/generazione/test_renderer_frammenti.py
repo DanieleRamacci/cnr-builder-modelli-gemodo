@@ -129,3 +129,19 @@ def test_t045_un_interruzione_di_pagina_porta_il_testo_dopo_sulla_pagina_seguent
     assert len(pagine) == 2
     assert "Seconda pagina." in pagine[1].extract_text()
     assert "Seconda pagina." not in pagine[0].extract_text()
+
+
+def test_t049_un_collegamento_e_cliccabile_e_il_suo_testo_resta_leggibile():
+    pdf = rendi(blocco(frammenti=[
+        {"testo": "Le domande si presentano sul portale "},
+        {"testo": "www.inpa.gov.it", "collegamento": "https://www.inpa.gov.it"},
+        {"testo": " o alla PEC "},
+        {"testo": "protocollo@pec.cnr.it", "collegamento": "mailto:protocollo@pec.cnr.it"},
+        {"testo": "."},
+    ]))
+    pagina = PdfReader(BytesIO(pdf)).pages[0]
+    collegamenti = [a.get_object()["/A"]["/URI"] for a in pagina["/Annots"]]
+    assert collegamenti == ["https://www.inpa.gov.it", "mailto:protocollo@pec.cnr.it"]
+    # Stampato, il collegamento e' il suo testo: nulla si perde.
+    assert ("Le domande si presentano sul portale www.inpa.gov.it o alla PEC "
+            "protocollo@pec.cnr.it.") in estrai_testo(pdf)

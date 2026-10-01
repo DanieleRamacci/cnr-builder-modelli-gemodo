@@ -90,6 +90,11 @@ export const routes: Routes = [
         redirectTo: 'tipi-documento',
       },
       {
+        path: 'tipi-documento/:codice/cornice',
+        loadComponent: () =>
+          import('../features/configurazione/cornice.component').then((m) => m.CorniceComponent),
+      },
+      {
         path: 'tipi-documento/:codice/dimensioni',
         loadComponent: () =>
           import('../features/configurazione/dimensioni.component').then(

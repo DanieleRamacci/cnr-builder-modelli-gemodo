@@ -32,6 +32,9 @@ from app.discovery.adapter_http import AdapterHTTP
 from app.discovery.egress import valida_destinazione_approvata
 from app.discovery.errors import DiscoveryError
 from app.discovery.schemas import VERSIONE_CONTRATTO_DISCOVERY, CatalogoDiscovery, MappaDiscovery
+from app.documentale.schemas import CornicePagina
+from app.generazione.renderer import LOGHI
+from app.quality.document_model import violazioni_cornice
 
 # Verification runs synchronously inside one request; this margin above the endpoint's
 # own HTTP timeout is how long a reserved tentativo blocks a concurrent verify before
@@ -516,6 +519,55 @@ class IntegrazioniService:
         )
         self.db.commit()
         return policy
+
+    def cornice_live(self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO):
+        """La cornice di pagina del tipo documento (012 FR-011), o nessuna."""
+        source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=False)
+        grezza = tipo.cornice_pagina if tipo is not None else None
+        return CornicePagina.model_validate(grezza) if grezza else None
+
+    def imposta_cornice_live(
+        self, integrazione_id: uuid.UUID, codice: str, cornice: CornicePagina, principal: PrincipalGEMODO,
+    ) -> CornicePagina:
+        """Registra la cornice di pagina del tipo documento (012 T047).
+
+        Le regole sono quelle del testo dei blocchi (niente markup) piu' il
+        limite di righe che la testata puo' contenere; il logo si sceglie fra
+        quelli che il servizio conosce, non si carica.
+        """
+        violazioni = violazioni_cornice(cornice)
+        if cornice.logo_ref is not None and cornice.logo_ref not in LOGHI:
+            violazioni.append(f"logo '{cornice.logo_ref}' non disponibile")
+        if violazioni:
+            raise DomainError(
+                ErrorCode.MODELLO_DOCUMENTALE_NON_VALIDO,
+                "Cornice di pagina non valida",
+                status_code=422,
+                dettagli=[{"violazione": violazione} for violazione in violazioni],
+            )
+        source, tipo = self._tipo_per_cornice(integrazione_id, codice, principal, associa=True)
+        tipo.cornice_pagina = cornice.model_dump(mode="json", exclude_defaults=False)
+        self._audit(
+            source.id,
+            principal,
+            "CORNICE_PAGINA_CONFIGURATA",
+            {"codice_tipo_documento": codice, "logo_ref": cornice.logo_ref,
+             "numerazione_pagine": cornice.numerazione_pagine},
+        )
+        self.db.commit()
+        return cornice
+
+    def _tipo_per_cornice(
+        self, integrazione_id: uuid.UUID, codice: str, principal: PrincipalGEMODO, *, associa: bool,
+    ):
+        source, mappa = self._mappa_live(integrazione_id, principal)
+        if codice not in mappa.cataloghi:
+            raise DomainError(
+                "RISORSA_NON_TROVATA",
+                "Tipo documento non disponibile per questa integrazione",
+                status_code=404,
+            )
+        return source, self._tipo_live_locale(source, codice, associa=associa)
 
     def lista(self, principal: PrincipalGEMODO) -> list[IntegrazioneAdmin]:
         ensure_roles(principal, (ROLE_GEMODO_ADMIN,))

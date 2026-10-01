@@ -963,6 +963,7 @@ class BuilderService:
             blocchi=sostituisci_placeholder(documento.blocchi, dati),
             inizi_sezione=builder_repository.inizi_sezione(versione),
             anteprima=True,
+            cornice=builder_repository.cornice_del_tipo(versione),
         )
         return pdf, f"anteprima-{modello.codice}-v{versione.versione}.pdf"
 

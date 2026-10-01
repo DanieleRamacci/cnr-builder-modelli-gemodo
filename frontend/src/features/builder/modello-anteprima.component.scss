@@ -134,6 +134,7 @@
   top: 0;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 8px 24px;
@@ -196,6 +197,24 @@
     height: 32px;
     padding-block: 0;
     font-size: 13px;
+  }
+
+  // La barra dell'indirizzo va a capo dentro la toolbar: cosi' resta fissa con lei.
+  .link-bar {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+
+    input {
+      width: min(360px, 100%);
+    }
+  }
+
+  .link-errore {
+    color: #b71918;
+    font-size: 12.5px;
   }
 
   .separator {
@@ -497,6 +516,11 @@
   .editor-text em,
   .frammento.fr-i {
     font-style: italic;
+  }
+
+  .editor-text a {
+    color: #0066cc;
+    text-decoration: underline;
   }
 
   .editor-text u,

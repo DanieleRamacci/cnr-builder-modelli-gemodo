@@ -954,9 +954,9 @@ coverage:
     spec_owner: specs/012-editor-documento-fedele
     requirement_id: FR-011
     scenario_id: SCENARIO-12
-    contract_ref: specs/012-editor-documento-fedele/tasks.md
-    stato: DA_COPRIRE
-    note: cornice di pagina sul tipo documento, Phase 6 T042-T044, T047-T048
+    contract_ref: backend/tests/generazione/test_cornice_pagina.py
+    stato: COPERTO
+    note: logo, intestazione e numero su ogni pagina (T048); configurata dall'admin (test_cornice_pagina_api) e verificata nel PDF dall'e2e. Il file del logo dell'ente va ancora fornito
 
   - id: COV-113
     spec_owner: specs/012-editor-documento-fedele
@@ -978,9 +978,9 @@ coverage:
     spec_owner: specs/012-editor-documento-fedele
     requirement_id: FR-014
     scenario_id: SCENARIO-12
-    contract_ref: backend/tests/builder/test_formato_frammenti.py
-    stato: DA_COPRIRE
-    note: schema e rifiuto degli schemi non ammessi coperti; resa cliccabile nel PDF e inserimento dall'editor sono T049-T051
+    contract_ref: backend/tests/generazione/test_renderer_frammenti.py
+    stato: COPERTO
+    note: test_t049 collegamento cliccabile e testo leggibile; inserimento dall'editor e javascript rifiutato in modello-anteprima.component.spec.ts; annotazione verificata dall'e2e
 
   - id: COV-116
     spec_owner: specs/012-editor-documento-fedele

@@ -105,6 +105,25 @@ class ElementoElenco(DocumentaleBaseModel):
     frammenti: list[FrammentoTesto] = Field(default_factory=list)
 
 
+class CornicePagina(DocumentaleBaseModel):
+    """Cio' che si ripete su **ogni** pagina (012 FR-011, T042).
+
+    Appartiene al tipo documento, non al modello: la configura una volta
+    l'amministratore, e il gestore che compone un bando non la vede ne' la
+    puo' sbagliare. Usa la stessa grammatica a frammenti dei blocchi, quindi
+    le stesse regole: niente markup nel testo.
+
+    `logo_ref` nomina il logo dell'ente fra quelli che il servizio conosce
+    (`generazione/renderer.py`, `LOGHI`): non e' un URL ne' un file caricato,
+    perche' gli asset versionati non esistono ancora (research.md).
+    """
+
+    logo_ref: str | None = Field(default=None, pattern=r"^[a-z0-9-]{1,64}$")
+    intestazione: list[FrammentoTesto] = Field(default_factory=list)
+    pie_pagina: list[FrammentoTesto] = Field(default_factory=list)
+    numerazione_pagine: bool = True
+
+
 class BloccoDocumento(DocumentaleBaseModel):
     """Elemento visuale ammesso nel modello documentale controllato.
 

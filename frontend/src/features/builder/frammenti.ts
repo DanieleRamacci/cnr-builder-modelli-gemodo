@@ -618,3 +618,38 @@ export function puntoDaOffset(radice: Node, offset: number): { nodo: Node; offse
   }
   return { nodo: radice, offset: radice.childNodes.length };
 }
+
+// --- Collegamenti (FR-014) -----------------------------------------------------
+
+/**
+ * L'indirizzo come lo scrive il gestore, nella forma che il formato accetta,
+ * o `null` se non e' un collegamento ammesso. Come in Word: un indirizzo email
+ * diventa `mailto:`, un `www.` diventa `https://`. Qualunque altro schema
+ * (`javascript:`, `file:`...) e' rifiutato qui e di nuovo dal servizio.
+ */
+export function normalizzaIndirizzo(scritto: string): string | null {
+  const indirizzo = scritto.trim();
+  if (!indirizzo || /\s/.test(indirizzo)) return null;
+  const candidato = /^[^@/:]+@[^@/:]+\.[a-z]{2,}$/i.test(indirizzo)
+    ? `mailto:${indirizzo}`
+    : /^www\./i.test(indirizzo)
+      ? `https://${indirizzo}`
+      : indirizzo;
+  return collegamentoAmmesso(candidato) ? candidato : null;
+}
+
+/** Collega (o scollega, con `null`) i caratteri `[inizio, fine)`. */
+export function applicaCollegamento(
+  frammenti: FrammentoTesto[],
+  inizio: number,
+  fine: number,
+  collegamento: string | null,
+): FrammentoTesto[] {
+  if (fine <= inizio) return normalizzaFrammenti(frammenti);
+  const prima = taglia(frammenti, 0, inizio);
+  const dentro = taglia(frammenti, inizio, fine).map((frammento) => ({
+    ...frammento,
+    collegamento,
+  }));
+  return normalizzaFrammenti([...prima, ...dentro, ...taglia(frammenti, fine)]);
+}

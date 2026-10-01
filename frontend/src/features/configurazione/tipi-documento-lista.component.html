@@ -66,6 +66,13 @@
                 class="btn btn-sm btn-outline-primary"
                 >Configura policy</a
               >
+              <a
+                [routerLink]="[tipo.codice, 'cornice']"
+                [queryParams]="{ integrazioneId: tipo.integrazione.id }"
+                class="btn btn-sm btn-outline-primary ms-2"
+                data-cornice-link
+                >Cornice</a
+              >
             </td>
           </tr>
         }

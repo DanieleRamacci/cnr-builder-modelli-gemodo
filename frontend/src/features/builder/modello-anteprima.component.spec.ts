@@ -1283,6 +1283,57 @@ describe('2b ridotta: anteprima modello', () => {
     });
   });
 
+  describe('012 T050: collegamenti dall editor', () => {
+    function apriBarra(root: HTMLElement, fixture: { detectChanges: () => void }) {
+      (root.querySelector('[data-link-open]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return root.querySelector('[data-link-input]') as HTMLInputElement | null;
+    }
+
+    it('links the selected words and saves the address on the fragment', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+      const campo = apriBarra(root, fixture)!;
+      campo.value = 'www.cnr.it';
+      (root.querySelector('[data-link-apply]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(editor.querySelector('a')?.getAttribute('href')).toBe('https://www.cnr.it');
+      expect(root.querySelector('[data-link-bar]')).toBeNull();
+      const request = salva(root, http);
+      expect(request.request.body.sezioni[0].contenuto[0].frammenti).toEqual([
+        { testo: 'Introduzione', collegamento: 'https://www.cnr.it' },
+        { testo: ' {{titolo_it}}' },
+      ]);
+      request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+      http.verify();
+    });
+
+    it('T051: refuses a javascript: address and leaves the text untouched', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, 0, 5);
+      const campo = apriBarra(root, fixture)!;
+      campo.value = 'javascript:alert(1)';
+      campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-link-error]')?.textContent).toContain('non valido');
+      expect(editor.querySelector('a')).toBeNull();
+      http.verify();
+    });
+
+    it('asks to select the text first instead of linking nothing', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, 3, 3);
+      expect(apriBarra(root, fixture)).toBeNull();
+      expect(root.querySelector('[data-link-error]')?.textContent).toContain('Seleziona prima');
+      http.verify();
+    });
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

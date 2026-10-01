@@ -23,6 +23,7 @@ from fpdf import FPDF
 from app.documentale.schemas import (
     AllineamentoTesto,
     BloccoDocumento,
+    CornicePagina,
     ElementoElenco,
     FrammentoTesto,
     TipoBloccoDocumento,
@@ -69,6 +70,8 @@ _ALLINEAMENTO_ESPLICITO = {
 # l'editor mostrava un titolo e il PDF un paragrafo (FR-008, T016).
 _STILI_TITOLO = {"H1": 14, "H2": 12}
 
+_COLORE_COLLEGAMENTO = (0, 102, 204)
+
 # Rientri di elenco, in mm, quelli predefiniti di Word: marcatore a 0,63 cm,
 # testo a 1,27 cm, e ogni livello (FR-003: due) sposta entrambi di 1,27 cm.
 # Il testo della voce va a capo allineato al testo, non al marcatore: e' il
@@ -96,12 +99,90 @@ def _intestazione(pdf: FPDF, titolo: str, *, anteprima: bool = False) -> None:
     pdf.ln(4)
 
 
-def _nuovo_pdf() -> FPDF:
-    pdf = FPDF(format="A4")
+# I loghi che una cornice puo' nominare (012 FR-011: lo stesso logo per tutti i
+# documenti dell'ente). Non e' un caricamento libero: gli asset versionati non
+# esistono ancora, e un logo e' identita' istituzionale, non contenuto. Il file
+# lo fornisce l'ente; finche' manca, la cornice si rende senza logo.
+_CARTELLA_LOGHI = Path(__file__).parent / "loghi"
+LOGHI = {"logo-ente": "logo-ente.png"}
+
+# Spazio della testata sopra il corpo, in mm: il logo e fino a tre righe di
+# intestazione (`RIGHE_MASSIME_INTESTAZIONE` in `quality/document_model.py`).
+_ALTEZZA_TESTATA = 30
+_ALTEZZA_LOGO = 14
+_MARGINE_PIEDE = 22
+
+
+def percorso_logo(logo_ref: str | None) -> Path | None:
+    """Il file del logo, se la cornice lo nomina e l'ente l'ha fornito."""
+    if logo_ref not in LOGHI:
+        return None
+    percorso = _CARTELLA_LOGHI / LOGHI[logo_ref]
+    return percorso if percorso.is_file() else None
+
+
+class _PdfConCornice(FPDF):
+    """Un PDF che disegna la cornice su **ogni** pagina (012 T044).
+
+    `header` e `footer` li chiama fpdf2 a ogni pagina nuova, comprese quelle
+    aperte dall'a capo automatico in mezzo a un elenco: e' per questo che la
+    cornice sta qui e non in un blocco, che comparirebbe una volta sola.
+    """
+
+    def __init__(self, cornice: CornicePagina | None) -> None:
+        super().__init__(format="A4")
+        self.cornice = cornice
+
+    def header(self) -> None:
+        cornice = self.cornice
+        if cornice is None or not (cornice.intestazione or percorso_logo(cornice.logo_ref)):
+            return
+        alto = 8
+        x = self.l_margin
+        logo = percorso_logo(cornice.logo_ref)
+        if logo is not None:
+            immagine = self.image(str(logo), x=x, y=alto, h=_ALTEZZA_LOGO)
+            x += immagine.rendered_width + 5
+        if cornice.intestazione:
+            # Le righe dell'intestazione vanno a capo accanto al logo, non sotto.
+            margine = self.l_margin
+            self.set_left_margin(x)
+            self.set_xy(x, alto + 1)
+            for frammento in cornice.intestazione:
+                self.set_font(_FONT, _variante(frammento, grassetto_base=False, corsivo_base=False), 9)
+                self.write(4.5, frammento.testo)
+            self.set_left_margin(margine)
+        linea = alto + _ALTEZZA_LOGO + 3
+        self.set_draw_color(160, 160, 160)
+        self.line(self.l_margin, linea, self.w - self.r_margin, linea)
+        self.set_draw_color(0, 0, 0)
+        self.set_xy(self.l_margin, self.t_margin)
+
+    def footer(self) -> None:
+        cornice = self.cornice
+        if cornice is None:
+            return
+        self.set_y(-14)
+        if cornice.pie_pagina:
+            for frammento in cornice.pie_pagina:
+                self.set_font(_FONT, _variante(frammento, grassetto_base=False, corsivo_base=False), 8)
+                self.write(4, frammento.testo)
+        if cornice.numerazione_pagine:
+            self.set_y(-14)
+            self.set_font(_FONT, "", 8)
+            # `{nb}` e' il totale delle pagine, che fpdf2 conosce solo alla fine.
+            self.cell(0, 4, f"Pagina {self.page_no()} di {{nb}}", align="R")
+
+
+def _nuovo_pdf(cornice: CornicePagina | None = None) -> FPDF:
+    pdf = _PdfConCornice(cornice)
     pdf.compress = False  # Simple, inspectable TEST output; not a size-sensitive path.
     for variante, file in _VARIANTI_FONT.items():
         pdf.add_font(_FONT, variante, str(_CARTELLA_FONT / file))
-    pdf.set_auto_page_break(auto=True, margin=15)
+    con_testata = cornice is not None and bool(cornice.intestazione or percorso_logo(cornice.logo_ref))
+    if con_testata:
+        pdf.set_top_margin(_ALTEZZA_TESTATA)
+    pdf.set_auto_page_break(auto=True, margin=_MARGINE_PIEDE if cornice is not None else 15)
     pdf.add_page()
     return pdf
 
@@ -146,9 +227,18 @@ def _scrivi_frammenti(
                           l_margin=pdf.l_margin + rientro) as colonne:
         with colonne.paragraph(bottom_margin=spazio_dopo) as paragrafo:
             for frammento in frammenti:
-                pdf.set_font(_FONT, _variante(frammento, grassetto_base=grassetto_base,
-                                              corsivo_base=corsivo_base), dimensione)
-                paragrafo.write(frammento.testo)
+                variante = _variante(frammento, grassetto_base=grassetto_base, corsivo_base=corsivo_base)
+                if frammento.collegamento:
+                    # Cliccabile, e riconoscibile come in Word: blu e
+                    # sottolineato. Il testo resta quello scritto, quindi si
+                    # legge anche stampato (FR-014). Lo schema e' gia' stato
+                    # verificato alla scrittura: solo http, https, mailto.
+                    pdf.set_text_color(*_COLORE_COLLEGAMENTO)
+                    if "U" not in variante:
+                        variante += "U"
+                pdf.set_font(_FONT, variante, dimensione)
+                paragrafo.write(frammento.testo, link=frammento.collegamento or None)
+                pdf.set_text_color(0, 0, 0)
     pdf.set_font(_FONT, "", dimensione)
 
 
@@ -348,15 +438,17 @@ def render_documento(
     blocchi: list[BloccoDocumento],
     inizi_sezione: frozenset[int] = frozenset(),
     anteprima: bool = False,
+    cornice: CornicePagina | None = None,
 ) -> bytes:
     """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
 
     `inizi_sezione` sono gli `ordine` dei blocchi che aprono una sezione: li'
     la numerazione degli elenchi riparte (012 T029). `anteprima` aggiunge la
     marcatura di anteprima (012 FR-009): e' l'unica differenza rispetto alla
-    generazione, che usa questa stessa funzione (FR-008).
+    generazione, che usa questa stessa funzione (FR-008). `cornice` e' quella
+    del tipo documento (FR-011): testata e pie' di pagina su ogni pagina.
     """
-    pdf = _nuovo_pdf()
+    pdf = _nuovo_pdf(cornice)
     _intestazione(pdf, titolo, anteprima=anteprima)
     marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):
@@ -364,9 +456,11 @@ def render_documento(
     return bytes(pdf.output())
 
 
-def render_pdf(*, titolo: str, righe: list[tuple[str, str]]) -> bytes:
+def render_pdf(
+    *, titolo: str, righe: list[tuple[str, str]], cornice: CornicePagina | None = None,
+) -> bytes:
     """L'elenco etichetta/valore: cio' che e' un modello senza sezioni."""
-    pdf = _nuovo_pdf()
+    pdf = _nuovo_pdf(cornice)
     _intestazione(pdf, titolo)
     for etichetta, valore in righe:
         pdf.set_font(_FONT, "B", 11)

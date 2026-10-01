@@ -18,6 +18,7 @@ from app.catalog.models import (
     TipoDocumento,
 )
 from app.documentale.schemas import (
+    CornicePagina,
     FORMATO_DOCUMENTALE,
     BloccoDocumento,
     ModelloDocumentaleControllato,
@@ -477,6 +478,12 @@ def _blocchi_per_sezione(versione: ModelloDocumentoVersione) -> list[list[Blocco
             progressivo += 1
         sezioni.append(blocchi)
     return sezioni
+
+
+def cornice_del_tipo(versione: ModelloDocumentoVersione) -> CornicePagina | None:
+    """La cornice di pagina del tipo documento della versione (012 FR-011), se configurata."""
+    grezza = versione.modello.tipo_documento.cornice_pagina
+    return CornicePagina.model_validate(grezza) if grezza else None
 
 
 def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:

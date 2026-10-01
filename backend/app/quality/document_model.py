@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 from app.quality.errors import ContrattoNonValidoError
 from app.quality.manifest_loader import load_yaml
-from app.documentale.schemas import FrammentoTesto
+from app.documentale.schemas import CornicePagina, FrammentoTesto
 from app.quality.schemas import BloccoDocumento, ModelloDocumentaleControllato, PosizionamentoBlocco, TipoBloccoDocumento
 
 # Compatible positions per block type (data-model.md: "il posizionamento deve essere
@@ -137,6 +137,30 @@ def violazioni_struttura_blocchi(blocchi: list[BloccoDocumento]) -> list[str]:
                     f"{dove}, elemento {indice}: livello {elemento.livello} non ammesso (solo 0 o 1)"
                 )
             _validate_frammenti(f"{dove}, elemento {indice}", elemento.frammenti, violazioni)
+    return violazioni
+
+
+# La testata ha un'altezza fissa sopra il margine del corpo: piu' righe di
+# cosi' finirebbero sopra il testo (renderer, `_ALTEZZA_TESTATA`).
+RIGHE_MASSIME_INTESTAZIONE = 3
+
+
+def violazioni_cornice(cornice: CornicePagina) -> list[str]:
+    """Cio' che rende una cornice di pagina non ammessa (012 T042).
+
+    Le stesse regole dei blocchi per il testo, piu' un limite che dipende
+    dalla resa: l'intestazione sta in uno spazio fisso in cima a ogni pagina.
+    """
+    violazioni: list[str] = []
+    _validate_frammenti("intestazione", cornice.intestazione, violazioni)
+    _validate_frammenti("pie' di pagina", cornice.pie_pagina, violazioni)
+    righe = "".join(f.testo for f in cornice.intestazione).count("\n") + 1
+    if righe > RIGHE_MASSIME_INTESTAZIONE:
+        violazioni.append(
+            f"intestazione: {righe} righe, al massimo {RIGHE_MASSIME_INTESTAZIONE}"
+        )
+    if "\n" in "".join(f.testo for f in cornice.pie_pagina):
+        violazioni.append("pie' di pagina: una sola riga")
     return violazioni
 
 

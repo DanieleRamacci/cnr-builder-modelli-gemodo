@@ -360,22 +360,34 @@ e numero compaiano su tutte, non solo sulla prima.
 **Due attori distinti**: la cornice la configura l'amministratore sul tipo
 documento; interruzione di pagina e firma restano al gestore nell'editor.
 
-- [ ] T042 [P] `CornicePagina` in `backend/app/documentale/schemas.py`
+- [x] T042 [P] `CornicePagina` in `backend/app/documentale/schemas.py`
       (`logo_ref`, `intestazione`, `pie_pagina`, `numerazione_pagine`), con la
       stessa grammatica a frammenti del resto del formato.
-- [ ] T043 Migrazione Alembic: colonna JSONB `cornice_pagina` su
+- [x] T043 Migrazione Alembic: colonna JSONB `cornice_pagina` su
       `tipo_documento`.
-- [ ] T044 Renderer: intestazione e pie' di pagina ripetuti su **ogni** pagina,
+- [x] T044 Renderer: intestazione e pie' di pagina ripetuti su **ogni** pagina,
       con numerazione. E' una cornice ricorrente, non i blocchi `LOGO`/`FOOTER`
       esistenti, che restano per i casi in cui compaiono una volta sola nel
       corpo.
 - [x] T045 [P] `INTERRUZIONE_PAGINA` creabile dall'editor (FR-012).
 - [x] T046 [P] Blocco `FIRMA` creabile dall'editor, allineato a destra (US3
       scenario 3).
-- [ ] T047 Configurazione della cornice in
+- [x] T047 Configurazione della cornice in
       `frontend/src/features/configurazione/tipo-documento-struttura.component.ts`.
-- [ ] T048 [P] Test: documento di tre pagine, logo e numero su ciascuna (US3
+- [x] T048 [P] Test: documento di tre pagine, logo e numero su ciascuna (US3
       scenario 1); interruzione di pagina rispettata (scenario 2).
+      *T042-T044, T047, T048 fatti 2026-10-01*. `CornicePagina` sul tipo
+      documento (migrazione 0025, colonna caricata solo per il PDF), stesse
+      regole dei frammenti piu' al massimo 3 righe di intestazione e 1 di pie'
+      di pagina. Testata e pie' disegnati da `header()`/`footer()` di fpdf2,
+      quindi anche sulle pagine aperte dall'a capo automatico; "Pagina N di M".
+      Rotte `GET/PUT /configurazione/integrazioni/{id}/tipi-documento/{codice}/cornice`
+      (contratto 010 0.4.0), solo GEMODO_ADMIN, con audit
+      `CORNICE_PAGINA_CONFIGURATA`. Pagina "Cornice" accanto a "Configura
+      policy". **Il logo**: `logo_ref` sceglie fra i loghi noti al servizio
+      (`LOGHI`), non si carica; il file `backend/app/generazione/loghi/logo-ente.png`
+      va fornito dall'ente e oggi manca, quindi la cornice esce senza logo e
+      la pagina lo dice.
 
 ---
 
@@ -383,11 +395,16 @@ documento; interruzione di pagina e firma restano al gestore nell'editor.
 
 **Goal**: collegamenti a portali e indirizzi PEC.
 
-- [ ] T049 [P] Resa del `collegamento` del frammento nel PDF, con il `testo`
+- [x] T049 [P] Resa del `collegamento` del frammento nel PDF, con il `testo`
       che resta leggibile dove il collegamento non e' cliccabile (FR-014).
-- [ ] T050 [P] Inserimento del collegamento dall'editor.
-- [ ] T051 [P] Test: collegamento cliccabile nel PDF; `javascript:` rifiutato
+- [x] T050 [P] Inserimento del collegamento dall'editor.
+- [x] T051 [P] Test: collegamento cliccabile nel PDF; `javascript:` rifiutato
       (gia' coperto da T007, qui verificato dal percorso dell'editor).
+      *T049-T051 fatti 2026-10-01*: nel PDF il collegamento e' cliccabile, blu
+      e sottolineato, e il testo resta quello scritto. Nell'editor: pulsante
+      nella toolbar, indirizzo in una barra sotto (resta fissa con la
+      toolbar); email -> `mailto:`, `www.` -> `https://`, ogni altro schema
+      rifiutato nel browser e dal servizio.
 
 ---
 

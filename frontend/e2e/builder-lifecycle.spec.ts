@@ -62,6 +62,7 @@ function fontPerParola(pdf: string): {
   font: Record<string, string>;
   testo: string;
   x: Record<string, number>;
+  collegamenti: string[];
 } {
   const backend = resolve(__dirname, '../../backend');
   const script = `
@@ -84,7 +85,13 @@ def visita(testo, cm, tm, _font, _dimensione):
         x.setdefault(parole[0], cm[4] + tm[4])
 for pagina in PdfReader(BytesIO(contenuto)).pages:
     pagina.extract_text(visitor_text=visita)
-print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x}))
+# I collegamenti cliccabili: le annotazioni del PDF, non il testo.
+collegamenti = [
+    annotazione.get_object()["/A"]["/URI"]
+    for pagina in PdfReader(BytesIO(contenuto)).pages
+    for annotazione in pagina.get("/Annots", [])
+]
+print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x, "collegamenti": collegamenti}))
 `;
   return JSON.parse(
     execFileSync('uv', ['run', 'python', '-c', script, pdf], { cwd: backend, encoding: 'utf-8' }),
@@ -134,6 +141,24 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // /configurazione/contesti/<id>/integrazione: l'id sta prima del tab, non in
   // fondo al path (la 010 ha aggiunto i tab alla pagina di configurazione).
   const sourceId = new URL(page.url()).pathname.split('/').at(-2)!;
+
+  // 012 T047: l'amministratore configura una volta la cornice del tipo
+  // documento; vale per anteprima e generazione di ogni modello di quel tipo.
+  await page.goto('/configurazione/tipi-documento');
+  await page
+    .getByRole('row')
+    .filter({ hasText: 'Discovery lifecycle' })
+    .filter({ hasText: 'BANDO_CONCORSO' })
+    .locator('[data-cornice-link]')
+    .click();
+  // Il logo dell'ente non e' nel repository: la pagina lo dice.
+  await expect(page.locator('[data-cornice-no-logo]')).toBeVisible();
+  await page
+    .locator('[data-cornice-intestazione]')
+    .fill('Consiglio Nazionale delle Ricerche\nUfficio Reclutamento del Personale');
+  await page.locator('[data-cornice-piede]').fill('Piazzale Aldo Moro 7 - 00185 Roma');
+  await page.locator('[data-cornice-salva]').click();
+  await expect(page.locator('[data-cornice-salvata]')).toBeVisible();
   await page.getByRole('link', { name: 'Contesti', exact: true }).click();
   // Schermata 1a: card del contesto autorizzato, poi lista modelli 1b.
   await page.locator(`a[href="/contesti/${contesto}/modelli"]`).click();
@@ -213,6 +238,15 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('[data-item-index="0"]')).toHaveText(
     'Sono indetti i seguenti concorsi:',
   );
+
+  // 012 T050: un collegamento dalla toolbar, sulla parola selezionata.
+  await visto.click();
+  await selezionaParola(page, visto, 'Decreto');
+  await page.locator('[data-link-open]').click();
+  await page.locator('[data-link-input]').fill('www.normattiva.it');
+  await page.keyboard.press('Enter');
+  await expect(visto.locator('a')).toHaveAttribute('href', 'https://www.normattiva.it');
+  await expect(visto.locator('a')).toHaveText('Decreto');
 
   // 012 T033: l'art. 3 del bando di riferimento, composto solo con tastiera e
   // pulsanti: nessun `1.` o `a)` scritto a mano (SC-002).
@@ -345,7 +379,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     expect(generato.status(), await generato.text()).toBe(200);
     const percorsoPdf = testInfo.outputPath('bando-012.pdf');
     writeFileSync(percorsoPdf, await generato.body());
-    const { font, testo, x } = fontPerParola(percorsoPdf);
+    const { font, testo, x, collegamenti } = fontPerParola(percorsoPdf);
     expect(font['Premesso']).toBe('TitilliumWebBold');
     expect(font['che']).toBe('TitilliumWebItalic');
     expect(font['VISTO']).toBe('TitilliumWebBold');
@@ -360,6 +394,16 @@ test('ACE manager creates a draft and publishes from the context list', async ({
       '1. Sono indetti i seguenti concorsi: a) un posto presso la sede di Roma;',
     );
     expect(testo).not.toContain('{{');
+
+    // T044: la cornice del tipo documento, configurata dall'amministratore.
+    expect(testo).toContain(
+      'Consiglio Nazionale delle Ricerche Ufficio Reclutamento del Personale',
+    );
+    expect(testo).toContain('Piazzale Aldo Moro 7 - 00185 Roma');
+    expect(testo).toMatch(/Pagina 1 di \d/);
+    // T049: il collegamento e' cliccabile, e il suo testo resta nel documento.
+    expect(collegamenti).toEqual(['https://www.normattiva.it']);
+    expect(testo).toContain('VISTO il Decreto Legislativo');
 
     // T033: l'art. 3 com'e' nel bando, con numerazione calcolata in resa.
     expect(testo).toContain(

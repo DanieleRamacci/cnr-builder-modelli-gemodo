@@ -1,8 +1,10 @@
 import {
+  applicaCollegamento,
   applicaEnfasi,
   convertiAppunti,
   leggiFrammentiDalDom,
   normalizzaFrammenti,
+  normalizzaIndirizzo,
   offsetNelTesto,
   placeholderNeiFrammenti,
   puntoDaOffset,
@@ -259,6 +261,34 @@ style='mso-list:Ignore'>a)<span>&nbsp;&nbsp; </span></span><![endif]>un posto pr
         tipo: 'PARAGRAFO',
         frammenti: [{ testo: 'clic e ' }, { testo: 'CNR', collegamento: 'https://cnr.it' }],
       },
+    ]);
+  });
+});
+
+describe('frammenti: collegamenti (012 T050, FR-014)', () => {
+  it('normalizza come Word: email in mailto, www in https, il resto solo se ammesso', () => {
+    expect(normalizzaIndirizzo(' protocollo@pec.cnr.it ')).toBe('mailto:protocollo@pec.cnr.it');
+    expect(normalizzaIndirizzo('www.inpa.gov.it')).toBe('https://www.inpa.gov.it');
+    expect(normalizzaIndirizzo('https://www.cnr.it/bandi')).toBe('https://www.cnr.it/bandi');
+    expect(normalizzaIndirizzo('javascript:alert(1)')).toBeNull();
+    expect(normalizzaIndirizzo('file:///etc/passwd')).toBeNull();
+    expect(normalizzaIndirizzo('cnr punto it')).toBeNull();
+  });
+
+  it('collega solo la porzione selezionata e la scollega con null', () => {
+    const collegati = applicaCollegamento(
+      [{ testo: 'portale www.inpa.gov.it oggi' }],
+      8,
+      23,
+      'https://www.inpa.gov.it',
+    );
+    expect(collegati).toEqual([
+      { testo: 'portale ' },
+      { testo: 'www.inpa.gov.it', collegamento: 'https://www.inpa.gov.it' },
+      { testo: ' oggi' },
+    ]);
+    expect(applicaCollegamento(collegati, 8, 23, null)).toEqual([
+      { testo: 'portale www.inpa.gov.it oggi' },
     ]);
   });
 });

@@ -34,6 +34,12 @@ class TipoDocumento(Base):
     spec_owner: Mapped[str] = mapped_column(String(128), nullable=False)
     codice_contesto: Mapped[str] = mapped_column(String(64), nullable=False)
     integrazione_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # 012 FR-011: la cornice di pagina (`CornicePagina`), una per tipo documento.
+    # Caricata solo quando serve, cioe' quando si rende un PDF: liste e
+    # cruscotti leggono tipi documento di continuo e non hanno motivo di
+    # portarsi dietro il JSON. Effetto collaterale voluto: l'ORM resta usabile
+    # sugli schemi precedenti alla 0025 (test delle migrazioni storiche).
+    cornice_pagina: Mapped[dict | None] = mapped_column(JSONB, nullable=True, deferred=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
