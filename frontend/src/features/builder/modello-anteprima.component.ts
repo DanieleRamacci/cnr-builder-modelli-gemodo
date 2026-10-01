@@ -4,6 +4,8 @@ import {
   DestroyRef,
   ElementRef,
   computed,
+  Injector,
+  afterNextRender,
   effect,
   inject,
   signal,
@@ -15,6 +17,26 @@ import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
 import { forkJoin } from 'rxjs';
+import {
+  applicaEnfasi,
+  convertiAppunti,
+  dividiPerRighe,
+  leggiFrammentiDalDom,
+  normalizzaFrammenti,
+  offsetNelTesto,
+  placeholderNeiFrammenti,
+  puntoDaOffset,
+  scriviFrammentiNelDom,
+  sostituisci,
+  taglia,
+  testoDiFrammenti,
+  unisciRighe,
+  type AttributoEnfasi,
+  type BloccoIncollato,
+  type ElementoElenco,
+  type FrammentoTesto,
+  type TipoMarcatore,
+} from './frammenti';
 
 type Dettaglio = components['schemas']['ModelloDettaglio'];
 type Versione = Dettaglio['versioni'][number];
@@ -49,17 +71,35 @@ type BloccoPredefinito = {
 type PolicyResponse = {
   policy: { nome_dimensione: string; consente_valore_generico: boolean }[];
 };
+type Allineamento = 'SINISTRA' | 'CENTRO' | 'DESTRA' | 'GIUSTIFICATO';
+/**
+ * Forma del blocco di `GEMODO_DOCUMENT_V1` dalla 012: il testo e' in
+ * `frammenti` (o negli `elementi` di un `ELENCO`), mai in una stringa.
+ */
 type BloccoDocumento = {
   id: string;
-  tipo: 'PARAGRAFO';
-  contenuto: string | null;
-  posizionamento: 'BODY';
+  tipo: string;
+  frammenti: FrammentoTesto[];
+  allineamento?: Allineamento | null;
+  elementi?: ElementoElenco[];
+  posizionamento: string;
   ordine: number;
   stile?: string | null;
   placeholder_usati: string[];
   regole_layout?: Record<string, string>;
   asset_ref?: string | null;
   colonne?: string[];
+};
+/** Dove sta il cursore: un blocco, ed eventualmente una voce del suo elenco. */
+type PosizioneEditor = { sezione: string; blocco: string; voce: number | null };
+// Allineamento implicito del renderer per un blocco nel corpo (`_ALLINEAMENTO`
+// in `renderer.py`): l'editor deve mostrare lo stesso, non un giustificato
+// che il PDF poi non produce (FR-008).
+const ALLINEAMENTO_CSS: Record<Allineamento, string> = {
+  SINISTRA: 'left',
+  CENTRO: 'center',
+  DESTRA: 'right',
+  GIUSTIFICATO: 'justify',
 };
 type SezioneDocumento = {
   codice: string;
@@ -207,37 +247,86 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
 
     @if (modello(); as m) {
       <div class="format-toolbar">
+        <!-- mousedown senza default: il clic non deve togliere il fuoco
+             all'editor, o la selezione da enfatizzare e' gia' persa. -->
         <button
           type="button"
           class="tool strong"
-          disabled
-          title="Stile inline non ancora persistito"
+          data-emphasis="grassetto"
+          title="Grassetto (Ctrl+B)"
+          [disabled]="!sezioni()?.modificabile"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaEnfasiSelezione('grassetto')"
         >
           B
         </button>
         <button
           type="button"
           class="tool italic"
-          disabled
-          title="Stile inline non ancora persistito"
+          data-emphasis="corsivo"
+          title="Corsivo (Ctrl+I)"
+          [disabled]="!sezioni()?.modificabile"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaEnfasiSelezione('corsivo')"
         >
           I
         </button>
         <button
           type="button"
           class="tool underline"
-          disabled
-          title="Stile inline non ancora persistito"
+          data-emphasis="sottolineato"
+          title="Sottolineato (Ctrl+U)"
+          [disabled]="!sezioni()?.modificabile"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaEnfasiSelezione('sottolineato')"
         >
           U
         </button>
         <span class="separator"></span>
-        <button type="button" class="tool" (click)="applicaStileBlocco('H1')">H1</button>
-        <button type="button" class="tool" (click)="applicaStileBlocco('H2')">H2</button>
+        <button
+          type="button"
+          class="tool"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaStileBlocco('H1')"
+        >
+          H1
+        </button>
+        <button
+          type="button"
+          class="tool"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaStileBlocco('H2')"
+        >
+          H2
+        </button>
         <span class="separator"></span>
-        <button type="button" class="tool" (click)="applicaLista('ordinata')">1.</button>
-        <button type="button" class="tool" (click)="applicaLista('puntata')">•</button>
-        <button type="button" class="tool" (click)="inserisciTab()">Tab</button>
+        <button
+          type="button"
+          class="tool"
+          data-list="NUMERICO"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaLista('NUMERICO')"
+        >
+          1.
+        </button>
+        <button
+          type="button"
+          class="tool"
+          data-list="PUNTATO"
+          (mousedown)="$event.preventDefault()"
+          (click)="applicaLista('PUNTATO')"
+        >
+          •
+        </button>
+        <button
+          type="button"
+          class="tool"
+          title="In un elenco: sposta la voce al secondo livello"
+          (mousedown)="$event.preventDefault()"
+          (click)="inserisciTab()"
+        >
+          Tab
+        </button>
         <span class="hint"
           >Clicca un segnaposto nel pannello laterale per inserirlo nella sezione selezionata</span
         >
@@ -379,27 +468,75 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   <article
                     class="section-editor"
                     [class.selected]="sezione.codice === sezioneAttiva()"
-                    [class.style-h1]="stileSezione(sezione) === 'H1'"
-                    [class.style-h2]="stileSezione(sezione) === 'H2'"
                   >
                     <span class="section-tag">{{ etichettaStile(stileSezione(sezione)) }}</span>
                     <h3>{{ sezione.codice }}</h3>
-                    <div
-                      #editor
-                      class="editor-text"
-                      contenteditable="plaintext-only"
-                      role="textbox"
-                      tabindex="0"
-                      spellcheck="true"
-                      [attr.aria-label]="'Testo sezione ' + sezione.codice"
-                      [attr.data-section-text]="sezione.codice"
-                      (focus)="selezionaSezione(sezione.codice, editor)"
-                      (blur)="autosalva()"
-                      (input)="aggiornaTestoDaEditor(sezione.codice, editor)"
-                      (keydown)="gestisciTastoEditor($event, sezione.codice, editor)"
-                      (dragover)="consentiDrop($event)"
-                      (drop)="rilasciaSegnaposto($event, sezione.codice, editor)"
-                    ></div>
+                    @for (blocco of sezione.contenuto; track blocco.id) {
+                      @if (blocco.tipo === 'ELENCO') {
+                        <div
+                          class="editor-list"
+                          [attr.data-block-id]="blocco.id"
+                          [class.block-active]="bloccoAttivo(sezione.codice, blocco.id)"
+                        >
+                          @for (
+                            elemento of blocco.elementi ?? [];
+                            track $index;
+                            let indice = $index
+                          ) {
+                            <div class="editor-item" [class.level-1]="elemento.livello === 1">
+                              <span class="item-marker" aria-hidden="true">{{
+                                marcatoreVoce(sezione, blocco, indice)
+                              }}</span>
+                              <div
+                                #editor
+                                class="editor-text"
+                                contenteditable="true"
+                                role="textbox"
+                                tabindex="0"
+                                spellcheck="true"
+                                [style.text-align]="allineamentoCss(blocco)"
+                                [attr.aria-label]="
+                                  'Voce ' + (indice + 1) + ' sezione ' + sezione.codice
+                                "
+                                [attr.data-section-text]="sezione.codice"
+                                [attr.data-block-id]="blocco.id"
+                                [attr.data-item-index]="indice"
+                                (focus)="selezionaEditor(editor)"
+                                (blur)="autosalva()"
+                                (input)="aggiornaDaEditor(editor)"
+                                (keydown)="gestisciTastoEditor($event, editor)"
+                                (paste)="incolla($event, editor)"
+                                (dragover)="consentiDrop($event)"
+                                (drop)="rilasciaSegnaposto($event, editor)"
+                              ></div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <div
+                          #editor
+                          class="editor-text"
+                          contenteditable="true"
+                          role="textbox"
+                          tabindex="0"
+                          spellcheck="true"
+                          [class.style-h1]="blocco.stile === 'H1'"
+                          [class.style-h2]="blocco.stile === 'H2'"
+                          [class.block-active]="bloccoAttivo(sezione.codice, blocco.id)"
+                          [style.text-align]="allineamentoCss(blocco)"
+                          [attr.aria-label]="'Testo sezione ' + sezione.codice"
+                          [attr.data-section-text]="sezione.codice"
+                          [attr.data-block-id]="blocco.id"
+                          (focus)="selezionaEditor(editor)"
+                          (blur)="autosalva()"
+                          (input)="aggiornaDaEditor(editor)"
+                          (keydown)="gestisciTastoEditor($event, editor)"
+                          (paste)="incolla($event, editor)"
+                          (dragover)="consentiDrop($event)"
+                          (drop)="rilasciaSegnaposto($event, editor)"
+                        ></div>
+                      }
+                    }
                   </article>
                 }
               } @else {
@@ -407,13 +544,45 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
                 }
                 @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
-                  <article
-                    class="section-editor readonly"
-                    [class.style-h1]="blocco.stile === 'H1'"
-                    [class.style-h2]="blocco.stile === 'H2'"
-                  >
+                  <article class="section-editor readonly">
                     <span class="section-tag">{{ etichettaStile(blocco.stile ?? '') }}</span>
-                    <div class="editor-text">{{ blocco.contenuto || 'Blocco senza testo' }}</div>
+                    @if (blocco.tipo === 'ELENCO') {
+                      @for (elemento of blocco.elementi ?? []; track $index; let indice = $index) {
+                        <div class="editor-item" [class.level-1]="elemento.livello === 1">
+                          <span class="item-marker">{{ marcatoreInBlocco(blocco, indice) }}</span>
+                          <div class="editor-text" [style.text-align]="allineamentoCss(blocco)">
+                            @for (frammento of elemento.frammenti; track $index) {
+                              <span
+                                class="frammento"
+                                [class.fr-b]="frammento.grassetto"
+                                [class.fr-i]="frammento.corsivo"
+                                [class.fr-u]="frammento.sottolineato"
+                                >{{ frammento.testo }}</span
+                              >
+                            }
+                          </div>
+                        </div>
+                      }
+                    } @else {
+                      <div
+                        class="editor-text"
+                        [class.style-h1]="blocco.stile === 'H1'"
+                        [class.style-h2]="blocco.stile === 'H2'"
+                        [style.text-align]="allineamentoCss(blocco)"
+                      >
+                        @for (frammento of blocco.frammenti; track $index) {
+                          <span
+                            class="frammento"
+                            [class.fr-b]="frammento.grassetto"
+                            [class.fr-i]="frammento.corsivo"
+                            [class.fr-u]="frammento.sottolineato"
+                            >{{ frammento.testo }}</span
+                          >
+                        } @empty {
+                          Blocco senza testo
+                        }
+                      </div>
+                    }
                   </article>
                 }
               }
@@ -819,24 +988,27 @@ export class ModelloAnteprimaComponent {
   ]);
 
   private readonly editors = viewChildren<ElementRef<HTMLElement>>('editor');
+  private readonly injector = inject(Injector);
+  /** Il blocco (e la voce) su cui sta lavorando il gestore. */
+  protected readonly posizioneAttiva = signal<PosizioneEditor | null>(null);
 
   constructor() {
-    // Il testo dell'editor NON e' un binding: `[textContent]` riscriveva il
-    // nodo a ogni battuta e il caret tornava a inizio blocco, restituendo il
-    // testo mescolato (visto sullo screenshot e2e del 2026-09-24). Qui il DOM
-    // si allinea al modello solo quando la modifica arriva da fuori, cioe'
-    // quando quell'editor non e' quello su cui si sta scrivendo.
+    // Il testo dell'editor NON e' un binding: riscrivere il DOM a ogni battuta
+    // riporta il caret a inizio blocco e mescola il testo (screenshot e2e del
+    // 2026-09-24). Il DOM si allinea al modello solo quando la modifica arriva
+    // da fuori, cioe' quando quell'editor non e' quello su cui si scrive; per
+    // l'editor attivo lo fa chi modifica (`riscriviEditor`).
     effect(() => {
       const sezioni = this.sezioniLocali();
       for (const riferimento of this.editors()) {
         const elemento = riferimento.nativeElement;
         if (elemento === this.document.activeElement) continue;
-        const sezione = sezioni.find(
-          (item) => item.codice === elemento.getAttribute('data-section-text'),
-        );
-        if (!sezione) continue;
-        const testo = this.testoSezione(sezione);
-        if (elemento.textContent !== testo) elemento.textContent = testo;
+        const posizione = this.posizioneDi(elemento);
+        const frammenti = posizione && this.frammentiIn(sezioni, posizione);
+        if (!frammenti) continue;
+        if (JSON.stringify(leggiFrammentiDalDom(elemento)) !== JSON.stringify(frammenti)) {
+          scriviFrammentiNelDom(elemento, frammenti);
+        }
       }
     });
     this.carica();
@@ -876,21 +1048,71 @@ export class ModelloAnteprimaComponent {
       });
   }
 
+  /** Tutto il testo della sezione, elenchi compresi: serve a dire se e' vuota. */
   protected testoSezione(sezione: SezioneDocumento): string {
-    return sezione.contenuto[0]?.contenuto ?? '';
+    return sezione.contenuto
+      .map((blocco) =>
+        [blocco.frammenti, ...(blocco.elementi ?? []).map((elemento) => elemento.frammenti)]
+          .map(testoDiFrammenti)
+          .join('\n'),
+      )
+      .join('\n');
   }
 
+  /** Lo stile del blocco su cui si lavora, o del primo blocco della sezione. */
   protected stileSezione(sezione: SezioneDocumento): string {
-    return sezione.contenuto[0]?.stile ?? '';
+    return this.bloccoBersaglio(sezione)?.stile ?? '';
   }
 
   protected placeholderSezione(sezione: SezioneDocumento): string[] {
-    return sezione.contenuto.flatMap((blocco) => blocco.placeholder_usati);
+    return [...new Set(sezione.contenuto.flatMap((blocco) => blocco.placeholder_usati))];
   }
 
-  protected selezionaSezione(codice: string, editor?: HTMLElement): void {
+  protected bloccoAttivo(codiceSezione: string, idBlocco: string): boolean {
+    const posizione = this.posizioneAttiva();
+    return posizione?.sezione === codiceSezione && posizione.blocco === idBlocco;
+  }
+
+  protected allineamentoCss(blocco: BloccoDocumento): string {
+    return ALLINEAMENTO_CSS[blocco.allineamento ?? 'SINISTRA'];
+  }
+
+  /**
+   * Il marcatore di una voce, calcolato e mai scritto nel testo (FR-015). I
+   * contatori proseguono fra elenchi della stessa sezione e si azzerano a ogni
+   * sezione e a ogni `TITOLO` (contracts/formato-documentale.md).
+   */
+  protected marcatoreVoce(
+    sezione: SezioneDocumento,
+    blocco: BloccoDocumento,
+    indice: number,
+  ): string {
+    return numeraElenchi(sezione.contenuto).get(blocco.id)?.[indice] ?? '';
+  }
+
+  /** In sola lettura i blocchi arrivano gia' concatenati: si numera blocco per blocco. */
+  protected marcatoreInBlocco(blocco: BloccoDocumento, indice: number): string {
+    return numeraElenchi([blocco]).get(blocco.id)?.[indice] ?? '';
+  }
+
+  protected selezionaSezione(codice: string): void {
     this.sezioneAttiva.set(codice);
-    if (editor) this.editorAttivo = editor;
+    if (this.posizioneAttiva()?.sezione === codice) return;
+    const primo = this.sezioniLocali().find((sezione) => sezione.codice === codice)?.contenuto[0];
+    this.posizioneAttiva.set(
+      primo
+        ? { sezione: codice, blocco: primo.id, voce: primo.tipo === 'ELENCO' ? 0 : null }
+        : null,
+    );
+    this.editorAttivo = null;
+  }
+
+  protected selezionaEditor(editor: HTMLElement): void {
+    const posizione = this.posizioneDi(editor);
+    if (!posizione) return;
+    this.editorAttivo = editor;
+    this.sezioneAttiva.set(posizione.sezione);
+    this.posizioneAttiva.set(posizione);
   }
 
   protected aggiungiSezione(
@@ -903,15 +1125,16 @@ export class ModelloAnteprimaComponent {
       codiceBase === 'sezione'
         ? this.codiceSezioneLibero(`sezione-${this.sezioniLocali().length + 1}`)
         : this.codiceSezioneLibero(codiceBase);
+    const blocco = {
+      ...this.nuovoBlocco(`${codice}-paragrafo`, contenuto ? [{ testo: contenuto }] : []),
+      stile,
+    };
     this.sezioniLocali.update((sezioni) => [
       ...sezioni,
-      {
-        codice,
-        ordine: sezioni.length,
-        contenuto: [{ ...this.nuovoBlocco(codice, contenuto), stile }],
-      },
+      { codice, ordine: sezioni.length, contenuto: [blocco] },
     ]);
     this.sezioneAttiva.set(codice);
+    this.posizioneAttiva.set({ sezione: codice, blocco: blocco.id, voce: null });
     this.documentoModificato.set(true);
     if (apriProprieta) this.pannelloAttivo.set('proprieta');
   }
@@ -927,7 +1150,9 @@ export class ModelloAnteprimaComponent {
     this.sezioniLocali.set(aggiornate);
     this.documentoModificato.set(true);
     if (this.sezioneAttiva() === codice) {
-      this.sezioneAttiva.set(aggiornate[0]?.codice ?? null);
+      this.posizioneAttiva.set(null);
+      this.sezioneAttiva.set(null);
+      if (aggiornate[0]) this.selezionaSezione(aggiornate[0].codice);
     }
   }
 
@@ -945,35 +1170,97 @@ export class ModelloAnteprimaComponent {
     });
   }
 
-  protected aggiornaTesto(codice: string, testo: string): void {
-    this.documentoModificato.set(true);
-    this.sezioniLocali.update((sezioni) =>
-      sezioni.map((sezione) =>
-        sezione.codice === codice ? this.sezioneConTesto(sezione, testo) : sezione,
-      ),
+  /** Ogni battuta: il DOM dell'editor torna frammenti, e i frammenti nel modello. */
+  protected aggiornaDaEditor(editor: HTMLElement): void {
+    const posizione = this.posizioneDi(editor);
+    if (posizione) this.scriviFrammenti(posizione, leggiFrammentiDalDom(editor));
+  }
+
+  protected gestisciTastoEditor(event: KeyboardEvent, editor: HTMLElement): void {
+    const posizione = this.posizioneDi(editor);
+    if (!posizione) return;
+    if (event.ctrlKey || event.metaKey) {
+      const attributo = SCORCIATOIE_ENFASI[event.key.toLowerCase()];
+      if (attributo && !event.altKey) {
+        event.preventDefault();
+        this.selezionaEditor(editor);
+        this.applicaEnfasiSelezione(attributo);
+      }
+      return;
+    }
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      if (posizione.voce !== null) this.cambiaLivelloVoce(posizione, event.shiftKey ? 0 : 1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (posizione.voce !== null && !event.shiftKey) {
+        this.dividiVoce(editor, posizione);
+      } else {
+        this.inserisciNelEditor(editor, '\n');
+      }
+      return;
+    }
+    if (event.key === 'Backspace' && posizione.voce !== null) {
+      const selezione = this.selezioneIn(editor);
+      if (selezione && selezione.inizio === 0 && selezione.fine === 0) {
+        event.preventDefault();
+        this.rimuoviVoce(posizione);
+      }
+    }
+  }
+
+  /** Grassetto, corsivo, sottolineato sulla porzione selezionata (FR-006). */
+  protected applicaEnfasiSelezione(attributo: AttributoEnfasi): void {
+    const editor = this.editorAttivo;
+    if (!editor || !this.sezioni()?.modificabile) return;
+    const selezione = this.selezioneIn(editor);
+    if (!selezione || selezione.fine <= selezione.inizio) return;
+    const frammenti = applicaEnfasi(
+      leggiFrammentiDalDom(editor),
+      selezione.inizio,
+      selezione.fine,
+      attributo,
     );
+    this.riscriviEditor(editor, frammenti, selezione.inizio, selezione.fine);
   }
 
-  protected aggiornaTestoDaEditor(codice: string, editor: HTMLElement): void {
-    this.aggiornaTesto(codice, this.testoEditor(editor));
-  }
-
-  protected gestisciTastoEditor(event: KeyboardEvent, codice: string, editor: HTMLElement): void {
-    if (event.key !== 'Tab') return;
+  /**
+   * Incolla da un elaboratore di testi (FR-017). L'HTML degli appunti viene
+   * convertito qui e non arriva mai al servizio: l'editor riceve frammenti e
+   * blocchi, come se il gestore li avesse scritti.
+   */
+  protected incolla(event: ClipboardEvent, editor: HTMLElement): void {
     event.preventDefault();
-    this.inserisciTestoNelEditor(codice, '  ', editor);
-  }
+    const posizione = this.posizioneDi(editor);
+    const appunti = event.clipboardData;
+    if (!posizione || !appunti || !this.sezioni()?.modificabile) return;
+    const incollati = convertiAppunti(appunti.getData('text/html'), appunti.getData('text/plain'));
+    if (incollati.length === 0) return;
+    const frammenti = leggiFrammentiDalDom(editor);
+    const fine = testoDiFrammenti(frammenti).length;
+    const selezione = this.selezioneIn(editor) ?? { inizio: fine, fine };
 
-  protected inserisciPlaceholder(codiceSezione: string, campo: CampoVersione): void {
-    const token = `{{${campo.codice}}}`;
-    this.documentoModificato.set(true);
-    this.sezioniLocali.update((sezioni) =>
-      sezioni.map((sezione) => {
-        if (sezione.codice !== codiceSezione) return sezione;
-        const testo = this.testoSezione(sezione);
-        return this.sezioneConTesto(sezione, `${testo}${testo ? ' ' : ''}${token}`);
-      }),
-    );
+    if (incollati.length === 1 && incollati[0].tipo === 'PARAGRAFO') {
+      const nuovi = incollati[0].frammenti;
+      this.riscriviEditor(
+        editor,
+        sostituisci(frammenti, selezione.inizio, selezione.fine, nuovi),
+        selezione.inizio + testoDiFrammenti(nuovi).length,
+      );
+      return;
+    }
+
+    const prima = taglia(frammenti, 0, selezione.inizio);
+    const dopo = taglia(frammenti, selezione.fine);
+    if (posizione.voce !== null) {
+      this.incollaInElenco(posizione, incollati, prima, dopo);
+    } else {
+      this.incollaFraBlocchi(posizione, incollati, prima, dopo);
+    }
+    this.editorAttivo = null;
+    editor.blur();
   }
 
   protected inserisciPlaceholderAttivo(campo: CampoVersione): void {
@@ -992,79 +1279,82 @@ export class ModelloAnteprimaComponent {
     event.preventDefault();
   }
 
-  protected rilasciaSegnaposto(event: DragEvent, codiceSezione: string, editor: HTMLElement): void {
+  protected rilasciaSegnaposto(event: DragEvent, editor: HTMLElement): void {
     event.preventDefault();
-    this.selezionaSezione(codiceSezione, editor);
+    this.selezionaEditor(editor);
+    const posizione = this.posizioneDi(editor);
+    if (!posizione) return;
     const codiceCampo = event.dataTransfer?.getData('application/x-gemodo-placeholder');
     if (codiceCampo) {
       const campo = this.corrente()?.campi.find((item) => item.codice === codiceCampo);
       if (campo) {
-        this.inserisciTestoNelEditor(codiceSezione, `{{${campo.codice}}}`, editor);
+        this.inserisciTestoNelEditor(posizione.sezione, `{{${campo.codice}}}`, editor);
         return;
       }
     }
     const testo = event.dataTransfer?.getData('text/plain');
-    if (testo) this.inserisciTestoNelEditor(codiceSezione, testo, editor);
+    if (testo) this.inserisciTestoNelEditor(posizione.sezione, testo, editor);
   }
 
   protected applicaStileBlocco(stile: 'H1' | 'H2'): void {
-    const codice = this.sezioneAttiva();
-    if (!codice || !this.sezioni()?.modificabile) return;
-    this.documentoModificato.set(true);
-    this.sezioniLocali.update((sezioni) =>
-      sezioni.map((sezione) => {
-        if (sezione.codice !== codice) return sezione;
-        const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
-        return {
-          ...sezione,
-          contenuto: [
-            {
-              ...blocco,
-              stile: blocco.stile === stile ? null : stile,
-            },
-            ...sezione.contenuto.slice(1),
-          ],
-        };
-      }),
-    );
+    this.modificaBloccoBersaglio((blocco) => ({
+      ...blocco,
+      stile: blocco.stile === stile ? null : stile,
+    }));
   }
 
   protected impostaStileSezione(stile: string): void {
-    const codice = this.sezioneAttiva();
-    if (!codice || !this.sezioni()?.modificabile) return;
     const normalizzato = stile === 'H1' || stile === 'H2' ? stile : null;
-    this.documentoModificato.set(true);
-    this.sezioniLocali.update((sezioni) =>
-      sezioni.map((sezione) => {
-        if (sezione.codice !== codice) return sezione;
-        const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
-        return {
-          ...sezione,
-          contenuto: [{ ...blocco, stile: normalizzato }, ...sezione.contenuto.slice(1)],
-        };
-      }),
-    );
+    this.modificaBloccoBersaglio((blocco) => ({ ...blocco, stile: normalizzato }));
   }
 
-  protected applicaLista(tipo: 'ordinata' | 'puntata'): void {
-    const codice = this.sezioneAttiva();
-    if (!codice || !this.sezioni()?.modificabile) return;
-    const sezione = this.sezioniLocali().find((item) => item.codice === codice);
-    if (!sezione) return;
-    const righe = this.testoSezione(sezione)
-      .split('\n')
-      .map((riga, indice) => {
-        const pulita = riga.replace(/^(\d+\.|-)\s+/, '');
-        return tipo === 'ordinata' ? `${indice + 1}. ${pulita}` : `- ${pulita}`;
-      });
-    this.aggiornaTesto(codice, righe.join('\n'));
-    this.sincronizzaEditorAttivo(codice);
+  /**
+   * Il paragrafo diventa un `ELENCO`, una voce per riga; su un elenco cambia
+   * il marcatore, e lo stesso marcatore lo riporta a paragrafo. Mai `1.`
+   * scritto nel testo: si sommerebbe alla numerazione calcolata (FR-015).
+   */
+  protected applicaLista(marcatore: TipoMarcatore): void {
+    this.modificaBloccoBersaglio((blocco) => {
+      if (blocco.tipo !== 'ELENCO') {
+        const righe = dividiPerRighe(blocco.frammenti);
+        return {
+          ...blocco,
+          tipo: 'ELENCO',
+          stile: null,
+          frammenti: [],
+          elementi: (righe.length ? righe : [[]]).map((frammenti) => ({
+            livello: 0,
+            marcatore,
+            frammenti,
+          })),
+        };
+      }
+      const elementi = blocco.elementi ?? [];
+      if (
+        elementi.every((elemento) => elemento.livello === 1 || elemento.marcatore === marcatore)
+      ) {
+        return {
+          ...blocco,
+          tipo: 'PARAGRAFO',
+          frammenti: unisciRighe(elementi.map((elemento) => elemento.frammenti)),
+          elementi: [],
+        };
+      }
+      return {
+        ...blocco,
+        elementi: elementi.map((elemento) => ({
+          ...elemento,
+          marcatore: elemento.livello === 0 ? marcatore : sottoMarcatore(marcatore),
+        })),
+      };
+    }, true);
   }
 
   protected inserisciTab(): void {
-    const codice = this.sezioneAttiva();
-    if (!codice) return;
-    this.inserisciTestoNelEditor(codice, '  ');
+    const posizione = this.posizioneAttiva();
+    if (!posizione || posizione.voce === null) return;
+    const voce = this.voceIn(posizione);
+    this.cambiaLivelloVoce(posizione, voce?.livello === 1 ? 0 : 1);
   }
 
   protected scorriAnteprima(): void {
@@ -1220,51 +1510,383 @@ export class ModelloAnteprimaComponent {
     if (
       target &&
       target.getAttribute('data-section-text') === codiceSezione &&
-      this.editorHaSelezione(target)
+      this.selezioneIn(target)
     ) {
       target.focus();
-      const selection = this.document.getSelection();
-      const range = selection?.getRangeAt(0);
-      if (selection && range) {
-        range.deleteContents();
-        range.insertNode(this.document.createTextNode(testo));
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        this.aggiornaTesto(codiceSezione, this.testoEditor(target));
-        return;
-      }
+      this.inserisciNelEditor(target, testo);
+      return;
     }
 
-    this.documentoModificato.set(true);
-    this.sezioniLocali.update((sezioni) =>
-      sezioni.map((sezione) => {
-        if (sezione.codice !== codiceSezione) return sezione;
-        const corrente = this.testoSezione(sezione);
-        return this.sezioneConTesto(sezione, `${corrente}${corrente ? ' ' : ''}${testo}`);
+    // Nessun cursore nella sezione: il testo va in coda all'ultimo blocco di testo.
+    const sezione = this.sezioniLocali().find((item) => item.codice === codiceSezione);
+    if (!sezione) return;
+    const blocco = [...sezione.contenuto].reverse().find((item) => item.tipo !== 'ELENCO');
+    if (!blocco) {
+      this.modificaSezione(codiceSezione, (blocchi) => [
+        ...blocchi,
+        this.nuovoBlocco(this.idBloccoLibero(sezione), [{ testo }]),
+      ]);
+      return;
+    }
+    const corrente = testoDiFrammenti(blocco.frammenti);
+    this.scriviFrammenti({ sezione: codiceSezione, blocco: blocco.id, voce: null }, [
+      ...blocco.frammenti,
+      { testo: `${corrente ? ' ' : ''}${testo}` },
+    ]);
+  }
+
+  /**
+   * Inserisce testo al cursore con l'enfasi di cio' che lo precede: un
+   * segnaposto scritto dentro un grassetto e' in grassetto (FR-005).
+   */
+  private inserisciNelEditor(editor: HTMLElement, testo: string): void {
+    const frammenti = leggiFrammentiDalDom(editor);
+    const fine = testoDiFrammenti(frammenti).length;
+    const selezione = this.selezioneIn(editor) ?? { inizio: fine, fine };
+    const enfasi = taglia(
+      frammenti,
+      Math.max(selezione.inizio - 1, 0),
+      Math.max(selezione.inizio, 1),
+    )[0];
+    const nuovo: FrammentoTesto = { ...(enfasi ?? {}), testo };
+    this.riscriviEditor(
+      editor,
+      sostituisci(frammenti, selezione.inizio, selezione.fine, [nuovo]),
+      selezione.inizio + testo.length,
+    );
+  }
+
+  /** Riscrive l'editor attivo dai frammenti e rimette la selezione dov'era. */
+  private riscriviEditor(
+    editor: HTMLElement,
+    frammenti: FrammentoTesto[],
+    inizio: number,
+    fine = inizio,
+  ): void {
+    scriviFrammentiNelDom(editor, frammenti);
+    const selezione = this.document.getSelection();
+    if (selezione && editor.isConnected) {
+      const da = puntoDaOffset(editor, inizio);
+      const a = puntoDaOffset(editor, fine);
+      const range = this.document.createRange();
+      range.setStart(da.nodo, da.offset);
+      range.setEnd(a.nodo, a.offset);
+      selezione.removeAllRanges();
+      selezione.addRange(range);
+    }
+    const posizione = this.posizioneDi(editor);
+    if (posizione) this.scriviFrammenti(posizione, frammenti);
+  }
+
+  /** La selezione come posizioni nel testo dell'editor, se sta dentro l'editor. */
+  private selezioneIn(editor: HTMLElement): { inizio: number; fine: number } | null {
+    const selezione = this.document.getSelection();
+    if (!selezione || selezione.rangeCount === 0) return null;
+    const range = selezione.getRangeAt(0);
+    const contenitore = range.commonAncestorContainer;
+    if (contenitore !== editor && !editor.contains(contenitore)) return null;
+    return {
+      inizio: offsetNelTesto(editor, range.startContainer, range.startOffset),
+      fine: offsetNelTesto(editor, range.endContainer, range.endOffset),
+    };
+  }
+
+  private posizioneDi(editor: HTMLElement): PosizioneEditor | null {
+    const sezione = editor.getAttribute('data-section-text');
+    const blocco = editor.getAttribute('data-block-id');
+    if (!sezione || !blocco) return null;
+    const voce = editor.getAttribute('data-item-index');
+    return { sezione, blocco, voce: voce === null ? null : Number(voce) };
+  }
+
+  private frammentiIn(
+    sezioni: SezioneDocumento[],
+    posizione: PosizioneEditor,
+  ): FrammentoTesto[] | null {
+    const blocco = sezioni
+      .find((sezione) => sezione.codice === posizione.sezione)
+      ?.contenuto.find((item) => item.id === posizione.blocco);
+    if (!blocco) return null;
+    if (posizione.voce === null) return blocco.frammenti;
+    return blocco.elementi?.[posizione.voce]?.frammenti ?? null;
+  }
+
+  private voceIn(posizione: PosizioneEditor): ElementoElenco | null {
+    if (posizione.voce === null) return null;
+    const blocco = this.sezioniLocali()
+      .find((sezione) => sezione.codice === posizione.sezione)
+      ?.contenuto.find((item) => item.id === posizione.blocco);
+    return blocco?.elementi?.[posizione.voce] ?? null;
+  }
+
+  private scriviFrammenti(posizione: PosizioneEditor, frammenti: FrammentoTesto[]): void {
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.map((blocco) => {
+        if (blocco.id !== posizione.blocco) return blocco;
+        if (posizione.voce === null) return { ...blocco, frammenti };
+        return {
+          ...blocco,
+          elementi: (blocco.elementi ?? []).map((elemento, indice) =>
+            indice === posizione.voce ? { ...elemento, frammenti } : elemento,
+          ),
+        };
       }),
     );
-    this.sincronizzaEditorAttivo(codiceSezione);
   }
 
-  private editorHaSelezione(editor: HTMLElement): boolean {
-    const selection = this.document.getSelection();
-    if (!selection || selection.rangeCount === 0) return false;
-    const range = selection.getRangeAt(0);
-    const contenitore = range.commonAncestorContainer;
-    return contenitore === editor || editor.contains(contenitore);
+  /**
+   * Il solo punto in cui cambiano i blocchi di una sezione: dopo ogni modifica
+   * `ordine` e `placeholder_usati` sono ricalcolati, cosi' che non possano
+   * divergere dal testo.
+   */
+  private modificaSezione(
+    codice: string,
+    trasforma: (blocchi: BloccoDocumento[]) => BloccoDocumento[],
+  ): void {
+    this.documentoModificato.set(true);
+    this.sezioniLocali.update((sezioni) =>
+      sezioni.map((sezione) =>
+        sezione.codice !== codice
+          ? sezione
+          : {
+              ...sezione,
+              contenuto: trasforma(sezione.contenuto).map((blocco, ordine) => ({
+                ...blocco,
+                ordine,
+                placeholder_usati: placeholderNeiFrammenti([
+                  ...blocco.frammenti,
+                  ...(blocco.elementi ?? []).flatMap((elemento) => elemento.frammenti),
+                ]),
+              })),
+            },
+      ),
+    );
   }
 
-  private testoEditor(editor: HTMLElement): string {
-    return editor.textContent ?? '';
+  /** Il blocco su cui agiscono i comandi della toolbar e del pannello proprieta'. */
+  private bloccoBersaglio(sezione: SezioneDocumento): BloccoDocumento | undefined {
+    const posizione = this.posizioneAttiva();
+    return (
+      (posizione?.sezione === sezione.codice
+        ? sezione.contenuto.find((blocco) => blocco.id === posizione.blocco)
+        : undefined) ?? sezione.contenuto[0]
+    );
   }
 
-  private sincronizzaEditorAttivo(codiceSezione: string): void {
-    if (this.editorAttivo?.getAttribute('data-section-text') !== codiceSezione) return;
-    const sezione = this.sezioniLocali().find((item) => item.codice === codiceSezione);
-    if (sezione && this.editorAttivo.textContent !== this.testoSezione(sezione)) {
-      this.editorAttivo.textContent = this.testoSezione(sezione);
+  private modificaBloccoBersaglio(
+    trasforma: (blocco: BloccoDocumento) => BloccoDocumento,
+    rimettiCursore = false,
+  ): void {
+    const sezione = this.sezioneCorrente();
+    if (!sezione || !this.sezioni()?.modificabile) return;
+    const bersaglio =
+      this.bloccoBersaglio(sezione) ?? this.nuovoBlocco(`${sezione.codice}-paragrafo`, []);
+    const trasformato = trasforma(bersaglio);
+    this.modificaSezione(sezione.codice, (blocchi) =>
+      blocchi.length
+        ? blocchi.map((blocco) => (blocco.id === bersaglio.id ? trasformato : blocco))
+        : [trasformato],
+    );
+    const voce = trasformato.tipo === 'ELENCO' ? 0 : null;
+    this.posizioneAttiva.set({ sezione: sezione.codice, blocco: trasformato.id, voce });
+    if (rimettiCursore)
+      this.mettiCursore({ sezione: sezione.codice, blocco: trasformato.id, voce }, 0);
+  }
+
+  private cambiaLivelloVoce(posizione: PosizioneEditor, livello: 0 | 1): void {
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.map((blocco) => {
+        if (blocco.id !== posizione.blocco) return blocco;
+        const elementi = blocco.elementi ?? [];
+        const radice = elementi.find((elemento) => elemento.livello === 0)?.marcatore ?? 'NUMERICO';
+        return {
+          ...blocco,
+          elementi: elementi.map((elemento, indice) =>
+            indice !== posizione.voce || indice === 0
+              ? elemento
+              : {
+                  ...elemento,
+                  livello,
+                  marcatore: livello === 1 ? sottoMarcatore(radice) : radice,
+                },
+          ),
+        };
+      }),
+    );
+  }
+
+  /** Invio in una voce: la voce si divide al cursore. Su una voce vuota si esce dall'elenco. */
+  private dividiVoce(editor: HTMLElement, posizione: PosizioneEditor): void {
+    const frammenti = leggiFrammentiDalDom(editor);
+    const voce = this.voceIn(posizione);
+    if (!voce || posizione.voce === null) return;
+    const indice = posizione.voce;
+    if (!testoDiFrammenti(frammenti)) {
+      this.esciDallElenco(posizione);
+      return;
     }
+    const selezione = this.selezioneIn(editor) ?? { inizio: 0, fine: 0 };
+    const prima = taglia(frammenti, 0, selezione.inizio);
+    const dopo = taglia(frammenti, selezione.fine);
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.map((blocco) => {
+        if (blocco.id !== posizione.blocco) return blocco;
+        const elementi = [...(blocco.elementi ?? [])];
+        elementi.splice(indice, 1, { ...voce, frammenti: prima }, { ...voce, frammenti: dopo });
+        return { ...blocco, elementi };
+      }),
+    );
+    scriviFrammentiNelDom(editor, prima);
+    this.mettiCursore({ ...posizione, voce: indice + 1 }, 0);
+  }
+
+  /** L'ultima voce vuota diventa un paragrafo dopo l'elenco, come in Word. */
+  private esciDallElenco(posizione: PosizioneEditor): void {
+    const sezione = this.sezioniLocali().find((item) => item.codice === posizione.sezione);
+    if (!sezione) return;
+    const nuovo = this.nuovoBlocco(this.idBloccoLibero(sezione), []);
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.flatMap((blocco) => {
+        if (blocco.id !== posizione.blocco) return [blocco];
+        const elementi = (blocco.elementi ?? []).filter((_, indice) => indice !== posizione.voce);
+        return elementi.length ? [{ ...blocco, elementi }, nuovo] : [nuovo];
+      }),
+    );
+    this.mettiCursore({ sezione: posizione.sezione, blocco: nuovo.id, voce: null }, 0);
+  }
+
+  /** Backspace all'inizio di una voce: la voce si unisce alla precedente. */
+  private rimuoviVoce(posizione: PosizioneEditor): void {
+    const voce = this.voceIn(posizione);
+    if (!voce || posizione.voce === null) return;
+    const indice = posizione.voce;
+    if (indice === 0) {
+      // Dalla prima voce si torna a un paragrafo con lo stesso testo.
+      this.modificaSezione(posizione.sezione, (blocchi) =>
+        blocchi.flatMap((blocco) => {
+          if (blocco.id !== posizione.blocco) return [blocco];
+          const resto = (blocco.elementi ?? []).slice(1);
+          const paragrafo = this.nuovoBlocco(`${blocco.id}-p`, voce.frammenti);
+          return resto.length
+            ? [paragrafo, { ...blocco, elementi: resto }]
+            : [{ ...paragrafo, id: blocco.id }];
+        }),
+      );
+      const rimasto = this.voceIn({ ...posizione, voce: 0 }) !== null;
+      this.mettiCursore(
+        {
+          sezione: posizione.sezione,
+          blocco: rimasto ? `${posizione.blocco}-p` : posizione.blocco,
+          voce: null,
+        },
+        0,
+      );
+      return;
+    }
+    const precedente = this.voceIn({ ...posizione, voce: indice - 1 })!;
+    const lunghezza = testoDiFrammenti(precedente.frammenti).length;
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.map((blocco) => {
+        if (blocco.id !== posizione.blocco) return blocco;
+        const elementi = [...(blocco.elementi ?? [])];
+        elementi.splice(indice - 1, 2, {
+          ...precedente,
+          frammenti: [...precedente.frammenti, ...voce.frammenti],
+        });
+        return { ...blocco, elementi };
+      }),
+    );
+    this.mettiCursore({ ...posizione, voce: indice - 1 }, lunghezza);
+  }
+
+  /** Incolla piu' capoversi in un paragrafo: il paragrafo si divide al cursore. */
+  private incollaFraBlocchi(
+    posizione: PosizioneEditor,
+    incollati: BloccoIncollato[],
+    prima: FrammentoTesto[],
+    dopo: FrammentoTesto[],
+  ): void {
+    const sezione = this.sezioniLocali().find((item) => item.codice === posizione.sezione);
+    if (!sezione) return;
+    const usati = new Set(sezione.contenuto.map((blocco) => blocco.id));
+    const libero = (): string => {
+      const id = this.idBloccoLibero(sezione, usati);
+      usati.add(id);
+      return id;
+    };
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.flatMap((blocco) => {
+        if (blocco.id !== posizione.blocco) return [blocco];
+        const nuovi = incollati.map((incollato) =>
+          incollato.tipo === 'ELENCO'
+            ? { ...this.nuovoBlocco(libero(), []), tipo: 'ELENCO', elementi: incollato.elementi }
+            : {
+                ...this.nuovoBlocco(libero(), incollato.frammenti),
+                allineamento: blocco.allineamento,
+              },
+        );
+        const coda = dopo.length
+          ? [{ ...this.nuovoBlocco(libero(), dopo), allineamento: blocco.allineamento }]
+          : [];
+        return [...(prima.length ? [{ ...blocco, frammenti: prima }] : []), ...nuovi, ...coda];
+      }),
+    );
+  }
+
+  /** Incolla in una voce: i capoversi diventano voci dopo quella corrente. */
+  private incollaInElenco(
+    posizione: PosizioneEditor,
+    incollati: BloccoIncollato[],
+    prima: FrammentoTesto[],
+    dopo: FrammentoTesto[],
+  ): void {
+    const voce = this.voceIn(posizione);
+    if (!voce || posizione.voce === null) return;
+    const indice = posizione.voce;
+    const voci = incollati.flatMap((incollato): ElementoElenco[] =>
+      incollato.tipo === 'ELENCO'
+        ? incollato.elementi
+        : [{ livello: voce.livello, marcatore: voce.marcatore, frammenti: incollato.frammenti }],
+    );
+    this.modificaSezione(posizione.sezione, (blocchi) =>
+      blocchi.map((blocco) => {
+        if (blocco.id !== posizione.blocco) return blocco;
+        const elementi = [...(blocco.elementi ?? [])];
+        const sostitute = [
+          ...(prima.length ? [{ ...voce, frammenti: prima }] : []),
+          ...voci,
+          ...(dopo.length ? [{ ...voce, frammenti: dopo }] : []),
+        ];
+        elementi.splice(indice, 1, ...sostitute);
+        return { ...blocco, elementi };
+      }),
+    );
+  }
+
+  /** Dopo il prossimo disegno, il cursore in un editor che forse ancora non esiste. */
+  private mettiCursore(posizione: PosizioneEditor, offset: number): void {
+    this.posizioneAttiva.set(posizione);
+    afterNextRender(
+      () => {
+        const selettore =
+          `[data-section-text="${CSS.escape(posizione.sezione)}"][data-block-id="${CSS.escape(posizione.blocco)}"]` +
+          (posizione.voce === null
+            ? ':not([data-item-index])'
+            : `[data-item-index="${posizione.voce}"]`);
+        const editor = this.document.querySelector<HTMLElement>(`.editor-text${selettore}`);
+        if (!editor) return;
+        editor.focus();
+        this.selezionaEditor(editor);
+        const punto = puntoDaOffset(editor, offset);
+        const range = this.document.createRange();
+        range.setStart(punto.nodo, punto.offset);
+        range.collapse(true);
+        const selezione = this.document.getSelection();
+        selezione?.removeAllRanges();
+        selezione?.addRange(range);
+      },
+      { injector: this.injector },
+    );
   }
 
   private codiceSezioneLibero(base: string): string {
@@ -1363,6 +1985,14 @@ export class ModelloAnteprimaComponent {
       ordine: sezione.ordine,
       contenuto: sezione.contenuto.map((blocco) => ({
         ...blocco,
+        // Il servizio rimanda gli attributi falsi per esteso: qui si tiene la
+        // forma compatta, la stessa che produce l'editor, cosi' che il
+        // confronto fra DOM e modello non veda differenze che non ci sono.
+        frammenti: normalizzaFrammenti(blocco.frammenti ?? []),
+        elementi: (blocco.elementi ?? []).map((elemento) => ({
+          ...elemento,
+          frammenti: normalizzaFrammenti(elemento.frammenti),
+        })),
         placeholder_usati: [...blocco.placeholder_usati],
       })),
     };
@@ -1372,42 +2002,72 @@ export class ModelloAnteprimaComponent {
     return sezioni.map((sezione, ordine) => ({ ...this.clonaSezione(sezione), ordine }));
   }
 
-  private sezioneConTesto(sezione: SezioneDocumento, testo: string): SezioneDocumento {
-    const blocco = sezione.contenuto[0] ?? this.nuovoBlocco(sezione.codice, '');
+  private nuovoBlocco(id: string, frammenti: FrammentoTesto[]): BloccoDocumento {
     return {
-      ...sezione,
-      contenuto: [
-        {
-          ...blocco,
-          contenuto: testo,
-          placeholder_usati: this.placeholderNelTesto(testo),
-        },
-        ...sezione.contenuto.slice(1),
-      ],
-    };
-  }
-
-  private nuovoBlocco(codiceSezione: string, contenuto: string): BloccoDocumento {
-    return {
-      id: `${codiceSezione}-paragrafo`,
+      id,
       tipo: 'PARAGRAFO',
-      contenuto,
+      frammenti,
+      allineamento: null,
+      elementi: [],
       posizionamento: 'BODY',
       ordine: 0,
       stile: null,
-      placeholder_usati: this.placeholderNelTesto(contenuto),
+      placeholder_usati: placeholderNeiFrammenti(frammenti),
       regole_layout: {},
       asset_ref: null,
       colonne: [],
     };
   }
 
-  private placeholderNelTesto(testo: string): string[] {
-    const trovati: string[] = [];
-    for (const match of testo.matchAll(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g)) {
-      const nome = match[1];
-      if (!trovati.includes(nome)) trovati.push(nome);
-    }
-    return trovati;
+  private idBloccoLibero(sezione: SezioneDocumento, usati?: Set<string>): string {
+    const occupati = usati ?? new Set(sezione.contenuto.map((blocco) => blocco.id));
+    let progressivo = occupati.size + 1;
+    while (occupati.has(`${sezione.codice}-b${progressivo}`)) progressivo += 1;
+    return `${sezione.codice}-b${progressivo}`;
   }
+}
+
+const SCORCIATOIE_ENFASI: Record<string, AttributoEnfasi> = {
+  b: 'grassetto',
+  i: 'corsivo',
+  u: 'sottolineato',
+};
+
+/** Sotto un elenco numerato si va per lettere (`a)`), sotto uno puntato si resta puntati. */
+function sottoMarcatore(radice: TipoMarcatore): TipoMarcatore {
+  return radice === 'NUMERICO' ? 'ALFABETICO' : 'PUNTATO';
+}
+
+/**
+ * I marcatori di ogni voce degli elenchi di una sequenza di blocchi. Il
+ * contatore del primo livello prosegue fra elenchi e si azzera a ogni `TITOLO`;
+ * quello del secondo si azzera a ogni voce di primo livello.
+ */
+function numeraElenchi(blocchi: BloccoDocumento[]): Map<string, string[]> {
+  const marcatori = new Map<string, string[]>();
+  let primo = 0;
+  let secondo = 0;
+  for (const blocco of blocchi) {
+    if (blocco.tipo === 'TITOLO') primo = 0;
+    if (blocco.tipo !== 'ELENCO') continue;
+    marcatori.set(
+      blocco.id,
+      (blocco.elementi ?? []).map((elemento) => {
+        if (elemento.livello === 0) {
+          secondo = 0;
+          primo += 1;
+          return formattaMarcatore(elemento.marcatore, primo, 0);
+        }
+        secondo += 1;
+        return formattaMarcatore(elemento.marcatore, secondo, 1);
+      }),
+    );
+  }
+  return marcatori;
+}
+
+function formattaMarcatore(marcatore: TipoMarcatore, numero: number, livello: 0 | 1): string {
+  if (marcatore === 'NUMERICO') return `${numero}.`;
+  if (marcatore === 'ALFABETICO') return `${String.fromCharCode(96 + ((numero - 1) % 26) + 1)})`;
+  return livello === 0 ? '•' : '–';
 }

@@ -94,7 +94,17 @@ const sezioniResponse = {
         {
           id: 'intro-p1',
           tipo: 'PARAGRAFO',
-          contenuto: 'Introduzione {{titolo_it}}',
+          frammenti: [
+            {
+              testo: 'Introduzione {{titolo_it}}',
+              grassetto: false,
+              corsivo: false,
+              sottolineato: false,
+              collegamento: null,
+            },
+          ],
+          allineamento: null,
+          elementi: [],
           posizionamento: 'BODY',
           ordine: 0,
           stile: null,
@@ -112,7 +122,7 @@ const sezioniResponse = {
         {
           id: 'dettagli-p1',
           tipo: 'PARAGRAFO',
-          contenuto: 'Posti disponibili {{numero_posti}}',
+          frammenti: [{ testo: 'Posti disponibili {{numero_posti}}' }],
           posizionamento: 'BODY',
           ordine: 0,
           stile: null,
@@ -129,7 +139,7 @@ const sezioniResponse = {
       {
         id: 'intro-p1',
         tipo: 'PARAGRAFO',
-        contenuto: 'Introduzione {{titolo_it}}',
+        frammenti: [{ testo: 'Introduzione {{titolo_it}}' }],
         posizionamento: 'BODY',
         ordine: 0,
         stile: null,
@@ -141,7 +151,7 @@ const sezioniResponse = {
       {
         id: 'dettagli-p1',
         tipo: 'PARAGRAFO',
-        contenuto: 'Posti disponibili {{numero_posti}}',
+        frammenti: [{ testo: 'Posti disponibili {{numero_posti}}' }],
         posizionamento: 'BODY',
         ordine: 1,
         stile: null,
@@ -422,7 +432,7 @@ describe('2b ridotta: anteprima modello', () => {
     ).click();
     fixture.detectChanges();
 
-    expect(root.querySelector('.section-editor.style-h1 [data-section-text="intro"]')).toBeTruthy();
+    expect(root.querySelector('[data-section-text="intro"].style-h1')).toBeTruthy();
     http.verify();
   });
 
@@ -463,9 +473,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-section-text="oggetto"]')?.textContent).toContain(
       'Oggetto: {{titolo_it}}',
     );
-    expect(
-      root.querySelector('.section-editor.style-h1 [data-section-text="oggetto"]'),
-    ).toBeTruthy();
+    expect(root.querySelector('[data-section-text="oggetto"].style-h1')).toBeTruthy();
 
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
@@ -502,7 +510,7 @@ describe('2b ridotta: anteprima modello', () => {
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
-    expect(root.querySelector('.section-editor.style-h2 [data-section-text="intro"]')).toBeTruthy();
+    expect(root.querySelector('[data-section-text="intro"].style-h2')).toBeTruthy();
     http.verify();
   });
 
@@ -569,7 +577,7 @@ describe('2b ridotta: anteprima modello', () => {
       {
         codice: 'dettagli',
         ordine: 0,
-        contenuto: [sezioniResponse.sezioni[1].contenuto[0]],
+        contenuto: [{ ...sezioniResponse.sezioni[1].contenuto[0], elementi: [] }],
       },
     ]);
     request.flush({
@@ -666,6 +674,147 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
+  function seleziona(nodo: Node, da: number, a: number): void {
+    const range = document.createRange();
+    range.setStart(nodo, da);
+    range.setEnd(nodo, a);
+    const selezione = document.getSelection()!;
+    selezione.removeAllRanges();
+    selezione.addRange(range);
+  }
+
+  function incollaIn(editor: HTMLElement, html: string, testo = ''): void {
+    const evento = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(evento, 'clipboardData', {
+      value: { getData: (tipo: string) => (tipo === 'text/html' ? html : testo) },
+    });
+    editor.dispatchEvent(evento);
+  }
+
+  function salva(root: HTMLElement, http: HttpTestingController) {
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    return http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+  }
+
+  it('012 US1: applies bold to the selected words and saves fragments, never markup', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.focus();
+    editor.dispatchEvent(new Event('focus'));
+    seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+    (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(editor.querySelector('strong')?.textContent).toBe('Introduzione');
+    const request = salva(root, http);
+    const blocco = request.request.body.sezioni[0].contenuto[0];
+    expect(blocco.frammenti).toEqual([
+      { testo: 'Introduzione', grassetto: true },
+      { testo: ' {{titolo_it}}' },
+    ]);
+    expect(JSON.stringify(request.request.body)).not.toContain('<strong>');
+    expect(blocco.placeholder_usati).toEqual(['titolo_it']);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 US1: Ctrl+I toggles italic on the selection like a word processor', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.focus();
+    editor.dispatchEvent(new Event('focus'));
+    seleziona(editor.firstChild!, 0, 5);
+    const tasto = new KeyboardEvent('keydown', { key: 'i', ctrlKey: true, cancelable: true });
+    editor.dispatchEvent(tasto);
+    expect(tasto.defaultPrevented).toBe(true);
+    expect(editor.querySelector('em')?.textContent).toBe('Intro');
+    http.verify();
+  });
+
+  it('012 US1: pasting from Word splits the paragraph into visible blocks and a computed list', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
+    editor.focus();
+    editor.dispatchEvent(new Event('focus'));
+    // Il cursore alla fine del testo esistente.
+    seleziona(editor.firstChild!, editor.textContent!.length, editor.textContent!.length);
+    incollaIn(
+      editor,
+      `<p class=MsoNormal><b>VISTO</b> il decreto;</p>
+       <p class=MsoListParagraph style='mso-list:l0 level1 lfo1'><span style='mso-list:Ignore'>1.<span>&nbsp; </span></span>Sono indetti:</p>
+       <p class=MsoListParagraph style='mso-list:l0 level2 lfo1'><span style='mso-list:Ignore'>a)<span>&nbsp; </span></span>un posto a Roma</p>`,
+    );
+    fixture.detectChanges();
+
+    const editori = root.querySelectorAll('[data-section-text="intro"]');
+    expect(editori.length).toBe(4);
+    const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) => m.textContent);
+    expect(marcatori).toEqual(['1.', 'a)']);
+    // Il marcatore di Word non resta nel testo: si sommerebbe a quello calcolato.
+    expect(editori[2].textContent).toBe('Sono indetti:');
+
+    const request = salva(root, http);
+    const blocchi = request.request.body.sezioni[0].contenuto;
+    expect(blocchi.map((b: { tipo: string }) => b.tipo)).toEqual([
+      'PARAGRAFO',
+      'PARAGRAFO',
+      'ELENCO',
+    ]);
+    expect(blocchi[1].frammenti).toEqual([
+      { testo: 'VISTO', grassetto: true },
+      { testo: ' il decreto;' },
+    ]);
+    expect(blocchi[2].elementi).toEqual([
+      { livello: 0, marcatore: 'NUMERICO', frammenti: [{ testo: 'Sono indetti:' }] },
+      { livello: 1, marcatore: 'ALFABETICO', frammenti: [{ testo: 'un posto a Roma' }] },
+    ]);
+    expect(new Set(blocchi.map((b: { id: string }) => b.id)).size).toBe(3);
+    expect(blocchi.map((b: { ordine: number }) => b.ordine)).toEqual([0, 1, 2]);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012: the list button turns the paragraph into a list without writing numbers in the text', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    const editor = root.querySelector('[data-section-text="dettagli"]') as HTMLElement;
+    editor.focus();
+    editor.dispatchEvent(new Event('focus'));
+    (root.querySelector('[data-list="NUMERICO"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('.item-marker')?.textContent).toBe('1.');
+    expect(root.querySelector('[data-section-text="dettagli"]')?.textContent).toBe(
+      'Posti disponibili {{numero_posti}}',
+    );
+    const request = salva(root, http);
+    const blocco = request.request.body.sezioni[1].contenuto[0];
+    expect(blocco.tipo).toBe('ELENCO');
+    expect(blocco.frammenti).toEqual([]);
+    expect(blocco.placeholder_usati).toEqual(['numero_posti']);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
@@ -685,9 +834,10 @@ describe('2b ridotta: anteprima modello', () => {
     editor.dispatchEvent(new Event('blur'));
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body.sezioni[0].contenuto[0].contenuto).toBe(
-      'Introduzione riscritta {{titolo_it}}',
-    );
+    expect(request.request.body.sezioni[0].contenuto[0].frammenti).toEqual([
+      { testo: 'Introduzione riscritta {{titolo_it}}' },
+    ]);
+    expect(request.request.body.sezioni[0].contenuto[0]).not.toHaveProperty('contenuto');
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
     fixture.detectChanges();
 
@@ -755,7 +905,7 @@ describe('2b ridotta: anteprima modello', () => {
           contenuto: [
             {
               ...sezioniResponse.sezioni[0].contenuto[0],
-              contenuto: 'Testo con {{campo_fantasma}}',
+              frammenti: [{ testo: 'Testo con {{campo_fantasma}}' }],
               placeholder_usati: ['campo_fantasma'],
             },
           ],

@@ -1,10 +1,80 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   accedi,
   bordiSforati,
   creaUtenteUsaEGetta,
+  tokenGeneratore,
   type UtenteUsaEGetta,
 } from './support/keycloak';
+
+// Un "visto" e un elenco come li mette negli appunti Word desktop: le liste
+// sono paragrafi `mso-list` con il marcatore in uno span `mso-list:Ignore`.
+const APPUNTI_WORD = `<html xmlns:o="urn:schemas-microsoft-com:office:office"><body lang=IT>
+<!--StartFragment--><p class=MsoNormal style='text-align:justify'><b><span style='color:#1F3864'>VISTO</span></b>
+il Decreto Legislativo 4 giugno 2003, n. 127, recante <i>“Riordino del Consiglio Nazionale delle Ricerche”</i>;<o:p></o:p></p>
+<p class=MsoListParagraph style='mso-list:l0 level1 lfo1'><![if !supportLists]><span style='mso-list:Ignore'>1.<span>&nbsp;&nbsp; </span></span><![endif]>Sono indetti i seguenti concorsi:<o:p></o:p></p>
+<p class=MsoListParagraph style='mso-list:l0 level2 lfo1'><![if !supportLists]><span style='mso-list:Ignore'>a)<span>&nbsp;&nbsp; </span></span><![endif]>un posto presso la sede di Roma;<o:p></o:p></p>
+<!--EndFragment--></body></html>`;
+
+/** Incolla come fa il browser: un `ClipboardEvent` vero, con l'HTML negli appunti. */
+async function incolla(editor: Locator, html: string, testo: string): Promise<void> {
+  await editor.evaluate(
+    (elemento, [html, testo]) => {
+      const appunti = new DataTransfer();
+      appunti.setData('text/html', html);
+      appunti.setData('text/plain', testo);
+      elemento.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: appunti, bubbles: true, cancelable: true }),
+      );
+    },
+    [html, testo],
+  );
+}
+
+/** Seleziona una parola dentro un editor, come farebbe il gestore col mouse. */
+async function selezionaParola(page: Page, editor: Locator, parola: string): Promise<void> {
+  await editor.evaluate((elemento, parola) => {
+    const camminatore = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
+    for (let nodo = camminatore.nextNode(); nodo; nodo = camminatore.nextNode()) {
+      const inizio = nodo.textContent!.indexOf(parola);
+      if (inizio < 0) continue;
+      const range = document.createRange();
+      range.setStart(nodo, inizio);
+      range.setEnd(nodo, inizio + parola.length);
+      getSelection()!.removeAllRanges();
+      getSelection()!.addRange(range);
+      return;
+    }
+    throw new Error(`parola non trovata: ${parola}`);
+  }, parola);
+  await page.waitForTimeout(0);
+}
+
+/**
+ * Parola -> font con cui il PDF la scrive. Il grassetto non e' un attributo
+ * del testo estratto ma la variante di font: lo legge lo stesso helper
+ * `pypdf` dei test del renderer (`backend/tests/support/pdf.py`).
+ */
+function fontPerParola(pdf: string): { font: Record<string, string>; testo: string } {
+  const backend = resolve(__dirname, '../../backend');
+  const script = `
+import json, sys
+from pathlib import Path
+from tests.support.pdf import estrai_font_e_testo, estrai_testo
+contenuto = Path(sys.argv[1]).read_bytes()
+font = {}
+for nome, pezzo in estrai_font_e_testo(contenuto):
+    for parola in pezzo.split():
+        font.setdefault(parola.strip(';:,.'), nome)
+print(json.dumps({"font": font, "testo": estrai_testo(contenuto)}))
+`;
+  return JSON.parse(
+    execFileSync('uv', ['run', 'python', '-c', script, pdf], { cwd: backend, encoding: 'utf-8' }),
+  );
+}
 
 // Il contesto DEVE essere fra quelli mappati in
 // infra/local/integration-profiles.local.yaml (ROLE_MANAGER#geban -> permessi
@@ -95,6 +165,50 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // Il testo deve essere quello scritto, nell'ordine in cui e' stato scritto:
   // con il caret che tornava a inizio blocco usciva mescolato.
   await expect(editor).toHaveText('Premesso che {{titolo_it}}');
+
+  // 012 US1: enfasi selezionando il testo, come in un elaboratore di testi.
+  await editor.click();
+  await selezionaParola(page, editor, 'Premesso');
+  await page.locator('[data-emphasis="grassetto"]').click();
+  await expect(editor.locator('strong')).toHaveText('Premesso');
+  await selezionaParola(page, editor, 'che');
+  await page.keyboard.press('Control+i');
+  await expect(editor.locator('em')).toHaveText('che');
+
+  // 012 T023: incolla da Word in una sezione nuova. Il "visto" conserva
+  // grassetto e corsivo; l'elenco diventa un ELENCO con i marcatori calcolati,
+  // e i `1.`/`a)` di Word non restano nel testo.
+  await page.locator('[data-add-section-inline]').click();
+  const visto = page.locator('[data-section-text="sezione-2"]').first();
+  await visto.click();
+  await incolla(
+    visto,
+    APPUNTI_WORD,
+    'VISTO il Decreto...\n1.\tSono indetti i seguenti concorsi:\na)\tun posto presso la sede di Roma;',
+  );
+  await expect(page.locator('[data-section-text="sezione-2"]')).toHaveCount(3);
+  await expect(visto.locator('strong')).toHaveText('VISTO');
+  await expect(visto.locator('em')).toHaveText('“Riordino del Consiglio Nazionale delle Ricerche”');
+  await expect(page.locator('.item-marker')).toHaveText(['1.', 'a)']);
+  await expect(page.locator('[data-item-index="0"]')).toHaveText(
+    'Sono indetti i seguenti concorsi:',
+  );
+  await page.locator('.format-toolbar .hint').click();
+  await page.locator('[data-save-sections]').click();
+  await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-enfasi.png'), fullPage: true });
+
+  // Ricaricata la pagina, l'enfasi torna dal servizio e non dalla memoria del browser.
+  await page.reload();
+  await expect(
+    page.locator('[data-section-text="intro"], [data-section-text]').first(),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-section-text="sezione-2"]').first().locator('strong'),
+  ).toHaveText('VISTO');
+  await expect(page.locator('[data-section-text]').first().locator('strong')).toHaveText(
+    'Premesso',
+  );
   await expect(page.locator('[data-readiness]')).toContainText('Nessun blocco');
   await expect(page.locator('[data-export-docx]')).toBeDisabled();
   expect(await bordiSforati(page), 'elementi oltre il bordo a 1280px').toEqual([]);
@@ -122,6 +236,38 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // nella lista: la tabella 1b ha le colonne Ver. e Stato, non le versioni.
   await page.getByRole('link', { name: modelName }).click();
   await expect(page.getByText(/ID API: \d+/)).toBeVisible();
+
+  // 012 T025: generato il documento, l'enfasi e' nel PDF come variante di font.
+  const idApi = /ID API: (\d+)/.exec((await page.getByText(/ID API: \d+/).textContent()) ?? '')![1];
+  const generatore = await tokenGeneratore();
+  try {
+    const generato = await page.request.post('/api/v1/documenti/genera', {
+      headers: { Authorization: `Bearer ${generatore.token}` },
+      data: {
+        sistema_richiedente: 'GEBAN',
+        external_context_id: `e2e-${Date.now()}`,
+        modello_versione_id: Number(idApi),
+        dati: { titolo_it: 'Ricercatore in fisica applicata' },
+      },
+    });
+    expect(generato.status(), await generato.text()).toBe(200);
+    const percorsoPdf = testInfo.outputPath('bando-012.pdf');
+    writeFileSync(percorsoPdf, await generato.body());
+    const { font, testo } = fontPerParola(percorsoPdf);
+    expect(font['Premesso']).toBe('TitilliumWebBold');
+    expect(font['che']).toBe('TitilliumWebItalic');
+    expect(font['VISTO']).toBe('TitilliumWebBold');
+    expect(font['Decreto']).toBe('TitilliumWeb');
+    expect(font['“Riordino']).toBe('TitilliumWebItalic');
+    // Le virgolette curve di Word arrivano intatte (SC-006) e il valore del
+    // segnaposto prende il posto del segnaposto.
+    expect(testo).toContain('Premesso che Ricercatore in fisica applicata');
+    expect(testo).toContain('“Riordino del Consiglio Nazionale delle Ricerche”');
+    expect(testo).toContain('Sono indetti i seguenti concorsi:');
+    expect(testo).not.toContain('{{');
+  } finally {
+    await generatore.rimuovi();
+  }
   await page.screenshot({ path: testInfo.outputPath('contesti-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('contesti-mobile.png'), fullPage: true });

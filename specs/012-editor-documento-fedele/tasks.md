@@ -167,19 +167,19 @@ Word.
 pubblicarlo, verificare grassetto e corsivo nel PDF. Vale da solo, senza elenchi
 e senza cornice.
 
-- [ ] T019 In `frontend/src/features/builder/modello-anteprima.component.ts`,
+- [x] T019 In `frontend/src/features/builder/modello-anteprima.component.ts`,
       sostituire `contenteditable="plaintext-only"` (riga ~390) con un editor
       ricco controllato. Quel `plaintext-only` era obbligato finche' il
       paragrafo era una stringa sola: senza frammenti non c'era dove mettere il
       grassetto, quindi conservarlo sarebbe stato inutile.
-- [ ] T020 Abilitare B/I/U, che oggi sono nel markup ma **disabilitati**, e
+- [x] T020 Abilitare B/I/U, che oggi sono nel markup ma **disabilitati**, e
       applicarli alla selezione (FR-006).
-- [ ] T021 [P] Modello dati lato frontend: un blocco porta frammenti, non una
+- [x] T021 [P] Modello dati lato frontend: un blocco porta frammenti, non una
       stringa.
-- [ ] T022 Serializzazione DOM -> frammenti alla scrittura, e frammenti -> DOM
+- [x] T022 Serializzazione DOM -> frammenti alla scrittura, e frammenti -> DOM
       alla lettura. Unire i frammenti adiacenti con gli stessi attributi, per
       non accumulare frammenti spuri a ogni modifica.
-- [ ] T023 **Incolla da elaboratore di testi** (FR-017): leggere la
+- [x] T023 **Incolla da elaboratore di testi** (FR-017): leggere la
       rappresentazione HTML degli appunti, conservare enfasi, capoversi ed
       elenchi, scartare colori, font, rientri, immagini e tabelle. La
       conversione avviene **nel browser**: al servizio arrivano frammenti, mai
@@ -188,12 +188,35 @@ e senza cornice.
       come testo dentro il paragrafo. Sommati alla numerazione calcolata in resa
       darebbero `1. 1. Sono indetti...`. I marcatori scritti a mano vanno
       riconosciuti e rimossi quando l'elenco viene convertito (research.md R8).
-- [ ] T024 [P] Test Vitest: applicazione dell'enfasi su selezione parziale,
+- [x] T024 [P] Test Vitest: applicazione dell'enfasi su selezione parziale,
       enfasi annidate (grassetto e corsivo insieme), incolla da Word con
       marcatori di lista da rimuovere.
-- [ ] T025 Test e2e Playwright contro lo stack reale: comporre un "visto" del
+- [x] T025 Test e2e Playwright contro lo stack reale: comporre un "visto" del
       bando di riferimento, pubblicare, generare, verificare l'enfasi nel PDF
       (US1 scenari 1 e 2).
+      *T019-T025 fatti 2026-10-01*. Conversioni in
+      `frontend/src/features/builder/frammenti.ts` (16 test Vitest), editor in
+      `modello-anteprima.component.ts` (4 test di componente nuovi, 143 totali).
+      L'enfasi si applica sui frammenti e non con `document.execCommand`,
+      deprecato e diverso per browser. L'e2e sta in `builder-lifecycle.spec.ts`
+      e non in un file suo: discovery-mock offre due soli tipi documento, gia'
+      presi dagli altri due e2e, e un terzo andrebbe in 409 per FR-024. Genera
+      il PDF con `geban-backend`, a cui `tokenGeneratore()` assegna
+      `DOCUMENTI_GENERATORE` solo per la durata del test, e verifica i font
+      parola per parola con `backend/tests/support/pdf.py`. Suite e2e 4/4 su
+      stack reale.
+      **Anticipato dalla Phase 4, perche' l'incolla non stava in piedi senza**:
+      l'editor mostra e modifica **tutti** i blocchi di una sezione (nucleo di
+      T026) e un `ELENCO` con le sue voci, Invio/Backspace/Tab sulle voci e i
+      pulsanti `1.`/`•` che convertono il paragrafo (parte di T028). Senza, i
+      capoversi incollati dopo il primo sarebbero stati salvati e invisibili.
+      **Divergenza aperta (FR-008) fino a T029**: l'editor mostra `1.`/`a)`,
+      il PDF scrive le voci senza marcatore. Inoltre `composizione_documentale`
+      passa al renderer i blocchi gia' concatenati, senza confini di sezione:
+      T029 deve portarli, o l'azzeramento per sezione non e' implementabile.
+      Corretti due difetti FR-008 trovati per strada nello SCSS: H1 in
+      maiuscolo nell'editor ma non nel PDF, e ogni blocco giustificato
+      nell'editor ma allineato a sinistra nel PDF.
 
 **Checkpoint**: la parte piu' voluminosa del bando - i quaranta paragrafi
 normativi - diventa componibile.
