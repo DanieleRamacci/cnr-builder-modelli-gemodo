@@ -28,6 +28,12 @@
     "design-angular-kit": "^21.2.0",
     "keycloak-angular": "^21.0.0",
     "keycloak-js": "^26.2.4",
+    "prosemirror-commands": "^1.7.2",
+    "prosemirror-keymap": "^1.2.3",
+    "prosemirror-model": "^1.25.12",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-transform": "^1.12.2",
+    "prosemirror-view": "^1.42.6",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

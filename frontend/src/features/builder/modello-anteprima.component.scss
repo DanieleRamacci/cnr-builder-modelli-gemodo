@@ -416,11 +416,6 @@
     line-height: 1.75;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-
-    &:empty::before {
-      content: 'Scrivi qui il testo della sezione';
-      color: #9aa5af;
-    }
   }
 
   // Proporzioni del PDF (corpo 11pt, titolo 13pt, firma con spazio sopra),
@@ -443,7 +438,6 @@
     color: var(--td-ink-500);
     font-size: 11px;
     text-transform: uppercase;
-    cursor: pointer;
 
     &::before,
     &::after {
@@ -451,23 +445,6 @@
       flex: 1;
       border-top: 1px dashed #b7c2cc;
     }
-
-    &:focus-visible,
-    &.block-active {
-      color: var(--td-primary-dark);
-      outline: 0;
-    }
-  }
-
-  .editor-text + .editor-text,
-  .editor-text + .editor-list,
-  .editor-list + .editor-text {
-    margin-top: 8px;
-  }
-
-  .editor-text.block-active,
-  .editor-list.block-active {
-    box-shadow: -8px 0 0 -6px var(--td-primary-050);
   }
 
   .editor-text strong,
@@ -490,8 +467,7 @@
     text-decoration: underline;
   }
 
-  // Il marcatore e' calcolato, fuori dal testo modificabile: non si puo'
-  // cancellare ne' riscrivere a mano (012 FR-015).
+  // In sola lettura; nell'editor gli stili sono in `editor-sezione.component.scss`.
   .editor-item {
     // Rientri predefiniti di Word, gli stessi del PDF (`renderer.py`):
     // marcatore a 0,63 cm, testo a 1,27 cm, +1,27 cm per livello.
@@ -519,10 +495,6 @@
     .editor-text {
       flex: 1 1 auto;
       min-height: 0;
-
-      &:empty::before {
-        content: 'Voce';
-      }
     }
   }
 

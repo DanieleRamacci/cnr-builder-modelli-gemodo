@@ -1,38 +1,11 @@
 import {
-  applicaCollegamento,
-  applicaEnfasi,
   convertiAppunti,
-  leggiFrammentiDalDom,
   normalizzaFrammenti,
   normalizzaIndirizzo,
-  offsetNelTesto,
   placeholderNeiFrammenti,
-  puntoDaOffset,
-  scriviFrammentiNelDom,
-  type FrammentoTesto,
 } from './frammenti';
 
-const VISTO: FrammentoTesto[] = [
-  { testo: 'VISTO', grassetto: true },
-  { testo: ' il Decreto Legislativo 4 giugno 2003, n. 127, recante ' },
-  { testo: '“Riordino del Consiglio Nazionale delle Ricerche”', corsivo: true },
-  { testo: ';' },
-];
-
-function editor(): HTMLElement {
-  const elemento = document.createElement('div');
-  document.body.appendChild(elemento);
-  return elemento;
-}
-
 describe('frammenti: forma del testo nell editor (012 T021-T022)', () => {
-  it('rilegge dal DOM esattamente i frammenti che vi ha scritto', () => {
-    const elemento = editor();
-    scriviFrammentiNelDom(elemento, VISTO);
-    expect(elemento.innerHTML).toContain('<strong>VISTO</strong>');
-    expect(leggiFrammentiDalDom(elemento)).toEqual(VISTO);
-  });
-
   it('unisce i frammenti adiacenti uguali invece di accumularli', () => {
     expect(
       normalizzaFrammenti([
@@ -44,32 +17,6 @@ describe('frammenti: forma del testo nell editor (012 T021-T022)', () => {
     ).toEqual([{ testo: 'Art. 1', grassetto: true }, { testo: ' - Indizione' }]);
   });
 
-  it('legge anche il markup che produce il browser, compreso lo stile in linea', () => {
-    const elemento = editor();
-    elemento.innerHTML =
-      'a <b>b <i>c</i></b> <span style="font-weight: 700">d</span> <u>e</u><br>f<div>g</div>';
-    expect(leggiFrammentiDalDom(elemento)).toEqual([
-      { testo: 'a ' },
-      { testo: 'b ', grassetto: true },
-      { testo: 'c', grassetto: true, corsivo: true },
-      { testo: ' ' },
-      { testo: 'd', grassetto: true },
-      { testo: ' ' },
-      { testo: 'e', sottolineato: true },
-      { testo: '\nf\ng' },
-    ]);
-  });
-
-  it('conta le posizioni nel DOM come conta il testo, a capo compresi', () => {
-    const elemento = editor();
-    scriviFrammentiNelDom(elemento, [{ testo: 'uno\n' }, { testo: 'due', grassetto: true }]);
-    const due = elemento.querySelector('strong')!.firstChild!;
-    expect(offsetNelTesto(elemento, due, 1)).toBe(5);
-    const punto = puntoDaOffset(elemento, 5);
-    expect(punto.nodo).toBe(due);
-    expect(punto.offset).toBe(1);
-  });
-
   it('cerca i segnaposto dentro ciascun frammento, come li sostituisce il servizio', () => {
     expect(
       placeholderNeiFrammenti([
@@ -79,40 +26,6 @@ describe('frammenti: forma del testo nell editor (012 T021-T022)', () => {
         { testo: 'ta}}', corsivo: true },
       ]),
     ).toEqual(['numero_bando']);
-  });
-});
-
-describe('frammenti: enfasi su selezione (012 T020, T024)', () => {
-  it('mette il grassetto su una selezione parziale di un frammento', () => {
-    expect(applicaEnfasi([{ testo: 'VISTO il decreto' }], 0, 5, 'grassetto')).toEqual([
-      { testo: 'VISTO', grassetto: true },
-      { testo: ' il decreto' },
-    ]);
-  });
-
-  it('annida corsivo e grassetto sulla stessa porzione', () => {
-    const grassetto = applicaEnfasi([{ testo: 'uno due tre' }], 4, 11, 'grassetto');
-    expect(applicaEnfasi(grassetto, 0, 7, 'corsivo')).toEqual([
-      { testo: 'uno ', corsivo: true },
-      { testo: 'due', grassetto: true, corsivo: true },
-      { testo: ' tre', grassetto: true },
-    ]);
-  });
-
-  it('toglie l enfasi se tutta la selezione ce l ha gia, la mette se ce l ha solo in parte', () => {
-    const tutto = applicaEnfasi(VISTO, 0, 5, 'grassetto');
-    expect(tutto[0]).toEqual({
-      testo: 'VISTO il Decreto Legislativo 4 giugno 2003, n. 127, recante ',
-    });
-
-    const parziale = applicaEnfasi(VISTO, 3, 9, 'grassetto');
-    expect(parziale[0]).toEqual({ testo: 'VISTO il ', grassetto: true });
-  });
-
-  it('un segnaposto in grassetto resta un frammento unico e sostituibile', () => {
-    const frammenti = applicaEnfasi([{ testo: 'Posti: {{numero_posti}}.' }], 7, 23, 'grassetto');
-    expect(frammenti[1]).toEqual({ testo: '{{numero_posti}}', grassetto: true });
-    expect(placeholderNeiFrammenti(frammenti)).toEqual(['numero_posti']);
   });
 });
 
@@ -305,22 +218,5 @@ describe('frammenti: collegamenti (012 T050, FR-014)', () => {
     expect(normalizzaIndirizzo('javascript:alert(1)')).toBeNull();
     expect(normalizzaIndirizzo('file:///etc/passwd')).toBeNull();
     expect(normalizzaIndirizzo('cnr punto it')).toBeNull();
-  });
-
-  it('collega solo la porzione selezionata e la scollega con null', () => {
-    const collegati = applicaCollegamento(
-      [{ testo: 'portale www.inpa.gov.it oggi' }],
-      8,
-      23,
-      'https://www.inpa.gov.it',
-    );
-    expect(collegati).toEqual([
-      { testo: 'portale ' },
-      { testo: 'www.inpa.gov.it', collegamento: 'https://www.inpa.gov.it' },
-      { testo: ' oggi' },
-    ]);
-    expect(applicaCollegamento(collegati, 8, 23, null)).toEqual([
-      { testo: 'portale www.inpa.gov.it oggi' },
-    ]);
   });
 });

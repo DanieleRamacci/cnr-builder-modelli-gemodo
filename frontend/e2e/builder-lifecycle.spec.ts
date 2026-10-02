@@ -23,6 +23,13 @@ il Decreto Legislativo 4 giugno 2003, n. 127, recante <i>“Riordino del Consigl
 const LOGO_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAHgAAAA8CAYAAACtrX6oAAABIElEQVR42u3dQQ6CMBQGYXjhbh7Ic3ggT4crEjesFO37+83KhVHCZEo1tKz7vi/IpZyCbLbjxXp7SDmI/XlfFWyIBsHocQ0+G8PRg7M5lIIN0SAYBINg/HIWnT67nOUXwzar1LP3p8neZpU6i+wi9/efq+CBBBzf0bXmIje75iI3W3KRmy25yM2W7J+sxV+V6m1csYIVrJbOFStYwSB44mFw9ONTsIJBMAgGwSAYcYJHv5Ni9ONTsIJB8KTDYIcb8RSsYLV0Xu6iYAWrpvNiteq6/xO5wUP0v05yx+Ur1X0nN3KX3MVnx0m/8q6K7ktIK2lfRnKDF4C/y/ikaCv8A2Xbo8Pw7RoMgkEwCMZ3Jlme4aBgEAyCcSmrJ58pGI15AcLOeofe1LUoAAAAAElFTkSuQmCC';
 
+/** I marcatori calcolati delle voci di una sezione, come li disegna l'editor. */
+async function marcatori(testo: Locator): Promise<string[]> {
+  return testo
+    .locator('[data-marcatore]')
+    .evaluateAll((voci) => voci.map((voce) => voce.getAttribute('data-marcatore') ?? ''));
+}
+
 /** Incolla come fa il browser: un `ClipboardEvent` vero, con l'HTML negli appunti. */
 async function incolla(editor: Locator, html: string, testo: string): Promise<void> {
   await editor.evaluate(
@@ -54,7 +61,9 @@ async function selezionaParola(page: Page, editor: Locator, parola: string): Pro
     }
     throw new Error(`parola non trovata: ${parola}`);
   }, parola);
-  await page.waitForTimeout(0);
+  // L'editor (ProseMirror) legge la selezione all'evento `selectionchange`,
+  // che il browser manda dopo: col mouse arriva prima di qualunque tasto.
+  await page.waitForTimeout(100);
 }
 
 /**
@@ -265,13 +274,24 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     APPUNTI_WORD,
     'VISTO il Decreto...\n1.\tSono indetti i seguenti concorsi:\na)\tun posto presso la sede di Roma;',
   );
-  await expect(page.locator('[data-section-text="sezione-2"]')).toHaveCount(3);
+  // Una sola area di scrittura per la sezione (T077): un capoverso e due voci.
+  await expect(visto.locator(':scope > *')).toHaveCount(3);
   await expect(visto.locator('strong')).toHaveText('VISTO');
   await expect(visto.locator('em')).toHaveText('“Riordino del Consiglio Nazionale delle Ricerche”');
-  await expect(page.locator('.item-marker')).toHaveText(['1.', 'a)']);
-  await expect(page.locator('[data-item-index="0"]')).toHaveText(
-    'Sono indetti i seguenti concorsi:',
-  );
+  expect(await marcatori(visto)).toEqual(['1.', 'a)']);
+  await expect(visto.locator('li').first()).toHaveText('Sono indetti i seguenti concorsi:');
+
+  // Riscontro del 2026-10-02 (T077): cio' che si e' incollato si riseleziona
+  // tutto insieme, capoversi e voci, e prende l'enfasi in un colpo solo.
+  await visto.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.locator('[data-emphasis="grassetto"]').click();
+  for (const blocco of await visto.locator(':scope > *').all()) {
+    await expect(blocco.locator('strong')).toHaveText(await blocco.innerText());
+  }
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-selezione-sezione.png') });
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(visto.locator('strong')).toHaveText('VISTO');
 
   // 012 T070: il foglio mostra la cornice del tipo documento, e la scheda
   // Pagina dice cosa c'e' e dove si imposta.
@@ -296,39 +316,34 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // 012 T033: l'art. 3 del bando di riferimento, composto solo con tastiera e
   // pulsanti: nessun `1.` o `a)` scritto a mano (SC-002).
   await page.locator('[data-add-section-inline]').click();
-  const intestazione = page.locator('[data-section-text="sezione-3"]').first();
-  await intestazione.click();
+  const testoArt3 = page.locator('[data-section-text="sezione-3"]');
+  await testoArt3.click();
   await page.keyboard.type('Art. 3 - Requisiti di ammissione');
   // T059: lo stile si sceglie dalla barra, dove sta il cursore.
   await page.locator('[data-style-select]').selectOption('TITOLO');
-  const titolo = page.locator('[data-section-text="sezione-3"][data-block-type="TITOLO"]');
-  await expect(titolo).toBeFocused();
+  const titolo = testoArt3.locator('[data-block-type="TITOLO"]');
+  await expect(testoArt3).toBeFocused();
   await expect(titolo).toHaveCSS('text-align', 'center');
   await page.keyboard.press('Enter');
   await page.keyboard.type(
     'Per la partecipazione al concorso sono richiesti i seguenti requisiti:',
   );
   await page.locator('[data-list="NUMERICO"]').click();
-  const voce = (indice: number) =>
-    page.locator(`[data-section-text="sezione-3"][data-item-index="${indice}"]`);
-  await expect(voce(0)).toBeFocused();
+  const voce = (indice: number) => testoArt3.locator('li').nth(indice);
+  await expect(testoArt3).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(voce(1)).toBeFocused();
   await page.keyboard.type('cittadinanza di uno degli Stati membri dell’Unione Europea;');
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
-  await expect(voce(2)).toBeFocused();
   await page.keyboard.type('età non inferiore a 18 anni;');
   await page.keyboard.press('Enter');
-  await expect(voce(3)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.type(
     'I requisiti richiesti devono essere posseduti alla data di scadenza del termine per la presentazione della domanda.',
   );
   await page.locator('[data-align="GIUSTIFICATO"]').click();
-  const sezione3 = page.locator('article', { has: titolo });
-  await expect(sezione3.locator('.item-marker')).toHaveText(['1.', 'a)', 'b)', '2.']);
-  // I marcatori non sono nel testo: l'editor della voce contiene solo la frase.
+  expect(await marcatori(testoArt3)).toEqual(['1.', 'a)', 'b)', '2.']);
+  // I marcatori non sono nel testo: la voce contiene solo la frase.
   await expect(voce(1)).toHaveText('cittadinanza di uno degli Stati membri dell’Unione Europea;');
   await expect(voce(3)).toHaveCSS('text-align', 'justify');
 

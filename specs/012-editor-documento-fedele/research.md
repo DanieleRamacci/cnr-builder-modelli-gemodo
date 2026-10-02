@@ -274,3 +274,48 @@ il lavoro si sposterebbe soltanto, dato che i visti devono comunque entrare da
 qualche parte. Incolla completo con tabelle e immagini - scartata: gli asset
 versionati non esistono ancora e le tabelle del bando stanno negli allegati,
 fuori dal documento principale.
+
+## R9 - Un'area di scrittura per sezione (2026-10-02)
+
+**Decisione**: il testo di una sezione e' **un solo editor ProseMirror**
+(`frontend/src/features/builder/editor-sezione.component.ts`), con uno schema
+che ricalca `GEMODO_DOCUMENT_V1` e nient'altro
+(`frontend/src/features/builder/documento-editor.ts`). Prima ogni blocco era
+un `contenteditable` a se'.
+
+**Rationale**: il browser non estende una selezione da un `contenteditable`
+all'altro. Con un'area per blocco, selezionare tre capoversi per metterli in
+grassetto, o riselezionare cio' che si e' appena incollato, non era possibile:
+non un difetto correggibile, ma il limite di quella forma. Riscriverla a mano
+su un solo `contenteditable` vorrebbe dire reimplementare cio' che un editor
+strutturato gia' fa (mappatura fra DOM e modello, incolla, selezione su nodi
+non testuali), cioe' la parte che si rompe da browser a browser.
+
+**Cosa resta uguale**: il formato salvato (lo schema non ammette nulla che il
+formato non ammetta, e la conversione da e verso i blocchi e' testata in andata
+e ritorno), il backend, il PDF, l'anteprima, la cornice; toolbar, menu Stile e
+comando `/` sono diventati comandi sulla selezione. L'HTML degli appunti lo
+interpreta ancora `convertiAppunti`; cio' che si copia dall'editor stesso lo
+riconosce ProseMirror e lo rimette con la sua struttura.
+
+**Scelte interne**:
+
+- le voci d'elenco sono nodi piatti (`voce`, con livello e marcatore), non
+  annidati: Invio, Tab e Backspace restano operazioni su un capoverso; le voci
+  consecutive con lo stesso `id` sono un blocco `ELENCO`;
+- gli `id` dei blocchi restano unici a ogni modifica (un plugin rinomina i
+  duplicati che nascono dividendo o incollando);
+- i marcatori delle voci sono calcolati con le regole di `marcatori_elenchi` e
+  disegnati fuori dal testo;
+- annulla e ripeti restano del builder intero, non della sezione, cosi' che
+  anche aggiungere, spostare o rinominare una sezione si annulli;
+- un blocco che l'editor non sa modificare (una tabella) resta nel documento
+  intatto e non modificabile.
+
+**Alternatives considered**: un `contenteditable` unico gestito a mano -
+scartato per la ragione sopra. Syncfusion Document Editor - scartato: licenza
+commerciale e un modello documentale proprio (DOCX/SFDT) da riconvertire al
+nostro, cioe' l'opposto di un formato chiuso. Un editor per l'intero documento
+invece che per sezione - possibile con lo stesso schema, ma la sezione come
+unita' e' una scelta di prodotto (riuso futuro), non solo tecnica.
+

@@ -646,3 +646,44 @@ Decisione del product owner (spec.md, chiarimento "Chi imposta la cornice").
       raggruppata (meno di un secondo fra due battute), Ctrl/Cmd+Z, Ctrl/Cmd+
       Maiusc+Z o Ctrl+Y, pulsanti nella toolbar, fino a 200 passi; si azzera
       quando si ricarica la versione. Test di componente ed e2e in Chromium.
+
+### Editor a sezione unica con ProseMirror (decisione del 2026-10-02)
+
+Riscontro: dentro una sezione non si puo' selezionare piu' di un capoverso alla
+volta, perche' ogni blocco e' un'area di scrittura separata e il browser non
+estende una selezione da un'area all'altra. Non e' correggibile restando cosi':
+il product owner ha scelto di sostituire l'interno dell'editor con
+**ProseMirror** (MIT), un editor per sezione che contiene tutti i suoi blocchi.
+Resta uguale tutto cio' che sta fuori dall'editor: formato salvato, backend,
+PDF, anteprima, cornice, toolbar, menu Stile, comando `/`.
+
+La selezione si ferma al bordo della sezione, per scelta: il product owner
+intende la sezione (per esempio "Art. 1") come un'unita' che in futuro si potra'
+salvare e riusare fra modelli, con una categorizzazione ancora da definire
+(fuori da questa spec). Una toolbar sola, sopra il foglio, agisce sulla
+sezione in cui sta il cursore.
+
+- [x] T073 Schema ProseMirror sul formato: `paragrafo` (allineamento, stile
+      H1/H2), `titolo`, `firma`, `elenco` di `voce` (livello 0/1, marcatore),
+      `interruzione`, `blocco_riservato` (tipi non gestiti, conservati
+      intatti); marchi grassetto, corsivo, sottolineato, collegamento.
+- [x] T074 Conversione blocchi <-> documento ProseMirror, con identificativi
+      dei blocchi stabili e unici; test di andata e ritorno.
+- [x] T075 Componente editor di sezione: tastiera (Invio, Maiusc+Invio, Tab
+      sulle voci, uscita da un elenco), annulla del builder, incolla tramite
+      `convertiAppunti`, comando `/`, collegamenti.
+- [x] T076 Toolbar e menu Stile come comandi sulla selezione, anche su piu'
+      blocchi; numerazione delle voci calcolata con le regole del PDF e
+      disegnata fuori dal testo.
+- [x] T077 Integrazione nella schermata 2b al posto degli editor per blocco;
+      test di componente ed e2e riscritti; selezione e formattazione di piu'
+      capoversi insieme verificate nel browser vero.
+
+  Verifica del 2026-10-02: 184 test di componente e unita' (14 nuovi su schema
+  e comandi, fra cui grassetto su titolo, capoversi ed elenco con una sola
+  selezione, e testo incollato riselezionato intero); e2e `builder-lifecycle`
+  su stack reale con il caso del riscontro (incolla da Word, Ctrl+A nella
+  sezione, grassetto su tutto, Ctrl+Z), anteprima, pubblicazione e
+  generazione con le verifiche sul PDF; build di produzione e immagini Coolify.
+  Le scorciatoie valgono con Ctrl anche su Mac, come prima. Annulla e ripeti
+  restano del builder (non la cronologia di ProseMirror), vedi research.md R9.

@@ -9,6 +9,7 @@ import { defineConfig } from 'vitest/config';
 // top-level ssr.noExternal).
 export default defineConfig({
   test: {
+    setupFiles: ['src/testing/jsdom-layout.ts'],
     server: {
       deps: {
         inline: ['bootstrap-italia', 'design-angular-kit'],

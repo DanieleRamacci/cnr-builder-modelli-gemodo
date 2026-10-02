@@ -1,0 +1,151 @@
+// Il testo della sezione: DOM di ProseMirror, quindi stili non incapsulati,
+// tutti sotto `.testo-sezione` (012 T075). Proporzioni del PDF sulla scala
+// dell'editor: corpo 11pt, titolo 13pt, firma con spazio sopra (FR-008).
+app-editor-sezione {
+  display: block;
+}
+
+.testo-sezione {
+  position: relative;
+  min-height: 28px;
+  outline: 0;
+  color: #1c2024;
+  font-size: 13.5px;
+  line-height: 1.75;
+  // Quelle che `prosemirror-view/style/prosemirror.css` chiede al contenitore.
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0;
+
+  > * {
+    margin: 0;
+  }
+
+  > * + * {
+    margin-top: 8px;
+  }
+
+  > li + li {
+    margin-top: 0;
+  }
+
+  &.vuoto > :first-child::before {
+    position: absolute;
+    content: 'Scrivi qui il testo della sezione';
+    color: #9aa5af;
+    pointer-events: none;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  u {
+    text-decoration: underline;
+  }
+
+  a {
+    color: #0066cc;
+    text-decoration: underline;
+  }
+
+  .block-titolo {
+    color: #17324d;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .block-firma {
+    margin-top: 20px;
+  }
+
+  // Niente `text-transform`: il PDF scrive il titolo come e' scritto.
+  .style-h1 {
+    color: #17324d;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+
+  .style-h2 {
+    color: #17324d;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  // Rientri predefiniti di Word, gli stessi del PDF (`renderer.py`):
+  // marcatore a 0,63 cm, testo a 1,27 cm, +1,27 cm per livello. Il
+  // marcatore e' calcolato e fuori dal testo: non si cancella ne' si
+  // riscrive a mano (FR-015).
+  .editor-item {
+    position: relative;
+    display: block;
+    padding-left: 12.7mm;
+    list-style: none;
+
+    &::before {
+      position: absolute;
+      left: 6.35mm;
+      content: attr(data-marcatore);
+      user-select: none;
+    }
+
+    &.level-1 {
+      padding-left: 25.4mm;
+
+      &::before {
+        left: 19.05mm;
+      }
+    }
+
+    // Il pallino di Word e' un cerchio di circa 1,5 mm, non il `•` minuto.
+    &[data-marcatore-tipo='PUNTATO']::before {
+      font-size: 8px;
+      line-height: 23.6px;
+    }
+  }
+
+  .page-break,
+  .reserved-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    color: #5a6772;
+    font-size: 11px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .page-break::before,
+  .page-break::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed #b7c2cc;
+  }
+
+  .reserved-block {
+    padding: 6px 10px;
+    border: 1px dashed #b7c2cc;
+    border-radius: 3px;
+  }
+
+  .ProseMirror-selectednode {
+    outline: 2px solid #8cbcf0;
+    color: #0059b3;
+  }
+}
+
+.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.ProseMirror-hideselection {
+  caret-color: transparent;
+}

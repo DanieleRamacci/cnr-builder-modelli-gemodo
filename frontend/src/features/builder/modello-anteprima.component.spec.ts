@@ -1,8 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
+import { NodeSelection, TextSelection } from 'prosemirror-state';
+import type { EditorView } from 'prosemirror-view';
 import { ModelloAnteprimaComponent } from './modello-anteprima.component';
+import { EditorSezioneComponent } from './editor-sezione.component';
 
 const dettaglio = {
   id: 'model',
@@ -219,6 +223,188 @@ describe('2b ridotta: anteprima modello', () => {
       .forEach((richiesta) => richiesta.flush(cornice));
   }
 
+  // --- L'editor di sezione (012 T077) ---------------------------------------
+  //
+  // Il testo e' un editor ProseMirror per sezione. Selezioni, tasti e incolla
+  // gli arrivano come dal browser; la sola cosa che jsdom non sa fare e'
+  // scrivere nel DOM una battuta, quindi la battuta entra dalla stessa porta
+  // che ProseMirror usa per il testo digitato (`handleTextInput`).
+
+  type Fixture = ComponentFixture<ModelloAnteprimaComponent>;
+
+  function editoreDi(fixture: Fixture, sezione: string): EditorSezioneComponent {
+    const trovato = fixture.debugElement
+      .queryAll(By.directive(EditorSezioneComponent))
+      .map((elemento) => elemento.componentInstance as EditorSezioneComponent)
+      .find((editor) => editor.codice() === sezione);
+    if (!trovato) throw new Error(`nessun editor per la sezione ${sezione}`);
+    return trovato;
+  }
+
+  function vistaDi(fixture: Fixture, sezione: string): EditorView {
+    return editoreDi(fixture, sezione)['vista']!;
+  }
+
+  /** Il fuoco nel testo della sezione, come con un clic. */
+  function apriEditor(fixture: Fixture, sezione = 'intro'): HTMLElement {
+    const vista = vistaDi(fixture, sezione);
+    vista.focus();
+    fixture.detectChanges();
+    return vista.dom as HTMLElement;
+  }
+
+  /** I capoversi della sezione come li vede chi legge. */
+  function capoversi(fixture: Fixture, sezione = 'intro'): string[] {
+    return Array.from(vistaDi(fixture, sezione).dom.children).map((c) => c.textContent ?? '');
+  }
+
+  function posizione(vista: EditorView, testo: string): { da: number; a: number } {
+    let trovata: { da: number; a: number } | null = null;
+    vista.state.doc.descendants((nodo, pos) => {
+      const indice = nodo.isText ? nodo.text!.indexOf(testo) : -1;
+      if (!trovata && indice >= 0) trovata = { da: pos + indice, a: pos + indice + testo.length };
+    });
+    if (!trovata) throw new Error(`"${testo}" non e' nel testo`);
+    return trovata;
+  }
+
+  /** Seleziona da `testo` fino alla fine di `finoA`, anche in un altro capoverso. */
+  function selezionaTesto(fixture: Fixture, sezione: string, testo: string, finoA = testo): void {
+    const vista = vistaDi(fixture, sezione);
+    vista.focus();
+    const da = posizione(vista, testo).da;
+    const a = posizione(vista, finoA).a;
+    vista.dispatch(vista.state.tr.setSelection(TextSelection.create(vista.state.doc, da, a)));
+    fixture.detectChanges();
+  }
+
+  function cursoreDopo(fixture: Fixture, sezione: string, testo: string): void {
+    const vista = vistaDi(fixture, sezione);
+    vista.focus();
+    const pos = posizione(vista, testo).a;
+    vista.dispatch(vista.state.tr.setSelection(TextSelection.create(vista.state.doc, pos)));
+    fixture.detectChanges();
+  }
+
+  function cursoreInFondo(fixture: Fixture, sezione: string): void {
+    const vista = vistaDi(fixture, sezione);
+    vista.focus();
+    const fine = vista.state.doc.content.size - 1;
+    vista.dispatch(vista.state.tr.setSelection(TextSelection.create(vista.state.doc, fine)));
+    fixture.detectChanges();
+  }
+
+  /** Scrive al cursore, una battuta alla volta, come la tastiera. */
+  function digita(fixture: Fixture, sezione: string, testo: string): void {
+    const vista = vistaDi(fixture, sezione);
+    for (const carattere of testo) {
+      const { from, to } = vista.state.selection;
+      const predefinito = () => vista.state.tr.insertText(carattere, from, to);
+      if (!vista.someProp('handleTextInput', (f) => f(vista, from, to, carattere, predefinito))) {
+        vista.dispatch(predefinito());
+      }
+    }
+    fixture.detectChanges();
+  }
+
+  function premi(
+    fixture: Fixture,
+    sezione: string,
+    key: string,
+    modificatori: KeyboardEventInit = {},
+  ): KeyboardEvent {
+    const evento = new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+      ...modificatori,
+    });
+    vistaDi(fixture, sezione).dom.dispatchEvent(evento);
+    fixture.detectChanges();
+    return evento;
+  }
+
+  function incollaIn(editor: HTMLElement, html: string, testo = ''): void {
+    const evento = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(evento, 'clipboardData', {
+      value: { getData: (tipo: string) => (tipo === 'text/html' ? html : testo) },
+    });
+    editor.dispatchEvent(evento);
+  }
+
+  function salva(root: HTMLElement, http: HttpTestingController) {
+    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
+    return http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+  }
+
+  function apriPannello(root: HTMLElement, nome: string): void {
+    (
+      Array.from(root.querySelectorAll('.panel-tabs button')).find((button) =>
+        button.textContent?.includes(nome),
+      ) as HTMLButtonElement
+    ).click();
+  }
+
+  function scegliStile(root: HTMLElement, valore: string): void {
+    const menu = root.querySelector('[data-style-select]') as HTMLSelectElement;
+    menu.value = valore;
+    menu.dispatchEvent(new Event('change'));
+  }
+
+  function paragrafo(id: string, frammenti: object[], ordine = 0) {
+    return {
+      id,
+      tipo: 'PARAGRAFO',
+      frammenti,
+      posizionamento: 'BODY',
+      ordine,
+      stile: null,
+      placeholder_usati: [] as string[],
+    };
+  }
+
+  function elenco(id: string, voci: string[], marcatore = 'NUMERICO') {
+    return {
+      id,
+      tipo: 'ELENCO',
+      frammenti: [] as { testo: string }[],
+      elementi: voci.map((testo) => ({ livello: 0, marcatore, frammenti: [{ testo }] })),
+      posizionamento: 'BODY',
+      ordine: 0,
+      stile: null,
+      placeholder_usati: [] as string[],
+    };
+  }
+
+  /** Una bozza con una sola sezione, `art`, fatta dei blocchi indicati. */
+  function caricaBozzaCon(blocchi: unknown[]) {
+    const contesto = setup();
+    contesto.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(contesto.http, {
+      ...sezioniResponse,
+      sezioni: [{ codice: 'art', ordine: 0, contenuto: blocchi }],
+    } as unknown as typeof sezioniResponse);
+    flushDerivationConfig(contesto.http);
+    contesto.fixture.detectChanges();
+    return contesto;
+  }
+
+  function caricaBozza() {
+    const contesto = setup();
+    contesto.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(contesto.http);
+    flushDerivationConfig(contesto.http);
+    contesto.fixture.detectChanges();
+    return contesto;
+  }
+
+  /** I marcatori calcolati delle voci, come li mostra l'editor. */
+  function marcatori(root: HTMLElement): string[] {
+    return Array.from(root.querySelectorAll('[data-section-text] [data-marcatore]')).map(
+      (voce) => voce.getAttribute('data-marcatore') ?? '',
+    );
+  }
+
   it('shows the contract fields returned by the API, with type and obligation', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
@@ -431,12 +617,12 @@ describe('2b ridotta: anteprima modello', () => {
     const { fixture, http, root } = caricaBozza();
 
     expect(root.querySelector('textarea')).toBeNull();
-    const editor = apriEditor(root);
+    const editor = apriEditor(fixture);
     expect(editor.textContent).toContain('Introduzione');
     scegliStile(root, 'H1');
     fixture.detectChanges();
 
-    expect(root.querySelector('[data-section-text="intro"].style-h1')).toBeTruthy();
+    expect(root.querySelector('[data-section-text="intro"] .style-h1')).toBeTruthy();
     http.verify();
   });
 
@@ -510,9 +696,9 @@ describe('2b ridotta: anteprima modello', () => {
     (root.querySelector('[data-add-section-inline]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    const riga = root.querySelector('[data-section-text="sezione-3"]') as HTMLElement;
-    expect(riga.textContent).toBe('');
-    expect(document.activeElement).toBe(riga);
+    const testo = root.querySelector('[data-section-text="sezione-3"]') as HTMLElement;
+    expect(capoversi(fixture, 'sezione-3')).toEqual(['']);
+    expect(document.activeElement).toBe(testo);
     // Il pannello Blocchi non c'e' piu': inserire blocchi e' compito dell'editor (T061).
     const schede = Array.from(root.querySelectorAll('.panel-tabs button')).map((b) =>
       b.textContent?.trim(),
@@ -523,7 +709,7 @@ describe('2b ridotta: anteprima modello', () => {
 
   it('012 T062: renames the section from the properties tab and refuses a duplicate name', () => {
     const { fixture, http, root } = caricaBozza();
-    apriEditor(root, 'dettagli');
+    apriEditor(fixture, 'dettagli');
     apriPannello(root, 'Proprietà');
     fixture.detectChanges();
 
@@ -652,9 +838,7 @@ describe('2b ridotta: anteprima modello', () => {
     placeholder.click();
     fixture.detectChanges();
 
-    expect(root.querySelector('[data-section-text="sezione-1"]')?.textContent).toBe(
-      '{{titolo_it}}',
-    );
+    expect(capoversi(fixture, 'sezione-1')).toEqual(['{{titolo_it}}']);
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
     expect(request.request.body.sezioni[0].contenuto[0].placeholder_usati).toEqual(['titolo_it']);
@@ -687,16 +871,9 @@ describe('2b ridotta: anteprima modello', () => {
   });
 
   it('shows backend placeholder violations when saving fails', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
-
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.textContent = 'Testo con {{campo_non_dichiarato}}';
-    editor.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    const { fixture, http, root } = caricaBozza();
+    cursoreInFondo(fixture, 'intro');
+    digita(fixture, 'intro', ' {{campo_non_dichiarato}}');
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni').flush(
       {
@@ -714,42 +891,13 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  function seleziona(nodo: Node, da: number, a: number): void {
-    const range = document.createRange();
-    range.setStart(nodo, da);
-    range.setEnd(nodo, a);
-    const selezione = document.getSelection()!;
-    selezione.removeAllRanges();
-    selezione.addRange(range);
-  }
-
-  function incollaIn(editor: HTMLElement, html: string, testo = ''): void {
-    const evento = new Event('paste', { bubbles: true, cancelable: true });
-    Object.defineProperty(evento, 'clipboardData', {
-      value: { getData: (tipo: string) => (tipo === 'text/html' ? html : testo) },
-    });
-    editor.dispatchEvent(evento);
-  }
-
-  function salva(root: HTMLElement, http: HttpTestingController) {
-    (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
-    return http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
-  }
-
   it('012 US1: applies bold to the selected words and saves fragments, never markup', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
-
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.focus();
-    editor.dispatchEvent(new Event('focus'));
-    seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+    const { fixture, http, root } = caricaBozza();
+    selezionaTesto(fixture, 'intro', 'Introduzione');
     (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
+    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
     expect(editor.querySelector('strong')?.textContent).toBe('Introduzione');
     const request = salva(root, http);
     const blocco = request.request.body.sezioni[0].contenuto[0];
@@ -763,50 +911,84 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  it('012 US1: Ctrl+I toggles italic on the selection like a word processor', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
+  it('012 T077: one selection across paragraphs, list and heading of a section takes the bold', () => {
+    const { fixture, http, root } = caricaBozzaCon([
+      { ...paragrafo('t', [{ testo: 'Art. 1 - Indizione' }]), tipo: 'TITOLO' },
+      paragrafo('p1', [{ testo: 'VISTO il decreto;' }], 1),
+      paragrafo('p2', [{ testo: 'CONSIDERATO che ' }, { testo: 'serve', corsivo: true }], 2),
+      { ...elenco('e', ['un posto a Roma']), ordine: 3 },
+    ]);
+    // Dal titolo fino a meta' della voce: quattro blocchi in una selezione sola.
+    selezionaTesto(fixture, 'art', 'Art. 1', 'un posto');
+    (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.focus();
-    editor.dispatchEvent(new Event('focus'));
-    seleziona(editor.firstChild!, 0, 5);
-    const tasto = new KeyboardEvent('keydown', { key: 'i', ctrlKey: true, cancelable: true });
-    editor.dispatchEvent(tasto);
-    expect(tasto.defaultPrevented).toBe(true);
-    expect(editor.querySelector('em')?.textContent).toBe('Intro');
+    const request = salva(root, http);
+    const [titolo, p1, p2, lista] = request.request.body.sezioni[0].contenuto;
+    expect(titolo.frammenti).toEqual([{ testo: 'Art. 1 - Indizione', grassetto: true }]);
+    expect(p1.frammenti).toEqual([{ testo: 'VISTO il decreto;', grassetto: true }]);
+    expect(p2.frammenti).toEqual([
+      { testo: 'CONSIDERATO che ', grassetto: true },
+      { testo: 'serve', grassetto: true, corsivo: true },
+    ]);
+    expect(lista.elementi[0].frammenti).toEqual([
+      { testo: 'un posto', grassetto: true },
+      { testo: ' a Roma' },
+    ]);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
     http.verify();
   });
 
-  it('012 US1: pasting from Word splits the paragraph into visible blocks and a computed list', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
+  it('012 T077: the style menu applies to every selected paragraph', () => {
+    const { fixture, http, root } = caricaBozzaCon([
+      paragrafo('p1', [{ testo: 'primo requisito' }]),
+      paragrafo('p2', [{ testo: 'secondo requisito' }], 1),
+    ]);
+    selezionaTesto(fixture, 'art', 'primo', 'secondo');
+    scegliStile(root, 'ELENCO_NUMERICO');
     fixture.detectChanges();
 
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.focus();
-    editor.dispatchEvent(new Event('focus'));
-    // Il cursore alla fine del testo esistente.
-    seleziona(editor.firstChild!, editor.textContent!.length, editor.textContent!.length);
+    expect(marcatori(root)).toEqual(['1.', '2.']);
+    const request = salva(root, http);
+    const blocchi = request.request.body.sezioni[0].contenuto;
+    expect(blocchi).toHaveLength(1);
+    expect(
+      blocchi[0].elementi.map((e: { frammenti: { testo: string }[] }) => e.frammenti[0].testo),
+    ).toEqual(['primo requisito', 'secondo requisito']);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.verify();
+  });
+
+  it('012 US1: Ctrl+I toggles italic on the selection like a word processor', () => {
+    const { fixture, http, root } = caricaBozza();
+    selezionaTesto(fixture, 'intro', 'Intro');
+    const tasto = premi(fixture, 'intro', 'i', { ctrlKey: true });
+    expect(tasto.defaultPrevented).toBe(true);
+    expect(root.querySelector('[data-section-text="intro"] em')?.textContent).toBe('Intro');
+    http.verify();
+  });
+
+  it('012 US1: pasting from Word gives visible paragraphs and a computed list', () => {
+    const { fixture, http, root } = caricaBozza();
+    // Una riga nuova dopo il testo esistente, e li' si incolla.
+    cursoreInFondo(fixture, 'intro');
+    premi(fixture, 'intro', 'Enter');
     incollaIn(
-      editor,
+      apriEditor(fixture),
       `<p class=MsoNormal><b>VISTO</b> il decreto;</p>
        <p class=MsoListParagraph style='mso-list:l0 level1 lfo1'><span style='mso-list:Ignore'>1.<span>&nbsp; </span></span>Sono indetti:</p>
        <p class=MsoListParagraph style='mso-list:l0 level2 lfo1'><span style='mso-list:Ignore'>a)<span>&nbsp; </span></span>un posto a Roma</p>`,
     );
     fixture.detectChanges();
 
-    const editori = root.querySelectorAll('[data-section-text="intro"]');
-    expect(editori.length).toBe(4);
-    const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) => m.textContent);
-    expect(marcatori).toEqual(['1.', 'a)']);
-    // Il marcatore di Word non resta nel testo: si sommerebbe a quello calcolato.
-    expect(editori[2].textContent).toBe('Sono indetti:');
+    expect(capoversi(fixture)).toEqual([
+      'Introduzione {{titolo_it}}',
+      'VISTO il decreto;',
+      // Il marcatore di Word non resta nel testo: si sommerebbe a quello calcolato.
+      'Sono indetti:',
+      'un posto a Roma',
+    ]);
+    expect(marcatori(root)).toEqual(['1.', 'a)']);
 
     const request = salva(root, http);
     const blocchi = request.request.body.sezioni[0].contenuto;
@@ -830,22 +1012,13 @@ describe('2b ridotta: anteprima modello', () => {
   });
 
   it('012: the list button turns the paragraph into a list without writing numbers in the text', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
-
-    const editor = root.querySelector('[data-section-text="dettagli"]') as HTMLElement;
-    editor.focus();
-    editor.dispatchEvent(new Event('focus'));
+    const { fixture, http, root } = caricaBozza();
+    apriEditor(fixture, 'dettagli');
     (root.querySelector('[data-list="NUMERICO"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(root.querySelector('.item-marker')?.textContent).toBe('1.');
-    expect(root.querySelector('[data-section-text="dettagli"]')?.textContent).toBe(
-      'Posti disponibili {{numero_posti}}',
-    );
+    expect(marcatori(root)).toEqual(['1.']);
+    expect(capoversi(fixture, 'dettagli')).toEqual(['Posti disponibili {{numero_posti}}']);
     const request = salva(root, http);
     const blocco = request.request.body.sezioni[1].contenuto[0];
     expect(blocco.tipo).toBe('ELENCO');
@@ -897,64 +1070,9 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  function apriEditor(root: HTMLElement, sezione = 'intro'): HTMLElement {
-    const editor = root.querySelector(`[data-section-text="${sezione}"]`) as HTMLElement;
-    editor.focus();
-    editor.dispatchEvent(new Event('focus'));
-    return editor;
-  }
-
-  function apriPannello(root: HTMLElement, nome: string): void {
-    (
-      Array.from(root.querySelectorAll('.panel-tabs button')).find((button) =>
-        button.textContent?.includes(nome),
-      ) as HTMLButtonElement
-    ).click();
-  }
-
-  function scegliStile(root: HTMLElement, valore: string): void {
-    const menu = root.querySelector('[data-style-select]') as HTMLSelectElement;
-    menu.value = valore;
-    menu.dispatchEvent(new Event('change'));
-  }
-
-  function elenco(id: string, voci: string[], marcatore = 'NUMERICO') {
-    return {
-      id,
-      tipo: 'ELENCO',
-      frammenti: [] as { testo: string }[],
-      elementi: voci.map((testo) => ({ livello: 0, marcatore, frammenti: [{ testo }] })),
-      posizionamento: 'BODY',
-      ordine: 0,
-      stile: null,
-      placeholder_usati: [] as string[],
-    };
-  }
-
-  /** Una bozza con una sola sezione fatta dei blocchi indicati. */
-  function caricaBozzaCon(blocchi: unknown[]) {
-    const contesto = setup();
-    contesto.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(contesto.http, {
-      ...sezioniResponse,
-      sezioni: [{ codice: 'art', ordine: 0, contenuto: blocchi }],
-    } as unknown as typeof sezioniResponse);
-    flushDerivationConfig(contesto.http);
-    return contesto;
-  }
-
-  function caricaBozza() {
-    const contesto = setup();
-    contesto.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(contesto.http);
-    flushDerivationConfig(contesto.http);
-    contesto.fixture.detectChanges();
-    return contesto;
-  }
-
   it('012 T059: the style menu turns the current line into a centred article heading', () => {
     const { fixture, http, root } = caricaBozza();
-    apriEditor(root);
+    apriEditor(fixture);
     const menu = root.querySelector('[data-style-select]') as HTMLSelectElement;
     expect(menu.value).toBe('PARAGRAFO');
     scegliStile(root, 'TITOLO');
@@ -979,7 +1097,7 @@ describe('2b ridotta: anteprima modello', () => {
 
   it('012 T059: turning a paragraph into a signature moves it where the format allows a signature', () => {
     const { fixture, http, root } = caricaBozza();
-    apriEditor(root);
+    apriEditor(fixture);
     scegliStile(root, 'FIRMA');
     fixture.detectChanges();
 
@@ -996,13 +1114,13 @@ describe('2b ridotta: anteprima modello', () => {
 
   it('012 T030: justifies the selected block from the toolbar', () => {
     const { fixture, http, root } = caricaBozza();
-    const editor = apriEditor(root);
+    const editor = apriEditor(fixture);
     const giustifica = root.querySelector('[data-align="GIUSTIFICATO"]') as HTMLButtonElement;
     expect(giustifica.getAttribute('aria-pressed')).toBe('false');
     giustifica.click();
     fixture.detectChanges();
 
-    expect(editor.style.textAlign).toBe('justify');
+    expect((editor.firstElementChild as HTMLElement).style.textAlign).toBe('justify');
     expect(giustifica.getAttribute('aria-pressed')).toBe('true');
     const request = salva(root, http);
     expect(request.request.body.sezioni[0].contenuto[0].allineamento).toBe('GIUSTIFICATO');
@@ -1012,27 +1130,15 @@ describe('2b ridotta: anteprima modello', () => {
 
   it('012: Enter opens a new paragraph at the caret and Backspace at its start joins it back', () => {
     const { fixture, http, root } = caricaBozza();
-    const editor = apriEditor(root);
-    seleziona(editor.firstChild!, 'Introduzione'.length, 'Introduzione'.length);
-    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
-    fixture.detectChanges();
+    cursoreDopo(fixture, 'intro', 'Introduzione');
+    premi(fixture, 'intro', 'Enter');
+    expect(capoversi(fixture)).toEqual(['Introduzione', ' {{titolo_it}}']);
 
-    let editori = root.querySelectorAll<HTMLElement>('[data-section-text="intro"]');
-    expect(Array.from(editori).map((e) => e.textContent)).toEqual([
-      'Introduzione',
-      ' {{titolo_it}}',
-    ]);
-
-    const secondo = editori[1];
-    secondo.focus();
-    secondo.dispatchEvent(new Event('focus'));
-    seleziona(secondo.firstChild!, 0, 0);
-    secondo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', cancelable: true }));
-    fixture.detectChanges();
-
-    editori = root.querySelectorAll<HTMLElement>('[data-section-text="intro"]');
-    expect(editori.length).toBe(1);
+    // Il cursore e' all'inizio del capoverso nuovo.
+    premi(fixture, 'intro', 'Backspace');
+    expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}}']);
     const request = salva(root, http);
+    expect(request.request.body.sezioni[0].contenuto).toHaveLength(1);
     expect(request.request.body.sezioni[0].contenuto[0].frammenti).toEqual([
       { testo: 'Introduzione {{titolo_it}}' },
     ]);
@@ -1042,20 +1148,26 @@ describe('2b ridotta: anteprima modello', () => {
 
   it('012 T060: a page break goes after the text with a new line, and Delete removes it', () => {
     const { fixture, http, root } = caricaBozza();
-    apriEditor(root);
+    const editor = apriEditor(fixture);
     (root.querySelector('[data-insert-block="INTERRUZIONE_PAGINA"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     // Come in Word: dopo l'interruzione c'e' una riga vuota, col cursore, sulla pagina nuova.
-    const editori = root.querySelectorAll<HTMLElement>('[data-section-text="intro"].editor-text');
-    expect(editori.length).toBe(2);
-    expect(document.activeElement).toBe(editori[1]);
-    const interruzione = root.querySelector('.page-break[data-block-id]') as HTMLElement;
-    expect(interruzione.textContent).toContain('Interruzione di pagina');
-    interruzione.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
-    fixture.detectChanges();
+    expect(capoversi(fixture)).toEqual([
+      'Introduzione {{titolo_it}}',
+      'Interruzione di pagina',
+      '',
+    ]);
+    const vista = vistaDi(fixture, 'intro');
+    expect(vista.state.selection.$from.parent.content.size).toBe(0);
+    expect(document.activeElement).toBe(editor);
 
-    expect(root.querySelector('.page-break[data-block-id]')).toBeNull();
+    // Un clic sull'interruzione la seleziona; Canc la elimina.
+    const pos = vista.state.doc.firstChild!.nodeSize;
+    vista.dispatch(vista.state.tr.setSelection(NodeSelection.create(vista.state.doc, pos)));
+    premi(fixture, 'intro', 'Delete');
+
+    expect(root.querySelector('.page-break')).toBeNull();
     const request = salva(root, http);
     expect(request.request.body.sezioni[0].contenuto.map((b: { tipo: string }) => b.tipo)).toEqual([
       'PARAGRAFO',
@@ -1082,25 +1194,26 @@ describe('2b ridotta: anteprima modello', () => {
   });
 
   it('012 T029: list numbering restarts after an article heading, as in the PDF', () => {
-    const { fixture, http, root } = caricaBozzaCon([
+    const { http, root } = caricaBozzaCon([
       elenco('e1', ['primo comma', 'secondo comma']),
-      { ...elenco('t', []), tipo: 'TITOLO', frammenti: [{ testo: 'Art. 2' }], elementi: [] },
-      elenco('e2', ['comma dell articolo 2']),
+      {
+        ...elenco('t', []),
+        tipo: 'TITOLO',
+        frammenti: [{ testo: 'Art. 2' }],
+        elementi: [],
+        ordine: 1,
+      },
+      { ...elenco('e2', ['comma dell articolo 2']), ordine: 2 },
     ]);
-    fixture.detectChanges();
-
-    const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) =>
-      m.textContent?.trim(),
-    );
-    expect(marcatori).toEqual(['1.', '2.', '1.']);
+    expect(marcatori(root)).toEqual(['1.', '2.', '1.']);
     http.verify();
   });
 
   it('012: after an autosave the next command still applies to the block being edited', () => {
     const { fixture, http, root } = caricaBozza();
-    const editor = apriEditor(root, 'dettagli');
-    editor.textContent = 'Posti disponibili: {{numero_posti}}';
-    editor.dispatchEvent(new Event('input'));
+    const editor = apriEditor(fixture, 'dettagli');
+    cursoreDopo(fixture, 'dettagli', 'Posti disponibili');
+    digita(fixture, 'dettagli', ':');
     editor.dispatchEvent(new FocusEvent('blur'));
     const autosave = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
     autosave.flush({ ...sezioniResponse, sezioni: autosave.request.body.sezioni });
@@ -1113,20 +1226,22 @@ describe('2b ridotta: anteprima modello', () => {
     const [intro, dettagli] = request.request.body.sezioni;
     expect(intro.contenuto[0].tipo).toBe('PARAGRAFO');
     expect(dettagli.contenuto[0].tipo).toBe('TITOLO');
+    expect(dettagli.contenuto[0].frammenti).toEqual([
+      { testo: 'Posti disponibili: {{numero_posti}}' },
+    ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
     http.verify();
   });
 
   it('012: a numbered list after a bulleted one starts again from 1, like Word', () => {
-    const { fixture, http, root } = caricaBozzaCon([
+    const { http, root } = caricaBozzaCon([
       elenco('p', ['punto'], 'PUNTATO'),
-      elenco('n', ['comma']),
+      { ...elenco('n', ['comma']), ordine: 1 },
     ]);
-    fixture.detectChanges();
-
-    const marcatori = Array.from(root.querySelectorAll('.item-marker'));
-    expect(marcatori.map((m) => m.textContent?.trim())).toEqual(['●', '1.']);
-    expect(marcatori[0].classList).toContain('marker-puntato');
+    expect(marcatori(root)).toEqual(['●', '1.']);
+    expect(root.querySelector('[data-marcatore]')?.getAttribute('data-marcatore-tipo')).toBe(
+      'PUNTATO',
+    );
     http.verify();
   });
 
@@ -1175,9 +1290,8 @@ describe('2b ridotta: anteprima modello', () => {
 
     it('saves unsaved edits first, so the preview shows what is on screen', () => {
       const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      editor.textContent = 'Testo appena scritto';
-      editor.dispatchEvent(new Event('input'));
+      cursoreInFondo(fixture, 'intro');
+      digita(fixture, 'intro', ' appena scritto');
       (root.querySelector('[data-preview-open]') as HTMLButtonElement).click();
 
       // Nessuna anteprima prima che il salvataggio sia concluso.
@@ -1231,51 +1345,29 @@ describe('2b ridotta: anteprima modello', () => {
   });
 
   describe('012 T064: comando / per i segnaposto', () => {
-    /** Scrive `testo` in fondo all'editor come farebbe la tastiera, un carattere alla volta. */
-    function scrivi(editor: HTMLElement, testo: string): void {
-      for (const carattere of testo) {
-        const nodo = editor.lastChild as Text;
-        nodo.textContent += carattere;
-        seleziona(nodo, nodo.textContent!.length, nodo.textContent!.length);
-        editor.dispatchEvent(new InputEvent('input', { data: carattere, bubbles: true }));
-      }
-    }
-
-    function tasto(editor: HTMLElement, key: string): KeyboardEvent {
-      const evento = new KeyboardEvent('keydown', { key, cancelable: true, bubbles: true });
-      editor.dispatchEvent(evento);
-      return evento;
-    }
-
-    function preparaEditor() {
-      const contesto = caricaBozza();
-      const editor = apriEditor(contesto.root, 'dettagli');
-      editor.replaceChildren(document.createTextNode('Posti:'));
-      seleziona(editor.firstChild!, 6, 6);
-      return { ...contesto, editor };
+    function preparaEditor(frammenti: object[] = [{ testo: 'Posti:' }]) {
+      const contesto = caricaBozzaCon([paragrafo('p', frammenti)]);
+      cursoreInFondo(contesto.fixture, 'art');
+      return contesto;
     }
 
     it('opens on a / that starts a word, filters while typing and inserts with Enter', () => {
-      const { fixture, http, root, editor } = preparaEditor();
-      scrivi(editor, ' /');
-      fixture.detectChanges();
+      const { fixture, http, root } = preparaEditor();
+      digita(fixture, 'art', ' /');
       expect(root.querySelector('[data-slash-menu]')).toBeTruthy();
-      const tutte = root.querySelectorAll('[data-slash-item]').length;
-      expect(tutte).toBeGreaterThan(1);
+      expect(root.querySelectorAll('[data-slash-item]').length).toBeGreaterThan(1);
 
-      scrivi(editor, 'num');
-      fixture.detectChanges();
+      digita(fixture, 'art', 'num');
       const voci = Array.from(root.querySelectorAll('[data-slash-item]')).map((v) =>
         v.getAttribute('data-slash-item'),
       );
       expect(voci).toEqual(['numero_posti']);
 
-      expect(tasto(editor, 'Enter').defaultPrevented).toBe(true);
-      fixture.detectChanges();
-      expect(editor.textContent).toBe('Posti: {{numero_posti}}');
+      expect(premi(fixture, 'art', 'Enter').defaultPrevented).toBe(true);
+      expect(capoversi(fixture, 'art')).toEqual(['Posti: {{numero_posti}}']);
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
       const request = salva(root, http);
-      expect(request.request.body.sezioni[1].contenuto[0].placeholder_usati).toEqual([
+      expect(request.request.body.sezioni[0].contenuto[0].placeholder_usati).toEqual([
         'numero_posti',
       ]);
       request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
@@ -1283,36 +1375,30 @@ describe('2b ridotta: anteprima modello', () => {
     });
 
     it('does not open inside a word: "e/o" and dates are text', () => {
-      const { fixture, http, root, editor } = preparaEditor();
-      scrivi(editor, ' e/o 01/10');
-      fixture.detectChanges();
+      const { fixture, http, root } = preparaEditor();
+      digita(fixture, 'art', ' e/o 01/10');
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
-      expect(editor.textContent).toBe('Posti: e/o 01/10');
+      expect(capoversi(fixture, 'art')).toEqual(['Posti: e/o 01/10']);
       http.verify();
     });
 
     it('Escape closes the menu and keeps the / as typed; a space closes it too', () => {
-      const { fixture, http, root, editor } = preparaEditor();
-      scrivi(editor, ' /');
-      fixture.detectChanges();
-      expect(tasto(editor, 'Escape').defaultPrevented).toBe(true);
-      fixture.detectChanges();
+      const { fixture, http, root } = preparaEditor();
+      digita(fixture, 'art', ' /');
+      expect(premi(fixture, 'art', 'Escape').defaultPrevented).toBe(true);
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
-      expect(editor.textContent).toBe('Posti: /');
+      expect(capoversi(fixture, 'art')).toEqual(['Posti: /']);
 
-      scrivi(editor, ' /x ');
-      fixture.detectChanges();
+      digita(fixture, 'art', ' /x ');
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
-      expect(editor.textContent).toBe('Posti: / /x ');
+      expect(capoversi(fixture, 'art')).toEqual(['Posti: / /x ']);
       http.verify();
     });
 
     it('arrows move the choice and a click inserts it', () => {
-      const { fixture, http, root, editor } = preparaEditor();
-      scrivi(editor, ' /');
-      fixture.detectChanges();
-      tasto(editor, 'ArrowDown');
-      fixture.detectChanges();
+      const { fixture, http, root } = preparaEditor();
+      digita(fixture, 'art', ' /');
+      premi(fixture, 'art', 'ArrowDown');
       const attiva = root.querySelector('[data-slash-item][aria-selected="true"]');
       const seconda = root.querySelectorAll('[data-slash-item]')[1];
       expect(attiva).toBe(seconda);
@@ -1320,27 +1406,18 @@ describe('2b ridotta: anteprima modello', () => {
       const codice = seconda.getAttribute('data-slash-item');
       seconda.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       fixture.detectChanges();
-      expect(editor.textContent).toBe(`Posti: {{${codice}}}`);
+      expect(capoversi(fixture, 'art')).toEqual([`Posti: {{${codice}}}`]);
       http.verify();
     });
 
     it('the placeholder takes the emphasis of the text it is typed into (FR-005)', () => {
-      const { fixture, http, editor } = preparaEditor();
-      editor.replaceChildren();
-      const grassetto = document.createElement('strong');
-      grassetto.textContent = 'Posti:';
-      editor.appendChild(grassetto);
-      const nodo = grassetto.firstChild as Text;
-      for (const carattere of ' /num') {
-        nodo.textContent += carattere;
-        seleziona(nodo, nodo.textContent!.length, nodo.textContent!.length);
-        editor.dispatchEvent(new InputEvent('input', { data: carattere, bubbles: true }));
-      }
-      fixture.detectChanges();
-      tasto(editor, 'Enter');
-      fixture.detectChanges();
+      const { fixture, http, root } = preparaEditor([{ testo: 'Posti:', grassetto: true }]);
+      digita(fixture, 'art', ' /num');
+      premi(fixture, 'art', 'Enter');
 
-      expect(editor.querySelector('strong')?.textContent).toBe('Posti: {{numero_posti}}');
+      expect(root.querySelector('[data-section-text="art"] strong')?.textContent).toBe(
+        'Posti: {{numero_posti}}',
+      );
       http.verify();
     });
   });
@@ -1354,8 +1431,8 @@ describe('2b ridotta: anteprima modello', () => {
 
     it('links the selected words and saves the address on the fragment', () => {
       const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+      const editor = apriEditor(fixture);
+      selezionaTesto(fixture, 'intro', 'Introduzione');
       const campo = apriBarra(root, fixture)!;
       campo.value = 'www.cnr.it';
       (root.querySelector('[data-link-apply]') as HTMLButtonElement).click();
@@ -1374,8 +1451,8 @@ describe('2b ridotta: anteprima modello', () => {
 
     it('T051: refuses a javascript: address and leaves the text untouched', () => {
       const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, 0, 5);
+      const editor = apriEditor(fixture);
+      selezionaTesto(fixture, 'intro', 'Intro');
       const campo = apriBarra(root, fixture)!;
       campo.value = 'javascript:alert(1)';
       campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -1388,8 +1465,7 @@ describe('2b ridotta: anteprima modello', () => {
 
     it('asks to select the text first instead of linking nothing', () => {
       const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, 3, 3);
+      cursoreDopo(fixture, 'intro', 'Int');
       expect(apriBarra(root, fixture)).toBeNull();
       expect(root.querySelector('[data-link-error]')?.textContent).toContain('Seleziona prima');
       http.verify();
@@ -1397,108 +1473,93 @@ describe('2b ridotta: anteprima modello', () => {
   });
 
   describe('annulla e ripeti (riscontro del 2026-10-02)', () => {
-    function tasto(editor: HTMLElement, key: string, shiftKey = false): KeyboardEvent {
-      const evento = new KeyboardEvent('keydown', {
-        key,
-        shiftKey,
-        ctrlKey: true,
-        cancelable: true,
-        bubbles: true,
-      });
-      editor.dispatchEvent(evento);
-      return evento;
-    }
-
-    function testi(root: HTMLElement, sezione = 'intro'): string[] {
-      return Array.from(
-        root.querySelectorAll<HTMLElement>(`[data-section-text="${sezione}"].editor-text`),
-      ).map((e) => e.textContent ?? '');
-    }
-
     it('undoes a burst of typing in one step and redoes it', () => {
-      const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      editor.textContent = 'Introduzione {{titolo_it}} e altro';
-      editor.dispatchEvent(new Event('input'));
-      editor.textContent = 'Introduzione {{titolo_it}} e altro ancora';
-      editor.dispatchEvent(new Event('input'));
-      fixture.detectChanges();
+      const { fixture, http } = caricaBozza();
+      cursoreInFondo(fixture, 'intro');
+      digita(fixture, 'intro', ' e altro ancora');
 
-      expect(tasto(editor, 'z').defaultPrevented).toBe(true);
-      fixture.detectChanges();
-      expect(testi(root)).toEqual(['Introduzione {{titolo_it}}']);
+      expect(premi(fixture, 'intro', 'z', { ctrlKey: true }).defaultPrevented).toBe(true);
+      expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}}']);
 
-      tasto(editor, 'z', true);
-      fixture.detectChanges();
-      expect(testi(root)).toEqual(['Introduzione {{titolo_it}} e altro ancora']);
+      premi(fixture, 'intro', 'z', { ctrlKey: true, shiftKey: true });
+      expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}} e altro ancora']);
       http.verify();
     });
 
     it('undoes bold applied from the toolbar, with the toolbar button too', () => {
       const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+      selezionaTesto(fixture, 'intro', 'Introduzione');
       (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
       fixture.detectChanges();
+      const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
       expect(editor.querySelector('strong')).toBeTruthy();
 
       (root.querySelector('[data-undo]') as HTMLButtonElement).click();
       fixture.detectChanges();
       expect(editor.querySelector('strong')).toBeNull();
       expect((root.querySelector('[data-redo]') as HTMLButtonElement).disabled).toBe(false);
+      // La selezione torna dov'era: si puo' rifare subito un'altra scelta.
+      const { from, to } = vistaDi(fixture, 'intro').state.selection;
+      expect(vistaDi(fixture, 'intro').state.doc.textBetween(from, to)).toBe('Introduzione');
       http.verify();
     });
 
     it('undoes a paragraph split by Enter, putting the text back in one block', () => {
-      const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, 'Introduzione'.length, 'Introduzione'.length);
-      editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
-      fixture.detectChanges();
-      expect(testi(root).length).toBe(2);
+      const { fixture, http } = caricaBozza();
+      cursoreDopo(fixture, 'intro', 'Introduzione');
+      premi(fixture, 'intro', 'Enter');
+      expect(capoversi(fixture)).toHaveLength(2);
 
-      const attivo = document.activeElement as HTMLElement;
-      tasto(attivo, 'z');
-      fixture.detectChanges();
-      expect(testi(root)).toEqual(['Introduzione {{titolo_it}}']);
+      premi(fixture, 'intro', 'z', { ctrlKey: true });
+      expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}}']);
       http.verify();
     });
 
     it('pastes a title copied from a PDF as one block, not one per line', () => {
-      const { fixture, http, root } = caricaBozza();
-      const editor = apriEditor(root);
-      seleziona(editor.firstChild!, editor.textContent!.length, editor.textContent!.length);
+      const { fixture, http } = caricaBozza();
+      cursoreInFondo(fixture, 'intro');
       incollaIn(
-        editor,
+        apriEditor(fixture),
         '',
         'CONCORSO PUBBLICO PER TITOLI ED ESAMI\nDI LAVORO A TEMPO PIENO\nRICERCHE - VARIE SEDI',
       );
       fixture.detectChanges();
 
-      expect(testi(root)).toEqual([
+      expect(capoversi(fixture)).toEqual([
         'Introduzione {{titolo_it}}CONCORSO PUBBLICO PER TITOLI ED ESAMI DI LAVORO A TEMPO PIENO RICERCHE - VARIE SEDI',
       ]);
       http.verify();
     });
+
+    it('012 T077: a pasted text can be selected whole and set bold in one go', () => {
+      const { fixture, http, root } = caricaBozza();
+      cursoreInFondo(fixture, 'intro');
+      premi(fixture, 'intro', 'Enter');
+      incollaIn(apriEditor(fixture), '', 'Primo capoverso.\n\nSecondo capoverso.\n\nTerzo.');
+      fixture.detectChanges();
+      expect(capoversi(fixture)).toHaveLength(4);
+
+      selezionaTesto(fixture, 'intro', 'Primo', 'Terzo.');
+      (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const grassetti = Array.from(root.querySelectorAll('[data-section-text="intro"] strong')).map(
+        (s) => s.textContent,
+      );
+      expect(grassetti).toEqual(['Primo capoverso.', 'Secondo capoverso.', 'Terzo.']);
+      http.verify();
+    });
   });
 
-  it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
-
+  it('tracks unsaved changes in the topbar and autosaves when the text loses focus', () => {
+    const { fixture, http, root } = caricaBozza();
     expect(root.querySelector('[data-save-state]')?.textContent).toContain(
       'Tutte le modifiche salvate',
     );
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.textContent = 'Introduzione riscritta {{titolo_it}}';
-    editor.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    selezionaTesto(fixture, 'intro', 'Introduzione');
+    digita(fixture, 'intro', 'Introduzione riscritta');
     expect(root.querySelector('[data-save-state]')?.textContent).toContain('Modifiche non salvate');
 
-    editor.dispatchEvent(new Event('blur'));
+    vistaDi(fixture, 'intro').dom.dispatchEvent(new FocusEvent('blur'));
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
     expect(request.request.method).toBe('PUT');
     expect(request.request.body.sezioni[0].contenuto[0].frammenti).toEqual([
@@ -1514,44 +1575,37 @@ describe('2b ridotta: anteprima modello', () => {
     http.verify();
   });
 
-  it('keeps edits typed while a save is in flight instead of overwriting them', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
+  it('moving from one section to another does not autosave', () => {
+    const { fixture, http } = caricaBozza();
+    cursoreInFondo(fixture, 'intro');
+    digita(fixture, 'intro', '!');
+    const verso = vistaDi(fixture, 'dettagli').dom;
+    vistaDi(fixture, 'intro').dom.dispatchEvent(new FocusEvent('blur', { relatedTarget: verso }));
+    http.expectNone('/api/v1/builder/modelli/model/versioni/v2/sezioni');
+    http.verify();
+  });
 
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.textContent = 'Primo testo';
-    editor.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+  it('keeps edits typed while a save is in flight instead of overwriting them', () => {
+    const { fixture, http, root } = caricaBozza();
+    selezionaTesto(fixture, 'intro', 'Introduzione {{titolo_it}}');
+    digita(fixture, 'intro', 'Primo testo');
     (root.querySelector('[data-save-sections]') as HTMLButtonElement).click();
     const request = http.expectOne('/api/v1/builder/modelli/model/versioni/v2/sezioni');
 
     // L'utente continua a scrivere mentre il PUT e' ancora in volo.
-    editor.textContent = 'Primo testo, poi il seguito';
-    editor.dispatchEvent(new Event('input'));
+    digita(fixture, 'intro', ', poi il seguito');
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
     fixture.detectChanges();
 
-    expect(root.querySelector('[data-section-text="intro"]')?.textContent).toBe(
-      'Primo testo, poi il seguito',
-    );
+    expect(capoversi(fixture)).toEqual(['Primo testo, poi il seguito']);
     expect(root.querySelector('[data-save-state]')?.textContent).toContain('Modifiche non salvate');
     http.verify();
   });
 
   it('blocks the version transition while there are unsaved changes', () => {
-    const { fixture, http, root } = setup();
-    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
-    flushSections(http);
-    flushDerivationConfig(http);
-    fixture.detectChanges();
-
-    const editor = root.querySelector('[data-section-text="intro"]') as HTMLElement;
-    editor.textContent = 'Testo non ancora salvato';
-    editor.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    const { fixture, http, root } = caricaBozza();
+    cursoreInFondo(fixture, 'intro');
+    digita(fixture, 'intro', ' non ancora salvato');
 
     const dialog = root.querySelector('[data-confirm-transition]') as HTMLDialogElement;
     expect(dialog.textContent).toContain('modifiche non salvate');

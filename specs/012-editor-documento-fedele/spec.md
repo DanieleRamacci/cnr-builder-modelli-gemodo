@@ -99,6 +99,14 @@ Chi compone vede un titolo e ottiene un paragrafo qualunque.
   quel momento nel sistema esiste **una sola** forma di paragrafo, non due
   strade di rendering che possono divergere - che e' esattamente il difetto
   gia' visto con H1/H2.
+- Q: Dentro una sezione si deve poter selezionare e formattare piu' capoversi
+  insieme, come in Word? (2026-10-02, dopo la prova sul server: un testo
+  incollato non si riselezionava tutto) → A: **Si', una sezione e' una sola
+  area di scrittura**, su ProseMirror. La selezione si ferma al bordo della
+  sezione, per scelta: la sezione (per esempio "Art. 1") e' l'unita' che in
+  futuro si potra' salvare e riusare fra modelli. Una toolbar sola agisce sulla
+  sezione col cursore. Formato salvato, backend e PDF non cambiano (research.md
+  R9).
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -1,11 +1,11 @@
 /**
  * Il testo di un blocco come sequenza di frammenti (spec 012, FR-001).
  *
- * Questo modulo e' il solo punto in cui il DOM dell'editor e l'HTML degli
- * appunti diventano dati. Al servizio arrivano frammenti - testo puro con
- * attributi booleani - e mai markup: il divieto di HTML del formato
+ * Qui l'HTML degli appunti diventa dati; il testo dell'editor lo converte
+ * `documento-editor.ts` (012 T074). Al servizio arrivano frammenti - testo puro
+ * con attributi booleani - e mai markup: il divieto di HTML del formato
  * (`GEMODO_DOCUMENT_V1`) non viene allentato, perche' l'HTML viene interpretato
- * e scartato qui, nel browser (research.md R8).
+ * e scartato nel browser (research.md R8).
  */
 
 export type FrammentoTesto = {
@@ -70,51 +70,6 @@ export function testoDiFrammenti(frammenti: FrammentoTesto[]): string {
   return frammenti.map((frammento) => frammento.testo).join('');
 }
 
-/** I frammenti dei caratteri `[da, a)`, con la loro enfasi. */
-export function taglia(frammenti: FrammentoTesto[], da: number, a = Infinity): FrammentoTesto[] {
-  const risultato: FrammentoTesto[] = [];
-  let posizione = 0;
-  for (const frammento of frammenti) {
-    const inizio = posizione;
-    posizione += frammento.testo.length;
-    const testo = frammento.testo.slice(Math.max(da - inizio, 0), Math.max(a - inizio, 0));
-    if (testo) risultato.push({ ...frammento, testo });
-  }
-  return normalizzaFrammenti(risultato);
-}
-
-/** Sostituisce i caratteri `[da, a)` con `nuovi`. */
-export function sostituisci(
-  frammenti: FrammentoTesto[],
-  da: number,
-  a: number,
-  nuovi: FrammentoTesto[],
-): FrammentoTesto[] {
-  return normalizzaFrammenti([...taglia(frammenti, 0, da), ...nuovi, ...taglia(frammenti, a)]);
-}
-
-/** Una riga per ogni a capo: e' cosi' che un paragrafo diventa un elenco. */
-export function dividiPerRighe(frammenti: FrammentoTesto[]): FrammentoTesto[][] {
-  const righe: FrammentoTesto[][] = [];
-  let inizio = 0;
-  const testo = testoDiFrammenti(frammenti);
-  for (let i = 0; i <= testo.length; i += 1) {
-    if (i === testo.length || testo[i] === '\n') {
-      const riga = taglia(frammenti, inizio, i);
-      if (riga.length) righe.push(riga);
-      inizio = i + 1;
-    }
-  }
-  return righe;
-}
-
-/** L'inverso di `dividiPerRighe`. */
-export function unisciRighe(righe: FrammentoTesto[][]): FrammentoTesto[] {
-  return normalizzaFrammenti(
-    righe.flatMap((riga, i) => (i === 0 ? riga : [{ testo: '\n' }, ...riga])),
-  );
-}
-
 /**
  * I segnaposto `{{campo}}` usati, cercati **dentro ciascun frammento**.
  *
@@ -150,77 +105,7 @@ function stessaEnfasi(a: FrammentoTesto, b: FrammentoTesto): boolean {
   );
 }
 
-// --- DOM dell'editor --------------------------------------------------------
-
-/**
- * Frammenti -> DOM, alla lettura. L'enfasi diventa `<strong>`/`<em>`/`<u>`,
- * l'a capo dentro il paragrafo un `<br>`.
- */
-export function scriviFrammentiNelDom(elemento: HTMLElement, frammenti: FrammentoTesto[]): void {
-  const documento = elemento.ownerDocument;
-  elemento.replaceChildren();
-  for (const frammento of frammenti) {
-    let contenitore: Node = elemento;
-    const avvolgi = (tag: string): void => {
-      const nodo = documento.createElement(tag);
-      contenitore.appendChild(nodo);
-      contenitore = nodo;
-    };
-    if (frammento.collegamento) {
-      avvolgi('a');
-      (contenitore as HTMLAnchorElement).setAttribute('href', frammento.collegamento);
-    }
-    if (frammento.grassetto) avvolgi('strong');
-    if (frammento.corsivo) avvolgi('em');
-    if (frammento.sottolineato) avvolgi('u');
-    frammento.testo.split('\n').forEach((riga, indice) => {
-      if (indice > 0) contenitore.appendChild(documento.createElement('br'));
-      if (riga) contenitore.appendChild(documento.createTextNode(riga));
-    });
-  }
-  // Un `<br>` finale da solo non apre una riga visibile: i browser ne
-  // aggiungono un secondo come segnaposto, e `leggiFrammentiDalDom` lo ignora.
-  if (testoDiFrammenti(frammenti).endsWith('\n'))
-    elemento.appendChild(documento.createElement('br'));
-}
-
-/**
- * DOM -> frammenti, alla scrittura. Legge sia cio' che scrive
- * `scriviFrammentiNelDom` sia cio' che il browser produce applicando
- * l'enfasi (`<b>`, `<i>`, o `<span style>` secondo il browser).
- */
-export function leggiFrammentiDalDom(radice: Node): FrammentoTesto[] {
-  const frammenti: FrammentoTesto[] = [];
-  const visita = (nodo: Node, enfasi: Enfasi, primoFiglio: boolean): void => {
-    if (nodo.nodeType === TESTO) {
-      frammenti.push({ testo: nodo.textContent ?? '', ...enfasi });
-      return;
-    }
-    if (nodo.nodeType !== ELEMENTO) return;
-    const elemento = nodo as Element;
-    const tag = elemento.localName;
-    if (tag === 'br') {
-      frammenti.push({ testo: '\n', ...enfasi });
-      return;
-    }
-    // Invio dentro un contenteditable produce `<div>` in alcuni browser:
-    // e' un a capo dentro lo stesso paragrafo, non un paragrafo nuovo.
-    if ((tag === 'div' || tag === 'p') && !primoFiglio) {
-      frammenti.push({ testo: '\n', ...enfasi });
-    }
-    const propria = enfasiDiElemento(elemento, enfasi);
-    elemento.childNodes.forEach((figlio, indice) => visita(figlio, propria, indice === 0));
-  };
-  radice.childNodes.forEach((figlio, indice) => visita(figlio, NESSUNA_ENFASI, indice === 0));
-  if (ultimoDiscendente(radice)?.nodeName === 'BR') frammenti.pop();
-  return normalizzaFrammenti(frammenti);
-}
-
-function ultimoDiscendente(radice: Node): Node | null {
-  let nodo = radice.lastChild;
-  while (nodo?.lastChild) nodo = nodo.lastChild;
-  return nodo;
-}
+// --- Lettura dell'HTML ------------------------------------------------------
 
 const ELEMENTO = 1;
 const TESTO = 3;
@@ -552,107 +437,6 @@ function raggruppa(capoversi: Capoverso[]): BloccoIncollato[] {
   return blocchi;
 }
 
-// --- Enfasi su una selezione (FR-006) -----------------------------------------
-
-export type AttributoEnfasi = 'grassetto' | 'corsivo' | 'sottolineato';
-
-/**
- * Applica o toglie un'enfasi ai caratteri `[inizio, fine)` del testo.
- *
- * Come in un elaboratore di testi: se tutta la selezione ha gia' l'enfasi la
- * si toglie, altrimenti la si mette a tutta. Si lavora sui frammenti e non con
- * `document.execCommand`, che ogni browser traduce in markup diverso e che
- * e' deprecato: cosi' il risultato e' lo stesso ovunque ed e' verificabile.
- */
-export function applicaEnfasi(
-  frammenti: FrammentoTesto[],
-  inizio: number,
-  fine: number,
-  attributo: AttributoEnfasi,
-): FrammentoTesto[] {
-  if (fine <= inizio) return normalizzaFrammenti(frammenti);
-  const pezzi: { frammento: FrammentoTesto; dentro: boolean }[] = [];
-  let posizione = 0;
-  for (const frammento of frammenti) {
-    const da = posizione;
-    const a = posizione + frammento.testo.length;
-    posizione = a;
-    const tagli = [da, Math.min(Math.max(inizio, da), a), Math.min(Math.max(fine, da), a), a];
-    for (let i = 0; i < 3; i += 1) {
-      if (tagli[i + 1] <= tagli[i]) continue;
-      pezzi.push({
-        frammento: { ...frammento, testo: frammento.testo.slice(tagli[i] - da, tagli[i + 1] - da) },
-        dentro: i === 1,
-      });
-    }
-  }
-  const selezionati = pezzi.filter((pezzo) => pezzo.dentro);
-  const valore = !selezionati.every((pezzo) => pezzo.frammento[attributo]);
-  return normalizzaFrammenti(
-    pezzi.map(({ frammento, dentro }) =>
-      dentro ? { ...frammento, [attributo]: valore } : frammento,
-    ),
-  );
-}
-
-/**
- * La posizione di un punto del DOM nel testo dei frammenti, contata come
- * `leggiFrammentiDalDom` conta: un `<br>` vale un carattere, e cosi' il
- * confine fra due `<div>`.
- */
-export function offsetNelTesto(radice: Node, nodo: Node, offset: number): number {
-  let conteggio = 0;
-  let trovato = -1;
-  const visita = (corrente: Node, primoFiglio: boolean): void => {
-    if (trovato >= 0) return;
-    if (corrente === nodo && corrente.nodeType === TESTO) {
-      trovato = conteggio + offset;
-      return;
-    }
-    if (corrente.nodeType === TESTO) {
-      conteggio += corrente.textContent?.length ?? 0;
-      return;
-    }
-    if (corrente.nodeType !== ELEMENTO) return;
-    const tag = (corrente as Element).localName;
-    if (tag === 'br') {
-      conteggio += 1;
-      return;
-    }
-    if ((tag === 'div' || tag === 'p') && !primoFiglio && corrente !== radice) conteggio += 1;
-    corrente.childNodes.forEach((figlio, indice) => {
-      if (trovato >= 0) return;
-      if (corrente === nodo && indice === offset) trovato = conteggio;
-      visita(figlio, indice === 0);
-    });
-    if (trovato < 0 && corrente === nodo) trovato = conteggio;
-  };
-  visita(radice, true);
-  return trovato < 0 ? conteggio : trovato;
-}
-
-/** L'inverso di `offsetNelTesto`, sul DOM scritto da `scriviFrammentiNelDom`. */
-export function puntoDaOffset(radice: Node, offset: number): { nodo: Node; offset: number } {
-  let resto = offset;
-  const camminatore = radice.ownerDocument!.createTreeWalker(radice, 0x1 | 0x4);
-  let corrente = camminatore.nextNode();
-  while (corrente) {
-    if (corrente.nodeType === TESTO) {
-      const lunghezza = corrente.textContent?.length ?? 0;
-      if (resto <= lunghezza) return { nodo: corrente, offset: resto };
-      resto -= lunghezza;
-    } else if ((corrente as Element).localName === 'br') {
-      if (resto === 0) {
-        const genitore = corrente.parentNode!;
-        return { nodo: genitore, offset: [...genitore.childNodes].indexOf(corrente as ChildNode) };
-      }
-      resto -= 1;
-    }
-    corrente = camminatore.nextNode();
-  }
-  return { nodo: radice, offset: radice.childNodes.length };
-}
-
 // --- Collegamenti (FR-014) -----------------------------------------------------
 
 /**
@@ -670,20 +454,4 @@ export function normalizzaIndirizzo(scritto: string): string | null {
       ? `https://${indirizzo}`
       : indirizzo;
   return collegamentoAmmesso(candidato) ? candidato : null;
-}
-
-/** Collega (o scollega, con `null`) i caratteri `[inizio, fine)`. */
-export function applicaCollegamento(
-  frammenti: FrammentoTesto[],
-  inizio: number,
-  fine: number,
-  collegamento: string | null,
-): FrammentoTesto[] {
-  if (fine <= inizio) return normalizzaFrammenti(frammenti);
-  const prima = taglia(frammenti, 0, inizio);
-  const dentro = taglia(frammenti, inizio, fine).map((frammento) => ({
-    ...frammento,
-    collegamento,
-  }));
-  return normalizzaFrammenti([...prima, ...dentro, ...taglia(frammenti, fine)]);
 }
