@@ -93,6 +93,12 @@ type BloccoDocumento = {
 };
 /** Dove sta il cursore: un blocco, ed eventualmente una voce del suo elenco. */
 type PosizioneEditor = { sezione: string; blocco: string; voce: number | null };
+/** Uno stato del documento a cui annulla e ripeti possono tornare. */
+type Istantanea = {
+  sezioni: SezioneDocumento[];
+  posizione: PosizioneEditor | null;
+  offset: number;
+};
 // Allineamento implicito del renderer per un blocco nel corpo (`_ALLINEAMENTO`
 // in `renderer.py`): l'editor deve mostrare lo stesso, non un giustificato
 // che il PDF poi non produce (FR-008).
@@ -161,7 +167,12 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
   imports: [RouterLink, AnteprimaPdfComponent, MenuSegnapostoComponent, CorniceAnteprimaComponent],
   // Il menu `/` e' fisso rispetto alla finestra: se il foglio scorre non
   // starebbe piu' sotto il cursore, quindi si chiude.
-  host: { '(window:scroll)': 'chiudiMenuSlash()', '(window:resize)': 'chiudiMenuSlash()' },
+  host: {
+    '(window:scroll)': 'chiudiMenuSlash()',
+    '(window:resize)': 'chiudiMenuSlash()',
+    // Annulla e ripeti anche quando il fuoco e' su un pulsante della toolbar.
+    '(document:keydown)': 'tastoDocumento($event)',
+  },
   styleUrl: './modello-anteprima.component.scss',
   template: `
     <header class="topbar">
@@ -264,6 +275,31 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
 
     @if (modello(); as m) {
       <div class="format-toolbar">
+        <button
+          type="button"
+          class="tool"
+          data-undo
+          title="Annulla (Ctrl+Z)"
+          aria-label="Annulla"
+          [disabled]="!possoAnnullare()"
+          (mousedown)="$event.preventDefault()"
+          (click)="annulla()"
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          class="tool"
+          data-redo
+          title="Ripeti (Ctrl+Maiusc+Z)"
+          aria-label="Ripeti"
+          [disabled]="!possoRipetere()"
+          (mousedown)="$event.preventDefault()"
+          (click)="ripeti()"
+        >
+          ↷
+        </button>
+        <span class="separator"></span>
         <!-- mousedown senza default: il clic non deve togliere il fuoco
              all'editor, o la selezione da enfatizzare e' gia' persa. -->
         <button
@@ -1205,6 +1241,19 @@ export class ModelloAnteprimaComponent {
   });
   protected readonly allineamenti = ALLINEAMENTI;
   protected readonly stili = STILI;
+  /**
+   * Annulla e ripeti dell'editor (riscontro del 2026-10-02: Ctrl+Z non
+   * funzionava). Quello del browser non basta: ogni riscrittura da programma
+   * (enfasi, incolla, Invio, segnaposto) ne azzera la cronologia, e dividere o
+   * unire blocchi non ci entra mai. Qui si conserva lo stato del documento
+   * prima di ogni modifica; la digitazione si raggruppa, come in Word.
+   */
+  private readonly passato: Istantanea[] = [];
+  private readonly futuro: Istantanea[] = [];
+  private ultimaDigitazione = 0;
+  private inDigitazione = false;
+  protected readonly possoAnnullare = signal(false);
+  protected readonly possoRipetere = signal(false);
   /** La cornice che il modello eredita dal suo tipo documento (012 T070). */
   protected readonly cornice = signal<CorniceModello | null>(null);
   protected readonly erroreCornice = signal<string | null>(null);
@@ -1412,6 +1461,7 @@ export class ModelloAnteprimaComponent {
    * ancora un ruolo: diventa cio' che si sceglie dal menu Stile (012 T060).
    */
   protected aggiungiSezione(): void {
+    this.ricorda();
     const codice = this.codiceSezioneLibero(`sezione-${this.sezioniLocali().length + 1}`);
     const blocco = this.nuovoBlocco(`${codice}-paragrafo`, []);
     this.sezioniLocali.update((sezioni) => [
@@ -1442,6 +1492,7 @@ export class ModelloAnteprimaComponent {
       campo.value = attuale;
       return;
     }
+    this.ricorda();
     this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) =>
@@ -1454,6 +1505,7 @@ export class ModelloAnteprimaComponent {
   }
 
   protected rimuoviSezione(codice: string): void {
+    this.ricorda();
     const aggiornate = this.riordina(
       this.sezioniLocali().filter((sezione) => sezione.codice !== codice),
     );
@@ -1467,6 +1519,7 @@ export class ModelloAnteprimaComponent {
   }
 
   protected spostaSezione(indice: number, direzione: -1 | 1): void {
+    this.ricorda();
     this.sezioniLocali.update((sezioni) => {
       const destinazione = indice + direzione;
       if (destinazione < 0 || destinazione >= sezioni.length) return sezioni;
@@ -1483,7 +1536,9 @@ export class ModelloAnteprimaComponent {
   /** Ogni battuta: il DOM dell'editor torna frammenti, e i frammenti nel modello. */
   protected aggiornaDaEditor(editor: HTMLElement, evento?: Event): void {
     const posizione = this.posizioneDi(editor);
+    this.inDigitazione = true;
     if (posizione) this.scriviFrammenti(posizione, leggiFrammentiDalDom(editor));
+    this.inDigitazione = false;
     this.seguiMenuSlash(editor, evento);
   }
 
@@ -1560,6 +1615,7 @@ export class ModelloAnteprimaComponent {
     if (!posizione) return;
     const menu = this.menuSlash();
     if (menu && menu.editor === editor && this.tastoMenuSlash(event, menu.indice)) return;
+    if ((event.ctrlKey || event.metaKey) && this.tastoCronologia(event)) return;
     if (event.ctrlKey || event.metaKey) {
       const attributo = SCORCIATOIE_ENFASI[event.key.toLowerCase()];
       if (attributo && !event.altKey) {
@@ -1723,6 +1779,96 @@ export class ModelloAnteprimaComponent {
    * centrato e la firma in basso a destra, come nel bando di riferimento;
    * il resto lo decide il gestore.
    */
+  protected annulla(): void {
+    const precedente = this.passato.pop();
+    if (!precedente) return;
+    this.futuro.push(this.istantanea());
+    this.ripristina(precedente);
+  }
+
+  protected ripeti(): void {
+    const successivo = this.futuro.pop();
+    if (!successivo) return;
+    this.passato.push(this.istantanea());
+    this.ripristina(successivo);
+  }
+
+  /** Ctrl/Cmd+Z annulla, Ctrl/Cmd+Maiusc+Z o Ctrl+Y ripete; `true` se il tasto era suo. */
+  private tastoCronologia(event: KeyboardEvent): boolean {
+    const tasto = event.key.toLowerCase();
+    if (tasto !== 'z' && tasto !== 'y') return false;
+    if (!this.sezioni()?.modificabile) return false;
+    event.preventDefault();
+    if (tasto === 'y' || event.shiftKey) this.ripeti();
+    else this.annulla();
+    return true;
+  }
+
+  /** Fuori dagli editor (un pulsante della toolbar), ma non nei campi di testo propri. */
+  protected tastoDocumento(event: KeyboardEvent): void {
+    if (event.defaultPrevented || !(event.ctrlKey || event.metaKey)) return;
+    const bersaglio = event.target as HTMLElement | null;
+    if (bersaglio?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+    this.tastoCronologia(event);
+  }
+
+  /**
+   * Prima di una modifica, lo stato a cui si potra' tornare. La digitazione
+   * continua (meno di un secondo fra due battute) resta un passo solo.
+   */
+  private ricorda(digitazione = false): void {
+    const ora = Date.now();
+    if (digitazione && this.ultimaDigitazione && ora - this.ultimaDigitazione < 1000) {
+      this.ultimaDigitazione = ora;
+      return;
+    }
+    this.ultimaDigitazione = digitazione ? ora : 0;
+    this.passato.push(this.istantanea());
+    if (this.passato.length > 200) this.passato.shift();
+    this.futuro.length = 0;
+    this.aggiornaCronologia();
+  }
+
+  private istantanea(): Istantanea {
+    const editor = this.editorAttivo;
+    return {
+      sezioni: structuredClone(this.sezioniLocali()),
+      posizione: this.posizioneAttiva(),
+      offset: (editor && this.selezioneIn(editor)?.inizio) ?? 0,
+    };
+  }
+
+  /** Rimette lo stato e il cursore; gli editor si riscrivono, compreso quello attivo. */
+  private ripristina(stato: Istantanea): void {
+    this.chiudiMenuSlash();
+    this.ultimaDigitazione = 0;
+    this.sezioniLocali.set(structuredClone(stato.sezioni));
+    this.documentoModificato.set(true);
+    this.aggiornaCronologia();
+    this.cdr.detectChanges();
+    for (const riferimento of this.editors()) {
+      const elemento = riferimento.nativeElement;
+      const posizione = this.posizioneDi(elemento);
+      const frammenti = posizione && this.frammentiIn(this.sezioniLocali(), posizione);
+      if (
+        frammenti &&
+        JSON.stringify(leggiFrammentiDalDom(elemento)) !== JSON.stringify(frammenti)
+      ) {
+        scriviFrammentiNelDom(elemento, frammenti);
+      }
+    }
+    const posizione = stato.posizione;
+    const esiste = posizione && this.frammentiIn(this.sezioniLocali(), posizione);
+    if (posizione && esiste) {
+      this.mettiCursore(posizione, Math.min(stato.offset, testoDiFrammenti(esiste).length));
+    }
+  }
+
+  private aggiornaCronologia(): void {
+    this.possoAnnullare.set(this.passato.length > 0);
+    this.possoRipetere.set(this.futuro.length > 0);
+  }
+
   /**
    * Un'interruzione di pagina al cursore, come in Word (FR-012, T060): su una
    * riga vuota va prima della riga, che resta pronta sulla pagina nuova;
@@ -2258,6 +2404,7 @@ export class ModelloAnteprimaComponent {
     codice: string,
     trasforma: (blocchi: BloccoDocumento[]) => BloccoDocumento[],
   ): void {
+    this.ricorda(this.inDigitazione);
     this.documentoModificato.set(true);
     this.sezioniLocali.update((sezioni) =>
       sezioni.map((sezione) =>
@@ -2738,7 +2885,12 @@ export class ModelloAnteprimaComponent {
       .get<SezioniResponse>(`/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/sezioni`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => this.applicaSezioni(response),
+        next: (response) => {
+          this.applicaSezioni(response);
+          this.passato.length = 0;
+          this.futuro.length = 0;
+          this.aggiornaCronologia();
+        },
         error: (e: ApiError) => this.erroreSezioni.set(e.messaggio),
       });
   }

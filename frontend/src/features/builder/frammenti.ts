@@ -321,12 +321,46 @@ export function convertiAppunti(html: string | null | undefined, testo: string):
   return raggruppa(capoversi.map(riconosciMarcatoreAMano));
 }
 
+/**
+ * Il testo semplice in capoversi. Copiato da un PDF, il testo porta un a capo
+ * a ogni riga **visiva** della pagina: trattarlo come un capoverso spezzava un
+ * titolo di cinque righe in cinque blocchi (visto sul bando 367.501, 2026-10-02).
+ * Le righe si uniscono quindi in un capoverso finche' una non chiude la frase
+ * (`.` `;` `:` `!` `?`), o finche' non arriva una riga vuota o una voce di
+ * elenco. Una parola spezzata a fine riga col trattino si ricuce.
+ */
 function capoversiDaTesto(testo: string): Capoverso[] {
-  return testo
-    .split('\n')
-    .map((riga) => riga.replace(/\t/g, ' ').replace(/ {2,}/g, ' ').trim())
-    .filter(Boolean)
-    .map((riga) => ({ tipo: 'PARAGRAFO', frammenti: [{ testo: riga }] }));
+  const capoversi: string[] = [];
+  let corrente = '';
+  const chiudi = (): void => {
+    if (corrente) capoversi.push(corrente);
+    corrente = '';
+  };
+  for (const grezza of testo.split('\n')) {
+    const riga = grezza.replace(/\t/g, ' ').replace(/ {2,}/g, ' ').trim();
+    if (!riga) {
+      chiudi();
+      continue;
+    }
+    if (MARCATORE_A_MANO.test(riga)) chiudi();
+    // Un titolo tutto maiuscolo finisce dove comincia il testo normale, anche
+    // senza punteggiatura: "... VARIE SEDI" e poi "VISTO il decreto ...".
+    if (corrente && maiuscolo(corrente) && /[a-zà-ÿ]/.test(riga)) chiudi();
+    if (!corrente) {
+      corrente = riga;
+    } else if (/[A-Za-zÀ-ÿ]-$/.test(corrente) && /^[a-zà-ÿ]/.test(riga)) {
+      corrente = corrente.slice(0, -1) + riga;
+    } else {
+      corrente = `${corrente} ${riga}`;
+    }
+    if (/[.;:!?]["”»)]?$/.test(riga)) chiudi();
+  }
+  chiudi();
+  return capoversi.map((riga) => ({ tipo: 'PARAGRAFO', frammenti: [{ testo: riga }] }));
+}
+
+function maiuscolo(testo: string): boolean {
+  return /[A-ZÀ-Ý]/.test(testo) && testo === testo.toLocaleUpperCase('it');
 }
 
 function capoversiDaHtml(html: string): Capoverso[] {

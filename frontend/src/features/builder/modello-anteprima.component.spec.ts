@@ -1396,6 +1396,92 @@ describe('2b ridotta: anteprima modello', () => {
     });
   });
 
+  describe('annulla e ripeti (riscontro del 2026-10-02)', () => {
+    function tasto(editor: HTMLElement, key: string, shiftKey = false): KeyboardEvent {
+      const evento = new KeyboardEvent('keydown', {
+        key,
+        shiftKey,
+        ctrlKey: true,
+        cancelable: true,
+        bubbles: true,
+      });
+      editor.dispatchEvent(evento);
+      return evento;
+    }
+
+    function testi(root: HTMLElement, sezione = 'intro'): string[] {
+      return Array.from(
+        root.querySelectorAll<HTMLElement>(`[data-section-text="${sezione}"].editor-text`),
+      ).map((e) => e.textContent ?? '');
+    }
+
+    it('undoes a burst of typing in one step and redoes it', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      editor.textContent = 'Introduzione {{titolo_it}} e altro';
+      editor.dispatchEvent(new Event('input'));
+      editor.textContent = 'Introduzione {{titolo_it}} e altro ancora';
+      editor.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(tasto(editor, 'z').defaultPrevented).toBe(true);
+      fixture.detectChanges();
+      expect(testi(root)).toEqual(['Introduzione {{titolo_it}}']);
+
+      tasto(editor, 'z', true);
+      fixture.detectChanges();
+      expect(testi(root)).toEqual(['Introduzione {{titolo_it}} e altro ancora']);
+      http.verify();
+    });
+
+    it('undoes bold applied from the toolbar, with the toolbar button too', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, 0, 'Introduzione'.length);
+      (root.querySelector('[data-emphasis="grassetto"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(editor.querySelector('strong')).toBeTruthy();
+
+      (root.querySelector('[data-undo]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(editor.querySelector('strong')).toBeNull();
+      expect((root.querySelector('[data-redo]') as HTMLButtonElement).disabled).toBe(false);
+      http.verify();
+    });
+
+    it('undoes a paragraph split by Enter, putting the text back in one block', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, 'Introduzione'.length, 'Introduzione'.length);
+      editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      fixture.detectChanges();
+      expect(testi(root).length).toBe(2);
+
+      const attivo = document.activeElement as HTMLElement;
+      tasto(attivo, 'z');
+      fixture.detectChanges();
+      expect(testi(root)).toEqual(['Introduzione {{titolo_it}}']);
+      http.verify();
+    });
+
+    it('pastes a title copied from a PDF as one block, not one per line', () => {
+      const { fixture, http, root } = caricaBozza();
+      const editor = apriEditor(root);
+      seleziona(editor.firstChild!, editor.textContent!.length, editor.textContent!.length);
+      incollaIn(
+        editor,
+        '',
+        'CONCORSO PUBBLICO PER TITOLI ED ESAMI\nDI LAVORO A TEMPO PIENO\nRICERCHE - VARIE SEDI',
+      );
+      fixture.detectChanges();
+
+      expect(testi(root)).toEqual([
+        'Introduzione {{titolo_it}}CONCORSO PUBBLICO PER TITOLI ED ESAMI DI LAVORO A TEMPO PIENO RICERCHE - VARIE SEDI',
+      ]);
+      http.verify();
+    });
+  });
+
   it('tracks unsaved changes in the topbar and autosaves when the block loses focus', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

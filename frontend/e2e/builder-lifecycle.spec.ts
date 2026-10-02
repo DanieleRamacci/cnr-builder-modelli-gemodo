@@ -226,6 +226,21 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   await expect(page.locator('[data-save-state]')).toHaveText(/Modifiche non salvate/);
   await page.locator('.format-toolbar .hint').click();
   await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
+  // Riscontro del 2026-10-02: Ctrl+Z deve annullare e Ctrl+Maiusc+Z ripetere,
+  // anche dopo che l'editor ha riscritto il testo (qui: il segnaposto).
+  await editor.click();
+  await page.keyboard.press('End');
+  await page.keyboard.press('ControlOrMeta+ArrowRight');
+  await page.keyboard.type(' (bozza)');
+  await expect(editor).toHaveText('Premesso che {{titolo_it}} (bozza)');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(editor).toHaveText('Premesso che {{titolo_it}}');
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect(editor).toHaveText('Premesso che {{titolo_it}} (bozza)');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(editor).toHaveText('Premesso che {{titolo_it}}');
+  await page.locator('.format-toolbar .hint').click();
+  await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
   // Il testo deve essere quello scritto, nell'ordine in cui e' stato scritto:
   // con il caret che tornava a inizio blocco usciva mescolato.
   await expect(editor).toHaveText('Premesso che {{titolo_it}}');

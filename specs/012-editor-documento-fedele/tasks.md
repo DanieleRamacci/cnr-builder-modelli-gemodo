@@ -626,3 +626,23 @@ Decisione del product owner (spec.md, chiarimento "Chi imposta la cornice").
       PDF. `pillow` e `pypdf` diventano dipendenze dichiarate: `pypdf` mancava
       nell'immagine di produzione (`--no-dev`) e lo script di SC-004 non
       sarebbe partito.
+
+### Riscontri del 2026-10-02 (ricomponendo il bando 367.501)
+
+- [x] T071 **Testo copiato da PDF spezzato in un blocco per riga.** Il PDF
+      mette un a capo a ogni riga visiva e l'incolla lo trattava come un
+      capoverso: il titolo di cinque righe diventava cinque blocchi, non
+      selezionabili insieme (ogni blocco e' un'area di scrittura a se', e il
+      browser non estende una selezione da un'area all'altra). Ora le righe si
+      uniscono finche' una non chiude la frase (`. ; : ! ?`), arriva una riga
+      vuota, una voce di elenco, o un titolo tutto maiuscolo lascia il posto a
+      testo normale; le parole spezzate col trattino si ricuciono. Limite
+      noto: due righe maiuscole senza riga vuota fra loro si uniscono; si
+      dividono con Invio. Test in `frammenti.spec.ts` sul testo del bando reale.
+- [x] T072 **Ctrl+Z non funzionava.** Ogni riscrittura da programma (enfasi,
+      incolla, Invio, segnaposto) azzerava la cronologia del browser, e
+      dividere o unire blocchi non ci entrava mai. Ora l'editor ha la sua
+      cronologia: stato del documento prima di ogni modifica, digitazione
+      raggruppata (meno di un secondo fra due battute), Ctrl/Cmd+Z, Ctrl/Cmd+
+      Maiusc+Z o Ctrl+Y, pulsanti nella toolbar, fino a 200 passi; si azzera
+      quando si ricarica la versione. Test di componente ed e2e in Chromium.

@@ -237,6 +237,38 @@ style='mso-list:Ignore'>a)<span>&nbsp;&nbsp; </span></span><![endif]>un posto pr
     ]);
   });
 
+  it('dal PDF ricompone in un capoverso le righe spezzate dalla pagina', () => {
+    const daPdf =
+      'BANDO N. 367.501 CTER\n\n' +
+      'CONCORSO PUBBLICO PER TITOLI ED ESAMI PER L’ASSUNZIONE CON CONTRATTO\n' +
+      'DI LAVORO A TEMPO PIENO E INDETERMINATO DI N. 21 UNITÀ DI PERSONALE\n' +
+      'PROFILO COLLABORATORE TECNICO ENTI DI RICERCA, VI LIVELLO\n' +
+      'PROFESSIONALE PRESSO STRUTTURE DEL CONSIGLIO NAZIONALE DELLE\n' +
+      'RICERCHE - VARIE SEDI\n' +
+      'VISTO il decreto recante norme sulla parteci-\npazione ai concorsi;\n' +
+      'VISTA la legge 241/1990;\n';
+    expect(convertiAppunti('', daPdf)).toEqual([
+      { tipo: 'PARAGRAFO', frammenti: [{ testo: 'BANDO N. 367.501 CTER' }] },
+      {
+        tipo: 'PARAGRAFO',
+        frammenti: [
+          {
+            testo:
+              'CONCORSO PUBBLICO PER TITOLI ED ESAMI PER L’ASSUNZIONE CON CONTRATTO DI LAVORO A ' +
+              'TEMPO PIENO E INDETERMINATO DI N. 21 UNITÀ DI PERSONALE PROFILO COLLABORATORE ' +
+              'TECNICO ENTI DI RICERCA, VI LIVELLO PROFESSIONALE PRESSO STRUTTURE DEL CONSIGLIO ' +
+              'NAZIONALE DELLE RICERCHE - VARIE SEDI',
+          },
+        ],
+      },
+      {
+        tipo: 'PARAGRAFO',
+        frammenti: [{ testo: 'VISTO il decreto recante norme sulla partecipazione ai concorsi;' }],
+      },
+      { tipo: 'PARAGRAFO', frammenti: [{ testo: 'VISTA la legge 241/1990;' }] },
+    ]);
+  });
+
   it('senza HTML usa il testo semplice, una riga per capoverso', () => {
     expect(convertiAppunti('', 'VISTO il decreto;\r\n\r\n• primo\n• secondo\n')).toEqual([
       { tipo: 'PARAGRAFO', frammenti: [{ testo: 'VISTO il decreto;' }] },
