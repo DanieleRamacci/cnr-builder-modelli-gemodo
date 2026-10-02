@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from copy import deepcopy
 from datetime import datetime, timezone
 
@@ -464,11 +465,18 @@ def clona_sezioni(versione: ModelloDocumentoVersione) -> list[SezioneModello]:
     ) for sezione in versione.sezioni]
 
 
-def _blocchi_per_sezione(versione: ModelloDocumentoVersione) -> list[list[BloccoDocumento]]:
+def _sezioni_ordinate(versione: ModelloDocumentoVersione, sezioni: Sequence | None) -> list:
+    """Le sezioni salvate, o quelle date (non salvate: 012 T081), in ordine di documento."""
+    return sorted(versione.sezioni if sezioni is None else sezioni, key=lambda s: (s.ordine, s.codice))
+
+
+def _blocchi_per_sezione(
+    versione: ModelloDocumentoVersione, sezioni: Sequence | None = None,
+) -> list[list[BloccoDocumento]]:
     """I blocchi di ogni sezione, in ordine, con `ordine` progressivo sull'intero documento."""
-    sezioni: list[list[BloccoDocumento]] = []
+    risultato: list[list[BloccoDocumento]] = []
     progressivo = 0
-    for sezione in sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice)):
+    for sezione in _sezioni_ordinate(versione, sezioni):
         blocchi: list[BloccoDocumento] = []
         for blocco in sorted(
             (BloccoDocumento.model_validate(b) for b in sezione.contenuto or ()),
@@ -476,8 +484,8 @@ def _blocchi_per_sezione(versione: ModelloDocumentoVersione) -> list[list[Blocco
         ):
             blocchi.append(blocco.model_copy(update={"ordine": progressivo}))
             progressivo += 1
-        sezioni.append(blocchi)
-    return sezioni
+        risultato.append(blocchi)
+    return risultato
 
 
 def cornice_del_tipo(versione: ModelloDocumentoVersione) -> CornicePagina | None:
@@ -491,21 +499,25 @@ def logo_del_tipo(versione: ModelloDocumentoVersione) -> bytes | None:
     return versione.modello.tipo_documento.logo_cornice
 
 
-def sezione_e_blocco(versione: ModelloDocumentoVersione) -> dict[int, tuple[str, str]]:
+def sezione_e_blocco(
+    versione: ModelloDocumentoVersione, sezioni: Sequence | None = None,
+) -> dict[int, tuple[str, str]]:
     """Per ogni `ordine` del documento composto, la sezione e l'`id` del blocco (012 T080).
 
     Il renderer conosce i blocchi solo per posizione nel documento piatto;
     l'editor li conosce per sezione e `id`, che e' unico solo nella sezione.
     """
-    sezioni = sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice))
+    ordinate = _sezioni_ordinate(versione, sezioni)
     return {
         blocco.ordine: (sezione.codice, blocco.id)
-        for sezione, blocchi in zip(sezioni, _blocchi_per_sezione(versione), strict=True)
+        for sezione, blocchi in zip(ordinate, _blocchi_per_sezione(versione, sezioni), strict=True)
         for blocco in blocchi
     }
 
 
-def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:
+def inizi_sezione(
+    versione: ModelloDocumentoVersione, sezioni: Sequence | None = None,
+) -> frozenset[int]:
     """L'`ordine` del primo blocco di ogni sezione, nella numerazione di `composizione_documentale`.
 
     Il documento composto e' una sequenza piatta e non dice dove finisce una
@@ -513,10 +525,14 @@ def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:
     elenchi riparte (012 FR-015, research.md R3). Resta un'informazione per la
     resa e non entra nel formato.
     """
-    return frozenset(sezione[0].ordine for sezione in _blocchi_per_sezione(versione) if sezione)
+    return frozenset(
+        sezione[0].ordine for sezione in _blocchi_per_sezione(versione, sezioni) if sezione
+    )
 
 
-def composizione_documentale(versione: ModelloDocumentoVersione) -> ModelloDocumentaleControllato:
+def composizione_documentale(
+    versione: ModelloDocumentoVersione, sezioni: Sequence | None = None,
+) -> ModelloDocumentaleControllato:
     """Assembla il documento completo dalle sezioni ordinate (003 T003).
 
     Le sezioni sono il modo in cui il documento e' **conservato**; questa e' la
@@ -528,7 +544,7 @@ def composizione_documentale(versione: ModelloDocumentoVersione) -> ModelloDocum
     `placeholder_usati` raccoglie l'unione di quelli dei blocchi: e' l'insieme
     che la validazione (003 US2) confronta con i campi del modello.
     """
-    blocchi = [blocco for sezione in _blocchi_per_sezione(versione) for blocco in sezione]
+    blocchi = [blocco for sezione in _blocchi_per_sezione(versione, sezioni) for blocco in sezione]
     placeholder: list[str] = []
     for blocco in blocchi:
         for nome in blocco.placeholder_usati:

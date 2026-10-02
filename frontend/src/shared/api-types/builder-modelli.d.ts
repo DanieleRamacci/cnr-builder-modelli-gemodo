@@ -344,13 +344,13 @@ export interface paths {
             };
             cookie?: never;
         };
-        /**
-         * Dove comincia ogni pagina dell'anteprima della bozza (012 T080)
-         * @description La misura dell'anteprima: il renderer compone la bozza come per `anteprima` e annota, mentre scrive, il blocco e la riga in cui comincia ogni pagina dopo la prima. L'editor la usa per disegnare dove finisce un foglio. Stesse regole e stesse autorizzazioni dell'anteprima; nessun PDF viene restituito ne' registrato.
-         */
-        get: operations["impaginazioneVersioneModello"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Dove comincia ogni pagina dell'anteprima della bozza (012 T080, T081)
+         * @description La misura dell'anteprima: il renderer compone la bozza come per `anteprima` e annota, mentre scrive, il blocco e la riga in cui comincia ogni pagina dopo la prima. L'editor la usa per disegnare dove finisce un foglio. Con le sezioni nel corpo misura il testo che l'editor ha sullo schermo e non ha ancora salvato, **senza scriverlo**; senza corpo, quello salvato. Stesse regole e stesse autorizzazioni dell'anteprima; nessun PDF viene restituito ne' registrato.
+         */
+        post: operations["impaginazioneVersioneModello"];
         delete?: never;
         options?: never;
         head?: never;
@@ -792,6 +792,33 @@ export interface components {
             validita: string;
             /** @description Primo livello dell'albero di categorizzazione di questo tipo documento. */
             nodi: components["schemas"]["NodoCategorizzazione"][];
+        };
+        BloccoDocumento: {
+            id: string;
+            /** @enum {string} */
+            tipo: "INTESTAZIONE" | "LOGO" | "TITOLO" | "PARAGRAFO" | "TABELLA" | "COLONNE" | "FIRMA" | "FOOTER" | "INTERRUZIONE_PAGINA";
+            contenuto?: string | null;
+            /** @enum {string} */
+            posizionamento: "TOP" | "BODY" | "BOTTOM_LEFT" | "BOTTOM_RIGHT" | "BOTTOM_CENTER" | "INLINE" | "COLUMN_LEFT" | "COLUMN_RIGHT";
+            /** @default 0 */
+            ordine: number;
+            stile?: string | null;
+            placeholder_usati?: string[];
+            regole_layout?: {
+                [key: string]: string;
+            };
+            asset_ref?: string | null;
+            colonne?: string[];
+        };
+        SezioneModello: {
+            /** @description Univoco nella versione. */
+            codice: string;
+            ordine: number;
+            /** @description Lista di BloccoDocumento (`app/documentale/schemas.py`), serializzata cosi' com'e' nella colonna JSONB. Un tipo o un posizionamento fuori dagli enum ammessi e' rifiutato con 400: il documento e' una struttura controllata, non contenuto arbitrario. */
+            contenuto: components["schemas"]["BloccoDocumento"][];
+        };
+        SostituisciSezioniRequest: {
+            sezioni: components["schemas"]["SezioneModello"][];
         };
     };
     responses: {
@@ -1496,7 +1523,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SostituisciSezioniRequest"];
+            };
+        };
         responses: {
             /** @description Le pagine dell'anteprima */
             200: {

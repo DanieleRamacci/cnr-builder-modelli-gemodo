@@ -34,7 +34,7 @@ Spec di riferimento: `002-builder-modelli` (modelli, versioni, varianti),
 | `POST /modelli/{id}/varianti`, `/edizioni-derivate`, `/versioni` | varianti, edizioni collegate, versioni nuove |
 | `GET/PUT /modelli/{id}/versioni/{id}/sezioni` | il corpo del documento |
 | `POST /modelli/{id}/versioni/{id}/anteprima` | il PDF della bozza con valori fac-simile |
-| `GET /modelli/{id}/versioni/{id}/impaginazione` | dove comincia ogni pagina dell'anteprima, per i fogli dell'editor |
+| `POST /modelli/{id}/versioni/{id}/impaginazione` | dove comincia ogni pagina dell'anteprima, per i fogli dell'editor; con le sezioni nel corpo misura il testo non salvato, senza scriverlo |
 | `POST .../invia-revisione`, `/approva`, `/pubblica`, `/sospendi`, `/archivia` | ciclo di vita |
 | `GET/PUT /integrazioni/{id}/tipi-documento/{codice}/cornice`, `GET/PUT/DELETE .../cornice/logo` | intestazione, piè di pagina e logo del tipo documento (gestore del contesto o admin) |
 | `GET /modelli/{id}/cornice` | la cornice che il modello eredita, per la scheda "Pagina" dell'editor |

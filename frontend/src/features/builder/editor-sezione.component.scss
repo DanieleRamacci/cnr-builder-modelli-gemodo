@@ -51,8 +51,21 @@ app-editor-sezione .fine-pagina {
   font-variant-ligatures: none;
   font-feature-settings: 'liga' 0;
 
+  // Bootstrap Italia da' ai `<p>` un corpo e un'interlinea propri, piu'
+  // grandi: qui valgono quelli del PDF, per tutti i blocchi.
   > * {
     margin: 0 0 calc(var(--mm) * 2);
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  // Il riquadro di focus di Bootstrap Italia incorniciava tutto il testo: la
+  // sezione col cursore e' gia' evidenziata dal suo bordo.
+  &:focus,
+  &:focus:not([data-focus-mouse='true']) {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: 0 !important;
   }
 
   > li {

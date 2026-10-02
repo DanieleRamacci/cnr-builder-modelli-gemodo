@@ -726,3 +726,17 @@ pagina, per sapere quanto spazio prende cio' che si incolla.
   punto: con le stesse misure e lo stesso carattere succede quasi sempre, ma
   e' la riga del PDF, non quella dello schermo, a fare fede.
 
+- [x] T081 I fogli seguono cio' che si scrive (riscontro del 2026-10-02: il
+      confine di pagina scendeva insieme al testo spostato, invece di restare
+      fermo sul foglio). `impaginazione` diventa `POST` e accetta le sezioni
+      dello schermo, non salvate, senza scriverle; l'editor le manda dopo 400 ms
+      di pausa a ogni modifica, e una misura vecchia non sostituisce mai quella
+      nuova. Nello stesso giro: capoversi e voci hanno il corpo del PDF
+      (Bootstrap Italia dava ai `<p>` 18 px e un'interlinea fissa), e il testo
+      col cursore non ha piu' la cornice nera di focus di Bootstrap Italia.
+
+  Verifica: test API (le sezioni inviate si misurano e non si salvano; il
+  markup e' rifiutato come al salvataggio); e2e con cinque righe vuote in cima
+  ai visti: il confine resta entro una riga dal punto in cui era sul foglio;
+  corpo dei capoversi uguale a quello delle voci; nessuna cornice di focus.
+

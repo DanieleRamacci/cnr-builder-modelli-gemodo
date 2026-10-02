@@ -50,9 +50,10 @@ def _bozza_lunga(client, codice: str) -> tuple[dict, dict]:
     return modello, versione
 
 
-def _impaginazione(client, modello: dict, versione: dict):
-    return client.get(
+def _impaginazione(client, modello: dict, versione: dict, sezioni: list | None = None):
+    return client.post(
         f"/api/v1/builder/modelli/{modello['id']}/versioni/{versione['id']}/impaginazione",
+        json={"sezioni": sezioni} if sezioni is not None else None,
     )
 
 
@@ -72,6 +73,36 @@ def test_le_pagine_sono_quelle_del_pdf_dell_anteprima(builder_client):
         assert inizio["sezione"] == "VISTI"
         assert inizio["blocco"].startswith("v")
         assert inizio["voce"] is None
+
+
+@pytest.mark.integration
+def test_il_testo_non_salvato_si_misura_senza_scriverlo(builder_client):
+    """012 T081: i fogli seguono cio' che si scrive, prima del salvataggio."""
+    modello, versione = _bozza_lunga(builder_client, "impaginazione-non-salvata")
+    salvate = _impaginazione(builder_client, modello, versione).json()
+    url_sezioni = f"/api/v1/builder/modelli/{modello['id']}/versioni/{versione['id']}/sezioni"
+    prima = builder_client.get(url_sezioni).json()["sezioni"]
+
+    piu_lunghe = _impaginazione(
+        builder_client, modello, versione, [*sezioni_del_bando(), _visti(140)],
+    )
+
+    assert piu_lunghe.status_code == 200, piu_lunghe.text
+    assert piu_lunghe.json()["pagine"] > salvate["pagine"]
+    # Niente e' stato scritto: le sezioni salvate sono quelle di prima.
+    assert builder_client.get(url_sezioni).json()["sezioni"] == prima
+    assert _impaginazione(builder_client, modello, versione).json() == salvate
+
+
+@pytest.mark.integration
+def test_il_testo_non_salvato_con_markup_e_rifiutato_come_al_salvataggio(builder_client):
+    modello, versione = _bozza_lunga(builder_client, "impaginazione-markup")
+    sporche = [*sezioni_del_bando(), _visti(1)]
+    sporche[-1]["contenuto"][0]["frammenti"] = [{"testo": "<b>VISTO</b>"}]
+
+    risposta = _impaginazione(builder_client, modello, versione, sporche)
+
+    assert risposta.status_code == 422, risposta.text
 
 
 @pytest.mark.integration

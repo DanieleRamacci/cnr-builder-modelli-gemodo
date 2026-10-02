@@ -550,22 +550,26 @@ def anteprima_versione(
     )
 
 
-@router.get(
+@router.post(
     "/modelli/{modelloId}/versioni/{versioneId}/impaginazione",
     response_model=ImpaginazioneResponse,
 )
 def impaginazione_versione(
     modelloId: uuid.UUID,
     versioneId: uuid.UUID,
+    request: SostituisciSezioniRequest | None = None,
     principal: PrincipalGEMODO = Depends(require_principal),
     service: BuilderService = Depends(get_builder_service),
 ) -> ImpaginazioneResponse:
-    """Dove comincia ogni pagina dell'anteprima della bozza (012 T080).
+    """Dove comincia ogni pagina dell'anteprima della bozza (012 T080, T081).
 
-    L'editor lo usa per mostrare dove finisce un foglio. Stesse regole e
-    stesse autorizzazioni dell'anteprima, di cui e' la misura.
+    L'editor lo usa per mostrare dove finisce un foglio. Con le sezioni nel
+    corpo misura il testo non ancora salvato, senza scriverlo; senza corpo,
+    quello salvato. Stesse regole e stesse autorizzazioni dell'anteprima.
     """
-    pagine, inizi = service.impaginazione(principal, modelloId, versioneId)
+    pagine, inizi = service.impaginazione(
+        principal, modelloId, versioneId, request.sezioni if request else None,
+    )
     return ImpaginazioneResponse(
         pagine=pagine, inizi_pagina=[InizioPaginaResponse(**inizio) for inizio in inizi],
     )

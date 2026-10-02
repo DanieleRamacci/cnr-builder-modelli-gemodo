@@ -934,19 +934,24 @@ class BuilderService:
         return pdf, f"anteprima-{versione.modello.codice}-v{versione.versione}.pdf"
 
     def impaginazione(
-        self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
+        self,
+        principal: PrincipalGEMODO,
+        modello_id: uuid.UUID,
+        versione_id: uuid.UUID,
+        sezioni: list | None = None,
     ) -> tuple[int, list[dict]]:
-        """Dove comincia ogni pagina dell'anteprima della bozza (012 T080).
+        """Dove comincia ogni pagina dell'anteprima della bozza (012 T080, T081).
 
         Non una stima: e' l'anteprima stessa, resa e misurata mentre la si
         scrive, cosi' che i fogli che l'editor disegna siano quelli del PDF.
         Stesse regole e stesse autorizzazioni dell'anteprima; il PDF prodotto
-        si scarta.
+        si scarta. `sezioni`, se date, sono quelle che l'editor ha sullo
+        schermo e non ha ancora salvato: si misurano senza scriverle.
         """
         versione = self._versione_per_anteprima(principal, modello_id, versione_id)
         inizi: list[InizioPagina] = []
-        self._rendi_bozza(versione, {}, inizi_pagina=inizi)
-        blocchi = builder_repository.sezione_e_blocco(versione)
+        self._rendi_bozza(versione, {}, inizi_pagina=inizi, sezioni=sezioni)
+        blocchi = builder_repository.sezione_e_blocco(versione, sezioni)
         return len(inizi) + 1, [
             {
                 "pagina": inizio.pagina,
@@ -963,6 +968,7 @@ class BuilderService:
         versione: ModelloDocumentoVersione,
         valori: dict[str, str],
         inizi_pagina: list[InizioPagina] | None = None,
+        sezioni: list | None = None,
     ) -> bytes:
         if versione.stato != "BOZZA":
             raise BuilderDomainError(
@@ -970,7 +976,7 @@ class BuilderService:
                 f"La versione e' in stato {versione.stato}: l'anteprima si chiede sulle bozze",
                 status_code=409,
             )
-        documento = builder_repository.composizione_documentale(versione)
+        documento = builder_repository.composizione_documentale(versione, sezioni)
         struttura = violazioni_struttura_blocchi(documento.blocchi)
         if struttura:
             raise BuilderDomainError(
@@ -995,7 +1001,7 @@ class BuilderService:
         return render_documento(
             titolo=f"{modello.tipo_documento.nome} - {modello.nome}",
             blocchi=sostituisci_placeholder(documento.blocchi, dati),
-            inizi_sezione=builder_repository.inizi_sezione(versione),
+            inizi_sezione=builder_repository.inizi_sezione(versione, sezioni),
             anteprima=True,
             cornice=builder_repository.cornice_del_tipo(versione),
             logo=builder_repository.logo_del_tipo(versione),

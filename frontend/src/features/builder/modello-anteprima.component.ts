@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   ChangeDetectorRef,
   Injector,
   afterNextRender,
@@ -26,7 +27,7 @@ import {
 } from './editor-sezione.component';
 import type { ApiError } from '../../shared/api-error';
 import type { components } from '../../shared/api-types/builder-modelli';
-import { forkJoin } from 'rxjs';
+import { Subject, debounceTime, forkJoin, of, switchMap, catchError } from 'rxjs';
 import {
   normalizzaFrammenti,
   normalizzaIndirizzo,
@@ -1199,10 +1200,11 @@ export class ModelloAnteprimaComponent {
   /** Perche' il nome scritto nelle Proprieta' non e' stato accettato. */
   protected readonly erroreNome = signal<string | null>(null);
   /**
-   * Le pagine dell'anteprima dell'ultima versione salvata (012 T080): quante
+   * Le pagine dell'anteprima del testo sullo schermo (012 T080, T081): quante
    * sono e dove comincia ciascuna, per disegnare i fogli sul testo.
    */
   protected readonly impaginazione = signal<Impaginazione | null>(null);
+  private readonly daMisurare = new Subject<SezioneDocumento[]>();
   protected readonly nessunInizio = NESSUN_INIZIO;
   protected readonly iniziPerSezione = computed(() => {
     const perSezione = new Map<string, InizioPaginaSezione[]>();
@@ -1240,6 +1242,30 @@ export class ModelloAnteprimaComponent {
   protected readonly documentoAnteprima = signal<SafeResourceUrl | null>(null);
 
   constructor() {
+    // I fogli seguono cio' che si scrive (012 T081): a ogni modifica, dopo
+    // una breve pausa, il renderer misura le sezioni come sono sullo schermo,
+    // anche se non ancora salvate. Una misura vecchia arrivata tardi non
+    // sostituisce mai quella nuova.
+    this.daMisurare
+      .pipe(
+        debounceTime(400),
+        switchMap((sezioni) => {
+          const versione = this.corrente();
+          if (!versione) return of(null);
+          return this.api
+            .post<Impaginazione>(
+              `/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/impaginazione`,
+              { sezioni },
+            )
+            .pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((impaginazione) => this.impaginazione.set(impaginazione));
+    effect(() => {
+      const sezioni = this.sezioniLocali();
+      if (this.sezioni()?.modificabile) this.daMisurare.next(this.riordina(sezioni));
+    });
     this.carica();
     this.destroyRef.onDestroy(() => {
       if (this.indirizzoLogoCornice) URL.revokeObjectURL(this.indirizzoLogoCornice);
@@ -1702,7 +1728,6 @@ export class ModelloAnteprimaComponent {
         next: (response) => {
           this.salvandoSezioni.set(false);
           this.applicaSezioni(response, this.documentoModificato());
-          this.caricaImpaginazione();
           for (const azione of this.dopoSalvataggio.splice(0)) azione();
         },
         error: (e: ApiError) => {
@@ -1889,31 +1914,11 @@ export class ModelloAnteprimaComponent {
       .subscribe({
         next: (response) => {
           this.applicaSezioni(response);
-          this.caricaImpaginazione();
           this.passato.length = 0;
           this.futuro.length = 0;
           this.aggiornaCronologia();
         },
         error: (e: ApiError) => this.erroreSezioni.set(e.messaggio),
-      });
-  }
-
-  /**
-   * Dove cominciano le pagine, misurato dal renderer sull'ultima versione
-   * salvata. Solo sulle bozze, come l'anteprima; se la misura non riesce i
-   * fogli semplicemente non si disegnano, il testo resta modificabile.
-   */
-  private caricaImpaginazione(): void {
-    const versione = this.corrente();
-    if (!versione || !this.sezioni()?.modificabile) return;
-    this.api
-      .get<Impaginazione>(
-        `/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/impaginazione`,
-      )
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (impaginazione) => this.impaginazione.set(impaginazione),
-        error: () => this.impaginazione.set(null),
       });
   }
 

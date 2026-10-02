@@ -339,6 +339,8 @@ capoversi nel DOM dell'editor: e' un editor diverso.
 
 **Alternatives considered**: stima nel browser dall'altezza della pagina -
 scartata per la deriva. Fogli separati nel DOM - scartata per ora, vedi sopra.
-Calcolo sul testo non ancora salvato (un `POST` con le sezioni) - rinviato: la
-misura segue il salvataggio, che avviene a ogni uscita dal testo.
+Misura solo dopo il salvataggio - provata e scartata il 2026-10-02 (T081): fra
+due salvataggi il confine restava agganciato al blocco e scendeva con il testo.
+Ora l'editor manda le sezioni dello schermo, e il servizio le misura senza
+scriverle.
 

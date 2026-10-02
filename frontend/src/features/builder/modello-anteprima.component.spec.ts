@@ -999,26 +999,37 @@ describe('2b ridotta: anteprima modello', () => {
     verifica(http);
   });
 
-  it('012 T080: shows where each PDF page starts, as measured by the renderer, and asks again after saving', () => {
+  it('012 T080-T081: shows where each PDF page starts and measures again what is typed, before saving', async () => {
     const { fixture, http, root } = caricaBozzaCon([
       paragrafo('p0', [{ testo: 'primo capoverso' }]),
       paragrafo('p1', [{ testo: 'secondo capoverso' }], 1),
     ]);
     const URL_PAGINE = '/api/v1/builder/modelli/model/versioni/v2/impaginazione';
-    http.expectOne(URL_PAGINE).flush({
+    const pausa = () => new Promise((fatto) => setTimeout(fatto, 450));
+    await pausa();
+    const prima = http.expectOne(URL_PAGINE);
+    expect(prima.request.method).toBe('POST');
+    expect(prima.request.body.sezioni[0].codice).toBe('art');
+    prima.flush({
       pagine: 2,
       inizi_pagina: [{ pagina: 2, sezione: 'art', blocco: 'p1', voce: null, riga: 0 }],
     });
     fixture.detectChanges();
+    fixture.detectChanges();
 
     expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('2 pagine nel PDF');
-    fixture.detectChanges();
     const confini = root.querySelectorAll('app-editor-sezione [data-fine-pagina]');
     expect(Array.from(confini).map((c) => c.textContent?.trim())).toEqual(['Pagina 2']);
 
-    const request = salva(root, http);
-    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.expectOne(URL_PAGINE).flush({ pagine: 1, inizi_pagina: [] });
+    // Si scrive, senza salvare: il renderer misura il testo sullo schermo.
+    cursoreInFondo(fixture, 'art');
+    digita(fixture, 'art', ' allungato');
+    await pausa();
+    const dopo = http.expectOne(URL_PAGINE);
+    expect(dopo.request.body.sezioni[0].contenuto[1].frammenti).toEqual([
+      { testo: 'secondo capoverso allungato' },
+    ]);
+    dopo.flush({ pagine: 1, inizi_pagina: [] });
     fixture.detectChanges();
     expect(root.querySelector('[data-fine-pagina]')).toBeNull();
     expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('1 pagina nel PDF');

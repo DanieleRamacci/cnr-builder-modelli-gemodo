@@ -400,6 +400,36 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     });
   expect(pagineAnteprima).toBe(pagine);
   await page.getByRole('button', { name: 'Chiudi', exact: true }).click();
+  // Riscontro del 2026-10-02 (T081): il confine sta fermo sul foglio, e' il
+  // testo a scorrere. Cinque righe vuote in cima ai visti spostano in basso il
+  // testo, non il confine di pagina, che si riposiziona appena misurato.
+  const sulFoglio = () =>
+    page
+      .locator('[data-fine-pagina]')
+      .first()
+      .evaluate((segno) => {
+        const foglio = segno.closest('.pagina')!.getBoundingClientRect();
+        return segno.getBoundingClientRect().top - foglio.top;
+      });
+  const confinePrima = await sulFoglio();
+  await testoVisti.locator(':scope > p').first().click();
+  await page.keyboard.press('Home');
+  for (let i = 0; i < 5; i += 1) await page.keyboard.press('Enter');
+  await expect.poll(sulFoglio).toBeLessThan(confinePrima + 40);
+  const interlinea = await testoVisti
+    .locator(':scope > p')
+    .first()
+    .evaluate((p) => parseFloat(getComputedStyle(p).lineHeight));
+  expect(Math.abs((await sulFoglio()) - confinePrima)).toBeLessThan(interlinea * 1.5);
+  // Capoversi e voci hanno il corpo del PDF, non quello di Bootstrap Italia;
+  // e il testo col cursore non ha la cornice nera di focus.
+  const stili = await testoVisti.evaluate((testo) => ({
+    p: getComputedStyle(testo.querySelector('p')!).fontSize,
+    li: getComputedStyle(document.querySelector('[data-section-text] li')!).fontSize,
+    cornice: getComputedStyle(testo).boxShadow,
+  }));
+  expect(stili.p).toBe(stili.li);
+  expect(stili.cornice).toBe('none');
   await page.locator('[data-fine-pagina]').first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('builder-2b-fogli.png') });
   // La sezione di prova esce dal documento: il resto del flusso confronta il
