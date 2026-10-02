@@ -149,7 +149,7 @@ export interface paths {
         put?: never;
         /**
          * Crea una variante dello stesso modello sulla stessa categorizzazione
-         * @description Eredita tipo, percorso e dimensioni dal modello di origine: si indica solo in cosa differisce. Il codice di variante (STANDARD, VARIANTE_1, VARIANTE_2...) lo assegna il sistema. Distinta da edizioni-derivate, che cambia il valore di una dimensione e non la variante.
+         * @description Eredita tipo, percorso e dimensioni dal modello di origine: si indica solo in cosa differisce. Il codice di variante (STANDARD, VARIANTE_1, VARIANTE_2...) lo assegna il sistema. Distinta da edizioni-derivate, che cambia il valore di una dimensione e non la variante. Nasce con una versione 1 in BOZZA che **copia** campi e documento dell'ultima versione dell'origine: e' lo stesso bando con una differenza dichiarata, e si parte da li' per applicarla. Se l'origine non ha versioni, la richiesta e' rifiutata: non c'e' nulla da cui partire.
          */
         post: operations["creaVariante"];
         delete?: never;
@@ -305,6 +305,143 @@ export interface paths {
          * @description Ritira la versione dal catalogo come scelta esplicita. Prima esisteva solo come effetto collaterale della pubblicazione di un'altra versione sullo stesso slot.
          */
         post: operations["archiviaVersione"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/modelli/{modelloId}/versioni/{versioneId}/anteprima": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Anteprima PDF di una versione in BOZZA (012 US4)
+         * @description Compone le sezioni con lo stesso renderer della generazione ufficiale (012 FR-008), sostituendo ogni segnaposto con un valore fac-simile nella forma «etichetta del campo», o con il valore passato in `valori`. Il PDF porta la marcatura di test e una marcatura di anteprima. **Non e' una generazione** (012 FR-010): non registra alcun documento, non consuma l'idempotenza e non richiede DOCUMENTI_GENERATORE. Chi e' gestore di un altro contesto riceve 404, non 403: non si rivela l'esistenza di cio' che non puo' vedere.
+         */
+        post: operations["anteprimaVersioneModello"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/modelli/{modelloId}/versioni/{versioneId}/impaginazione": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Dove comincia ogni pagina dell'anteprima della bozza (012 T080)
+         * @description La misura dell'anteprima: il renderer compone la bozza come per `anteprima` e annota, mentre scrive, il blocco e la riga in cui comincia ogni pagina dopo la prima. L'editor la usa per disegnare dove finisce un foglio. Stesse regole e stesse autorizzazioni dell'anteprima; nessun PDF viene restituito ne' registrato.
+         */
+        get: operations["impaginazioneVersioneModello"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profilo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contesti, ruoli e permessi dell'utente (007 FR-034)
+         * @description Calcolati dal backend con la stessa mappatura ruoli esterni -> permessi che usa per autorizzare. La pagina profilo li mostra; l'interfaccia decide da qui cosa offrire, invece di ricostruirlo con regole proprie (007 T115). Un contesto i cui ruoli non sono mappati compare senza permessi. Basta essere autenticati.
+         */
+        get: operations["profiloUtente"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Intestazione e pie' di pagina del tipo documento (012 FR-011)
+         * @description Valgono per tutti i modelli del tipo, nel PDF generato e nell'anteprima. Le leggono e le impostano il gestore del contesto dell'integrazione e l'amministratore. `cornice` e' null finche' non si imposta nulla.
+         */
+        get: operations["corniceTipoDocumento"];
+        /** Registra intestazione e pie' di pagina del tipo documento */
+        put: operations["impostaCorniceTipoDocumento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        /** Il logo dell'intestazione, come PNG */
+        get: operations["logoCornice"];
+        /**
+         * Carica il logo dell'intestazione (PNG o JPEG, al massimo 1 MB)
+         * @description Il file si apre come immagine e se ne conserva una copia PNG ricodificata: metadati o contenuti accodati non arrivano al PDF.
+         */
+        put: operations["caricaLogoCornice"];
+        post?: never;
+        /** Toglie il logo dell'intestazione */
+        delete: operations["rimuoviLogoCornice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/modelli/{modelloId}/cornice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * La cornice che il modello eredita dal suo tipo documento (012 T070)
+         * @description Per la scheda dell'editor: la cornice del tipo e dove impostarla (integrazione, tipo documento, contesto).
+         */
+        get: operations["corniceModello"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -490,6 +627,101 @@ export interface components {
             stato: "BOZZA" | "IN_REVISIONE" | "APPROVATO" | "PUBBLICATO" | "ARCHIVIATO" | "SOSPESO";
             /** Format: date-time */
             pubblicato_at: string | null;
+        };
+        FrammentoTesto: {
+            testo: string;
+            /** @default false */
+            grassetto: boolean;
+            /** @default false */
+            corsivo: boolean;
+            /** @default false */
+            sottolineato: boolean;
+            collegamento?: string | null;
+        };
+        CornicePagina: {
+            intestazione?: {
+                /**
+                 * @default LOGO_CENTRO_TESTO_SOTTO
+                 * @enum {string}
+                 */
+                maschera: "LOGO_CENTRO_TESTO_SOTTO";
+                /** @default true */
+                con_logo: boolean;
+                testo?: components["schemas"]["FrammentoTesto"][];
+            } | null;
+            pie_pagina?: {
+                /**
+                 * @default TESTO_SINISTRA_NUMERO_DESTRA
+                 * @enum {string}
+                 */
+                maschera: "TESTO_SINISTRA_NUMERO_DESTRA";
+                testo?: components["schemas"]["FrammentoTesto"][];
+                /** @default true */
+                numerazione_pagine: boolean;
+            } | null;
+        };
+        CorniceTipoDocumento: {
+            cornice: components["schemas"]["CornicePagina"] | null;
+            logo_presente: boolean;
+            maschere_intestazione: string[];
+            maschere_pie_pagina: string[];
+        };
+        CorniceModello: {
+            cornice: components["schemas"]["CornicePagina"] | null;
+            logo_presente: boolean;
+            maschere_intestazione: string[];
+            maschere_pie_pagina: string[];
+            integrazione_id?: string | null;
+            codice_tipo_documento: string;
+            codice_contesto: string;
+        };
+        PermessoProfilo: {
+            /** @example GEMODO_MODELLI_GESTORE */
+            codice: string;
+            descrizione: string;
+        };
+        Profilo: {
+            soggetto: string;
+            client_id: string;
+            permessi_diretti: components["schemas"]["PermessoProfilo"][];
+            contesti: {
+                /** @example geban */
+                codice: string;
+                ruoli: string[];
+                permessi: components["schemas"]["PermessoProfilo"][];
+            }[];
+            permessi: string[];
+        };
+        /** @description Corpo facoltativo. Omesso, ogni segnaposto assume il fac-simile «etichetta del campo». I valori non sono dati ufficiali e non vengono conservati. */
+        RichiestaAnteprima: {
+            /**
+             * @example {
+             *       "numero_posti": "2",
+             *       "sede": "Roma"
+             *     }
+             */
+            valori?: {
+                [key: string]: string;
+            };
+        };
+        Impaginazione: {
+            pagine: number;
+            /** @description Una voce per ogni pagina dopo la prima, in ordine. */
+            inizi_pagina: {
+                pagina: number;
+                sezione: string | null;
+                blocco: string | null;
+                /** @description indice della voce, se il blocco e' un elenco */
+                voce: number | null;
+                riga: number;
+            }[];
+        };
+        ErroreConViolazioni: {
+            codice: string;
+            messaggio: string;
+            dettagli?: {
+                violazione: string;
+            }[];
         };
         Errore: {
             codice: string;
@@ -953,7 +1185,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Variante creata, senza versioni */
+            /** @description Variante creata, con la sua versione 1 in BOZZA */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1182,6 +1414,364 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    anteprimaVersioneModello: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RichiestaAnteprima"];
+            };
+        };
+        responses: {
+            /** @description Anteprima prodotta */
+            200: {
+                headers: {
+                    /** @example inline; filename="anteprima-bando-cter-v3.pdf" */
+                    "Content-Disposition"?: string;
+                    /** @description Sempre `true`; marca la risposta come non ufficiale. */
+                    "X-GEMODO-Anteprima"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description La versione non e' in BOZZA; su una versione pubblicata si chiede il documento vero */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "MODELLO_VERSIONE_NON_MODIFICABILE",
+                     *       "messaggio": "La versione e' in stato PUBBLICATO: l'anteprima si chiede sulle bozze"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Errore"];
+                };
+            };
+            /** @description Le sezioni non sono componibili secondo il formato documentale */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "MODELLO_DOCUMENTALE_NON_VALIDO",
+                     *       "messaggio": "Struttura del modello documentale non valida",
+                     *       "dettagli": [
+                     *         {
+                     *           "violazione": "blocco b1, frammento 0: il testo contiene markup, non ammesso"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErroreConViolazioni"];
+                };
+            };
+        };
+    };
+    impaginazioneVersioneModello: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+                versioneId: components["parameters"]["VersioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Le pagine dell'anteprima */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "pagine": 3,
+                     *       "inizi_pagina": [
+                     *         {
+                     *           "pagina": 2,
+                     *           "sezione": "VISTI",
+                     *           "blocco": "VISTI-b14",
+                     *           "voce": null,
+                     *           "riga": 2
+                     *         },
+                     *         {
+                     *           "pagina": 3,
+                     *           "sezione": "Art. 2 - Requisiti",
+                     *           "blocco": "art2-elenco",
+                     *           "voce": 3,
+                     *           "riga": 0
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Impaginazione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description La versione non e' in BOZZA */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Errore"];
+                };
+            };
+            /** @description Le sezioni non sono componibili secondo il formato documentale */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroreConViolazioni"];
+                };
+            };
+        };
+    };
+    profiloUtente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profilo dell'utente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profilo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    corniceTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cornice, presenza del logo e maschere disponibili */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorniceTipoDocumento"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    impostaCorniceTipoDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CornicePagina"];
+            };
+        };
+        responses: {
+            /** @description Cornice salvata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorniceTipoDocumento"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Markup nel testo, troppe righe */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "MODELLO_DOCUMENTALE_NON_VALIDO",
+                     *       "messaggio": "Cornice di pagina non valida",
+                     *       "dettagli": [
+                     *         {
+                     *           "violazione": "intestazione: 4 righe, al massimo 3"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErroreConViolazioni"];
+                };
+            };
+        };
+    };
+    logoCornice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Il logo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    caricaLogoCornice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/png": string;
+                "image/jpeg": string;
+            };
+        };
+        responses: {
+            /** @description Logo salvato */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Non e' un'immagine PNG o JPEG, o e' troppo grande */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "MODELLO_DOCUMENTALE_NON_VALIDO",
+                     *       "messaggio": "Logo non valido",
+                     *       "dettagli": [
+                     *         {
+                     *           "violazione": "il file non e' un'immagine PNG o JPEG leggibile"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErroreConViolazioni"];
+                };
+            };
+        };
+    };
+    rimuoviLogoCornice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: string;
+                codice: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logo rimosso */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    corniceModello: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cornice del tipo documento del modello */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorniceModello"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

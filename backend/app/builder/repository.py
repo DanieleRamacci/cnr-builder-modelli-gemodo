@@ -491,6 +491,20 @@ def logo_del_tipo(versione: ModelloDocumentoVersione) -> bytes | None:
     return versione.modello.tipo_documento.logo_cornice
 
 
+def sezione_e_blocco(versione: ModelloDocumentoVersione) -> dict[int, tuple[str, str]]:
+    """Per ogni `ordine` del documento composto, la sezione e l'`id` del blocco (012 T080).
+
+    Il renderer conosce i blocchi solo per posizione nel documento piatto;
+    l'editor li conosce per sezione e `id`, che e' unico solo nella sezione.
+    """
+    sezioni = sorted(versione.sezioni, key=lambda s: (s.ordine, s.codice))
+    return {
+        blocco.ordine: (sezione.codice, blocco.id)
+        for sezione, blocchi in zip(sezioni, _blocchi_per_sezione(versione), strict=True)
+        for blocco in blocchi
+    }
+
+
 def inizi_sezione(versione: ModelloDocumentoVersione) -> frozenset[int]:
     """L'`ordine` del primo blocco di ogni sezione, nella numerazione di `composizione_documentale`.
 

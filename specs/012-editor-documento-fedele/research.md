@@ -319,3 +319,26 @@ nostro, cioe' l'opposto di un formato chiuso. Un editor per l'intero documento
 invece che per sezione - possibile con lo stesso schema, ma la sezione come
 unita' e' una scelta di prodotto (riuso futuro), non solo tecnica.
 
+## R10 - Dove finiscono le pagine: misurate, non stimate (2026-10-02)
+
+**Decisione**: i confini dei fogli nell'editor li misura il renderer, non il
+browser. `GET .../impaginazione` compone la bozza come l'anteprima e annota,
+mentre scrive, in quale blocco e a quale riga comincia ogni pagina; l'editor
+disegna "Pagina N" in quel punto. Il foglio dell'editor ha intanto le misure del
+PDF (A4, 10 mm di margine, 11 pt, interlinea 1,35), cosi' che la riga N di un
+blocco sullo schermo sia la riga N nel PDF.
+
+**Rationale**: una stima nel browser sommerebbe a ogni pagina le piccole
+differenze fra le due impaginazioni (spazi fra sezioni, testata, titolo del
+documento, metriche del carattere): su un bando di quindici pagine il confine
+finirebbe al posto sbagliato proprio dove serve. Il numero di pagine e il
+blocco in cima a ogni pagina, invece, vengono dal PDF stesso, e non possono
+sbagliare; l'unica approssimazione resta la riga dentro un capoverso spezzato.
+Dividere il testo in fogli separati, come Word, vorrebbe dire spezzare i
+capoversi nel DOM dell'editor: e' un editor diverso.
+
+**Alternatives considered**: stima nel browser dall'altezza della pagina -
+scartata per la deriva. Fogli separati nel DOM - scartata per ora, vedi sopra.
+Calcolo sul testo non ancora salvato (un `POST` con le sezioni) - rinviato: la
+misura segue il salvataggio, che avviene a ogni uscita dal testo.
+

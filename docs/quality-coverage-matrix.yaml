@@ -1023,3 +1023,19 @@ coverage:
     contract_ref: frontend/src/features/builder/modello-anteprima.component.spec.ts
     stato: COPERTO
     note: la versione in sola lettura mostra il documento composto; dalla 012 l'anteprima produce anche il PDF della bozza (T040)
+
+  - id: COV-121
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-006
+    scenario_id: SCENARIO-12
+    contract_ref: frontend/src/features/builder/documento-editor.spec.ts
+    stato: COPERTO
+    note: una sezione e' una sola area di scrittura (T073-T077); enfasi, stile e unisci righe su piu' capoversi; e2e con Ctrl+A e grassetto su un incolla da Word
+
+  - id: COV-122
+    spec_owner: specs/012-editor-documento-fedele
+    requirement_id: FR-008
+    scenario_id: SCENARIO-12
+    contract_ref: backend/tests/generazione/test_impaginazione.py
+    stato: COPERTO
+    note: foglio A4 con le misure del PDF (T078) e confini di pagina misurati dal renderer (T080); e2e confronta i fogli disegnati con le pagine del PDF dell'anteprima

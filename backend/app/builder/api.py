@@ -19,6 +19,8 @@ from app.builder.schemas import (
     ContestoProfilo,
     PermessoProfilo,
     ProfiloResponse,
+    ImpaginazioneResponse,
+    InizioPaginaResponse,
     RichiestaAnteprima,
     SezioneResponse,
     SezioniResponse,
@@ -545,6 +547,27 @@ def anteprima_versione(
             "Content-Disposition": f'inline; filename="{nome_file}"',
             "X-GEMODO-Anteprima": "true",
         },
+    )
+
+
+@router.get(
+    "/modelli/{modelloId}/versioni/{versioneId}/impaginazione",
+    response_model=ImpaginazioneResponse,
+)
+def impaginazione_versione(
+    modelloId: uuid.UUID,
+    versioneId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> ImpaginazioneResponse:
+    """Dove comincia ogni pagina dell'anteprima della bozza (012 T080).
+
+    L'editor lo usa per mostrare dove finisce un foglio. Stesse regole e
+    stesse autorizzazioni dell'anteprima, di cui e' la misura.
+    """
+    pagine, inizi = service.impaginazione(principal, modelloId, versioneId)
+    return ImpaginazioneResponse(
+        pagine=pagine, inizi_pagina=[InizioPaginaResponse(**inizio) for inizio in inizi],
     )
 
 

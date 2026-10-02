@@ -32,7 +32,9 @@ import { baseKeymap, chainCommands, splitBlockAs, toggleMark } from 'prosemirror
 import { keymap } from 'prosemirror-keymap';
 
 import {
+  gruppiDiRighe,
   normalizzaFrammenti,
+  parolaSpezzata,
   placeholderNeiFrammenti,
   type BloccoIncollato,
   type ElementoElenco,
@@ -972,6 +974,47 @@ export const comandoInterruzione: Command = (stato, dispatch) => {
       const dopo = pos + nodo.nodeSize;
       tr.insert(dopo, [interruzione, N['paragrafo'].create()]);
       tr.setSelection(TextSelection.create(tr.doc, dopo + interruzione.nodeSize + 1));
+    }
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+};
+
+/**
+ * Ricompone in capoversi le righe selezionate di un testo spezzato dalla
+ * pagina: un visto che occupa tre righe torna un capoverso solo, e il
+ * giustificato lo allarga per intero (riscontro del 2026-10-02). La regola e'
+ * quella dell'incolla da PDF (`gruppiDiRighe`); l'enfasi resta dov'era. Una
+ * voce d'elenco apre sempre un capoverso: le righe che la seguono sono il suo
+ * seguito.
+ */
+export const comandoUnisciRighe: Command = (stato, dispatch) => {
+  if (stato.selection.empty) return false;
+  const blocchi = blocchiSelezionati(stato).filter(({ nodo }) => testuale(nodo));
+  const inizi = new Set(
+    blocchi.flatMap(({ nodo }, i) => (i > 0 && nodo.type === N['voce'] ? [i] : [])),
+  );
+  const gruppi = gruppiDiRighe(
+    blocchi.map(({ nodo }) => nodo.textContent),
+    inizi,
+  ).filter((gruppo) => gruppo.length > 1);
+  if (!gruppi.length) return false;
+  if (dispatch) {
+    const tr = stato.tr;
+    // Dall'ultima giuntura alla prima: le posizioni prima restano valide.
+    for (const gruppo of [...gruppi].reverse()) {
+      for (let k = gruppo.length - 1; k > 0; k -= 1) {
+        const prima = blocchi[gruppo[k - 1]].nodo;
+        const dopo = blocchi[gruppo[k]].nodo;
+        const confine = blocchi[gruppo[k]].pos;
+        if (parolaSpezzata(prima.textContent, dopo.textContent)) {
+          tr.delete(confine - 2, confine - 1);
+          tr.join(confine - 1);
+        } else {
+          tr.insertText(' ', confine - 1);
+          tr.join(confine + 1);
+        }
+      }
     }
     dispatch(tr.scrollIntoView());
   }

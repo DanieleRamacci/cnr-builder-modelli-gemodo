@@ -687,3 +687,42 @@ sezione in cui sta il cursore.
   generazione con le verifiche sul PDF; build di produzione e immagini Coolify.
   Le scorciatoie valgono con Ctrl anche su Mac, come prima. Annulla e ripeti
   restano del builder (non la cronologia di ProseMirror), vedi research.md R9.
+
+### Righe da PDF, foglio A4 e fogli visibili (riscontro del 2026-10-02, sera)
+
+Riscontro sul server di test, versione 36: la sezione dei visti non si
+giustificava. Causa nei dati: 118 capoversi di una riga ciascuno, uno per
+ogni riga del PDF (incollati con l'editor per blocco), e una riga sola e'
+l'ultima del suo capoverso, che il giustificato non allarga. Il product owner
+chiede anche un foglio largo quanto la colonna e di vedere dove finisce ogni
+pagina, per sapere quanto spazio prende cio' che si incolla.
+
+- [x] T078 Il foglio dell'editor e' un A4 in scala (`--foglio-mm`, container
+      query): 190 mm di testo su 210, corpo 11 pt con interlinea 1,35 e 2 mm
+      dopo il capoverso, le stesse misure di `renderer.py`, cosi' che le righe
+      vadano a capo dove ci vanno nel PDF. Usa tutta la colonna centrale fino a
+      1060 px.
+- [x] T079 "Unisci righe" (¶ nella toolbar): ricompone in capoversi le righe
+      selezionate, con la stessa regola dell'incolla da PDF (`gruppiDiRighe`,
+      ora condivisa); l'enfasi resta, le voci d'elenco restano voci e prendono
+      il loro seguito. La regola diventa piu' precisa: una riga che chiude con
+      un punto non chiude il capoverso se la successiva comincia in minuscolo
+      o con una cifra ("n. 93 prot." / "0051080/2018").
+- [x] T080 Dove comincia ogni pagina, misurato dal renderer:
+      `GET .../versioni/{id}/impaginazione` (contratto 002 0.11.0) rende la
+      bozza come l'anteprima e annota, per ogni pagina dopo la prima, sezione,
+      blocco, voce e righe rimaste sopra. L'editor la chiede al caricamento e
+      dopo ogni salvataggio e disegna "Pagina N" sulla riga giusta; in cima al
+      foglio dice quante pagine ha il PDF.
+
+  Verifica del 2026-10-02: test del renderer sul PDF vero (pagina, blocco e
+  righe annotati corrispondono al testo estratto), API su PostgreSQL vero
+  (pagine = pagine del PDF dell'anteprima, 409 sulle pubblicate, 403 a chi
+  genera), 512 test backend, 188 frontend; e2e su stack reale con le 117 righe
+  dei visti della versione 36: incollate una per capoverso, ricomposte con
+  "Unisci righe", giustificate, salvate; i fogli disegnati sono tanti quante le
+  pagine del PDF dell'anteprima. La posizione dentro un capoverso spezzato fra
+  due pagine dipende dal fatto che browser e PDF vadano a capo nello stesso
+  punto: con le stesse misure e lo stesso carattere succede quasi sempre, ma
+  e' la riga del PDF, non quella dello schermo, a fare fede.
+

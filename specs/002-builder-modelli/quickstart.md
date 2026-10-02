@@ -53,7 +53,8 @@ Test: `test_un_secondo_modello_senza_nota_e_rifiutato_dicendo_quale_esiste`,
 
 Atteso: il PDF della bozza mostra enfasi, titolo centrato, `1.` e `a)`, e
 «etichetta» al posto del segnaposto, con la marcatura di anteprima; nessun
-documento viene registrato.
+documento viene registrato. Sul foglio dell'editor, salvato il testo, compare
+"N pagine nel PDF" e, dove una pagina comincia, una fascia "Pagina N".
 Test: `frontend/e2e/builder-lifecycle.spec.ts`, `test_anteprima_api.py`.
 
 ## Scenario 4 - Il corpo pubblicato non cambia

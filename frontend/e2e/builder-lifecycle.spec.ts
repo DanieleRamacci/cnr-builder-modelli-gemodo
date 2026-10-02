@@ -9,6 +9,8 @@ import {
   tokenGeneratore,
   type UtenteUsaEGetta,
 } from './support/keycloak';
+import { RIGHE_VISTI } from './support/visti';
+import { gruppiDiRighe } from '../src/features/builder/frammenti';
 
 // Un "visto" e un elenco come li mette negli appunti Word desktop: le liste
 // sono paragrafi `mso-list` con il marcatore in uno span `mso-list:Ignore`.
@@ -346,6 +348,66 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // I marcatori non sono nel testo: la voce contiene solo la frase.
   await expect(voce(1)).toHaveText('cittadinanza di uno degli Stati membri dell’Unione Europea;');
   await expect(voce(3)).toHaveCSS('text-align', 'justify');
+
+  // Riscontro del 2026-10-02 (T078-T080) sui visti della versione 36: salvati
+  // una riga del PDF per capoverso, non si giustificavano, e il foglio non
+  // diceva dove finiscono le pagine. Si incollano cosi', si ricompongono con
+  // "Unisci righe", si giustificano, e i fogli disegnati devono essere quelli
+  // del PDF dell'anteprima.
+  await page.locator('[data-add-section-inline]').click();
+  const testoVisti = page.locator('[data-section-text="sezione-4"]');
+  await testoVisti.click();
+  const html = RIGHE_VISTI.map(
+    (riga) => `<p>${riga.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`,
+  ).join('');
+  await incolla(testoVisti, html, RIGHE_VISTI.join('\n'));
+  await expect(testoVisti.locator(':scope > p')).toHaveCount(RIGHE_VISTI.length);
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.locator('[data-join-lines]').click();
+  const capoversiVisti = gruppiDiRighe(RIGHE_VISTI).length;
+  await expect(testoVisti.locator(':scope > p')).toHaveCount(capoversiVisti);
+  expect(capoversiVisti).toBeLessThan(RIGHE_VISTI.length / 2);
+  await expect(testoVisti.locator(':scope > p').nth(2)).toHaveText(
+    /^VISTO il D\.Lgs 31 dicembre 2009 n\. 213, .* legge 27 settembre 2007, n\. 165”;$/,
+  );
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.locator('[data-align="GIUSTIFICATO"]').click();
+  await expect(testoVisti.locator(':scope > p').nth(2)).toHaveCSS('text-align', 'justify');
+  // Il foglio e' largo come il PDF: 190 mm di testo su 210.
+  const misure = await page.locator('.pagina').evaluate((foglio) => ({
+    foglio: foglio.getBoundingClientRect().width,
+    testo: foglio.querySelector('.testo-sezione')!.getBoundingClientRect().width,
+  }));
+  expect(misure.testo / misure.foglio).toBeCloseTo(190 / 210, 2);
+
+  // Uscendo dal testo si salva, e il renderer dice dove cominciano le pagine.
+  await page.locator('.format-toolbar .hint').click();
+  await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
+  await expect(page.locator('[data-pagine]')).toHaveText(/^\s*\d+ pagine nel PDF\s*$/);
+  const pagine = Number(
+    /(\d+)/.exec((await page.locator('[data-pagine]').textContent()) ?? '')![1],
+  );
+  expect(pagine).toBeGreaterThanOrEqual(2);
+  await expect(page.locator('[data-fine-pagina]')).toHaveCount(pagine - 1);
+  await expect(page.locator('[data-fine-pagina]').first()).toHaveText('Pagina 2');
+  await page.locator('[data-preview-open]').click();
+  await expect(page.locator('[data-preview-frame]')).toBeVisible();
+  const pagineAnteprima = await page
+    .locator('[data-preview-frame]')
+    .evaluate(async (cornice: HTMLIFrameElement) => {
+      const pdf = await (await fetch(cornice.src)).text();
+      return (pdf.match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
+    });
+  expect(pagineAnteprima).toBe(pagine);
+  await page.getByRole('button', { name: 'Chiudi', exact: true }).click();
+  await page.locator('[data-fine-pagina]').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-fogli.png') });
+  // La sezione di prova esce dal documento: il resto del flusso confronta il
+  // PDF generato con quello di sempre.
+  await page.locator('[data-remove-section="sezione-4"]').click();
+  await page.locator('[data-save-sections]').click();
+  await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
+  await expect(page.locator('[data-fine-pagina]')).toHaveCount(0);
 
   // T063: scorrendo, la barra degli strumenti resta in cima.
   await page.mouse.wheel(0, 1500);

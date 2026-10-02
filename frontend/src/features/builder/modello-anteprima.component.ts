@@ -20,6 +20,7 @@ import { CorniceAnteprimaComponent } from './cornice-anteprima.component';
 import { NOMI_MASCHERE, urlCornice, type CorniceModello } from './cornice.model';
 import {
   EditorSezioneComponent,
+  type InizioPaginaSezione,
   type Intervallo,
   type ModificaSezione,
 } from './editor-sezione.component';
@@ -46,6 +47,7 @@ import {
   comandoInterruzione,
   comandoLivello,
   comandoStile,
+  comandoUnisciRighe,
   numeraElenchi,
   statoSelezione,
   type Allineamento,
@@ -55,6 +57,8 @@ import {
 } from './documento-editor';
 
 type Dettaglio = components['schemas']['ModelloDettaglio'];
+type Impaginazione = components['schemas']['Impaginazione'];
+const NESSUN_INIZIO: readonly InizioPaginaSezione[] = [];
 type Versione = Dettaglio['versioni'][number];
 type CampoVersione = Versione['campi'][number];
 type Nodo = {
@@ -417,6 +421,18 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         <button
           type="button"
           class="tool"
+          data-join-lines
+          title="Unisci righe: ricompone in capoversi le righe selezionate di un testo incollato da PDF"
+          aria-label="Unisci righe in capoversi"
+          [disabled]="!sezioni()?.modificabile || !editorAttivo()"
+          (mousedown)="$event.preventDefault()"
+          (click)="unisciRighe()"
+        >
+          ¶
+        </button>
+        <button
+          type="button"
+          class="tool"
           data-insert-block="INTERRUZIONE_PAGINA"
           title="Interruzione di pagina: il testo dopo va sulla pagina seguente"
           aria-label="Inserisci interruzione di pagina"
@@ -571,133 +587,147 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         </aside>
 
         <section class="foglio">
-          <div class="pagina" id="anteprima-documento" data-document-preview>
-            <!-- La cornice vera del tipo documento, come nel PDF (012 T070, FR-008):
+          <!-- Un A4 in scala: le misure del foglio sono in millimetri del PDF
+               (012 T078), cosi' che le righe vadano a capo dove ci vanno li'. -->
+          <div class="scala">
+            @if (impaginazione(); as pagine) {
+              <p class="conta-pagine" data-pagine>
+                {{ pagine.pagine === 1 ? '1 pagina' : pagine.pagine + ' pagine' }} nel PDF
+              </p>
+            }
+            <div class="pagina" id="anteprima-documento" data-document-preview>
+              <!-- La cornice vera del tipo documento, come nel PDF (012 T070, FR-008):
                  prima qui c'erano un'intestazione e una firma finte del prototipo. -->
-            <div class="document-frame" data-sheet-intestazione>
-              @if (cornice()?.cornice?.intestazione) {
-                <app-cornice-anteprima
-                  [cornice]="cornice()!.cornice"
-                  parte="intestazione"
-                  [logoUrl]="logoCornice()"
-                />
-              } @else if (linkCornice(); as link) {
-                <a class="frame-add" data-sheet-add-intestazione [routerLink]="link"
-                  >+ Aggiungi intestazione</a
-                >
-              }
-            </div>
-
-            <div class="document-body">
-              @if (erroreSezioni()) {
-                <div class="alert alert-danger" role="alert">
-                  {{ erroreSezioni() }}
-                  @if (violazioniSezioni().length) {
-                    <ul class="mb-0">
-                      @for (violazione of violazioniSezioni(); track violazione) {
-                        <li>{{ violazione }}</li>
-                      }
-                    </ul>
-                  }
-                </div>
-              }
-
-              @if (sezioni()?.modificabile) {
-                @for (sezione of sezioniLocali(); track sezione.codice) {
-                  <article
-                    class="section-editor"
-                    [class.selected]="sezione.codice === sezioneAttiva()"
+              <div class="document-frame" data-sheet-intestazione>
+                @if (cornice()?.cornice?.intestazione) {
+                  <app-cornice-anteprima
+                    [cornice]="cornice()!.cornice"
+                    parte="intestazione"
+                    [logoUrl]="logoCornice()"
+                  />
+                } @else if (linkCornice(); as link) {
+                  <a class="frame-add" data-sheet-add-intestazione [routerLink]="link"
+                    >+ Aggiungi intestazione</a
                   >
-                    <h3>{{ sezione.codice }}</h3>
-                    <app-editor-sezione
-                      [codice]="sezione.codice"
-                      [blocchi]="sezione.contenuto"
-                      [campi]="vociCampi()"
-                      (modificato)="aggiornaSezione(sezione.codice, $event)"
-                      (attivato)="sezioneAttiva.set(sezione.codice)"
-                      (uscito)="autosalva($event)"
-                      (selezione)="statoEditor.set($event)"
-                      (cronologia)="$event === 'annulla' ? annulla() : ripeti()"
-                      (dragover)="consentiDrop($event)"
-                    />
-                  </article>
                 }
-              } @else {
-                @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
-                  <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
+              </div>
+
+              <div class="document-body">
+                @if (erroreSezioni()) {
+                  <div class="alert alert-danger" role="alert">
+                    {{ erroreSezioni() }}
+                    @if (violazioniSezioni().length) {
+                      <ul class="mb-0">
+                        @for (violazione of violazioniSezioni(); track violazione) {
+                          <li>{{ violazione }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
                 }
-                @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
-                  <article class="section-editor readonly">
-                    <span class="section-tag">{{ etichettaStile(blocco.stile ?? '') }}</span>
-                    @if (blocco.tipo === 'ELENCO') {
-                      @for (elemento of blocco.elementi ?? []; track $index; let indice = $index) {
-                        <div class="editor-item" [class.level-1]="elemento.livello === 1">
-                          <span
-                            class="item-marker"
-                            [class.marker-puntato]="elemento.marcatore === 'PUNTATO'"
-                            >{{ marcatoreInBlocco(blocco, indice) }}</span
-                          >
-                          <div class="editor-text" [style.text-align]="allineamentoCss(blocco)">
-                            @for (frammento of elemento.frammenti; track $index) {
-                              <span
-                                class="frammento"
-                                [class.fr-b]="frammento.grassetto"
-                                [class.fr-i]="frammento.corsivo"
-                                [class.fr-u]="frammento.sottolineato"
-                                >{{ frammento.testo }}</span
-                              >
-                            }
+
+                @if (sezioni()?.modificabile) {
+                  @for (sezione of sezioniLocali(); track sezione.codice) {
+                    <article
+                      class="section-editor"
+                      [class.selected]="sezione.codice === sezioneAttiva()"
+                    >
+                      <h3>{{ sezione.codice }}</h3>
+                      <app-editor-sezione
+                        [codice]="sezione.codice"
+                        [blocchi]="sezione.contenuto"
+                        [campi]="vociCampi()"
+                        [inizi]="iniziPerSezione().get(sezione.codice) ?? nessunInizio"
+                        (modificato)="aggiornaSezione(sezione.codice, $event)"
+                        (attivato)="sezioneAttiva.set(sezione.codice)"
+                        (uscito)="autosalva($event)"
+                        (selezione)="statoEditor.set($event)"
+                        (cronologia)="$event === 'annulla' ? annulla() : ripeti()"
+                        (dragover)="consentiDrop($event)"
+                      />
+                    </article>
+                  }
+                } @else {
+                  @if ((sezioni()?.documento?.blocchi?.length ?? 0) === 0) {
+                    <p class="vuoto-sezioni">L'anteprima del documento composto comparira' qui.</p>
+                  }
+                  @for (blocco of sezioni()?.documento?.blocchi ?? []; track blocco.id) {
+                    <article class="section-editor readonly">
+                      <span class="section-tag">{{ etichettaStile(blocco.stile ?? '') }}</span>
+                      @if (blocco.tipo === 'ELENCO') {
+                        @for (
+                          elemento of blocco.elementi ?? [];
+                          track $index;
+                          let indice = $index
+                        ) {
+                          <div class="editor-item" [class.level-1]="elemento.livello === 1">
+                            <span
+                              class="item-marker"
+                              [class.marker-puntato]="elemento.marcatore === 'PUNTATO'"
+                              >{{ marcatoreInBlocco(blocco, indice) }}</span
+                            >
+                            <div class="editor-text" [style.text-align]="allineamentoCss(blocco)">
+                              @for (frammento of elemento.frammenti; track $index) {
+                                <span
+                                  class="frammento"
+                                  [class.fr-b]="frammento.grassetto"
+                                  [class.fr-i]="frammento.corsivo"
+                                  [class.fr-u]="frammento.sottolineato"
+                                  >{{ frammento.testo }}</span
+                                >
+                              }
+                            </div>
                           </div>
+                        }
+                      } @else if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
+                        <div class="page-break"><span>Interruzione di pagina</span></div>
+                      } @else {
+                        <div
+                          class="editor-text"
+                          [class.style-h1]="blocco.stile === 'H1'"
+                          [class.style-h2]="blocco.stile === 'H2'"
+                          [class.block-titolo]="blocco.tipo === 'TITOLO'"
+                          [class.block-firma]="blocco.tipo === 'FIRMA'"
+                          [style.text-align]="allineamentoCss(blocco)"
+                        >
+                          @for (frammento of blocco.frammenti; track $index) {
+                            <span
+                              class="frammento"
+                              [class.fr-b]="frammento.grassetto"
+                              [class.fr-i]="frammento.corsivo"
+                              [class.fr-u]="frammento.sottolineato"
+                              >{{ frammento.testo }}</span
+                            >
+                          } @empty {
+                            Blocco senza testo
+                          }
                         </div>
                       }
-                    } @else if (blocco.tipo === 'INTERRUZIONE_PAGINA') {
-                      <div class="page-break"><span>Interruzione di pagina</span></div>
-                    } @else {
-                      <div
-                        class="editor-text"
-                        [class.style-h1]="blocco.stile === 'H1'"
-                        [class.style-h2]="blocco.stile === 'H2'"
-                        [class.block-titolo]="blocco.tipo === 'TITOLO'"
-                        [class.block-firma]="blocco.tipo === 'FIRMA'"
-                        [style.text-align]="allineamentoCss(blocco)"
-                      >
-                        @for (frammento of blocco.frammenti; track $index) {
-                          <span
-                            class="frammento"
-                            [class.fr-b]="frammento.grassetto"
-                            [class.fr-i]="frammento.corsivo"
-                            [class.fr-u]="frammento.sottolineato"
-                            >{{ frammento.testo }}</span
-                          >
-                        } @empty {
-                          Blocco senza testo
-                        }
-                      </div>
-                    }
-                  </article>
+                    </article>
+                  }
                 }
-              }
 
-              @if (sezioni()?.modificabile) {
-                <button
-                  type="button"
-                  class="add-section-inline"
-                  data-add-section-inline
-                  [disabled]="salvandoSezioni()"
-                  (click)="aggiungiSezione()"
-                >
-                  Inserisci una nuova sezione di testo
-                </button>
-              }
-            </div>
-            <div class="document-frame" data-sheet-piede>
-              @if (cornice()?.cornice?.pie_pagina) {
-                <app-cornice-anteprima [cornice]="cornice()!.cornice" parte="piede" />
-              } @else if (linkCornice(); as link) {
-                <a class="frame-add" data-sheet-add-piede [routerLink]="link"
-                  >+ Aggiungi piè di pagina</a
-                >
-              }
+                @if (sezioni()?.modificabile) {
+                  <button
+                    type="button"
+                    class="add-section-inline"
+                    data-add-section-inline
+                    [disabled]="salvandoSezioni()"
+                    (click)="aggiungiSezione()"
+                  >
+                    Inserisci una nuova sezione di testo
+                  </button>
+                }
+              </div>
+              <div class="document-frame" data-sheet-piede>
+                @if (cornice()?.cornice?.pie_pagina) {
+                  <app-cornice-anteprima [cornice]="cornice()!.cornice" parte="piede" />
+                } @else if (linkCornice(); as link) {
+                  <a class="frame-add" data-sheet-add-piede [routerLink]="link"
+                    >+ Aggiungi piè di pagina</a
+                  >
+                }
+              </div>
             </div>
           </div>
         </section>
@@ -1168,6 +1198,20 @@ export class ModelloAnteprimaComponent {
   );
   /** Perche' il nome scritto nelle Proprieta' non e' stato accettato. */
   protected readonly erroreNome = signal<string | null>(null);
+  /**
+   * Le pagine dell'anteprima dell'ultima versione salvata (012 T080): quante
+   * sono e dove comincia ciascuna, per disegnare i fogli sul testo.
+   */
+  protected readonly impaginazione = signal<Impaginazione | null>(null);
+  protected readonly nessunInizio = NESSUN_INIZIO;
+  protected readonly iniziPerSezione = computed(() => {
+    const perSezione = new Map<string, InizioPaginaSezione[]>();
+    for (const inizio of this.impaginazione()?.inizi_pagina ?? []) {
+      if (!inizio.sezione) continue;
+      perSezione.set(inizio.sezione, [...(perSezione.get(inizio.sezione) ?? []), inizio]);
+    }
+    return perSezione;
+  });
   /** Cosa c'e' dove sta il cursore, come lo mostra la toolbar. */
   protected readonly statoEditor = signal<StatoSelezione | null>(null);
   /** Lo stile del blocco col cursore, come lo mostra il menu Stile. */
@@ -1496,6 +1540,11 @@ export class ModelloAnteprimaComponent {
     this.possoRipetere.set(this.futuro.length > 0);
   }
 
+  /** Le righe selezionate di un testo incollato da PDF, ricomposte in capoversi. */
+  protected unisciRighe(): void {
+    this.editorAttivo()?.esegui(comandoUnisciRighe);
+  }
+
   /** Un'interruzione di pagina al cursore (FR-012, T060). */
   protected inserisciInterruzione(): void {
     this.editorAttivo()?.esegui(comandoInterruzione);
@@ -1653,6 +1702,7 @@ export class ModelloAnteprimaComponent {
         next: (response) => {
           this.salvandoSezioni.set(false);
           this.applicaSezioni(response, this.documentoModificato());
+          this.caricaImpaginazione();
           for (const azione of this.dopoSalvataggio.splice(0)) azione();
         },
         error: (e: ApiError) => {
@@ -1839,11 +1889,31 @@ export class ModelloAnteprimaComponent {
       .subscribe({
         next: (response) => {
           this.applicaSezioni(response);
+          this.caricaImpaginazione();
           this.passato.length = 0;
           this.futuro.length = 0;
           this.aggiornaCronologia();
         },
         error: (e: ApiError) => this.erroreSezioni.set(e.messaggio),
+      });
+  }
+
+  /**
+   * Dove cominciano le pagine, misurato dal renderer sull'ultima versione
+   * salvata. Solo sulle bozze, come l'anteprima; se la misura non riesce i
+   * fogli semplicemente non si disegnano, il testo resta modificabile.
+   */
+  private caricaImpaginazione(): void {
+    const versione = this.corrente();
+    if (!versione || !this.sezioni()?.modificabile) return;
+    this.api
+      .get<Impaginazione>(
+        `/api/v1/builder/modelli/${this.id}/versioni/${versione.id}/impaginazione`,
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (impaginazione) => this.impaginazione.set(impaginazione),
+        error: () => this.impaginazione.set(null),
       });
   }
 

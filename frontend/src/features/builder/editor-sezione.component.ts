@@ -34,6 +34,18 @@ import {
 /** Una porzione del documento della sezione, come posizioni ProseMirror. */
 export type Intervallo = { da: number; a: number };
 
+/**
+ * Dove comincia una pagina dentro questa sezione, come lo misura il renderer
+ * (012 T080): il blocco (la voce, se e' un elenco) e quante sue righe restano
+ * sulla pagina prima.
+ */
+export type InizioPaginaSezione = {
+  pagina: number;
+  blocco: string | null;
+  voce: number | null;
+  riga: number;
+};
+
 export type ModificaSezione = {
   blocchi: BloccoDocumento[];
   /** Una battuta di testo: la cronologia la raggruppa con le vicine. */
@@ -66,10 +78,16 @@ const COMANDO = 'gemodo-comando';
     // Il menu `/` e' fisso rispetto alla finestra: se il foglio scorre non
     // starebbe piu' sotto il cursore, quindi si chiude.
     '(window:scroll)': 'chiudiMenuSlash()',
-    '(window:resize)': 'chiudiMenuSlash()',
+    '(window:resize)': 'chiudiMenuSlash(); misuraPagine()',
   },
   template: `
     <div #area></div>
+    <!-- Dove finisce un foglio del PDF: sopra il testo, senza prenderne il posto. -->
+    @for (segno of segniPagina(); track segno.pagina) {
+      <div class="fine-pagina" aria-hidden="true" data-fine-pagina [style.top.px]="segno.top">
+        <span>Pagina {{ segno.pagina }}</span>
+      </div>
+    }
     @if (menuSlash(); as menu) {
       <app-menu-segnaposto
         [voci]="vociSlash()"
@@ -87,6 +105,8 @@ export class EditorSezioneComponent implements AfterViewInit {
   readonly blocchi = input.required<BloccoDocumento[]>();
   /** I segnaposto che il menu `/` propone: i campi della versione. */
   readonly campi = input<VoceSegnaposto[]>([]);
+  /** Le pagine che cominciano in questa sezione, misurate sull'anteprima. */
+  readonly inizi = input<readonly InizioPaginaSezione[]>([]);
 
   readonly modificato = output<ModificaSezione>();
   readonly attivato = output<void>();
@@ -113,6 +133,9 @@ export class EditorSezioneComponent implements AfterViewInit {
     x: number;
     y: number;
   } | null>(null);
+  /** I confini dei fogli, in pixel dall'alto della sezione. */
+  protected readonly segniPagina = signal<{ pagina: number; top: number }[]>([]);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly vociSlash = computed<VoceSegnaposto[]>(() => {
     const filtro = this.menuSlash()?.filtro.toLocaleLowerCase() ?? '';
     return this.campi()
@@ -127,6 +150,10 @@ export class EditorSezioneComponent implements AfterViewInit {
     effect(() => {
       const blocchi = this.blocchi();
       if (this.vista) this.sincronizza(blocchi);
+    });
+    effect(() => {
+      this.inizi();
+      if (this.vista) this.misuraPagine();
     });
     inject(DestroyRef).onDestroy(() => this.vista?.destroy());
   }
@@ -169,6 +196,36 @@ export class EditorSezioneComponent implements AfterViewInit {
         },
       },
     });
+  }
+
+  /**
+   * Porta i confini dei fogli sul testo: all'inizio della riga annotata dal
+   * renderer, nel blocco che la contiene. Il foglio dell'editor ha le misure
+   * del PDF (012 T078), quindi la riga N del blocco qui e' la riga N li'. Se il
+   * blocco non c'e' piu' (cancellato dopo l'ultimo salvataggio) il segno
+   * aspetta la misura successiva.
+   */
+  protected misuraPagine(): void {
+    const radice = this.vista?.dom;
+    if (!radice) return;
+    const origine = this.host.nativeElement.getBoundingClientRect().top;
+    const segni: { pagina: number; top: number }[] = [];
+    for (const inizio of this.inizi()) {
+      const candidati = Array.from(radice.children).filter(
+        (figlio): figlio is HTMLElement =>
+          figlio instanceof HTMLElement && figlio.getAttribute('data-block-id') === inizio.blocco,
+      );
+      const elemento = candidati[inizio.voce ?? 0];
+      if (!elemento) continue;
+      const box = elemento.getBoundingClientRect();
+      if (elemento.classList.contains('page-break')) {
+        segni.push({ pagina: inizio.pagina, top: box.bottom - origine });
+        continue;
+      }
+      const interlinea = parseFloat(getComputedStyle(elemento).lineHeight) || 0;
+      segni.push({ pagina: inizio.pagina, top: box.top - origine + inizio.riga * interlinea });
+    }
+    this.segniPagina.set(segni);
   }
 
   /** Lo stato dell'editor, per chi deve leggerlo (un collegamento gia' presente). */
@@ -231,6 +288,7 @@ export class EditorSezioneComponent implements AfterViewInit {
     const prima = vista.state;
     const { state: dopo, transactions } = prima.applyTransaction(tr);
     vista.updateState(dopo);
+    if (!dopo.doc.eq(prima.doc) && this.inizi().length) this.misuraPagine();
     if (this.slashDa !== null && dopo.doc.textBetween(this.slashDa, this.slashDa + 1) === '/') {
       this.apriMenuSlash(this.slashDa);
     }

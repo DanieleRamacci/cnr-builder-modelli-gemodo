@@ -34,6 +34,7 @@ Spec di riferimento: `002-builder-modelli` (modelli, versioni, varianti),
 | `POST /modelli/{id}/varianti`, `/edizioni-derivate`, `/versioni` | varianti, edizioni collegate, versioni nuove |
 | `GET/PUT /modelli/{id}/versioni/{id}/sezioni` | il corpo del documento |
 | `POST /modelli/{id}/versioni/{id}/anteprima` | il PDF della bozza con valori fac-simile |
+| `GET /modelli/{id}/versioni/{id}/impaginazione` | dove comincia ogni pagina dell'anteprima, per i fogli dell'editor |
 | `POST .../invia-revisione`, `/approva`, `/pubblica`, `/sospendi`, `/archivia` | ciclo di vita |
 | `GET/PUT /integrazioni/{id}/tipi-documento/{codice}/cornice`, `GET/PUT/DELETE .../cornice/logo` | intestazione, piè di pagina e logo del tipo documento (gestore del contesto o admin) |
 | `GET /modelli/{id}/cornice` | la cornice che il modello eredita, per la scheda "Pagina" dell'editor |
@@ -76,6 +77,6 @@ descriva solo rotte che esistono: una rotta nuova entra con il suo contratto.
 
 Tutti su PostgreSQL reale (Testcontainers) e via HTTP. I principali:
 `test_builder_flow_api.py` (fixture comuni, creazione e ciclo di vita),
-`test_sezioni_*.py`, `test_formato_frammenti.py`, `test_anteprima_api.py`,
+`test_sezioni_*.py`, `test_formato_frammenti.py`, `test_anteprima_api.py`, `test_impaginazione_api.py`,
 `test_profilo_api.py`, `test_varianti_modello.py`, `test_dimensioni_generiche.py`.
 Il percorso completo dall'interfaccia è `frontend/e2e/builder-lifecycle.spec.ts`.

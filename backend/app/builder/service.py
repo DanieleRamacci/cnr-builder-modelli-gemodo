@@ -46,7 +46,7 @@ from app.discovery.schemas import CatalogoDiscovery
 from app.quality.document_model import validate_document_model, violazioni_struttura_blocchi
 from app.quality.errors import ContrattoNonValidoError
 # Solo il renderer, mai lo storage: l'anteprima non e' una generazione (012 FR-010).
-from app.generazione.renderer import render_documento, sostituisci_placeholder
+from app.generazione.renderer import InizioPagina, render_documento, sostituisci_placeholder
 
 TRANSIZIONI_VALIDE: dict[str, set[str]] = {
     "BOZZA": {"IN_REVISIONE"},
@@ -930,6 +930,40 @@ class BuilderService:
         mescolerebbe ai fatti del modello delle semplici consultazioni.
         """
         versione = self._versione_per_anteprima(principal, modello_id, versione_id)
+        pdf = self._rendi_bozza(versione, valori)
+        return pdf, f"anteprima-{versione.modello.codice}-v{versione.versione}.pdf"
+
+    def impaginazione(
+        self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
+    ) -> tuple[int, list[dict]]:
+        """Dove comincia ogni pagina dell'anteprima della bozza (012 T080).
+
+        Non una stima: e' l'anteprima stessa, resa e misurata mentre la si
+        scrive, cosi' che i fogli che l'editor disegna siano quelli del PDF.
+        Stesse regole e stesse autorizzazioni dell'anteprima; il PDF prodotto
+        si scarta.
+        """
+        versione = self._versione_per_anteprima(principal, modello_id, versione_id)
+        inizi: list[InizioPagina] = []
+        self._rendi_bozza(versione, {}, inizi_pagina=inizi)
+        blocchi = builder_repository.sezione_e_blocco(versione)
+        return len(inizi) + 1, [
+            {
+                "pagina": inizio.pagina,
+                "sezione": blocchi[inizio.ordine][0] if inizio.ordine is not None else None,
+                "blocco": blocchi[inizio.ordine][1] if inizio.ordine is not None else None,
+                "voce": inizio.voce,
+                "riga": inizio.riga,
+            }
+            for inizio in inizi
+        ]
+
+    def _rendi_bozza(
+        self,
+        versione: ModelloDocumentoVersione,
+        valori: dict[str, str],
+        inizi_pagina: list[InizioPagina] | None = None,
+    ) -> bytes:
         if versione.stato != "BOZZA":
             raise BuilderDomainError(
                 ErrorCode.MODELLO_VERSIONE_NON_MODIFICABILE,
@@ -958,15 +992,15 @@ class BuilderService:
             for nome in documento.placeholder_usati
         }
         modello = versione.modello
-        pdf = render_documento(
+        return render_documento(
             titolo=f"{modello.tipo_documento.nome} - {modello.nome}",
             blocchi=sostituisci_placeholder(documento.blocchi, dati),
             inizi_sezione=builder_repository.inizi_sezione(versione),
             anteprima=True,
             cornice=builder_repository.cornice_del_tipo(versione),
             logo=builder_repository.logo_del_tipo(versione),
+            inizi_pagina=inizi_pagina,
         )
-        return pdf, f"anteprima-{modello.codice}-v{versione.versione}.pdf"
 
     def _versione_per_anteprima(
         self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,

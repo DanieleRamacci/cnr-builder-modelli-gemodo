@@ -215,33 +215,67 @@ export function convertiAppunti(html: string | null | undefined, testo: string):
  * elenco. Una parola spezzata a fine riga col trattino si ricuce.
  */
 function capoversiDaTesto(testo: string): Capoverso[] {
-  const capoversi: string[] = [];
-  let corrente = '';
+  const righe = testo.split('\n').map(pulisciRiga);
+  return gruppiDiRighe(righe).map((gruppo) => ({
+    tipo: 'PARAGRAFO',
+    frammenti: [{ testo: gruppo.reduce((unito, i) => saldaRighe(unito, righe[i]), '') }],
+  }));
+}
+
+function pulisciRiga(riga: string): string {
+  return riga.replace(/\t/g, ' ').replace(/ {2,}/g, ' ').trim();
+}
+
+/**
+ * Le righe di un testo spezzato dalla pagina (un PDF, o un incolla che ha
+ * fatto una riga per capoverso), raggruppate nei capoversi veri: indici delle
+ * righe, una riga vuota separa sempre. `inizi` sono righe che aprono comunque
+ * un capoverso (una voce d'elenco).
+ *
+ * Un capoverso finisce dove la riga chiude una frase (`.;:!?`) **e** la
+ * successiva comincia come un capoverso, cioe' non in minuscolo ne' con una
+ * cifra: "n. 93 prot." seguito da "0051080/2018" e' la stessa frase (riscontro
+ * del 2026-10-02 sui visti del bando). Finisce anche prima di un marcatore
+ * scritto a mano, e dove un titolo tutto maiuscolo lascia il posto al testo.
+ */
+export function gruppiDiRighe(righe: string[], inizi: ReadonlySet<number> = new Set()): number[][] {
+  const gruppi: number[][] = [];
+  let corrente: number[] = [];
+  let testo = '';
   const chiudi = (): void => {
-    if (corrente) capoversi.push(corrente);
-    corrente = '';
+    if (corrente.length) gruppi.push(corrente);
+    corrente = [];
+    testo = '';
   };
-  for (const grezza of testo.split('\n')) {
-    const riga = grezza.replace(/\t/g, ' ').replace(/ {2,}/g, ' ').trim();
+  righe.forEach((grezza, indice) => {
+    const riga = pulisciRiga(grezza);
     if (!riga) {
       chiudi();
-      continue;
+      return;
     }
-    if (MARCATORE_A_MANO.test(riga)) chiudi();
-    // Un titolo tutto maiuscolo finisce dove comincia il testo normale, anche
-    // senza punteggiatura: "... VARIE SEDI" e poi "VISTO il decreto ...".
-    if (corrente && maiuscolo(corrente) && /[a-zà-ÿ]/.test(riga)) chiudi();
-    if (!corrente) {
-      corrente = riga;
-    } else if (/[A-Za-zÀ-ÿ]-$/.test(corrente) && /^[a-zà-ÿ]/.test(riga)) {
-      corrente = corrente.slice(0, -1) + riga;
-    } else {
-      corrente = `${corrente} ${riga}`;
-    }
-    if (/[.;:!?]["”»)]?$/.test(riga)) chiudi();
-  }
+    if (corrente.length && (inizi.has(indice) || apreCapoverso(testo, riga))) chiudi();
+    corrente.push(indice);
+    testo = saldaRighe(testo, riga);
+  });
   chiudi();
-  return capoversi.map((riga) => ({ tipo: 'PARAGRAFO', frammenti: [{ testo: riga }] }));
+  return gruppi;
+}
+
+function apreCapoverso(prima: string, riga: string): boolean {
+  if (MARCATORE_A_MANO.test(riga)) return true;
+  // "... VARIE SEDI" e poi "VISTO il decreto ...": il titolo e' finito.
+  if (maiuscolo(prima) && /[a-zà-ÿ]/.test(riga)) return true;
+  return /[.;:!?]["”»)]?$/.test(prima) && !/^[a-zà-ÿ0-9]/.test(riga);
+}
+
+/** Una parola spezzata a fine riga ("rice-" e "rca") si ricompone senza trattino. */
+export function parolaSpezzata(prima: string, dopo: string): boolean {
+  return /[A-Za-zÀ-ÿ]-$/.test(prima) && /^[a-zà-ÿ]/.test(dopo.trimStart());
+}
+
+function saldaRighe(prima: string, dopo: string): string {
+  if (!prima) return dopo;
+  return parolaSpezzata(prima, dopo) ? prima.slice(0, -1) + dopo : `${prima} ${dopo}`;
 }
 
 function maiuscolo(testo: string): boolean {

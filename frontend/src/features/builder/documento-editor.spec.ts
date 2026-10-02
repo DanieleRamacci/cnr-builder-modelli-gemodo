@@ -10,6 +10,7 @@ import {
   comandoLivello,
   comandoStile,
   comandoTesto,
+  comandoUnisciRighe,
   creaStato,
   documentoDaBlocchi,
   impronta,
@@ -251,5 +252,81 @@ describe('incolla (T075)', () => {
     const blocchi = blocchiDaDocumento(dopo.doc);
     expect(blocchi.map((b) => b.frammenti[0]?.testo)).toEqual(['prima uno', 'due dopo']);
     expect(new Set(blocchi.map((b) => b.id)).size).toBe(2);
+  });
+});
+
+describe('unisci righe (riscontro del 2026-10-02)', () => {
+  // I visti come li aveva salvati il vecchio editor: una riga del PDF per capoverso.
+  const RIGHE: BloccoDocumento[] = [
+    'IL VICEPRESIDENTE',
+    'VISTO il D.Lgs 31 dicembre 2009 n. 213, “Riordino degli Enti di ricerca in attuazione dell’art. 1 della',
+    'legge 27 settembre 2007, n. 165”;',
+    'VISTO lo Statuto del CNR, emanato con provvedimento del Presidente del CNR n. 93 prot.',
+    '0051080/2018 del 19/07/2018, di cui è stato dato l’avviso di pubbli-',
+    'cazione sul sito del Ministero;',
+  ].map((testo, i) =>
+    blocco(
+      `r${i}`,
+      i === 1 ? [{ testo: 'VISTO', grassetto: true }, { testo: testo.slice(5) }] : [{ testo }],
+      {
+        ordine: i,
+        allineamento: 'GIUSTIFICATO',
+      },
+    ),
+  );
+
+  it('ricompone i visti in capoversi interi, tenendo l enfasi e ricucendo le parole spezzate', () => {
+    const tutto = stato(RIGHE);
+    const selezione = tutto.apply(
+      tutto.tr.setSelection(TextSelection.create(tutto.doc, 1, tutto.doc.content.size - 1)),
+    );
+    const blocchi = blocchiDaDocumento(esegui(selezione, comandoUnisciRighe).doc);
+    expect(blocchi.map((b) => b.frammenti.map((f) => f.testo).join(''))).toEqual([
+      'IL VICEPRESIDENTE',
+      'VISTO il D.Lgs 31 dicembre 2009 n. 213, “Riordino degli Enti di ricerca in attuazione dell’art. 1 della legge 27 settembre 2007, n. 165”;',
+      'VISTO lo Statuto del CNR, emanato con provvedimento del Presidente del CNR n. 93 prot. 0051080/2018 del 19/07/2018, di cui è stato dato l’avviso di pubblicazione sul sito del Ministero;',
+    ]);
+    expect(blocchi[1].frammenti[0]).toEqual({ testo: 'VISTO', grassetto: true });
+    expect(blocchi.every((b) => b.allineamento === 'GIUSTIFICATO')).toBe(true);
+    expect(new Set(blocchi.map((b) => b.id)).size).toBe(3);
+  });
+
+  it('il seguito di una voce si unisce alla voce, e una voce nuova resta una voce', () => {
+    const conVoci = [
+      {
+        ...blocco('e', [], {
+          tipo: 'ELENCO',
+          ordine: 0,
+          elementi: [
+            {
+              livello: 0 as const,
+              marcatore: 'NUMERICO' as const,
+              frammenti: [{ testo: 'ai sensi del' }],
+            },
+          ],
+        }),
+      },
+      blocco('p', [{ testo: 'D.P.R. 487/1994;' }], { ordine: 1 }),
+      {
+        ...blocco('e2', [], {
+          tipo: 'ELENCO',
+          ordine: 2,
+          elementi: [
+            {
+              livello: 0 as const,
+              marcatore: 'NUMERICO' as const,
+              frammenti: [{ testo: 'secondo comma' }],
+            },
+          ],
+        }),
+      },
+    ];
+    const tutto = stato(conVoci);
+    const selezione = tutto.apply(
+      tutto.tr.setSelection(TextSelection.create(tutto.doc, 1, tutto.doc.content.size - 1)),
+    );
+    const blocchi = blocchiDaDocumento(esegui(selezione, comandoUnisciRighe).doc);
+    expect(blocchi.map((b) => b.tipo)).toEqual(['ELENCO', 'ELENCO']);
+    expect(blocchi[0].elementi![0].frammenti).toEqual([{ testo: 'ai sensi del D.P.R. 487/1994;' }]);
   });
 });

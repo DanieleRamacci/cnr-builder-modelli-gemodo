@@ -1,17 +1,49 @@
 // Il testo della sezione: DOM di ProseMirror, quindi stili non incapsulati,
-// tutti sotto `.testo-sezione` (012 T075). Proporzioni del PDF sulla scala
-// dell'editor: corpo 11pt, titolo 13pt, firma con spazio sopra (FR-008).
+// tutti sotto `.testo-sezione` (012 T075). Le misure sono quelle del renderer
+// in millimetri del foglio (`--foglio-mm`, 012 T078): corpo 11 pt con
+// interlinea 1,35 e 2 mm dopo il capoverso, titolo 13, H1 14, H2 12, voci con
+// 1 mm, firma con 6 mm sopra. 1 pt = 0,3528 mm.
 app-editor-sezione {
+  position: relative;
   display: block;
 }
 
+// Il confine fra due fogli del PDF (012 T080): una fascia grigia come lo
+// spazio fra due pagine, larga quanto il foglio, sopra la riga che apre la
+// pagina nuova. Non prende spazio e non si seleziona.
+app-editor-sezione .fine-pagina {
+  position: absolute;
+  z-index: 1;
+  right: calc(var(--foglio-mm, 0.3rem) * -14);
+  left: calc(var(--foglio-mm, 0.3rem) * -14);
+  height: 0;
+  margin-top: -3px;
+  border-top: 6px solid #e8edf2;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    top: -3px;
+    right: calc(var(--foglio-mm, 0.3rem) * 2);
+    transform: translateY(-50%);
+    padding: 0 8px;
+    border-radius: 9px;
+    background: #5a6772;
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+  }
+}
+
 .testo-sezione {
+  --mm: var(--foglio-mm, 0.3rem);
+
   position: relative;
-  min-height: 28px;
+  min-height: calc(var(--mm) * 5.24);
   outline: 0;
   color: #1c2024;
-  font-size: 13.5px;
-  line-height: 1.75;
+  font-size: calc(var(--mm) * 3.881);
+  line-height: 1.35;
   // Quelle che `prosemirror-view/style/prosemirror.css` chiede al contenitore.
   white-space: pre-wrap;
   white-space: break-spaces;
@@ -20,15 +52,16 @@ app-editor-sezione {
   font-feature-settings: 'liga' 0;
 
   > * {
-    margin: 0;
+    margin: 0 0 calc(var(--mm) * 2);
   }
 
-  > * + * {
-    margin-top: 8px;
+  > li {
+    margin-bottom: var(--mm);
   }
 
-  > li + li {
-    margin-top: 0;
+  // Dopo l'ultima voce il renderer lascia 1 mm in piu'.
+  > li:has(+ :not(li)) {
+    margin-bottom: calc(var(--mm) * 2);
   }
 
   &.vuoto > :first-child::before {
@@ -57,25 +90,24 @@ app-editor-sezione {
 
   .block-titolo {
     color: #17324d;
-    font-size: 16px;
+    font-size: calc(var(--mm) * 4.586);
     font-weight: 700;
   }
 
   .block-firma {
-    margin-top: 20px;
+    margin-top: calc(var(--mm) * 6);
   }
 
   // Niente `text-transform`: il PDF scrive il titolo come e' scritto.
   .style-h1 {
     color: #17324d;
-    font-size: 17px;
+    font-size: calc(var(--mm) * 4.939);
     font-weight: 700;
-    line-height: 1.55;
   }
 
   .style-h2 {
     color: #17324d;
-    font-size: 15px;
+    font-size: calc(var(--mm) * 4.233);
     font-weight: 700;
   }
 
@@ -86,28 +118,28 @@ app-editor-sezione {
   .editor-item {
     position: relative;
     display: block;
-    padding-left: 12.7mm;
+    padding-left: calc(var(--mm) * 12.7);
     list-style: none;
 
     &::before {
       position: absolute;
-      left: 6.35mm;
+      left: calc(var(--mm) * 6.35);
       content: attr(data-marcatore);
       user-select: none;
     }
 
     &.level-1 {
-      padding-left: 25.4mm;
+      padding-left: calc(var(--mm) * 25.4);
 
       &::before {
-        left: 19.05mm;
+        left: calc(var(--mm) * 19.05);
       }
     }
 
     // Il pallino di Word e' un cerchio di circa 1,5 mm, non il `•` minuto.
     &[data-marcatore-tipo='PUNTATO']::before {
-      font-size: 8px;
-      line-height: 23.6px;
+      font-size: calc(var(--mm) * 2);
+      line-height: calc(var(--mm) * 5.24);
     }
   }
 

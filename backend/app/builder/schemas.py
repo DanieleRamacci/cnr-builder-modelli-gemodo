@@ -223,6 +223,30 @@ class RichiestaAnteprima(BaseModel):
     valori: dict[str, str] = Field(default_factory=dict)
 
 
+class InizioPaginaResponse(BaseModel):
+    """Dove comincia una pagina dopo la prima, nei termini dell'editor (012 T080).
+
+    `sezione` e `blocco` sono il codice della sezione e l'`id` del blocco che si
+    sta scrivendo quando la pagina finisce, `voce` l'indice della voce se e' un
+    elenco; `riga` e' quante righe di quel blocco restano sulla pagina prima
+    (0: il blocco comincia sulla pagina nuova). Senza blocco, la pagina e'
+    cominciata fra due blocchi.
+    """
+
+    pagina: int
+    sezione: str | None
+    blocco: str | None
+    voce: int | None
+    riga: int
+
+
+class ImpaginazioneResponse(BaseModel):
+    """Le pagine dell'anteprima della bozza, come le scrive il renderer (012 T080)."""
+
+    pagine: int
+    inizi_pagina: list[InizioPaginaResponse]
+
+
 class SostituisciSezioniRequest(BaseModel):
     """L'insieme completo delle sezioni della versione.
 

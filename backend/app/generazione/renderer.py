@@ -16,6 +16,7 @@ document official.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 
@@ -109,6 +110,23 @@ _RIGA_TESTATA = 4.5
 _MARGINE_PIEDE = 22
 
 
+@dataclass(frozen=True)
+class InizioPagina:
+    """Dove comincia una pagina dopo la prima (012 T080).
+
+    `ordine` e `voce` sono il blocco (e la voce d'elenco) che si sta scrivendo
+    quando la pagina finisce; `riga` e' quante righe di quel blocco sono
+    rimaste sulla pagina prima: 0 se il blocco comincia sulla pagina nuova.
+    Senza blocco (`ordine` assente) la pagina e' cominciata fra un blocco e
+    l'altro. L'editor la usa per disegnare dove finisce un foglio.
+    """
+
+    pagina: int
+    ordine: int | None
+    voce: int | None
+    riga: int
+
+
 def _righe_testata(frammenti: list[FrammentoTesto]) -> list[list[FrammentoTesto]]:
     """Le righe dell'intestazione, ciascuna con i suoi frammenti."""
     righe: list[list[FrammentoTesto]] = [[]]
@@ -135,6 +153,35 @@ class _PdfConCornice(FPDF):
         self.intestazione = cornice.intestazione if cornice else None
         self.logo = logo if self.intestazione and self.intestazione.con_logo else None
         self.righe = _righe_testata(self.intestazione.testo) if self.intestazione else []
+        # Dove cominciano le pagine, se chi rende lo chiede (012 T080).
+        self.inizi_pagina: list[InizioPagina] | None = None
+        self._segno: tuple[int, int | None] | None = None
+        self._y_segno = 0.0
+        self._interlinea = _interlinea(11)
+        self._righe_segno = 0
+
+    def segna(self, ordine: int, voce: int | None = None) -> None:
+        """Il blocco (o la voce) che comincia ora: le pagine nuove si riferiscono a lui."""
+        self._segno = (ordine, voce)
+        self._y_segno = self.get_y()
+        self._righe_segno = 0
+
+    def misura_righe(self, dimensione: float) -> None:
+        """Le righe del blocco segnato partono da qui, con questa interlinea."""
+        self._y_segno = self.get_y()
+        self._interlinea = _interlinea(dimensione)
+
+    def add_page(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        if self.inizi_pagina is not None and self.page > 0:
+            if self._segno is None:
+                self.inizi_pagina.append(InizioPagina(self.page + 1, None, None, 0))
+            else:
+                scritte = round((self.get_y() - self._y_segno) / self._interlinea)
+                self._righe_segno += max(0, scritte)
+                ordine, voce = self._segno
+                self.inizi_pagina.append(InizioPagina(self.page + 1, ordine, voce, self._righe_segno))
+        super().add_page(*args, **kwargs)
+        self._y_segno = self.get_y()
 
     def altezza_testata(self) -> float:
         """Dove comincia il corpo: sotto logo, righe e linea di separazione."""
@@ -232,6 +279,8 @@ def _scrivi_frammenti(
     """
     if not frammenti:
         return
+    if isinstance(pdf, _PdfConCornice):
+        pdf.misura_righe(dimensione)
     with pdf.text_columns(text_align=allineamento, line_height=1.35,
                           l_margin=pdf.l_margin + rientro) as colonne:
         with colonne.paragraph(bottom_margin=spazio_dopo) as paragrafo:
@@ -249,6 +298,11 @@ def _scrivi_frammenti(
                 paragrafo.write(frammento.testo, link=frammento.collegamento or None)
                 pdf.set_text_color(0, 0, 0)
     pdf.set_font(_FONT, "", dimensione)
+
+
+def _interlinea(dimensione: float) -> float:
+    """L'altezza di una riga in mm: corpo in punti per l'interlinea 1,35 dei paragrafi."""
+    return dimensione * 1.35 * 25.4 / 72
 
 
 def marcatori_elenchi(
@@ -302,7 +356,7 @@ def _rendi_voce(pdf: FPDF, elemento: ElementoElenco, marcatore: str, allineament
     """Marcatore a sinistra, testo a destra con il rientro sporgente."""
     spostamento = _PASSO_LIVELLO * elemento.livello
     x_marcatore = pdf.l_margin + _RIENTRO_MARCATORE + spostamento
-    altezza_riga = _DIMENSIONE_ELENCO * 1.35 * 25.4 / 72
+    altezza_riga = _interlinea(_DIMENSIONE_ELENCO)
     # Il marcatore e il testo devono stare sulla stessa pagina: se la prima
     # riga non ci sta, si va a capo pagina prima di scrivere il marcatore.
     if pdf.get_y() + altezza_riga > pdf.page_break_trigger:
@@ -325,6 +379,8 @@ def _rendi_voce(pdf: FPDF, elemento: ElementoElenco, marcatore: str, allineament
 
 
 def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | None = None) -> None:
+    if isinstance(pdf, _PdfConCornice):
+        pdf.segna(blocco.ordine)
     allineamento = (
         _ALLINEAMENTO_ESPLICITO[blocco.allineamento]
         if blocco.allineamento is not None
@@ -368,7 +424,9 @@ def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | Non
 
     if blocco.tipo is TipoBloccoDocumento.ELENCO:
         marcatori = marcatori or marcatori_elenchi([blocco])[blocco.ordine]
-        for elemento, marcatore in zip(blocco.elementi, marcatori, strict=True):
+        for indice, (elemento, marcatore) in enumerate(zip(blocco.elementi, marcatori, strict=True)):
+            if isinstance(pdf, _PdfConCornice):
+                pdf.segna(blocco.ordine, indice)
             _rendi_voce(pdf, elemento, marcatore, allineamento)
         pdf.ln(1)
         return
@@ -449,6 +507,7 @@ def render_documento(
     anteprima: bool = False,
     cornice: CornicePagina | None = None,
     logo: bytes | None = None,
+    inizi_pagina: list[InizioPagina] | None = None,
 ) -> bytes:
     """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
 
@@ -457,8 +516,12 @@ def render_documento(
     marcatura di anteprima (012 FR-009): e' l'unica differenza rispetto alla
     generazione, che usa questa stessa funzione (FR-008). `cornice` e' quella
     del tipo documento (FR-011): testata e pie' di pagina su ogni pagina.
+    Se si passa `inizi_pagina`, vi si annota dove comincia ogni pagina dopo la
+    prima (012 T080): lo stesso documento, misurato mentre lo si scrive.
     """
     pdf = _nuovo_pdf(cornice, logo)
+    if isinstance(pdf, _PdfConCornice):
+        pdf.inizi_pagina = inizi_pagina
     _intestazione(pdf, titolo, anteprima=anteprima)
     marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):

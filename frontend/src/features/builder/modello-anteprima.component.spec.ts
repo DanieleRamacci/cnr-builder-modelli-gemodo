@@ -223,6 +223,19 @@ describe('2b ridotta: anteprima modello', () => {
       .forEach((richiesta) => richiesta.flush(cornice));
   }
 
+  const IMPAGINAZIONE_VUOTA = { pagine: 1, inizi_pagina: [] };
+
+  /**
+   * Il builder chiede dove cominciano le pagine dopo ogni caricamento e
+   * salvataggio (012 T080): chi non le guarda le risponde con una pagina sola.
+   */
+  function verifica(http: HttpTestingController): void {
+    http
+      .match((richiesta) => richiesta.url.endsWith('/impaginazione'))
+      .forEach((richiesta) => richiesta.flush(IMPAGINAZIONE_VUOTA));
+    http.verify();
+  }
+
   // --- L'editor di sezione (012 T077) ---------------------------------------
   //
   // Il testo e' un editor ProseMirror per sezione. Selezioni, tasti e incolla
@@ -421,7 +434,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.textContent).toContain('TI / CTER');
     expect(root.textContent).toContain('v2');
     expect(root.textContent).toContain('BOZZA');
-    http.verify();
+    verifica(http);
   });
 
   it('keeps the IT/EN flow automatic while sending the generic contract', () => {
@@ -456,7 +469,7 @@ describe('2b ridotta: anteprima modello', () => {
       .expectOne('/api/v1/builder/modelli/model')
       .flush({ ...dettaglio, derivato_da_modello_id: 'padre' });
     flushSections(http);
-    http.verify();
+    verifica(http);
   });
 
   it('creates a variant from the builder editor and opens the new model', () => {
@@ -490,7 +503,7 @@ describe('2b ridotta: anteprima modello', () => {
     richiesta.flush({ id: 'variante' });
     expect(dialog.close).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/modelli', 'variante', 'builder']);
-    http.verify();
+    verifica(http);
   });
 
   it('asks which value to derive when the dimension has more than one alternative', () => {
@@ -513,7 +526,7 @@ describe('2b ridotta: anteprima modello', () => {
       (option) => option.textContent,
     );
     expect(valori).toEqual(['EN', 'FR']);
-    http.verify();
+    verifica(http);
   });
 
   it('does not offer derivation when no multivalue dimension is mandatory', () => {
@@ -527,7 +540,7 @@ describe('2b ridotta: anteprima modello', () => {
     fixture.detectChanges();
 
     expect(root.textContent).not.toContain('Crea edizione collegata');
-    http.verify();
+    verifica(http);
   });
 
   it('hides the English action for a model that is already an English edition', () => {
@@ -542,7 +555,7 @@ describe('2b ridotta: anteprima modello', () => {
         b.textContent?.includes('Crea modello derivato'),
       ),
     ).toBeUndefined();
-    http.verify();
+    verifica(http);
   });
 
   it('offers derivation on a dimension whose policy is only the fallback', () => {
@@ -566,7 +579,7 @@ describe('2b ridotta: anteprima modello', () => {
       ),
     ).toBeTruthy();
     expect(root.querySelector('[data-derivazione-ko]')).toBeNull();
-    http.verify();
+    verifica(http);
   });
 
   it('says why derivation is unavailable instead of hiding the button silently', () => {
@@ -594,7 +607,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-derivazione-ko]')?.getAttribute('title')).toContain(
       'non raggiungibile',
     );
-    http.verify();
+    verifica(http);
   });
 
   it('shows the composed document returned by the sections API', () => {
@@ -610,7 +623,7 @@ describe('2b ridotta: anteprima modello', () => {
       'Posti disponibili {{numero_posti}}',
     );
     expect(root.querySelectorAll('.outline-item').length).toBe(2);
-    http.verify();
+    verifica(http);
   });
 
   it('uses the fullscreen editor controls instead of a textarea form', () => {
@@ -623,7 +636,7 @@ describe('2b ridotta: anteprima modello', () => {
     fixture.detectChanges();
 
     expect(root.querySelector('[data-section-text="intro"] .style-h1')).toBeTruthy();
-    http.verify();
+    verifica(http);
   });
 
   it('012 T070: without a frame the sheet and the Pagina tab offer to add header and footer', () => {
@@ -646,7 +659,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-add-section-inline]')?.textContent).toContain(
       'Inserisci una nuova sezione di testo',
     );
-    http.verify();
+    verifica(http);
   });
 
   it('012 T070: the frame of the document type shows on the sheet as in the PDF', () => {
@@ -688,7 +701,7 @@ describe('2b ridotta: anteprima modello', () => {
       'Logo non ancora caricato',
     );
     expect(root.querySelector('[data-modifica-cornice]')).toBeTruthy();
-    http.verify();
+    verifica(http);
   });
 
   it('012 T060: a new section starts with an empty line and the caret in it', () => {
@@ -704,7 +717,7 @@ describe('2b ridotta: anteprima modello', () => {
       b.textContent?.trim(),
     );
     expect(schede).toEqual(['Segnaposto', 'Pagina', 'Proprietà']);
-    http.verify();
+    verifica(http);
   });
 
   it('012 T062: renames the section from the properties tab and refuses a duplicate name', () => {
@@ -737,7 +750,7 @@ describe('2b ridotta: anteprima modello', () => {
       'Art. 1 - Posti a concorso',
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('offers the builder-editor topbar actions and runs the version transition', () => {
@@ -779,7 +792,7 @@ describe('2b ridotta: anteprima modello', () => {
       modificabile: false,
     });
     flushDerivationConfig(http);
-    http.verify();
+    verifica(http);
   });
 
   it('saves the whole section set after reordering and removing sections', () => {
@@ -811,7 +824,7 @@ describe('2b ridotta: anteprima modello', () => {
       sezioni: [{ ...sezioniResponse.sezioni[1], ordine: 0 }],
       documento: { ...sezioniResponse.documento, blocchi: [sezioniResponse.documento.blocchi[1]] },
     });
-    http.verify();
+    verifica(http);
   });
 
   it('inserts placeholders from the version fields list before saving', () => {
@@ -850,7 +863,7 @@ describe('2b ridotta: anteprima modello', () => {
         placeholder_usati: ['titolo_it'],
       },
     });
-    http.verify();
+    verifica(http);
   });
 
   it('keeps a published version readable without edit controls', () => {
@@ -867,7 +880,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-add-section]')).toBeNull();
     expect(root.querySelector('[data-save-sections]')).toBeNull();
     expect(root.textContent).toContain('sola lettura');
-    http.verify();
+    verifica(http);
   });
 
   it('shows backend placeholder violations when saving fails', () => {
@@ -888,7 +901,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[role=alert]')?.textContent).toContain(
       "placeholder 'campo_non_dichiarato'",
     );
-    http.verify();
+    verifica(http);
   });
 
   it('012 US1: applies bold to the selected words and saves fragments, never markup', () => {
@@ -908,7 +921,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(JSON.stringify(request.request.body)).not.toContain('<strong>');
     expect(blocco.placeholder_usati).toEqual(['titolo_it']);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T077: one selection across paragraphs, list and heading of a section takes the bold', () => {
@@ -936,7 +949,7 @@ describe('2b ridotta: anteprima modello', () => {
       { testo: ' a Roma' },
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T077: the style menu applies to every selected paragraph', () => {
@@ -956,7 +969,60 @@ describe('2b ridotta: anteprima modello', () => {
       blocchi[0].elementi.map((e: { frammenti: { testo: string }[] }) => e.frammenti[0].testo),
     ).toEqual(['primo requisito', 'secondo requisito']);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
+  });
+
+  it('012 T079: Unisci righe recomposes PDF lines into whole paragraphs', () => {
+    const { fixture, http, root } = caricaBozzaCon([
+      paragrafo('r0', [
+        { testo: 'VISTO', grassetto: true },
+        { testo: ' il D.Lgs 31 dicembre 2009, “Riordino degli Enti' },
+      ]),
+      paragrafo('r1', [{ testo: 'di ricerca”;' }], 1),
+      paragrafo('r2', [{ testo: 'VISTO lo Statuto del CNR, n. 93 prot.' }], 2),
+      paragrafo('r3', [{ testo: '0051080/2018 del 19/07/2018;' }], 3),
+    ]);
+    selezionaTesto(fixture, 'art', 'VISTO', '19/07/2018;');
+    (root.querySelector('[data-join-lines]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(capoversi(fixture, 'art')).toEqual([
+      'VISTO il D.Lgs 31 dicembre 2009, “Riordino degli Enti di ricerca”;',
+      'VISTO lo Statuto del CNR, n. 93 prot. 0051080/2018 del 19/07/2018;',
+    ]);
+    const request = salva(root, http);
+    expect(request.request.body.sezioni[0].contenuto[0].frammenti[0]).toEqual({
+      testo: 'VISTO',
+      grassetto: true,
+    });
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    verifica(http);
+  });
+
+  it('012 T080: shows where each PDF page starts, as measured by the renderer, and asks again after saving', () => {
+    const { fixture, http, root } = caricaBozzaCon([
+      paragrafo('p0', [{ testo: 'primo capoverso' }]),
+      paragrafo('p1', [{ testo: 'secondo capoverso' }], 1),
+    ]);
+    const URL_PAGINE = '/api/v1/builder/modelli/model/versioni/v2/impaginazione';
+    http.expectOne(URL_PAGINE).flush({
+      pagine: 2,
+      inizi_pagina: [{ pagina: 2, sezione: 'art', blocco: 'p1', voce: null, riga: 0 }],
+    });
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('2 pagine nel PDF');
+    fixture.detectChanges();
+    const confini = root.querySelectorAll('app-editor-sezione [data-fine-pagina]');
+    expect(Array.from(confini).map((c) => c.textContent?.trim())).toEqual(['Pagina 2']);
+
+    const request = salva(root, http);
+    request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
+    http.expectOne(URL_PAGINE).flush({ pagine: 1, inizi_pagina: [] });
+    fixture.detectChanges();
+    expect(root.querySelector('[data-fine-pagina]')).toBeNull();
+    expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('1 pagina nel PDF');
+    verifica(http);
   });
 
   it('012 US1: Ctrl+I toggles italic on the selection like a word processor', () => {
@@ -965,7 +1031,7 @@ describe('2b ridotta: anteprima modello', () => {
     const tasto = premi(fixture, 'intro', 'i', { ctrlKey: true });
     expect(tasto.defaultPrevented).toBe(true);
     expect(root.querySelector('[data-section-text="intro"] em')?.textContent).toBe('Intro');
-    http.verify();
+    verifica(http);
   });
 
   it('012 US1: pasting from Word gives visible paragraphs and a computed list', () => {
@@ -1008,7 +1074,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(new Set(blocchi.map((b: { id: string }) => b.id)).size).toBe(3);
     expect(blocchi.map((b: { ordine: number }) => b.ordine)).toEqual([0, 1, 2]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012: the list button turns the paragraph into a list without writing numbers in the text', () => {
@@ -1025,7 +1091,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(blocco.frammenti).toEqual([]);
     expect(blocco.placeholder_usati).toEqual(['numero_posti']);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T029: a published document restarts list numbering at every section, like the PDF', () => {
@@ -1067,7 +1133,7 @@ describe('2b ridotta: anteprima modello', () => {
 
     const marcatori = Array.from(root.querySelectorAll('.item-marker')).map((m) => m.textContent);
     expect(marcatori).toEqual(['1.', '2.', '1.']);
-    http.verify();
+    verifica(http);
   });
 
   it('012 T059: the style menu turns the current line into a centred article heading', () => {
@@ -1092,7 +1158,7 @@ describe('2b ridotta: anteprima modello', () => {
       allineamento: 'CENTRO',
     });
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T059: turning a paragraph into a signature moves it where the format allows a signature', () => {
@@ -1109,7 +1175,7 @@ describe('2b ridotta: anteprima modello', () => {
       'right',
     );
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T030: justifies the selected block from the toolbar', () => {
@@ -1125,7 +1191,7 @@ describe('2b ridotta: anteprima modello', () => {
     const request = salva(root, http);
     expect(request.request.body.sezioni[0].contenuto[0].allineamento).toBe('GIUSTIFICATO');
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012: Enter opens a new paragraph at the caret and Backspace at its start joins it back', () => {
@@ -1143,7 +1209,7 @@ describe('2b ridotta: anteprima modello', () => {
       { testo: 'Introduzione {{titolo_it}}' },
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T060: a page break goes after the text with a new line, and Delete removes it', () => {
@@ -1174,7 +1240,7 @@ describe('2b ridotta: anteprima modello', () => {
       'PARAGRAFO',
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T060: on an empty line the page break goes before it, leaving the line on the new page', () => {
@@ -1190,7 +1256,7 @@ describe('2b ridotta: anteprima modello', () => {
       'PARAGRAFO',
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012 T029: list numbering restarts after an article heading, as in the PDF', () => {
@@ -1206,7 +1272,7 @@ describe('2b ridotta: anteprima modello', () => {
       { ...elenco('e2', ['comma dell articolo 2']), ordine: 2 },
     ]);
     expect(marcatori(root)).toEqual(['1.', '2.', '1.']);
-    http.verify();
+    verifica(http);
   });
 
   it('012: after an autosave the next command still applies to the block being edited', () => {
@@ -1230,7 +1296,7 @@ describe('2b ridotta: anteprima modello', () => {
       { testo: 'Posti disponibili: {{numero_posti}}' },
     ]);
     request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-    http.verify();
+    verifica(http);
   });
 
   it('012: a numbered list after a bulleted one starts again from 1, like Word', () => {
@@ -1242,7 +1308,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-marcatore]')?.getAttribute('data-marcatore-tipo')).toBe(
       'PUNTATO',
     );
-    http.verify();
+    verifica(http);
   });
 
   describe('012 US4: anteprima della bozza', () => {
@@ -1285,7 +1351,7 @@ describe('2b ridotta: anteprima modello', () => {
       expect(root.querySelector('[data-preview-dialog] a[download]')?.getAttribute('href')).toBe(
         'blob:anteprima-0',
       );
-      http.verify();
+      verifica(http);
     });
 
     it('saves unsaved edits first, so the preview shows what is on screen', () => {
@@ -1302,7 +1368,7 @@ describe('2b ridotta: anteprima modello', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('[data-preview-frame]')).toBeTruthy();
-      http.verify();
+      verifica(http);
     });
 
     it('reads the service error out of the binary response instead of a generic failure', async () => {
@@ -1327,7 +1393,7 @@ describe('2b ridotta: anteprima modello', () => {
       const errore = root.querySelector('[data-preview-error]')?.textContent ?? '';
       expect(errore).toContain('Struttura del modello documentale non valida');
       expect(errore).toContain('il testo contiene markup');
-      http.verify();
+      verifica(http);
     });
 
     it('frees the PDF from memory when the dialog closes', () => {
@@ -1340,7 +1406,7 @@ describe('2b ridotta: anteprima modello', () => {
 
       expect(revocati).toEqual(['blob:anteprima-0']);
       expect(root.querySelector('[data-preview-frame]')).toBeNull();
-      http.verify();
+      verifica(http);
     });
   });
 
@@ -1371,7 +1437,7 @@ describe('2b ridotta: anteprima modello', () => {
         'numero_posti',
       ]);
       request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-      http.verify();
+      verifica(http);
     });
 
     it('does not open inside a word: "e/o" and dates are text', () => {
@@ -1379,7 +1445,7 @@ describe('2b ridotta: anteprima modello', () => {
       digita(fixture, 'art', ' e/o 01/10');
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
       expect(capoversi(fixture, 'art')).toEqual(['Posti: e/o 01/10']);
-      http.verify();
+      verifica(http);
     });
 
     it('Escape closes the menu and keeps the / as typed; a space closes it too', () => {
@@ -1392,7 +1458,7 @@ describe('2b ridotta: anteprima modello', () => {
       digita(fixture, 'art', ' /x ');
       expect(root.querySelector('[data-slash-menu]')).toBeNull();
       expect(capoversi(fixture, 'art')).toEqual(['Posti: / /x ']);
-      http.verify();
+      verifica(http);
     });
 
     it('arrows move the choice and a click inserts it', () => {
@@ -1407,7 +1473,7 @@ describe('2b ridotta: anteprima modello', () => {
       seconda.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       fixture.detectChanges();
       expect(capoversi(fixture, 'art')).toEqual([`Posti: {{${codice}}}`]);
-      http.verify();
+      verifica(http);
     });
 
     it('the placeholder takes the emphasis of the text it is typed into (FR-005)', () => {
@@ -1418,7 +1484,7 @@ describe('2b ridotta: anteprima modello', () => {
       expect(root.querySelector('[data-section-text="art"] strong')?.textContent).toBe(
         'Posti: {{numero_posti}}',
       );
-      http.verify();
+      verifica(http);
     });
   });
 
@@ -1446,7 +1512,7 @@ describe('2b ridotta: anteprima modello', () => {
         { testo: ' {{titolo_it}}' },
       ]);
       request.flush({ ...sezioniResponse, sezioni: request.request.body.sezioni });
-      http.verify();
+      verifica(http);
     });
 
     it('T051: refuses a javascript: address and leaves the text untouched', () => {
@@ -1460,7 +1526,7 @@ describe('2b ridotta: anteprima modello', () => {
 
       expect(root.querySelector('[data-link-error]')?.textContent).toContain('non valido');
       expect(editor.querySelector('a')).toBeNull();
-      http.verify();
+      verifica(http);
     });
 
     it('asks to select the text first instead of linking nothing', () => {
@@ -1468,7 +1534,7 @@ describe('2b ridotta: anteprima modello', () => {
       cursoreDopo(fixture, 'intro', 'Int');
       expect(apriBarra(root, fixture)).toBeNull();
       expect(root.querySelector('[data-link-error]')?.textContent).toContain('Seleziona prima');
-      http.verify();
+      verifica(http);
     });
   });
 
@@ -1483,7 +1549,7 @@ describe('2b ridotta: anteprima modello', () => {
 
       premi(fixture, 'intro', 'z', { ctrlKey: true, shiftKey: true });
       expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}} e altro ancora']);
-      http.verify();
+      verifica(http);
     });
 
     it('undoes bold applied from the toolbar, with the toolbar button too', () => {
@@ -1501,7 +1567,7 @@ describe('2b ridotta: anteprima modello', () => {
       // La selezione torna dov'era: si puo' rifare subito un'altra scelta.
       const { from, to } = vistaDi(fixture, 'intro').state.selection;
       expect(vistaDi(fixture, 'intro').state.doc.textBetween(from, to)).toBe('Introduzione');
-      http.verify();
+      verifica(http);
     });
 
     it('undoes a paragraph split by Enter, putting the text back in one block', () => {
@@ -1512,7 +1578,7 @@ describe('2b ridotta: anteprima modello', () => {
 
       premi(fixture, 'intro', 'z', { ctrlKey: true });
       expect(capoversi(fixture)).toEqual(['Introduzione {{titolo_it}}']);
-      http.verify();
+      verifica(http);
     });
 
     it('pastes a title copied from a PDF as one block, not one per line', () => {
@@ -1528,7 +1594,7 @@ describe('2b ridotta: anteprima modello', () => {
       expect(capoversi(fixture)).toEqual([
         'Introduzione {{titolo_it}}CONCORSO PUBBLICO PER TITOLI ED ESAMI DI LAVORO A TEMPO PIENO RICERCHE - VARIE SEDI',
       ]);
-      http.verify();
+      verifica(http);
     });
 
     it('012 T077: a pasted text can be selected whole and set bold in one go', () => {
@@ -1546,7 +1612,7 @@ describe('2b ridotta: anteprima modello', () => {
         (s) => s.textContent,
       );
       expect(grassetti).toEqual(['Primo capoverso.', 'Secondo capoverso.', 'Terzo.']);
-      http.verify();
+      verifica(http);
     });
   });
 
@@ -1572,7 +1638,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-save-state]')?.textContent).toContain(
       'Tutte le modifiche salvate',
     );
-    http.verify();
+    verifica(http);
   });
 
   it('moving from one section to another does not autosave', () => {
@@ -1582,7 +1648,7 @@ describe('2b ridotta: anteprima modello', () => {
     const verso = vistaDi(fixture, 'dettagli').dom;
     vistaDi(fixture, 'intro').dom.dispatchEvent(new FocusEvent('blur', { relatedTarget: verso }));
     http.expectNone('/api/v1/builder/modelli/model/versioni/v2/sezioni');
-    http.verify();
+    verifica(http);
   });
 
   it('keeps edits typed while a save is in flight instead of overwriting them', () => {
@@ -1599,7 +1665,7 @@ describe('2b ridotta: anteprima modello', () => {
 
     expect(capoversi(fixture)).toEqual(['Primo testo, poi il seguito']);
     expect(root.querySelector('[data-save-state]')?.textContent).toContain('Modifiche non salvate');
-    http.verify();
+    verifica(http);
   });
 
   it('blocks the version transition while there are unsaved changes', () => {
@@ -1612,7 +1678,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(
       (root.querySelector('[data-confirm-transition-submit]') as HTMLButtonElement).disabled,
     ).toBe(true);
-    http.verify();
+    verifica(http);
   });
 
   it('lists the publication blocks for placeholders outside the version contract', () => {
@@ -1639,7 +1705,7 @@ describe('2b ridotta: anteprima modello', () => {
     const readiness = root.querySelector('[data-readiness]')!;
     expect(readiness.textContent).toContain('{{campo_fantasma}}');
     expect(readiness.textContent).toContain('intro');
-    http.verify();
+    verifica(http);
   });
 
   it('shows the backend violations when the publication is refused', () => {
@@ -1675,7 +1741,7 @@ describe('2b ridotta: anteprima modello', () => {
     expect(root.querySelector('[data-transition-blocks]')?.textContent).toContain(
       "placeholder 'campo_fantasma' non dichiarato",
     );
-    http.verify();
+    verifica(http);
   });
 
   it('shows a functional error instead of an empty page when the model is not readable', () => {
@@ -1689,6 +1755,6 @@ describe('2b ridotta: anteprima modello', () => {
     fixture.detectChanges();
     expect(root.querySelector('[role=alert]')?.textContent).toContain('Risorsa non disponibile');
     expect(root.querySelector('.campo')).toBeNull();
-    http.verify();
+    verifica(http);
   });
 });
