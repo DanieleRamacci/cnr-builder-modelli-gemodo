@@ -119,7 +119,7 @@ def test_su_una_versione_pubblicata_si_risponde_come_per_l_anteprima(builder_cli
 @pytest.mark.integration
 def test_chi_sa_solo_generare_non_misura_le_bozze(builder_client, monkeypatch):
     modello, versione = _bozza_lunga(builder_client, "impaginazione-generatore")
-    monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geban-backend")
+    monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geri-angular-public")
     monkeypatch.delenv("GEMODO_MOCK_CONTEXT")
     monkeypatch.delenv("GEMODO_MOCK_CONTEXT_ROLES")
     monkeypatch.setenv("GEMODO_MOCK_ROLES", "DOCUMENTI_GENERATORE")

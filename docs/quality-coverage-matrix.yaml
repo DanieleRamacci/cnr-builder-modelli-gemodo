@@ -300,7 +300,7 @@ coverage:
     scenario_id: E2E-006
     contract_ref: backend/tests/common/test_contesto_consumatore_profilo.py
     stato: COPERTO
-    note: "contesto senza integrazione o ruolo non mappato non concede nulla; FR-036a client tecnico solo nel contesto che lo ammette"
+    note: "contesto senza integrazione o ruolo non mappato non concede nulla; ruoli diretti senza contesto nel token non aprono nulla, anche da client ammesso"
 
   - id: COV-126
     spec_owner: specs/001-catalogo-contratto-geban

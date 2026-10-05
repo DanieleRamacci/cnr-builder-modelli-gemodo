@@ -52,7 +52,7 @@ def test_upgrade_e_downgrade_0028_accessi(postgres_database_url, monkeypatch):
         assert set(ruoli) == {"ROLE_GESTORE", "ROLE_MANAGER", "ROLE_COORDINATOR", "ROLE_USER"}
         assert "GEMODO_MODELLI_GESTORE" in ruoli["ROLE_MANAGER"]
         assert "GEMODO_MODELLI_GESTORE" not in ruoli["ROLE_USER"]
-        assert client == {"geban-backend", "geri-angular-public"}
+        assert client == {"geri-angular-public"}, "geban-backend non si copia: SEC-006-001 superata"
         assert dell_altra == 0, "un contesto diverso da geban nasce senza ruoli"
 
         with pytest.raises(sa.exc.IntegrityError):

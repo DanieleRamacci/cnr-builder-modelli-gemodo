@@ -635,14 +635,6 @@ risposta distingua i due casi.
 - **FR-036**: Contesto assente, proprieta' non risolvibile o mapping mancante
   MUST negare accesso senza fallback a geban o ai permessi aggregati. Client e
   profilo richiedente devono essere attivi e autorizzati al perimetro richiesto.
-- **FR-036a** (2026-10-05, T115): un client tecnico server-server (client
-  credentials: ruoli diretti, nessun contesto nel token) esercita i suoi ruoli
-  diretti di consumo - `DOCUMENTI_VIEWER`, `DOCUMENTI_GENERATORE`, mai il
-  builder - **solo** nei contesti delle integrazioni che lo ammettono nel
-  profilo di accesso. Non e' il fallback ai permessi aggregati vietato da
-  FR-036: un client non ammesso da alcuna integrazione resta senza contesto e
-  viene negato. Senza questa regola, accendere l'isolamento avrebbe chiuso
-  fuori il backend di GEBAN.
 - **FR-037**: Accesso fuori contesto MUST essere rifiutato senza dati, contratto,
   esito dei campi, PDF o effetti di generazione. Per accesso diretto tramite ID,
   risorsa inesistente e risorsa non visibile MUST avere risposta pubblica

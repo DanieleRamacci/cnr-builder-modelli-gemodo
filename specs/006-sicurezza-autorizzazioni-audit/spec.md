@@ -149,6 +149,12 @@ l'implementazione di questa spec; la feature attiva resta 010.
 
 ### Session 2026-07-29
 
+- **Revisione 2026-10-05 di SEC-006-001** (decisione del product owner): il
+  token tecnico `geban-backend` descritto sotto non e' mai stato usato dal flusso
+  reale ed e' stato tolto da codice, test, realm locale e manifesti. GEBAN chiama
+  GEMODO col token ACE dell'utente, i cui ruoli in `contexts.<contesto>.roles` il
+  profilo di accesso dell'integrazione traduce in permessi (001 T088-T092). Le
+  risposte che seguono restano come storia della decisione.
 - Q SEC-006-001: Come deve arrivare l'identita' utente da GEBAN a GEMODO nelle chiamate operative? -> A: **Risolto.** GEBAN chiama GEMODO con un token tecnico Keycloak (client credentials) del client `geban-backend`, con ruolo applicativo `DOCUMENTI_GENERATORE` assegnato al client stesso. L'identita' dell'utente reale e il contesto GEBAN (bando, azioni autorizzate) viaggiano nel payload della richiesta come dati applicativi e di audit, non come claim del token. L'autorizzazione resta sempre basata sul token verificato (client + ruolo), mai sul payload. Il token delegato/token exchange (identita' utente reale nel JWT) resta documentato come possibile evoluzione futura se un requisito di audit piu' stringente lo richiedera', ma non e' necessario per la prima release: evita una dipendenza da funzionalita' Keycloak non standard e da sviluppo aggiuntivo lato backend GEBAN. Questa decisione e' estesa dalla sessione 2026-09-14 per includere token ACE reali con ruoli in `contexts.geban.roles`.
 - Q: Dove vengono gestiti utenti e ruoli applicativi? -> A: Utenti e assegnazione ruoli sono gestiti in Keycloak, non in GEMODO. GEMODO legge i ruoli dal JWT e applica autorizzazioni backend. Per il builder usa ruoli GEMODO; per chiamate da GEBAN usa ruoli/claim di generazione o consultazione.
 - Q: Come trattare revisione e approvazione modello rispetto ai ruoli builder? -> A: La prima versione deve supportare il flusso minimo con gestore abilitato anche alla pubblicazione; la specifica riserva pero' ruoli separati di revisore e approvatore, attivabili se il processo CNR richiede separazione dei compiti prima dell'implementazione.

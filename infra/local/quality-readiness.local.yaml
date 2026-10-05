@@ -95,10 +95,9 @@ api_documentation:
     auth_scheme: bearer-jwt
     authorization_notes: >
       Keycloak valida identita', firma, issuer, audience e ruoli/claim generali del
-      token (SEC-006-001: token tecnico geban-backend con ruolo DOCUMENTI_GENERATORE
-      per le chiamate GEBAN); GEMODO valida in aggiunta il profilo di integrazione
-      GEBAN_RECLUTAMENTO_V1 su tipo documento, categoria e modello richiesti
-      (infra/local/integration-profiles.local.yaml).
+      token (SEC-006-001, revisione 2026-10-05: token ACE dell'utente con i ruoli in
+      contexts.geban.roles); GEMODO li traduce in permessi con il profilo di accesso
+      dell'integrazione del contesto e verifica il contesto della risorsa.
     success_examples:
       - infra/openapi/examples/catalog-success.json
     error_examples:
@@ -126,10 +125,10 @@ open_source_reuse:
 
 integration_profiles:
   - system_code: GEBAN
-    client_id: geban-backend
+    client_id: geri-angular-public
     expected_audience: gemodo-backend
     required_roles_or_claims:
-      - DOCUMENTI_GENERATORE
+      - contexts.geban.roles
     profile_code: GEBAN_RECLUTAMENTO_V1
     profile_status: ATTIVO
     allowed_document_types:
@@ -247,9 +246,7 @@ open_decisions:
       - specs/009-fondamenta-mock-test-qualita
     status: CONFERMATA
     provisional_assumption: >
-      token tecnico Keycloak (client credentials) geban-backend con ruolo
-      DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit,
-      risolta 2026-07-29
+      token ACE dell'utente (client ACE, es. geri-angular-public) con i ruoli in contexts.<contesto>.roles, tradotti in permessi dal profilo di accesso dell'integrazione; nessun token tecnico. Revisione 2026-10-05: il token tecnico geban-backend (client credentials) deciso il 2026-07-29 e' superato, nessun flusso lo usava
     blocking_phase: NESSUNA
   - id: SEC-006-002
     title: Separazione revisore/approvatore builder modelli

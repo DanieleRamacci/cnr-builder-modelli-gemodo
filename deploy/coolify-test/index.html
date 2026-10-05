@@ -417,8 +417,7 @@
             di questa pagina.
           </p>
           <div class="warn">
-            Il client tecnico <code>geban-backend</code> (client credentials, ruoli diretti su
-            <code>gemodo-backend</code>, <strong>con</strong> audience) resta un doppio di test/CI. Il flusso reale
+            Non esiste un client tecnico server-to-server: il flusso
             usa un client ACE ammesso (es. <code>geri-angular-public</code>): il token
             <strong>non contiene <code>aud</code></strong> (ACE non lo valorizza) e porta solo il claim
             <code>contexts</code>, con il ruolo GEBAN dentro <code>contexts.geban.roles</code> — l'utente puo' avere

@@ -6,7 +6,7 @@ contratti GEMODO senza dipendere dal sistema GEBAN reale (spec
 
 Il mock **non sostituisce il collaudo con GEBAN reale**: esercita solo i contratti
 pubblici (catalogo, campi/schema, validazione, generazione, stato, download) con la stessa
-identita' tecnica prevista per l'integrazione operativa (client `geban-backend`, profilo
+identita' prevista per l'integrazione operativa (client ACE `geri-angular-public`, profilo
 `GEBAN_RECLUTAMENTO_V1`), senza scorciatoie interne su builder o database GEMODO.
 
 Contenuto:

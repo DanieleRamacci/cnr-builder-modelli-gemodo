@@ -52,16 +52,6 @@
       "description": "Audience delle API GEMODO; nessun login diretto, solo validazione token"
     },
     {
-      "clientId": "geban-backend",
-      "enabled": true,
-      "publicClient": false,
-      "protocol": "openid-connect",
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "description": "Client tecnico server-to-server GEBAN -> GEMODO (client credentials, decisione SEC-006-001); utente reale e contesto bando viaggiano nel payload applicativo, non nel token"
-    },
-    {
       "clientId": "geban-frontend",
       "enabled": false,
       "publicClient": true,
@@ -90,7 +80,7 @@
         },
         {
           "name": "DOCUMENTI_GENERATORE",
-          "description": "Ruolo/claim generale richiesto al client tecnico geban-backend per le chiamate operative (catalogo, validazione, generazione, stato, download)"
+          "description": "Generazione e validazione documenti; per gli utenti ACE lo concede il profilo di accesso dell'integrazione del contesto"
         }
       ]
     }

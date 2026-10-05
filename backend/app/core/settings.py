@@ -76,8 +76,8 @@ def get_settings() -> Settings:
         keycloak_jwks_cache_ttl_seconds=_int_env("KEYCLOAK_JWKS_CACHE_TTL_SECONDS", 300),
         keycloak_jwt_leeway_seconds=_int_env("KEYCLOAK_JWT_LEEWAY_SECONDS", 60),
         gemodo_use_mock_principal=_bool_env("GEMODO_USE_MOCK_PRINCIPAL", False),
-        gemodo_mock_subject=os.getenv("GEMODO_MOCK_SUBJECT", "mock-geban-backend"),
-        gemodo_mock_client_id=os.getenv("GEMODO_MOCK_CLIENT_ID", "geban-backend"),
+        gemodo_mock_subject=os.getenv("GEMODO_MOCK_SUBJECT", "mock-utente"),
+        gemodo_mock_client_id=os.getenv("GEMODO_MOCK_CLIENT_ID", "gemodo-frontend"),
         gemodo_mock_roles=tuple(
             role.strip()
             for role in os.getenv("GEMODO_MOCK_ROLES", "DOCUMENTI_VIEWER,DOCUMENTI_GENERATORE").split(",")

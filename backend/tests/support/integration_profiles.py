@@ -17,20 +17,8 @@ from app.quality.schemas import (
     StatoSistemaRichiedente,
 )
 
-GEBAN_CLIENT_ID = "geban-backend"
 GEBAN_ACE_CLIENT_ID = "geri-angular-public"
 GEBAN_PROFILE_CODE = "GEBAN_RECLUTAMENTO_V1"
-
-
-def client_geban_backend(stato: StatoClientApplicativo = StatoClientApplicativo.ATTIVO) -> ClientApplicativo:
-    return ClientApplicativo(
-        client_id=GEBAN_CLIENT_ID,
-        audience_attesa="gemodo-backend",
-        ruoli_claim_richiesti=["DOCUMENTI_GENERATORE"],
-        sistemi_abilitati=["GEBAN"],
-        stato=stato,
-        gestisce_credenziali=False,
-    )
 
 
 def client_geban_ace(stato: StatoClientApplicativo = StatoClientApplicativo.ATTIVO) -> ClientApplicativo:
@@ -54,7 +42,7 @@ def profilo_geban_attivo(
         sistema_richiedente="GEBAN",
         versione="1",
         stato=StatoProfiloIntegrazione.ATTIVO,
-        client_ammessi=[GEBAN_CLIENT_ID, GEBAN_ACE_CLIENT_ID],
+        client_ammessi=[GEBAN_ACE_CLIENT_ID],
         tipi_documento_ammessi=tipi_documento_ammessi
         if tipi_documento_ammessi is not None
         else ["BANDO_CONCORSO"],
@@ -122,7 +110,7 @@ def sistema_geban_attivo() -> SistemaRichiedente:
         codice="GEBAN",
         nome="GEBAN - gestione bandi di concorso",
         stato=StatoSistemaRichiedente.ATTIVO,
-        client_applicativi=[client_geban_backend(), client_geban_ace()],
+        client_applicativi=[client_geban_ace()],
         profili_integrazione=[profilo_geban_attivo()],
         spec_owner="specs/001-catalogo-contratto-geban",
     )

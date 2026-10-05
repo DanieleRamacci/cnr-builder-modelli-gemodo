@@ -160,7 +160,7 @@ def test_t039_l_anteprima_si_chiede_sulle_bozze(builder_client):
 def test_t038_chi_sa_solo_generare_riceve_403(builder_client, monkeypatch):
     """FR-010: l'anteprima e' un'azione di chi compone, non di chi genera."""
     modello, versione = _bozza_composta(builder_client, "anteprima-generatore")
-    monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geban-backend")
+    monkeypatch.setenv("GEMODO_MOCK_CLIENT_ID", "geri-angular-public")
     monkeypatch.delenv("GEMODO_MOCK_CONTEXT")
     monkeypatch.delenv("GEMODO_MOCK_CONTEXT_ROLES")
     monkeypatch.setenv("GEMODO_MOCK_ROLES", "DOCUMENTI_GENERATORE")

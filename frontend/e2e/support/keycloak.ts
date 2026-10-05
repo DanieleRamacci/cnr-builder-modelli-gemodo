@@ -229,48 +229,16 @@ export async function registraOrigine(origine: string, attiva: boolean): Promise
 }
 
 /**
- * Token del client tecnico `geban-backend`, che e' chi genera i documenti.
- *
- * Il realm locale dichiara il ruolo `DOCUMENTI_GENERATORE` sul client
- * `gemodo-backend` ma non lo assegna al service account di `geban-backend`:
- * qui lo si assegna per la durata del test e `rimuovi` lo toglie, come
- * `creaUtenteUsaEGetta` fa con l'utente.
+ * Il token della sessione dell'utente entrato nel browser: quello che
+ * l'interfaccia manda alle API. E' il token ACE con cui chiama GEBAN, con i
+ * ruoli del contesto (SEC-006-001, revisione 2026-10-05: niente token tecnico).
  */
-export async function tokenGeneratore(): Promise<{ token: string; rimuovi: () => Promise<void> }> {
-  const admin = await contestoAdmin();
-  const idClient = async (clientId: string): Promise<string> =>
-    (await (await admin.get(`${REALM_ADMIN}/clients?clientId=${clientId}`)).json())[0].id;
-  const geban = await idClient('geban-backend');
-  const gemodo = await idClient('gemodo-backend');
-  const segreto = (await (await admin.get(`${REALM_ADMIN}/clients/${geban}/client-secret`)).json())
-    .value;
-  const account = await (
-    await admin.get(`${REALM_ADMIN}/clients/${geban}/service-account-user`)
-  ).json();
-  const ruolo = await (
-    await admin.get(`${REALM_ADMIN}/clients/${gemodo}/roles/DOCUMENTI_GENERATORE`)
-  ).json();
-  const mappature = `${REALM_ADMIN}/users/${account.id}/role-mappings/clients/${gemodo}`;
-  const giaAssegnato = ((await (await admin.get(mappature)).json()) as { name: string }[]).some(
-    (assegnato) => assegnato.name === ruolo.name,
+export async function tokenDellaSessione(page: Page): Promise<string> {
+  const richiesta = page.waitForRequest(
+    (r) => r.url().includes('/api/') && !!r.headers()['authorization'],
   );
-  if (!giaAssegnato) expect((await admin.post(mappature, { data: [ruolo] })).ok()).toBeTruthy();
-
-  const auth = await request.newContext();
-  const risposta = await auth.post(`${ISSUER}/protocol/openid-connect/token`, {
-    form: { client_id: 'geban-backend', client_secret: segreto, grant_type: 'client_credentials' },
-  });
-  expect(risposta.ok()).toBeTruthy();
-  const token = (await risposta.json()).access_token as string;
-  await auth.dispose();
-
-  return {
-    token,
-    rimuovi: async () => {
-      if (!giaAssegnato) await admin.delete(mappature, { data: [ruolo] });
-      await admin.dispose();
-    },
-  };
+  await page.reload();
+  return (await richiesta).headers()['authorization']!.replace(/^Bearer /, '');
 }
 
 export type { APIRequestContext };

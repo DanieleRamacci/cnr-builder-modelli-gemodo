@@ -153,7 +153,7 @@ paths:
               ruoli:
                 - {ruolo: ROLE_MANAGER, permessi: [GEMODO_MODELLI_GESTORE, DOCUMENTI_GENERATORE, DOCUMENTI_VIEWER]}
                 - {ruolo: ROLE_USER, permessi: [DOCUMENTI_GENERATORE, DOCUMENTI_VIEWER]}
-              client: [geban-backend]
+              client: [geri-angular-public]
       responses:
         '200':
           description: Profilo salvato

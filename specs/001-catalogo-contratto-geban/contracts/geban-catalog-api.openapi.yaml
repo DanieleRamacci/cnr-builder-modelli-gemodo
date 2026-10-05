@@ -233,9 +233,10 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: >
-        JWT Keycloak emesso dal realm CNR, con audience gemodo-backend e ruoli client in
-        resource_access.gemodo-backend.roles. Le chiamate GEBAN usano client tecnico
-        geban-backend.
+        JWT Keycloak emesso dal realm CNR. Le chiamate GEBAN usano il token ACE
+        dell'utente (client ACE, es. geri-angular-public) con i ruoli in
+        contexts.geban.roles, tradotti in permessi dal profilo di accesso
+        dell'integrazione (SEC-006-001, revisione 2026-10-05).
     KeycloakSSO:
       type: oauth2
       description: >

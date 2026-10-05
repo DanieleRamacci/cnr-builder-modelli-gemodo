@@ -220,10 +220,10 @@ example:
     contains_real_personal_data: false
   integration_profiles:
     - system_code: GEBAN
-      client_id: geban-backend
+      client_id: geri-angular-public
       expected_audience: gemodo-backend
       required_roles_or_claims:
-        - DOCUMENTI_GENERATORE
+        - contexts.geban.roles
       profile_code: GEBAN_RECLUTAMENTO_V1
       profile_status: ATTIVO
       allowed_document_types:
@@ -296,7 +296,7 @@ example:
         - specs/005-storage-idempotenza-consultazione
         - specs/009-fondamenta-mock-test-qualita
       status: CONFERMATA
-      provisional_assumption: token tecnico Keycloak (client credentials) geban-backend con ruolo DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit, risolta 2026-07-29
+      provisional_assumption: "token ACE dell'utente (client ACE, es. geri-angular-public) con i ruoli in contexts.<contesto>.roles, tradotti in permessi dal profilo di accesso dell'integrazione; nessun token tecnico. Revisione 2026-10-05: il token tecnico geban-backend (client credentials) deciso il 2026-07-29 e' superato, nessun flusso lo usava"
       blocking_phase: NESSUNA
     - id: SEC-006-002
       title: Separazione revisore/approvatore builder modelli

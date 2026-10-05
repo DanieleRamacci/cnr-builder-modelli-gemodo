@@ -40,7 +40,9 @@ _GEBAN_RUOLI = {
     "ROLE_COORDINATOR": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"],
     "ROLE_USER": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"],
 }
-_GEBAN_CLIENT = ("geban-backend", "geri-angular-public")
+# Il client ACE di GEBAN. `geban-backend`, il client tecnico del file, non c'e':
+# era un doppio di prova mai usato dal flusso reale (SEC-006-001 superata).
+_GEBAN_CLIENT = ("geri-angular-public",)
 
 
 def upgrade() -> None:

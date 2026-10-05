@@ -8,10 +8,10 @@ API via HTTP.
 - T114: lo stesso token porta due contesti; nel primo il ruolo concede la
   generazione, nel secondo solo la consultazione. Il secondo consulta ma non
   genera.
-- T115: un client tecnico server-server (client credentials, ruoli diretti,
-  nessun contesto nel token) esercita i suoi ruoli di consumo solo nel
-  contesto dell'integrazione che lo ammette. Senza questa regola, accendere il
-  flag avrebbe chiuso fuori il backend di GEBAN.
+- FR-036: il contesto viene solo dal token ACE. Un client che porta soli
+  ruoli diretti, senza contesti, non ottiene nulla nemmeno se l'integrazione
+  lo ammette (SEC-006-001, il token tecnico geban-backend, superata il
+  2026-10-05: nessuno lo usava, GEBAN chiama col token ACE dell'utente).
 """
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.common.errors import AuthorizationError
 from app.common.security import decode_principal_from_token, require_principal
 from app.configurazione.models import ClientIntegrazione, Integrazione, RuoloIntegrazione
 from app.core.settings import get_settings
@@ -132,42 +131,16 @@ def test_un_contesto_del_token_senza_integrazione_non_vede_nulla(db_engine, clie
 
 
 @pytest.mark.integration
-def test_t115_il_client_tecnico_genera_solo_nel_contesto_che_lo_ammette(db_engine, client):
-    suo, altro = _contesto(), _contesto()
-    _integrazione(db_engine, suo, {}, client=("backend-tecnico-prova",))
-    _integrazione(db_engine, altro, {"ROLE_USER": ["DOCUMENTI_VIEWER"]})
-    nel_suo = _crea_versione(db_engine, codice_contesto=suo)
-    nell_altro = _crea_versione(db_engine, codice_contesto=altro)
+def test_ruoli_diretti_senza_contesto_non_aprono_nulla_anche_da_client_ammesso(db_engine, client):
+    suo = _contesto()
+    _integrazione(db_engine, suo, {"ROLE_USER": ["DOCUMENTI_GENERATORE"]}, client=("client-ammesso-prova",))
+    versione = _crea_versione(db_engine, codice_contesto=suo)
     keys = JwtTestKeys()
-    token = signed_token(keys, client_id="backend-tecnico-prova", roles=("DOCUMENTI_GENERATORE",))
-    http = _come(client, db_engine, token, keys)
+    token = signed_token(keys, client_id="client-ammesso-prova", roles=("DOCUMENTI_GENERATORE",))
 
-    ok = http.post("/api/v1/documenti/genera", json=_payload(nel_suo["public_id"], "suo"))
-    assert ok.status_code == 200, ok.text
-    negato = http.post("/api/v1/documenti/genera", json=_payload(nell_altro["public_id"], "altro"))
+    negato = _come(client, db_engine, token, keys).post(
+        "/api/v1/documenti/genera", json=_payload(versione["public_id"], "diretti")
+    )
+
     assert negato.status_code == 404, negato.text
     assert negato.json()["codice"] == "MODELLO_VERSIONE_NON_TROVATO"
-
-
-@pytest.mark.integration
-def test_t115_il_client_tecnico_non_ottiene_il_builder(db_engine, client):
-    """I ruoli diretti valgono per il consumo; il builder e' per le persone."""
-    suo = _contesto()
-    _integrazione(db_engine, suo, {}, client=("backend-tecnico-prova",))
-    keys = JwtTestKeys()
-    token = signed_token(keys, client_id="backend-tecnico-prova",
-                         roles=("DOCUMENTI_GENERATORE", "GEMODO_MODELLI_GESTORE"))
-
-    with Session(db_engine) as db:
-        principal = decode_principal_from_token(token, settings=get_settings(), signing_key=keys.public_pem, db=db)
-
-    assert dict(principal.permessi_contesto)[suo] == ("DOCUMENTI_GENERATORE",)
-
-
-@pytest.mark.integration
-def test_t115_un_client_tecnico_non_registrato_e_rifiutato(db_engine, client):
-    keys = JwtTestKeys()
-    token = signed_token(keys, client_id="backend-mai-registrato", roles=("DOCUMENTI_GENERATORE",))
-
-    with Session(db_engine) as db, pytest.raises(AuthorizationError):
-        decode_principal_from_token(token, settings=get_settings(), signing_key=keys.public_pem, db=db)

@@ -17,7 +17,7 @@ from app.configurazione.models import Integrazione
 from tests.support.postgres import postgres_database_url
 
 PRINCIPAL = PrincipalGEMODO(
-    "viewer-test", "geban-backend", ("gemodo-backend",), ("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"),
+    "viewer-test", "geri-angular-public", ("gemodo-backend",), ("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"),
     "https://sso.example.test",
 )
 

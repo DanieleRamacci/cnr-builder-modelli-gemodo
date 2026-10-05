@@ -36,7 +36,7 @@ def signed_token(
     *,
     issuer: str = "https://sso.test.si.cnr.it/auth/realms/cnr",
     audience: str | list[str] | None = "gemodo-backend",
-    client_id: str = "geban-backend",
+    client_id: str = "gemodo-frontend",
     roles: Iterable[str] | None = ("DOCUMENTI_GENERATORE",),
     # Keycloak mette i ruoli sotto il client che li possiede, non sotto `aud`:
     # i due claim sono indipendenti. Tenerli legati faceva sparire i ruoli

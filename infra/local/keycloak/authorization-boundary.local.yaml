@@ -29,11 +29,9 @@ clients:
     uso: audience delle API GEMODO; valida token in ingresso
     client_id_env: KEYCLOAK_CLIENT_ID
     client_secret_env: KEYCLOAK_CLIENT_SECRET
-  - client_id: geban-backend
-    tipo: CONFIDENZIALE_SERVER_TO_SERVER
-    uso: chiamata operativa GEBAN -> GEMODO con token tecnico (client credentials)
-    ruoli_claim_generali_attesi:
-      - DOCUMENTI_GENERATORE
+  - client_id: geri-angular-public
+    tipo: ACE
+    uso: chiamata operativa GEBAN -> GEMODO col token ACE dell'utente (contexts.geban.roles)
   - client_id: geban-frontend
     tipo: DA_CONFERMARE
     uso: placeholder, da verificare se gia' gestito dal team GEBAN
@@ -56,7 +54,7 @@ rules:
       GEMODO attivo associato al client/sistema richiedente
       (infra/local/integration-profiles.local.yaml).
   - description: >
-      GEBAN chiama GEMODO con token tecnico geban-backend (client credentials);
-      l'utente reale e il contesto bando viaggiano nel payload applicativo per audit,
-      tracciabilita' e idempotenza, non nel token (nessun token exchange/on-behalf-of
-      nella prima release).
+      GEBAN chiama GEMODO col token ACE dell'utente: il contesto e i ruoli sono nel
+      token (contexts.<contesto>.roles), i permessi li decide il profilo di accesso
+      dell'integrazione (SEC-006-001, revisione 2026-10-05; il token tecnico
+      geban-backend previsto il 2026-07-29 e' stato tolto).

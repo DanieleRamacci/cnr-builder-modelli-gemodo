@@ -800,8 +800,10 @@ indistinguibile da risorsa inesistente).
       (default `true`) e in `deploy/coolify.env.example`; nel codice resta
       `false` per test e sviluppo locale. Trovato nel farlo: il client tecnico
       `geban-backend` (solo ruoli diretti, nessun contesto) col flag acceso
-      sarebbe stato negato ovunque. Nuova FR-036a: esercita i ruoli diretti di
-      consumo solo nei contesti delle integrazioni che lo ammettono. Test
+      sarebbe stato negato ovunque. Il product owner ha chiarito che nessun
+      flusso lo usa (GEBAN e l'amministratore arrivano dal token ACE col
+      contesto): tolto da codice, test, realm locale, manifesti e mock, e
+      SEC-006-001 rivista. Nessuna eccezione a FR-036. Test
       `tests/common/test_contesto_consumatore_profilo.py` (token veri, profilo
       dal database, flag acceso); matrice COV-123..127; decisione
       `DEC-001-ISOLAMENTO-CONTESTO-ACCESO`. **Resta**: provarlo in test online

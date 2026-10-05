@@ -34,7 +34,7 @@ def _settings(*, integration_profiles_path: str | None = None) -> Settings:
         keycloak_jwt_leeway_seconds=60,
         gemodo_use_mock_principal=False,
         gemodo_mock_subject="mock",
-        gemodo_mock_client_id="geban-backend",
+        gemodo_mock_client_id="gemodo-frontend",
         gemodo_mock_roles=(ROLE_DOCUMENTI_VIEWER,),
         integration_profiles_path=integration_profiles_path,
     )
@@ -109,7 +109,7 @@ def test_decode_valid_token_with_required_claims():
     principal = decode_principal_from_token(token, settings=_settings(), signing_key=keys.public_pem)
 
     assert principal.subject == "test-subject"
-    assert principal.client_id == "geban-backend"
+    assert principal.client_id == "gemodo-frontend"
     assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
 
 
@@ -128,7 +128,7 @@ def test_decode_ignora_l_audience_del_token():
         token, settings=_settings(), signing_key=keys.public_pem,
     )
 
-    assert principal.client_id == "geban-backend"
+    assert principal.client_id == "gemodo-frontend"
     # Il token resta valutato per cio' che dichiara: l'audience diversa non
     # aggiunge ne' toglie permessi.
     assert ROLE_DOCUMENTI_GENERATORE in principal.ruoli
@@ -379,13 +379,15 @@ def test_interactive_ace_permissions_are_scoped_without_profile_client_registrat
     ) == ({"geban"} if manager else set())
 
 
-def test_technical_client_does_not_gain_interactive_context_permissions(tmp_path):
+def test_a_client_no_integration_admits_is_rejected_even_with_contexts(tmp_path):
+    """Nessun client fisso e' ammesso d'ufficio (SEC-006-001 superata, 2026-10-05):
+    o e' il client di login di GEMODO, o lo ammette il profilo di un'integrazione."""
     keys = JwtTestKeys()
     settings = _settings(integration_profiles_path=_write_integration_profiles(tmp_path))
-    token = signed_token(keys, client_id="geban-backend", roles=None,
+    token = signed_token(keys, client_id="geban-backend", roles=("DOCUMENTI_GENERATORE",),
                          contexts={"geban": ["ROLE_MANAGER#geban"]})
-    principal = decode_principal_from_token(token, settings=settings, signing_key=keys.public_pem)
-    assert principal.ruoli == ()
+    with pytest.raises(AuthorizationError):
+        decode_principal_from_token(token, settings=settings, signing_key=keys.public_pem)
 
 
 @pytest.mark.parametrize("target", ["system", "profile"])

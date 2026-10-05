@@ -27,7 +27,7 @@ from app.main import app
 from app.quality.integration_profile import load_sistemi_richiedenti, permessi_da_ruoli_esterni
 from tests.support.postgres import postgres_database_url
 
-CLIENT_ID = "geban-backend"
+CLIENT_ID = "geri-angular-public"
 
 
 @pytest.fixture()

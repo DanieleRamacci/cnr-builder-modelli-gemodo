@@ -728,7 +728,7 @@ export interface operations {
                  *         }
                  *       ],
                  *       "client": [
-                 *         "geban-backend"
+                 *         "geri-angular-public"
                  *       ]
                  *     }
                  */

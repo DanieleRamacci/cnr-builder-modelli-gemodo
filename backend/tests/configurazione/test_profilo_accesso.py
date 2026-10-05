@@ -42,7 +42,7 @@ GEBAN = {
         {"ruolo": "ROLE_MANAGER", "permessi": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER", "GEMODO_MODELLI_GESTORE"]},
         {"ruolo": "ROLE_USER", "permessi": ["DOCUMENTI_GENERATORE", "DOCUMENTI_VIEWER"]},
     ],
-    "client": ["geban-backend", "geri-angular-public"],
+    "client": ["geri-angular-public"],
 }
 
 
@@ -185,7 +185,7 @@ def test_un_client_tecnico_vale_solo_se_registrato(admin_client, dal_database):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("client_id", ["gemodo-frontend", "geban-backend", "geri-angular-public"])
+@pytest.mark.parametrize("client_id", ["gemodo-frontend", "geri-angular-public"])
 @pytest.mark.parametrize("ruolo", ["ROLE_MANAGER", "ROLE_GESTORE", "ROLE_COORDINATOR", "ROLE_USER", "ROLE_IGNOTO"])
 def test_geban_dal_database_ha_gli_stessi_permessi_del_file(admin_client, dal_database, client_id, ruolo):
     """Dopo il passaggio GEBAN deve poter fare esattamente cio' che faceva prima."""
@@ -212,7 +212,7 @@ def test_la_modifica_e_registrata_con_il_prima_e_il_dopo(admin_client, dal_datab
         "ruoli": [{"ruolo": "ROLE_USER", "permessi": ["DOCUMENTI_VIEWER"]}], "client": [],
     })
     client.put(_url(integrazione["id"]), json={
-        "ruoli": [{"ruolo": "ROLE_MANAGER", "permessi": ["GEMODO_MODELLI_GESTORE"]}], "client": ["geban-backend"],
+        "ruoli": [{"ruolo": "ROLE_MANAGER", "permessi": ["GEMODO_MODELLI_GESTORE"]}], "client": ["geri-angular-public"],
     })
 
     with Session(engine) as db:
@@ -224,7 +224,7 @@ def test_la_modifica_e_registrata_con_il_prima_e_il_dopo(admin_client, dal_datab
     ultimo = eventi[-1].payload_minimo
     assert ultimo["prima"]["ruoli"] == [{"ruolo": "ROLE_USER", "permessi": ["DOCUMENTI_VIEWER"]}]
     assert ultimo["dopo"]["ruoli"] == [{"ruolo": "ROLE_MANAGER", "permessi": ["GEMODO_MODELLI_GESTORE"]}]
-    assert ultimo["dopo"]["client"] == ["geban-backend"]
+    assert ultimo["dopo"]["client"] == ["geri-angular-public"]
 
 
 @pytest.mark.integration
@@ -233,7 +233,7 @@ def test_la_modifica_e_registrata_con_il_prima_e_il_dopo(admin_client, dal_datab
     ([{"ruolo": "ROLE_MANAGER", "permessi": ["GEMODO_ADMIN"]}], []),
     ([{"ruolo": "ROLE_MANAGER", "permessi": []}], []),
     ([{"ruolo": "ROLE_X", "permessi": ["DOCUMENTI_VIEWER"]}, {"ruolo": "ROLE_X", "permessi": ["DOCUMENTI_VIEWER"]}], []),
-    ([], ["geban-backend", "geban-backend"]),
+    ([], ["geri-angular-public", "geri-angular-public"]),
 ])
 def test_un_profilo_non_valido_e_rifiutato(admin_client, dal_database, ruoli, client_ids):
     """In particolare non si puo' concedere GEMODO_ADMIN: il catalogo e' chiuso."""

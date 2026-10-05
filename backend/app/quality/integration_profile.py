@@ -111,29 +111,6 @@ def permessi_da_ruoli_esterni(
     return permessi
 
 
-def contesti_del_client(sistemi: list[SistemaRichiedente], client_id: str) -> set[str]:
-    """I contesti per cui un client tecnico e' registrato (001 T115).
-
-    Dal database sono quelli delle integrazioni che lo ammettono
-    (`token_contexts`); da un file senza `token_contexts`, quelli dei profili
-    attivi che lo elencano fra i client ammessi.
-    """
-    contesti: set[str] = set()
-    for sistema in sistemi:
-        if sistema.stato != StatoSistemaRichiedente.ATTIVO:
-            continue
-        client = _client_attivo(sistema, client_id)
-        if client is None:
-            continue
-        if client.token_contexts:
-            contesti.update(client.token_contexts)
-            continue
-        for profilo in sistema.profili_integrazione:
-            if profilo.stato == StatoProfiloIntegrazione.ATTIVO and client_id in profilo.client_ammessi:
-                contesti.update(mapping.token_context for mapping in profilo.role_mappings)
-    return contesti
-
-
 def validate_profilo(profilo: ProfiloDiIntegrazione) -> None:
     """An ACTIVE profile must declare a system, admitted clients and at least one operation."""
 

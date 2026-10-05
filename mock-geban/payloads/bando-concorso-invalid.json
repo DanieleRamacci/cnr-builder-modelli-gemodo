@@ -2,7 +2,7 @@
   "_comment": "Payload demo non valido per E2E-002: numero_posti e altri campi obbligatori del contratto selezionato sono mancanti. La ricerca non valida contro una allowlist di tipologie locale (010 FR-016). atteso_errori e' metadato del test, non parte del payload inviato.",
   "demo_marker": "DEMO",
   "sistema_richiedente": "GEBAN",
-  "client_id": "geban-backend",
+  "client_id": "geri-angular-public",
   "profilo_integrazione": "GEBAN_RECLUTAMENTO_V1",
   "external_context_id": "GEBAN-DEMO-2026-002-INVALID",
   "tipo_documento": "BANDO_CONCORSO",

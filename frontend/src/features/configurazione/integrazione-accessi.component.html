@@ -122,8 +122,8 @@
   <section class="mm-card mt-4" aria-labelledby="client-titolo">
     <h2 id="client-titolo" class="h5">Client ammessi</h2>
     <p class="text-muted small">
-      I client Keycloak che chiamano GEMODO per conto di questa integrazione, oltre al client di
-      login di GEMODO stesso: per esempio il backend dell'applicazione.
+      I client ACE dell'applicazione che chiamano GEMODO col token dell'utente (per esempio il
+      frontend di GEBAN), oltre al client di login di GEMODO stesso.
     </p>
     <ul class="list-unstyled">
       @for (clientId of client(); track clientId) {
@@ -148,7 +148,7 @@
         type="text"
         class="form-control form-control-sm w-auto"
         aria-label="Nuovo client"
-        placeholder="geban-backend"
+        placeholder="geri-angular-public"
         (keydown.enter)="aggiungiClient(nuovoClient)"
       />
       <button

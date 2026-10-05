@@ -94,7 +94,9 @@ describe('IntegrazioneAccessiComponent (001 T091)', () => {
   });
 
   it('salva il profilo intero dopo una modifica', () => {
-    setup(profilo([{ ruolo: 'ROLE_USER', permessi: ['DOCUMENTI_VIEWER'] }], ['geban-backend']));
+    setup(
+      profilo([{ ruolo: 'ROLE_USER', permessi: ['DOCUMENTI_VIEWER'] }], ['geri-angular-public']),
+    );
 
     casella('ROLE_USER: DOCUMENTI_GENERATORE').click();
     fixture.detectChanges();
@@ -103,7 +105,7 @@ describe('IntegrazioneAccessiComponent (001 T091)', () => {
 
     expect(service.impostaAccessi).toHaveBeenCalledWith(ID, {
       ruoli: [{ ruolo: 'ROLE_USER', permessi: ['DOCUMENTI_GENERATORE', 'DOCUMENTI_VIEWER'] }],
-      client: ['geban-backend'],
+      client: ['geri-angular-public'],
     });
     expect(el().textContent).toContain('Profilo salvato');
     expect(pulsante('Salva profilo di accesso').disabled).toBe(true);
@@ -130,7 +132,7 @@ describe('IntegrazioneAccessiComponent (001 T091)', () => {
   it("copia il profilo di un'altra integrazione senza salvarlo", () => {
     const geban = profilo(
       [{ ruolo: 'ROLE_MANAGER', permessi: ['GEMODO_MODELLI_GESTORE', 'DOCUMENTI_VIEWER'] }],
-      ['geban-backend'],
+      ['geri-angular-public'],
       'geban',
     );
     setup(profilo([]), { [ALTRA]: geban });
@@ -141,7 +143,7 @@ describe('IntegrazioneAccessiComponent (001 T091)', () => {
     fixture.detectChanges();
 
     expect(casella('ROLE_MANAGER: GEMODO_MODELLI_GESTORE').checked).toBe(true);
-    expect(el().textContent).toContain('geban-backend');
+    expect(el().textContent).toContain('geri-angular-public');
     expect(service.impostaAccessi).not.toHaveBeenCalled();
     expect(pulsante('Salva profilo di accesso').disabled).toBe(false);
   });

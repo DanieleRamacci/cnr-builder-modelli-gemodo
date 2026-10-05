@@ -6,7 +6,7 @@ import {
   accedi,
   bordiSforati,
   creaUtenteUsaEGetta,
-  tokenGeneratore,
+  tokenDellaSessione,
   type UtenteUsaEGetta,
 } from './support/keycloak';
 import { concediAlManager } from './support/accessi';
@@ -519,10 +519,12 @@ test('ACE manager creates a draft and publishes from the context list', async ({
 
   // 012 T025: generato il documento, l'enfasi e' nel PDF come variante di font.
   const idApi = /ID API: (\d+)/.exec((await page.getByText(/ID API: \d+/).textContent()) ?? '')![1];
-  const generatore = await tokenGeneratore();
-  try {
+  // Genera con il token ACE dell'utente: ROLE_MANAGER concede anche
+  // DOCUMENTI_GENERATORE nel contesto, ed e' cosi' che chiama GEBAN.
+  const token = await tokenDellaSessione(page);
+  {
     const generato = await page.request.post('/api/v1/documenti/genera', {
-      headers: { Authorization: `Bearer ${generatore.token}` },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         sistema_richiedente: 'GEBAN',
         external_context_id: `e2e-${Date.now()}`,
@@ -589,8 +591,6 @@ test('ACE manager creates a draft and publishes from the context list', async ({
       expect(anteprima.font[parola], parola).toBe(font[parola]);
     }
     expect(anteprima.x['a)']).toBeCloseTo(x['a)'], 0);
-  } finally {
-    await generatore.rimuovi();
   }
   await page.screenshot({ path: testInfo.outputPath('contesti-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

@@ -2,7 +2,7 @@
   "_comment": "Payload demo valido per E2E-001/E2E-003/E2E-004 (spec 009, FR-029). modello_versione_id qui e' la stringa usata dai manifest 009 (infra/local/integration-profiles.local.yaml, seed-demo-catalog.yaml); il formato tecnico definitivo dell'identificativo resta una decisione aperta owner 001 (spec.md, 'Identificativi e mapping modello GEBAN-GEMODO').",
   "demo_marker": "DEMO",
   "sistema_richiedente": "GEBAN",
-  "client_id": "geban-backend",
+  "client_id": "geri-angular-public",
   "profilo_integrazione": "GEBAN_RECLUTAMENTO_V1",
   "external_context_id": "GEBAN-DEMO-2026-001",
   "tipo_documento": "BANDO_CONCORSO",

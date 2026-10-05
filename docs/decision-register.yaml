@@ -123,11 +123,16 @@ decisions:
     stato: CONFERMATA
     assunzione_provvisoria: null
     impatto: >
-      token tecnico Keycloak (client credentials) geban-backend con ruolo
-      DOCUMENTI_GENERATORE; utente reale e contesto GEBAN nel payload solo per audit.
-      Token exchange resta variante futura non richiesta per la prima release.
+      Revisione 2026-10-05 (decisione del product owner): GEBAN chiama GEMODO con
+      il token ACE dell'utente (client ACE, es. geri-angular-public), che porta i
+      ruoli in contexts.<contesto>.roles; GEMODO li traduce in permessi con il
+      profilo di accesso dell'integrazione (DEC-001-PROFILO-ACCESSO-NELL-INTEGRAZIONE).
+      Superata la decisione del 2026-07-29 - token tecnico Keycloak (client
+      credentials) geban-backend con ruolo DOCUMENTI_GENERATORE - che nessun flusso
+      usava: il client e' stato tolto da codice, test, realm locale e manifesti.
+      Un'eventuale chiamata server-server senza utente si riprogetta quando servira'.
     fase_bloccante: NESSUNA
-    data_ultima_revisione: 2026-07-29
+    data_ultima_revisione: 2026-10-05
 
   - id: SEC-006-002
     titolo: Separazione revisore/approvatore builder modelli
@@ -1362,9 +1367,9 @@ decisions:
       i suoi permessi, quindi catalogo, validazione, generazione e download
       verificano il contesto della risorsa: docker-compose.coolify.yml lo
       imposta a true di default. Nel codice il default resta false per test e
-      sviluppo locale. FR-036a: un client tecnico server-server esercita i suoi
-      ruoli diretti di consumo solo nei contesti delle integrazioni che lo
-      ammettono. Da verificare in test online con il token reale di GEBAN prima
+      sviluppo locale. Il contesto viene solo dal token ACE (FR-036, nessuna
+      eccezione): il client tecnico geban-backend, che non ne porta, e' stato
+      tolto con la revisione di SEC-006-001. Da verificare in test online con il token reale di GEBAN prima
       della produzione.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-10-05

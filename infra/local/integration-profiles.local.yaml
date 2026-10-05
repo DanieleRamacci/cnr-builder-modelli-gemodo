@@ -23,14 +23,6 @@ sistemi_richiedenti:
     stato: ATTIVO
     spec_owner: specs/001-catalogo-contratto-geban
     client_applicativi:
-      - client_id: geban-backend
-        audience_attesa: gemodo-backend
-        ruoli_claim_richiesti:
-          - DOCUMENTI_GENERATORE
-        sistemi_abilitati:
-          - GEBAN
-        stato: ATTIVO
-        gestisce_credenziali: false
       - client_id: geri-angular-public
         audience_attesa: gemodo-backend
         token_contexts:
@@ -45,7 +37,6 @@ sistemi_richiedenti:
         versione: "1"
         stato: ATTIVO
         client_ammessi:
-          - geban-backend
           - geri-angular-public
         tipi_documento_ammessi:
           - BANDO_CONCORSO

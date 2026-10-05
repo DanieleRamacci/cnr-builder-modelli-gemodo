@@ -19,8 +19,9 @@ aggiornato. Baseline attuale:
 
 - `gemodo-frontend`: client pubblico SSO per operatori GEMODO (login utente).
 - `gemodo-backend`: client confidenziale, audience delle API GEMODO.
-- `geban-backend`: client tecnico server-to-server (client credentials) usato da GEBAN per
-  chiamare le API operative GEMODO; ruolo applicativo atteso `DOCUMENTI_GENERATORE`.
+- (`geban-backend`, il client tecnico server-to-server previsto il 2026-07-29, e' stato
+  tolto il 2026-10-05: nessun flusso lo usava. GEBAN chiama GEMODO col token ACE
+  dell'utente; vedi SEC-006-001. Se esiste ancora nel realm CNR di test, si puo' cancellare.)
 - `geban-frontend`: placeholder, da verificare se gia' gestito dal team GEBAN.
 
 GEMODO non gestisce password o segreti dei client: Keycloak resta l'unica sorgente di
@@ -38,7 +39,8 @@ Nel realm CNR di test reale il client pubblico deve includere:
 L'utente che prova le API da Swagger deve avere ruoli client su `gemodo-backend` coerenti
 con l'endpoint: `DOCUMENTI_VIEWER` per catalogo/campi e `DOCUMENTI_GENERATORE` per
 validazione payload. Questi ruoli su utente servono solo per il test interattivo SSO;
-il flusso GEBAN operativo resta server-to-server con client tecnico `geban-backend`.
+il flusso GEBAN operativo usa il token ACE dell'utente (`contexts.geban.roles`), tradotto
+in permessi dal profilo di accesso dell'integrazione in GEMODO.
 
 ## Fallback offline: Keycloak containerizzato
 
