@@ -9,6 +9,9 @@
   --td-border-300: #c5cdd4;
   --td-border-200: #e3e7eb;
   --td-surface-50: #fbfcfd;
+  // Quanto e' alta la barra degli strumenti, che resta in cima scorrendo: le
+  // sidebar si fermano subito sotto.
+  --altezza-strumenti: 49px;
 
   display: block;
 }
@@ -22,8 +25,10 @@
   color: #fff;
 
   a {
+    flex: none;
     color: #fff;
     text-decoration: none;
+    white-space: nowrap;
   }
 
   .divisore {
@@ -32,28 +37,28 @@
     background: rgb(255 255 255 / 22%);
   }
 
-  // Il nome del modello e' generato e puo' essere lunghissimo ("DEMO - Tempo
-  // determinato - DEMO - Ricercatore - IT - VI - 2026-09-24"): senza troncarlo
-  // spingeva le azioni fuori dalla barra (visto sullo screenshot e2e).
+  // Il nome del modello e' generato e puo' essere lunghissimo ("Tempo
+  // Indeterminato - Collaboratore di Amministrazione - EN - 2026-10-01"):
+  // va su due righe, poi si tronca; le azioni restano su una riga sola.
   .titolo {
-    flex: 0 1 auto;
+    display: -webkit-box;
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
-    font-size: 15.5px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 17px;
     font-weight: 700;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 
   .meta {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
+    flex: none;
     font-family: 'Roboto Mono', monospace;
-    font-size: 11.5px;
+    font-size: 13px;
     color: rgb(255 255 255 / 70%);
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
   .save-state {
@@ -61,7 +66,7 @@
     margin-left: auto;
     padding: 3px 10px;
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: 13px;
     white-space: nowrap;
     background: rgb(255 255 255 / 12%);
     color: rgb(255 255 255 / 80%);
@@ -113,9 +118,72 @@
     }
   }
 
+  .altre-azioni {
+    position: relative;
+
+    summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      list-style: none;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &::after {
+        content: '▾';
+        font-size: 12px;
+      }
+    }
+  }
+
+  .menu-azioni {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    min-width: 220px;
+    padding: 6px;
+    border: 1px solid var(--td-border-300);
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgb(23 50 77 / 18%);
+
+    button,
+    .derivazione-ko {
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--td-ink-900);
+      font-size: 14.5px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    button:not(:disabled) {
+      cursor: pointer;
+
+      &:hover {
+        background: var(--td-primary-050);
+      }
+    }
+
+    button:disabled,
+    .derivazione-ko {
+      color: #9aa5af;
+    }
+  }
+
   .btn {
     height: 36px;
     border: 1px solid rgb(255 255 255 / 50%);
+    padding: 0 12px;
+    font-size: 14px;
+    line-height: 34px;
+    white-space: nowrap;
     color: #fff;
 
     &.primary {
@@ -141,7 +209,7 @@
   border-bottom: 1px solid var(--td-border-200);
   background: #f7f9fb;
   color: var(--td-ink-600);
-  font-size: 14px;
+  font-size: 15.5px;
 
   .tool {
     display: inline-flex;
@@ -196,7 +264,7 @@
     min-width: 150px;
     height: 32px;
     padding-block: 0;
-    font-size: 13px;
+    font-size: 14.5px;
   }
 
   // La barra dell'indirizzo va a capo dentro la toolbar: cosi' resta fissa con lei.
@@ -214,7 +282,7 @@
 
   .link-errore {
     color: #b71918;
-    font-size: 12.5px;
+    font-size: 14px;
   }
 
   .separator {
@@ -224,10 +292,44 @@
     background: #dbe2e8;
   }
 
+  // Salva dalla barra che resta in alto (riscontro del 2026-10-05).
+  .salva-documento {
+    margin-left: auto;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--td-primary);
+    border-radius: 4px;
+    background: var(--td-primary);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:disabled {
+      border-color: var(--td-border-300);
+      background: transparent;
+      color: var(--td-ink-500);
+      font-weight: 400;
+      cursor: default;
+    }
+  }
+
   .hint {
     margin-left: auto;
     color: var(--td-ink-500);
-    font-size: 12.5px;
+    font-size: 14px;
+  }
+
+  // Il suggerimento prende lo spazio che resta sulla riga, e se non basta si
+  // accorcia: la barra resta su una riga sola e non scende sul documento.
+  .salva-documento + .hint {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   @media (max-width: 767px) {
@@ -244,15 +346,34 @@
   display: grid;
   grid-template-columns: 232px 1fr 320px;
   min-height: 720px;
+  background: var(--td-surface-50);
+
+  // Le sidebar restano a vista scorrendo il documento (riscontro del
+  // 2026-10-05): sezioni, segnaposto e proprieta' sempre a portata di mano.
+  // Se sono piu' lunghe dello schermo scorrono da sole.
+  > .outline,
+  > .pannello {
+    position: sticky;
+    top: var(--altezza-strumenti);
+    align-self: start;
+    max-height: calc(100vh - var(--altezza-strumenti));
+    overflow-y: auto;
+  }
 
   @media (max-width: 991px) {
     grid-template-columns: 1fr;
+
+    > .outline,
+    > .pannello {
+      position: static;
+      max-height: none;
+    }
   }
 }
 
 .outline h2,
 .pannello h2 {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -262,7 +383,6 @@
 .outline {
   padding: 16px 0;
   background: var(--td-surface-50);
-  border-right: 1px solid var(--td-border-200);
 
   h2,
   .vuoto-sezioni {
@@ -297,13 +417,6 @@
     cursor: pointer;
   }
 
-  .handle {
-    flex: none;
-    color: #9aa5af;
-    font-size: 15px;
-    line-height: 1;
-  }
-
   .outline-copy {
     flex: 1;
     min-width: 0;
@@ -313,7 +426,7 @@
     display: block;
     margin-bottom: 1px;
     font-family: 'Roboto Mono', monospace;
-    font-size: 12px;
+    font-size: 13.5px;
     color: var(--td-ink-900);
     overflow-wrap: anywhere;
   }
@@ -321,26 +434,60 @@
   small {
     display: block;
     color: var(--td-ink-500);
-    font-size: 11.5px;
+    font-size: 13px;
   }
 }
 
 .section-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  max-width: 92px;
+  flex: none;
+  gap: 2px;
+}
 
-  .btn {
-    min-height: 26px;
-    padding-inline: 5px;
-    font-size: 10.5px;
+// Su, giu' e cestino su una riga sola, piccoli: la sezione si legge, non i
+// pulsanti (riscontro del 2026-10-05).
+.azione-sezione {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--td-ink-600);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:not(:disabled):hover {
+    border-color: var(--td-border-300);
+    background: #fff;
+  }
+
+  &:disabled {
+    color: #c3cad1;
+    cursor: default;
+  }
+
+  &.rimuovi {
+    color: #b71918;
+
+    svg {
+      fill: currentColor;
+    }
+
+    &:disabled {
+      color: #e3b7b7;
+    }
   }
 }
 
 .foglio {
   padding: 26px 24px 34px;
+  border-right: 1px solid var(--td-border-200);
+  border-left: 1px solid var(--td-border-200);
   background: #e8edf2;
 
   // Il foglio usa tutta la colonna, fino a una misura che resta leggibile.
@@ -355,7 +502,7 @@
   .conta-pagine {
     margin: 0 0 6px;
     color: var(--td-ink-500);
-    font-size: 12px;
+    font-size: 13.5px;
     text-align: right;
   }
 
@@ -410,7 +557,7 @@
       border-radius: 9px;
       background: #5a6772;
       color: #fff;
-      font-size: 11px;
+      font-size: 12.5px;
       line-height: 18px;
     }
   }
@@ -428,7 +575,7 @@
   background: #e9f2fb;
   color: var(--td-primary-dark);
   font-family: 'Roboto Mono', monospace;
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -463,13 +610,13 @@
     left: 10px;
     display: inline-flex;
     align-items: center;
-    font-size: 10.5px;
+    font-size: 12px;
   }
 
   h3 {
     margin: 2px 0 8px;
     font-family: 'Roboto Mono', monospace;
-    font-size: 12.5px;
+    font-size: 14px;
     color: var(--td-ink-900);
     text-transform: uppercase;
   }
@@ -501,7 +648,7 @@
     gap: 8px;
     margin: 12px 0;
     color: var(--td-ink-500);
-    font-size: 11px;
+    font-size: 12.5px;
     text-transform: uppercase;
 
     &::before,
@@ -587,7 +734,7 @@
   border-radius: 3px;
   background: transparent;
   color: var(--td-primary);
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 
@@ -608,7 +755,7 @@
 }
 
 .vuoto-sezioni {
-  font-size: 13px;
+  font-size: 14.5px;
   line-height: 1.5;
   color: var(--td-ink-500);
 }
@@ -617,14 +764,13 @@
   display: flex;
   flex-direction: column;
   background: var(--td-surface-50);
-  border-left: 1px solid var(--td-border-200);
 
   footer {
     margin-top: auto;
     padding: 14px 18px;
     border-top: 1px solid var(--td-border-200);
     background: #f2f5f8;
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.5;
     color: var(--td-ink-500);
   }
@@ -633,7 +779,7 @@
 .panel-tabs {
   display: flex;
   border-bottom: 1px solid var(--td-border-200);
-  font-size: 13.5px;
+  font-size: 15px;
 
   button {
     flex: 1;
@@ -660,7 +806,7 @@
     display: block;
     margin: 12px 0 6px;
     color: var(--td-ink-500);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
@@ -672,14 +818,14 @@
     border: 1px solid var(--td-border-300);
     border-radius: 4px;
     background: #fff;
-    font-size: 13.5px;
+    font-size: 15px;
   }
 }
 
 .panel-hint {
   margin: 8px 0 16px;
   color: var(--td-ink-500);
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -700,7 +846,7 @@
   .drag-handle {
     flex: none;
     color: #9aa5af;
-    font-size: 15px;
+    font-size: 16.5px;
     line-height: 1;
   }
 
@@ -717,24 +863,24 @@
 
   .tipo {
     margin-left: auto;
-    font-size: 11px;
+    font-size: 12.5px;
     color: var(--td-ink-500);
   }
 
   .etichetta {
     display: block;
     margin: 4px 0;
-    font-size: 12.5px;
+    font-size: 14px;
     color: var(--td-ink-600);
   }
 
   .lingua {
-    font-size: 11px;
+    font-size: 12.5px;
     color: var(--td-ink-500);
   }
 
   .pill {
-    font-size: 11px;
+    font-size: 12.5px;
   }
 }
 
@@ -743,13 +889,13 @@
   padding-top: 12px;
   border-top: 1px solid var(--td-border-200);
   color: var(--td-ink-500);
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 .versione {
   margin-bottom: 4px;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--td-ink-600);
 
   .api {
@@ -783,7 +929,7 @@ dialog {
 
   h3 {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: 13.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -792,7 +938,7 @@ dialog {
 
   .readiness-ok {
     margin: 0;
-    font-size: 12.5px;
+    font-size: 14px;
     color: #14713a;
   }
 }
@@ -808,7 +954,7 @@ dialog {
 .blocco-pubblicazione-elenco {
   margin: 0;
   padding-left: 18px;
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -828,7 +974,7 @@ dialog {
   flex: none;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 13px;
   white-space: nowrap;
   background: rgb(220 53 69 / 26%);
   color: #ffc2c7;
@@ -837,7 +983,7 @@ dialog {
 .nome-errore {
   margin: 4px 0 0;
   color: #b71918;
-  font-size: 12.5px;
+  font-size: 14px;
 }
 
 // La cornice del tipo documento sul foglio (012 T070), o il rimando a impostarla.
@@ -855,6 +1001,6 @@ dialog {
   border: 1px dashed #b7c2cc;
   border-radius: 4px;
   color: var(--td-primary);
-  font-size: 12.5px;
+  font-size: 14px;
   text-align: center;
 }

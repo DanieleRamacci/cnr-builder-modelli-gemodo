@@ -155,6 +155,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
     // Annulla e ripeti anche quando il fuoco e' su un pulsante della toolbar.
     '(document:keydown)': 'tastoDocumento($event)',
     '(window:resize)': 'disegnaFogli()',
+    '(document:click)': 'chiudiAltreAzioni($event)',
   },
   styleUrl: './modello-anteprima.component.scss',
   template: `
@@ -162,10 +163,12 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
       <a [routerLink]="['/contesti', contesto(), 'modelli']">&larr; Modelli</a>
       <span class="divisore" aria-hidden="true"></span>
       @if (modello(); as m) {
-        <span class="titolo">{{ m.nome }}</span>
-        <span class="meta"
-          >{{ m.codice }} · v{{ corrente()?.numero_versione }} · {{ corrente()?.stato }}</span
-        >
+        <!-- Il nome si legge per intero su due righe; il codice generato, lungo
+             e con l'id in fondo, non serve a chi scrive: resta nel suggerimento. -->
+        <span class="titolo" data-titolo-modello [title]="m.nome + ' (' + m.codice + ')'">{{
+          m.nome
+        }}</span>
+        <span class="meta">v{{ corrente()?.numero_versione }} · {{ corrente()?.stato }}</span>
       }
       <span
         class="save-state"
@@ -175,32 +178,48 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         >{{ statoSalvataggio().etichetta }}</span
       >
       <div class="azioni">
-        @if (puoDerivare()) {
-          <button
-            type="button"
-            class="btn btn-sm"
-            [disabled]="salvando()"
-            (click)="derivazione.showModal()"
-          >
-            Crea modello derivato
-          </button>
-        }
-        @if (derivazioneNonDisponibile(); as motivo) {
-          <span class="derivazione-ko" data-derivazione-ko [title]="motivo">
-            Derivazione non disponibile
-          </span>
-        }
-        @if (modello()) {
-          <button
-            type="button"
-            class="btn btn-sm"
-            data-create-variant-open
-            [disabled]="salvando()"
-            (click)="variante.showModal()"
-          >
-            Crea variante
-          </button>
-        }
+        <!-- Le azioni che servono di rado stanno in un menu: il nome del modello,
+             lungo, ha bisogno del posto (riscontro del 2026-10-05). -->
+        <details class="altre-azioni" data-altre-azioni #altreAzioni>
+          <summary class="btn btn-sm">Altre azioni</summary>
+          <div class="menu-azioni" role="menu">
+            @if (puoDerivare()) {
+              <button
+                type="button"
+                role="menuitem"
+                [disabled]="salvando()"
+                (click)="altreAzioni.open = false; derivazione.showModal()"
+              >
+                Crea modello derivato
+              </button>
+            }
+            @if (derivazioneNonDisponibile(); as motivo) {
+              <span class="derivazione-ko" data-derivazione-ko [title]="motivo">
+                Derivazione non disponibile
+              </span>
+            }
+            @if (modello()) {
+              <button
+                type="button"
+                role="menuitem"
+                data-create-variant-open
+                [disabled]="salvando()"
+                (click)="altreAzioni.open = false; variante.showModal()"
+              >
+                Crea variante
+              </button>
+            }
+            <button
+              type="button"
+              role="menuitem"
+              data-export-docx
+              disabled
+              title="Il backend non espone ancora un export .docx del modello: vedi T123 in tasks.md"
+            >
+              Esporta .docx
+            </button>
+          </div>
+        </details>
         <button
           type="button"
           class="btn btn-sm"
@@ -214,15 +233,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           (click)="apriAnteprima(anteprimaPdf.elemento())"
         >
           Anteprima
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm"
-          data-export-docx
-          disabled
-          title="Il backend non espone ancora un export .docx del modello: vedi T123 in tasks.md"
-        >
-          Esporta .docx
         </button>
         @if (azioneVersione(); as azione) {
           <button
@@ -447,6 +457,26 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         >
           ⤓
         </button>
+        @if (sezioni()?.modificabile) {
+          <!-- Nella barra che resta in alto: si salva da qualunque punto del
+               documento, senza perdere il cursore. -->
+          <button
+            type="button"
+            class="salva-documento"
+            data-salva-documento
+            [disabled]="salvandoSezioni() || !documentoModificato()"
+            (mousedown)="$event.preventDefault()"
+            (click)="salvaSezioni()"
+          >
+            {{
+              salvandoSezioni()
+                ? 'Salvataggio...'
+                : documentoModificato()
+                  ? 'Salva documento'
+                  : 'Documento salvato'
+            }}
+          </button>
+        }
         <span class="hint">Scrivi / nel testo per inserire un segnaposto</span>
         @if (collegamento(); as stato) {
           <div class="link-bar" data-link-bar>
@@ -509,7 +539,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 class="outline-select"
                 (click)="selezionaSezione(sezione.codice)"
               >
-                <span class="handle" aria-hidden="true">≡</span>
                 <span class="outline-copy">
                   <strong>{{ sezione.codice }}</strong>
                   <small>modificabile · {{ placeholderSezione(sezione).length }} segnaposto</small>
@@ -519,32 +548,42 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 <div class="section-actions">
                   <button
                     type="button"
-                    class="btn btn-sm btn-outline-secondary"
+                    class="azione-sezione"
+                    title="Sposta su"
+                    [attr.aria-label]="'Sposta su la sezione ' + sezione.codice"
                     [disabled]="i === 0 || salvandoSezioni()"
                     [attr.data-move-section]="sezione.codice"
                     data-direction="up"
                     (click)="spostaSezione(i, -1); $event.stopPropagation()"
                   >
-                    Su
+                    ↑
                   </button>
                   <button
                     type="button"
-                    class="btn btn-sm btn-outline-secondary"
+                    class="azione-sezione"
+                    title="Sposta giù"
+                    [attr.aria-label]="'Sposta giù la sezione ' + sezione.codice"
                     [disabled]="i === sezioniLocali().length - 1 || salvandoSezioni()"
                     [attr.data-move-section]="sezione.codice"
                     data-direction="down"
                     (click)="spostaSezione(i, 1); $event.stopPropagation()"
                   >
-                    Giu
+                    ↓
                   </button>
                   <button
                     type="button"
-                    class="btn btn-sm btn-outline-danger"
+                    class="azione-sezione rimuovi"
+                    title="Rimuovi la sezione"
+                    [attr.aria-label]="'Rimuovi la sezione ' + sezione.codice"
                     [disabled]="salvandoSezioni()"
                     [attr.data-remove-section]="sezione.codice"
                     (click)="rimuoviSezione(sezione.codice); $event.stopPropagation()"
                   >
-                    Rimuovi
+                    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+                      <path
+                        d="M6 1.5h4a.5.5 0 0 1 .5.5v1H14a.5.5 0 0 1 0 1h-.6l-.8 9.6A1.5 1.5 0 0 1 11.1 15H4.9a1.5 1.5 0 0 1-1.5-1.4L2.6 4H2a.5.5 0 0 1 0-1h3.5V2a.5.5 0 0 1 .5-.5Zm.5 1.5h3v-.5h-3V3ZM3.6 4l.8 9.5a.5.5 0 0 0 .5.5h6.2a.5.5 0 0 0 .5-.5L12.4 4H3.6Zm2.9 2a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5Zm3 0a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5Z"
+                      />
+                    </svg>
                   </button>
                 </div>
               }
@@ -1274,6 +1313,7 @@ export class ModelloAnteprimaComponent {
 
   private readonly editori = viewChildren(EditorSezioneComponent);
   private readonly foglio = viewChild<ElementRef<HTMLElement>>('foglio');
+  private readonly altreAzioni = viewChild<ElementRef<HTMLDetailsElement>>('altreAzioni');
   /** Lo spazio fra due fogli, in pixel dall'alto del foglio, con le sue misure. */
   protected readonly fasce = signal<(InizioPagina & { top: number; altezza: number })[]>([]);
   /** Dove il PDF scrive pie' di pagina e intestazione, in mm (renderer.py). */
@@ -1376,6 +1416,12 @@ export class ModelloAnteprimaComponent {
       fasce.push({ ...inizio, top: box.top - origine, altezza: box.height });
     }
     this.fasce.set(fasce);
+  }
+
+  /** Il menu delle altre azioni si chiude cliccando fuori, come ogni menu. */
+  protected chiudiAltreAzioni(evento: Event): void {
+    const menu = this.altreAzioni()?.nativeElement;
+    if (menu?.open && !menu.contains(evento.target as Node)) menu.open = false;
   }
 
   /** Millimetri del PDF sul foglio dell'editor. */

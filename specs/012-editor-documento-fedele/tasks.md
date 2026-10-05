@@ -785,3 +785,26 @@ pagina, per sapere quanto spazio prende cio' che si incolla.
   all'ultimo capoverso della pagina 1 lo spezza, con righe sopra e sotto la
   fascia. Tutta la suite e2e (4 test) verde.
 
+- [x] T084 Riscontri del 2026-10-05 sulla schermata del builder:
+      caratteri dell'interfaccia piu' grandi (circa 1,5 px; il testo del
+      documento resta in scala col PDF); nella barra in alto il nome del
+      modello va su due righe, il codice generato con l'id esce (resta nel
+      suggerimento del nome) e "Crea modello derivato", "Crea variante",
+      "Esporta .docx" passano nel menu "Altre azioni", cosi' i pulsanti non
+      vanno piu' a capo; "Salva documento" nella barra degli strumenti, che
+      resta in alto scorrendo ("Documento salvato" e spento quando non c'e'
+      niente da salvare); le sidebar restano a vista sotto la barra e
+      scorrono da sole se piu' lunghe dello schermo; nell'elenco delle
+      sezioni su, giu' e cestino stanno su una riga e la maniglia di
+      trascinamento, che non trascinava, non c'e' piu'. Il budget degli
+      stili di un componente sale a 16 kB: la 2b e' l'editor intero.
+
+  Verifica: 195 test frontend, build di produzione; e2e su stack reale a
+  1280 px: con un nome di 120 caratteri il titolo sta su due righe ed e'
+  largo piu' di 300 px, i pulsanti sono su una riga, la barra degli
+  strumenti anche; "Salva documento" salva e diventa "Documento salvato";
+  il menu si apre e si chiude cliccando fuori; scorrendo, in cima allo
+  schermo ci sono la barra e, subito sotto, le due sidebar
+  (`elementFromPoint`: il controllo di T063 accettava anche una barra
+  uscita dallo schermo). Tutta la suite e2e (4 test) verde.
+

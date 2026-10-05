@@ -222,7 +222,11 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // Il nome del modello porta all'anteprima (2b ridotta): li' vivono i campi
   // del contratto e la creazione dell'edizione inglese, non nella lista.
   await page.getByRole('link', { name: modelName }).click();
-  await expect(page.getByRole('button', { name: 'Crea modello derivato' })).toBeVisible();
+  // Le azioni di rado stanno nel menu "Altre azioni" (riscontro del 2026-10-05).
+  await page.locator('[data-altre-azioni] summary').click();
+  await expect(page.getByRole('menuitem', { name: 'Crea modello derivato' })).toBeVisible();
+  await page.locator('.topbar .meta').click();
+  await expect(page.getByRole('menuitem', { name: 'Crea modello derivato' })).toBeHidden();
 
   // T130: la 2b e' un editor a schermo intero. L'header e il footer della
   // shell non ci sono: l'unica barra e' la topbar della pagina.
@@ -497,6 +501,43 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   expect(righe.sotto).toBeGreaterThan(0);
   await page.locator('[data-fra-fogli]').first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('builder-2b-fogli-capoverso.png') });
+  // Riscontro del 2026-10-05: si salva dalla barra degli strumenti, che resta
+  // in alto scorrendo il documento; salvato, il pulsante lo dice e si spegne.
+  const salvaDocumento = page.locator('[data-salva-documento]');
+  await expect(salvaDocumento).toHaveText('Salva documento');
+  await expect(salvaDocumento).toBeEnabled();
+  await salvaDocumento.click();
+  await expect(page.locator('[data-save-state]')).toHaveText(/Tutte le modifiche salvate/);
+  await expect(salvaDocumento).toHaveText('Documento salvato');
+  await expect(salvaDocumento).toBeDisabled();
+  // Il nome del modello e' generato e lungo: va su due righe al piu', il
+  // codice con l'id non c'e', e i pulsanti restano su una riga sola.
+  await page.locator('[data-titolo-modello]').evaluate((titolo) => {
+    titolo.textContent =
+      'Tempo Indeterminato - Collaboratore di Amministrazione - EN - 2026-10-01 - Tempo Indeterminato - Collaboratore di Amministrazione';
+  });
+  const barra = await page.locator('.topbar').evaluate((topbar) => {
+    const titolo = topbar.querySelector('[data-titolo-modello]')!;
+    return {
+      righeTitolo: Math.round(
+        titolo.getBoundingClientRect().height / parseFloat(getComputedStyle(titolo).lineHeight),
+      ),
+      meta: topbar.querySelector('.meta')!.textContent,
+      larghezzaTitolo: titolo.getBoundingClientRect().width,
+      strumenti: document.querySelector('.format-toolbar')!.getBoundingClientRect().height,
+      pulsanti: Array.from(topbar.querySelectorAll('.azioni .btn')).map(
+        (pulsante) => pulsante.getBoundingClientRect().height,
+      ),
+    };
+  });
+  expect(barra.righeTitolo).toBeLessThanOrEqual(2);
+  expect(barra.larghezzaTitolo).toBeGreaterThan(300);
+  // La barra degli strumenti, col pulsante di salvataggio, sta su una riga.
+  expect(barra.strumenti).toBeLessThan(56);
+  expect(barra.meta).toMatch(/^v\d+ · BOZZA$/);
+  for (const altezza of barra.pulsanti) expect(altezza).toBeLessThanOrEqual(36);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-barra.png') });
   // Capoversi e voci hanno il corpo del PDF, non quello di Bootstrap Italia;
   // e il testo col cursore non ha la cornice nera di focus.
   const stili = await testoVisti.evaluate((testo) => ({
@@ -518,8 +559,34 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // T063: scorrendo, la barra degli strumenti resta in cima.
   await page.mouse.wheel(0, 1500);
   await expect
-    .poll(async () => (await page.locator('.format-toolbar').boundingBox())?.y ?? 999)
+    .poll(async () => Math.abs((await page.locator('.format-toolbar').boundingBox())?.y ?? 999))
     .toBeLessThan(2);
+  // Riscontro del 2026-10-05: anche le sidebar restano a vista, subito sotto
+  // la barra; e i comandi di una sezione stanno su una riga, col cestino.
+  const sottoBarra = (await page.locator('.format-toolbar').boundingBox())!;
+  for (const sidebar of ['.outline', '.pannello']) {
+    const box = (await page.locator(sidebar).boundingBox())!;
+    expect(Math.abs(box.y - (sottoBarra.y + sottoBarra.height))).toBeLessThan(2);
+  }
+  const comandi = await page
+    .locator('.outline-item')
+    .first()
+    .locator('.section-actions button')
+    .evaluateAll((pulsanti) => pulsanti.map((p) => Math.round(p.getBoundingClientRect().top)));
+  expect(comandi).toHaveLength(3);
+  expect(new Set(comandi).size).toBe(1);
+  await expect(page.locator('.outline-item .handle')).toHaveCount(0);
+  // Cio' che si vede davvero in cima allo schermo: la barra, e sotto le sidebar.
+  const inCima = await page.evaluate((y) => {
+    const qui = (x: number, altezza: number) =>
+      document.elementFromPoint(x, altezza)?.closest('.format-toolbar, .outline, .pannello')
+        ?.className ?? '';
+    return { barra: qui(640, 20), sinistra: qui(100, y + 20), destra: qui(1100, y + 20) };
+  }, sottoBarra.y + sottoBarra.height);
+  expect(inCima.barra).toContain('format-toolbar');
+  expect(inCima.sinistra).toContain('outline');
+  expect(inCima.destra).toContain('pannello');
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-sidebar.png') });
   await page.evaluate(() => window.scrollTo(0, 0));
 
   // T062: la sezione prende un nome, che compare nella struttura a sinistra.
