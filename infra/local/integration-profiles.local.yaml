@@ -1,3 +1,10 @@
+# DATO DI PROVA DEI TEST dal 2026-10-05 (001 T089, migrazione 0028).
+# In un ambiente il profilo di accesso sta nel database (ruolo_integrazione,
+# client_integrazione) e si gestisce dalla scheda "Profilo di accesso"
+# dell'integrazione. Questo file si usa solo se indicato esplicitamente con
+# GEMODO_INTEGRATION_PROFILES_PATH (lo fa tests/conftest.py); la migrazione
+# 0028 ne ha copiato la mappatura GEBAN sulle integrazioni di contesto geban.
+#
 # Profili di integrazione locali/test (spec 009, User Story 1/2; entita' SistemaRichiedente,
 # ClientApplicativo, ProfiloDiIntegrazione in backend/app/quality/schemas.py).
 #

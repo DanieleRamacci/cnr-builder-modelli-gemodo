@@ -31,6 +31,40 @@ class Integrazione(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+# 001 T088: il catalogo chiuso dei permessi che un ruolo ACE puo' concedere.
+# Cosa consente ciascuno sta in `app.common.security.DESCRIZIONI_PERMESSI`.
+PERMESSI_RUOLO = ("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE", "GEMODO_MODELLI_GESTORE")
+
+
+class RuoloIntegrazione(Base):
+    """Un ruolo ACE nel contesto dell'integrazione e i permessi GEMODO che concede (001 T088).
+
+    Il ruolo e' scritto senza `#contesto`: il contesto e' quello
+    dell'integrazione, e il token porta `ROLE_MANAGER#geban`.
+    """
+
+    __tablename__ = "ruolo_integrazione"
+    __table_args__ = (UniqueConstraint("integrazione_id", "ruolo", name="uq_ruolo_integrazione"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrazione.id", ondelete="CASCADE"), nullable=False)
+    ruolo: Mapped[str] = mapped_column(String(128), nullable=False)
+    permessi: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class ClientIntegrazione(Base):
+    """Un client Keycloak che chiama GEMODO per conto dell'integrazione (001 T088)."""
+
+    __tablename__ = "client_integrazione"
+    __table_args__ = (UniqueConstraint("integrazione_id", "client_id", name="uq_client_integrazione"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrazione.id", ondelete="CASCADE"), nullable=False)
+    client_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
 class AuditEventoIntegrazione(Base):
     __tablename__ = "audit_evento_integrazione"
     __table_args__ = (

@@ -11,10 +11,14 @@ from sqlalchemy.orm import Session
 from app.builder import repository as builder_repository
 from app.catalog.models import ModelloDocumento, TipoDocumento
 from app.common.errors import DomainError, ErrorCode
-from app.common.security import PrincipalGEMODO, ensure_roles, verify_scrittura_su_contesto
+from app.common.security import DESCRIZIONI_PERMESSI, PrincipalGEMODO, ensure_roles, verify_scrittura_su_contesto
 from app.configurazione import repository
-from app.configurazione.models import AttributoProfilo, AuditEventoConfigurazione, AuditEventoIntegrazione, DefinizioneStruttura, EndpointIntegrazione, Integrazione, SchemaDiscoveryGenerato
+from app.configurazione.models import PERMESSI_RUOLO, AttributoProfilo, AuditEventoConfigurazione, AuditEventoIntegrazione, ClientIntegrazione, DefinizioneStruttura, EndpointIntegrazione, Integrazione, RuoloIntegrazione, SchemaDiscoveryGenerato
 from app.configurazione.schemas import (
+    AccessiIntegrazione,
+    AccessiIntegrazioneInput,
+    PermessoDescritto,
+    RuoloAccesso,
     ErroreVerifica,
     IntegrazioneAdmin,
     IntegrazioneCreate,
@@ -297,6 +301,57 @@ class IntegrazioniService:
             soggetto_id=principal.subject, client_id=principal.client_id, payload_minimo=payload,
         ))
 
+    def _accessi(self, source: Integrazione) -> AccessiIntegrazione:
+        ruoli = self.db.scalars(
+            select(RuoloIntegrazione).where(RuoloIntegrazione.integrazione_id == source.id)
+            .order_by(RuoloIntegrazione.ruolo)
+        )
+        client = self.db.scalars(
+            select(ClientIntegrazione.client_id).where(ClientIntegrazione.integrazione_id == source.id)
+            .order_by(ClientIntegrazione.client_id)
+        )
+        return AccessiIntegrazione(
+            codice_contesto=source.codice_contesto,
+            ruoli=[RuoloAccesso(ruolo=r.ruolo, permessi=sorted(r.permessi)) for r in ruoli],
+            client=list(client),
+            permessi_disponibili=[
+                PermessoDescritto(codice=codice, descrizione=DESCRIZIONI_PERMESSI[codice])
+                for codice in PERMESSI_RUOLO
+            ],
+        )
+
+    def accessi(self, integrazione_id: uuid.UUID) -> AccessiIntegrazione:
+        """Il profilo di accesso: quali ruoli ACE del contesto concedono cosa (001 T090)."""
+        return self._accessi(self._integrazione(integrazione_id))
+
+    def imposta_accessi(
+        self, integrazione_id: uuid.UUID, richiesta: AccessiIntegrazioneInput, principal: PrincipalGEMODO,
+    ) -> AccessiIntegrazione:
+        """Sostituisce il profilo di accesso intero; vale dalla richiesta successiva.
+
+        E' una decisione di sicurezza: l'audit registra il prima e il dopo.
+        """
+        source = self._integrazione(integrazione_id, lock=True)
+        prima = self._accessi(source)
+        self.db.execute(delete(RuoloIntegrazione).where(RuoloIntegrazione.integrazione_id == source.id))
+        self.db.execute(delete(ClientIntegrazione).where(ClientIntegrazione.integrazione_id == source.id))
+        self.db.add_all([
+            RuoloIntegrazione(integrazione_id=source.id, ruolo=r.ruolo, permessi=sorted(r.permessi))
+            for r in richiesta.ruoli
+        ])
+        self.db.add_all([
+            ClientIntegrazione(integrazione_id=source.id, client_id=client_id) for client_id in richiesta.client
+        ])
+        self.db.flush()
+        dopo = self._accessi(source)
+        self._audit(source.id, principal, "ACCESSI_MODIFICATI", {
+            "codice": source.codice,
+            "prima": {"ruoli": [r.model_dump() for r in prima.ruoli], "client": prima.client},
+            "dopo": {"ruoli": [r.model_dump() for r in dopo.ruoli], "client": dopo.client},
+        })
+        self.db.commit()
+        return dopo
+
     def elimina(self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO) -> None:
         """Cancella un'integrazione registrata, con i suoi tipi documento (010 T103).
 
@@ -329,8 +384,11 @@ class IntegrazioniService:
                 status_code=409,
                 dettagli=[{"codice": m.codice, "nome": m.nome} for m in modelli if m.id in con_documenti],
             )
+        accessi = self._accessi(source)
         self._audit(source.id, principal, "INTEGRAZIONE_CANCELLATA", {
             "codice": source.codice,
+            # Chi poteva fare cosa nel contesto: le righe seguono l'integrazione.
+            "accessi": {"ruoli": [r.model_dump() for r in accessi.ruoli], "client": accessi.client},
             "nome": source.nome,
             "codice_contesto": source.codice_contesto,
             "tipi_documento": sorted(t.codice for t in tipi),

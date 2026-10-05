@@ -83,6 +83,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'contesti/:id/accessi',
+        loadComponent: () =>
+          import('../features/configurazione/integrazione-accessi.component').then(
+            (m) => m.IntegrazioneAccessiComponent,
+          ),
+      },
+      {
         path: 'contesti/:id/struttura-json',
         loadComponent: () =>
           import('../features/configurazione/integrazione-struttura-json.component').then(

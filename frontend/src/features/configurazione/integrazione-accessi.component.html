@@ -1,0 +1,198 @@
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a>
+  <span class="mx-1">/</span>
+  <a routerLink="/configurazione">Integrazioni</a>
+  <span class="mx-1">/</span>
+  <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
+</nav>
+
+@if (caricamento()) {
+  <p role="status">Caricamento...</p>
+} @else if (errore()) {
+  <div class="alert alert-danger" role="alert">{{ errore() }}</div>
+  <a routerLink="/configurazione" class="btn btn-outline-secondary">Torna alle integrazioni</a>
+} @else if (salvati(); as profilo) {
+  <header class="mm-page-header">
+    <div>
+      <h1>{{ integrazione()?.nome ?? 'Integrazione' }}</h1>
+      <p>
+        Quali ruoli ACE del contesto <code>{{ profilo.codice_contesto }}</code> concedono quali
+        permessi in GEMODO.
+      </p>
+    </div>
+  </header>
+
+  @if (integrazione(); as corrente) {
+    <nav class="mm-tabs" aria-label="Sezioni del contesto">
+      <a [routerLink]="['/configurazione/contesti', corrente.id, 'integrazione']">Integrazione</a>
+      <a [routerLink]="['/configurazione/contesti', corrente.id, 'struttura-json']"
+        >Struttura API</a
+      >
+      <a routerLink="/configurazione/tipi-documento" [queryParams]="{ integrazioneId: corrente.id }"
+        >Policy dati</a
+      >
+      <span class="active">Profilo di accesso</span>
+    </nav>
+  }
+
+  <div class="mm-info-box mt-3">
+    Gli utenti arrivano dal realm CNR attraverso ACE: il token porta i ruoli del contesto nella
+    forma <code>ROLE_MANAGER#{{ profilo.codice_contesto }}</code
+    >. Qui il ruolo si scrive senza <code>#{{ profilo.codice_contesto }}</code
+    >. Un ruolo che non compare qui non concede nulla, e un'integrazione appena registrata non ne ha
+    nessuno. Le modifiche valgono dalla richiesta successiva, senza riavvio.
+  </div>
+
+  <section class="mm-card mt-4" aria-labelledby="ruoli-titolo">
+    <h2 id="ruoli-titolo" class="h5">Ruoli</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Ruolo ACE</th>
+            @for (permesso of permessi(); track permesso.codice) {
+              <th scope="col">
+                <span class="d-block">{{ permesso.codice }}</span>
+                <span class="d-block small text-muted fw-normal">{{ permesso.descrizione }}</span>
+              </th>
+            }
+            <th scope="col"><span class="visually-hidden">Azioni</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (riga of ruoli(); track $index; let i = $index) {
+            <tr>
+              <td>
+                <input
+                  type="text"
+                  class="form-control"
+                  [attr.aria-label]="'Ruolo ' + (i + 1)"
+                  placeholder="ROLE_MANAGER"
+                  [value]="riga.ruolo"
+                  (input)="rinomina(i, $any($event.target).value)"
+                />
+              </td>
+              @for (permesso of permessi(); track permesso.codice) {
+                <td>
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [attr.aria-label]="(riga.ruolo || 'Ruolo ' + (i + 1)) + ': ' + permesso.codice"
+                    [checked]="concede(riga, permesso.codice)"
+                    (change)="commuta(i, permesso.codice)"
+                  />
+                </td>
+              }
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="togliRuolo(i)">
+                  Togli
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="permessi().length + 2" class="text-muted">
+                Nessun ruolo: nessun utente di questo contesto puo' usare GEMODO.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="aggiungiRuolo()">
+        Aggiungi ruolo
+      </button>
+      @if (altre().length) {
+        <label for="copia-da" class="ms-3 small">Copia il profilo di</label>
+        <select
+          id="copia-da"
+          class="form-select form-select-sm w-auto"
+          (change)="copiaDa($any($event.target).value); $any($event.target).value = ''"
+        >
+          <option value="">scegli un'integrazione...</option>
+          @for (altra of altre(); track altra.id) {
+            <option [value]="altra.id">{{ altra.nome }} ({{ altra.codice_contesto }})</option>
+          }
+        </select>
+      }
+    </div>
+  </section>
+
+  <section class="mm-card mt-4" aria-labelledby="client-titolo">
+    <h2 id="client-titolo" class="h5">Client ammessi</h2>
+    <p class="text-muted small">
+      I client Keycloak che chiamano GEMODO per conto di questa integrazione, oltre al client di
+      login di GEMODO stesso: per esempio il backend dell'applicazione.
+    </p>
+    <ul class="list-unstyled">
+      @for (clientId of client(); track clientId) {
+        <li class="d-flex align-items-center gap-2 mb-1">
+          <code>{{ clientId }}</code>
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-danger"
+            [attr.aria-label]="'Togli ' + clientId"
+            (click)="togliClient(clientId)"
+          >
+            Togli
+          </button>
+        </li>
+      } @empty {
+        <li class="text-muted">Nessun client oltre a quello di login di GEMODO.</li>
+      }
+    </ul>
+    <div class="d-flex gap-2">
+      <input
+        #nuovoClient
+        type="text"
+        class="form-control form-control-sm w-auto"
+        aria-label="Nuovo client"
+        placeholder="geban-backend"
+        (keydown.enter)="aggiungiClient(nuovoClient)"
+      />
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        (click)="aggiungiClient(nuovoClient)"
+      >
+        Aggiungi client
+      </button>
+    </div>
+  </section>
+
+  <div class="mt-4">
+    @for (problema of problemi(); track problema) {
+      <div class="alert alert-warning py-2" role="alert">{{ problema }}</div>
+    }
+    @if (erroreSalvataggio(); as errore) {
+      <div class="alert alert-danger" role="alert">
+        <p class="mb-1">{{ errore.messaggio }}</p>
+        @for (dettaglio of errore.dettagli ?? []; track $index) {
+          <div class="small">{{ dettaglio['messaggio'] }}</div>
+        }
+      </div>
+    }
+    @if (salvato()) {
+      <div class="alert alert-success py-2" role="status">
+        Profilo salvato: vale dalla prossima richiesta.
+      </div>
+    }
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="!modificato() || salvando() || problemi().length > 0"
+      (click)="salva()"
+    >
+      Salva profilo di accesso
+    </button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary ms-2"
+      [disabled]="!modificato() || salvando()"
+      (click)="annulla()"
+    >
+      Annulla modifiche
+    </button>
+  </div>
+}

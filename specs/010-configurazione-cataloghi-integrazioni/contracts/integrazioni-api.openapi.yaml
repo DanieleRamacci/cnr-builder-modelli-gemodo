@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Registro Software E Discovery Autorizzato
-  version: 0.6.0
+  version: 0.7.0
   description: >
     Contratto T078, implementato (T081 registro/configurazione/verifica admin,
     T082 resolver builder dal registro, T083 letture manager). La matrice di
@@ -14,6 +14,8 @@ info:
     mai una copia dell'albero esterno.
     Policy operativa e scenari in integrazioni-policy.md.
     0.6.0 (010 T103): cancellazione di un'integrazione registrata.
+    0.7.0 (001 T090): profilo di accesso dell'integrazione, cioe' quali ruoli
+    ACE del suo contesto concedono quali permessi GEMODO.
 servers:
   - url: /api/v1
 security:
@@ -113,6 +115,62 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/NonCancellabile'}
+  /configurazione/integrazioni/{integrazioneId}/accessi:
+    parameters:
+      - {$ref: '#/components/parameters/IntegrazioneId'}
+    get:
+      operationId: getAccessiIntegrazione
+      summary: Quali ruoli ACE del contesto concedono quali permessi GEMODO
+      description: >
+        Il token ACE porta `contexts.<contesto>.roles` con ruoli come
+        `ROLE_MANAGER#geban`; qui il ruolo si scrive senza `#contesto`, che e'
+        quello dell'integrazione. Un contesto senza integrazione registrata, o
+        un ruolo non elencato, non concede nulla. `permessi_disponibili` e' il
+        catalogo chiuso, con cio' che ciascun permesso consente.
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Profilo corrente; vuoto per un'integrazione appena registrata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AccessiIntegrazione'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      operationId: putAccessiIntegrazione
+      summary: Sostituisce il profilo di accesso intero
+      description: >
+        Ogni invio e' la definizione completa. Vale dalla richiesta successiva,
+        senza riavvio; l'audit ACCESSI_MODIFICATI registra il prima e il dopo.
+      x-required-role: GEMODO_ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AccessiIntegrazioneInput'}
+            example:
+              ruoli:
+                - {ruolo: ROLE_MANAGER, permessi: [GEMODO_MODELLI_GESTORE, DOCUMENTI_GENERATORE, DOCUMENTI_VIEWER]}
+                - {ruolo: ROLE_USER, permessi: [DOCUMENTI_GENERATORE, DOCUMENTI_VIEWER]}
+              client: [geban-backend]
+      responses:
+        '200':
+          description: Profilo salvato
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AccessiIntegrazione'}
+        '400':
+          description: >
+            Fuori schema: ruolo con `#` o spazi, permesso fuori catalogo,
+            ruolo o client ripetuto, ruolo senza permessi
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Errore'}
+              example: {codice: CONTESTO_NON_VALIDO, messaggio: Richiesta non coerente con il contratto API}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /configurazione/integrazioni/{integrazioneId}/verifica:
     parameters:
       - {$ref: '#/components/parameters/IntegrazioneId'}
@@ -485,6 +543,52 @@ components:
         timeout_ms: 5000
         stato: DEFINITO
         ultima_verifica: null
+    PermessoRuolo:
+      type: string
+      enum: [DOCUMENTI_VIEWER, DOCUMENTI_GENERATORE, GEMODO_MODELLI_GESTORE]
+    RuoloAccesso:
+      type: object
+      additionalProperties: false
+      required: [ruolo, permessi]
+      properties:
+        ruolo: {type: string, minLength: 1, maxLength: 128, pattern: '^[^\s#]+$'}
+        permessi:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/PermessoRuolo'}
+    AccessiIntegrazioneInput:
+      type: object
+      additionalProperties: false
+      properties:
+        ruoli:
+          type: array
+          items: {$ref: '#/components/schemas/RuoloAccesso'}
+        client:
+          type: array
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 255, pattern: '^\S+$'}
+    AccessiIntegrazione:
+      type: object
+      additionalProperties: false
+      required: [codice_contesto, ruoli, client, permessi_disponibili]
+      properties:
+        codice_contesto: {type: string}
+        ruoli:
+          type: array
+          items: {$ref: '#/components/schemas/RuoloAccesso'}
+        client:
+          type: array
+          items: {type: string}
+        permessi_disponibili:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [codice, descrizione]
+            properties:
+              codice: {$ref: '#/components/schemas/PermessoRuolo'}
+              descrizione: {type: string}
     Errore:
       type: object
       additionalProperties: false

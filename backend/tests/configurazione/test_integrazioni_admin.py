@@ -403,6 +403,9 @@ def test_admin_routes_reject_non_admin_principals(admin_client):
         ("get", base, None),
         ("put", base, {}),
         ("post", base + "/verifica", {}),
+        ("get", base + "/accessi", None),
+        ("put", base + "/accessi", {"ruoli": [], "client": []}),
+        ("delete", base, None),
     ]:
         response = client.request(method, path, json=body)
         assert response.status_code == 403, (path, response.text)

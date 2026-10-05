@@ -48,6 +48,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configurazione/integrazioni/{integrazioneId}/accessi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Quali ruoli ACE del contesto concedono quali permessi GEMODO
+         * @description Il token ACE porta `contexts.<contesto>.roles` con ruoli come `ROLE_MANAGER#geban`; qui il ruolo si scrive senza `#contesto`, che e' quello dell'integrazione. Un contesto senza integrazione registrata, o un ruolo non elencato, non concede nulla. `permessi_disponibili` e' il catalogo chiuso, con cio' che ciascun permesso consente.
+         */
+        get: operations["getAccessiIntegrazione"];
+        /**
+         * Sostituisce il profilo di accesso intero
+         * @description Ogni invio e' la definizione completa. Vale dalla richiesta successiva, senza riavvio; l'audit ACCESSI_MODIFICATI registra il prima e il dopo.
+         */
+        put: operations["putAccessiIntegrazione"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/configurazione/integrazioni/{integrazioneId}/verifica": {
         parameters: {
             query?: never;
@@ -309,6 +335,25 @@ export interface components {
                     percorso?: string;
                 }[];
             } | null;
+        };
+        /** @enum {string} */
+        PermessoRuolo: "DOCUMENTI_VIEWER" | "DOCUMENTI_GENERATORE" | "GEMODO_MODELLI_GESTORE";
+        RuoloAccesso: {
+            ruolo: string;
+            permessi: components["schemas"]["PermessoRuolo"][];
+        };
+        AccessiIntegrazioneInput: {
+            ruoli?: components["schemas"]["RuoloAccesso"][];
+            client?: string[];
+        };
+        AccessiIntegrazione: {
+            codice_contesto: string;
+            ruoli: components["schemas"]["RuoloAccesso"][];
+            client: string[];
+            permessi_disponibili: {
+                codice: components["schemas"]["PermessoRuolo"];
+                descrizione: string;
+            }[];
         };
         Errore: {
             codice: string;
@@ -625,6 +670,99 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["NonCancellabile"];
+        };
+    };
+    getAccessiIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profilo corrente; vuoto per un'integrazione appena registrata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessiIntegrazione"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putAccessiIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "ruoli": [
+                 *         {
+                 *           "ruolo": "ROLE_MANAGER",
+                 *           "permessi": [
+                 *             "GEMODO_MODELLI_GESTORE",
+                 *             "DOCUMENTI_GENERATORE",
+                 *             "DOCUMENTI_VIEWER"
+                 *           ]
+                 *         },
+                 *         {
+                 *           "ruolo": "ROLE_USER",
+                 *           "permessi": [
+                 *             "DOCUMENTI_GENERATORE",
+                 *             "DOCUMENTI_VIEWER"
+                 *           ]
+                 *         }
+                 *       ],
+                 *       "client": [
+                 *         "geban-backend"
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["AccessiIntegrazioneInput"];
+            };
+        };
+        responses: {
+            /** @description Profilo salvato */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessiIntegrazione"];
+                };
+            };
+            /** @description Fuori schema: ruolo con `#` o spazi, permesso fuori catalogo, ruolo o client ripetuto, ruolo senza permessi */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "codice": "CONTESTO_NON_VALIDO",
+                     *       "messaggio": "Richiesta non coerente con il contratto API"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Errore"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     verifyIntegrazione: {

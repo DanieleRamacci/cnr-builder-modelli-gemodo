@@ -9,6 +9,7 @@ import {
   tokenGeneratore,
   type UtenteUsaEGetta,
 } from './support/keycloak';
+import { concediAlManager } from './support/accessi';
 import { RIGHE_VISTI } from './support/visti';
 import { gruppiDiRighe } from '../src/features/builder/frammenti';
 
@@ -116,9 +117,9 @@ print(json.dumps({"font": font, "testo": estrai_testo(contenuto), "x": x, "colle
   );
 }
 
-// Il contesto DEVE essere fra quelli mappati in
-// infra/local/integration-profiles.local.yaml (ROLE_MANAGER#geban -> permessi
-// GEMODO, FR-018): un codice arbitrario non concede alcun permesso.
+// Il contesto concede permessi solo dopo che l'integrazione ne ha il profilo
+// di accesso (001 T091): il test lo imposta dalla scheda, subito dopo la
+// verifica (ROLE_MANAGER -> permessi GEMODO).
 // Di conseguenza il test non e' ripetibile su un database gia' usato: FR-024
 // ammette un solo tipo documento non inattivo per (codice_contesto, codice) e
 // la seconda esecuzione otterrebbe TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE. Ripulire
@@ -159,6 +160,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   // /configurazione/contesti/<id>/integrazione: l'id sta prima del tab, non in
   // fondo al path (la 010 ha aggiunto i tab alla pagina di configurazione).
   const sourceId = new URL(page.url()).pathname.split('/').at(-2)!;
+  await concediAlManager(page);
 
   // 012 T069: chi gestisce i modelli del contesto imposta intestazione e pie'
   // di pagina del tipo documento, da Contesti -> geban -> Impostazioni modelli.

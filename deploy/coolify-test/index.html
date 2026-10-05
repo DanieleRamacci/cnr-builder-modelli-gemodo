@@ -423,8 +423,8 @@
             <strong>non contiene <code>aud</code></strong> (ACE non lo valorizza) e porta solo il claim
             <code>contexts</code>, con il ruolo GEBAN dentro <code>contexts.geban.roles</code> — l'utente puo' avere
             anche altri contesti per altri applicativi ACE nello stesso token, GEMODO considera solo quelli che
-            conosce. GEMODO non usa quei ruoli direttamente: li traduce in permessi propri tramite una mappa
-            configurata (<code>infra/local/integration-profiles.local.yaml</code>).
+            conosce. GEMODO non usa quei ruoli direttamente: li traduce in permessi propri tramite il profilo di accesso
+            dell'integrazione del contesto, che l'amministratore imposta in GEMODO (scheda "Profilo di accesso").
           </div>
           <pre>{
   "iss": "https://sso.test.si.cnr.it/auth/realms/cnr",

@@ -527,7 +527,7 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
 > mappa solo `#geban`, e per cambiarlo serviva un nuovo deploy. Il perimetro
 > fine (tipi, categorie, tipologie, modelli) resta fuori: Phase 9 rinviata.
 
-- [ ] T088 Migrazione e modelli: `ruolo_integrazione` (integrazione,
+- [x] T088 Migrazione e modelli: `ruolo_integrazione` (integrazione,
       ruolo ACE **senza** `#contesto`, permessi GEMODO) e
       `client_tecnico_integrazione` (integrazione, `client_id`), entrambe in
       `CASCADE` dall'integrazione. I permessi sono un catalogo chiuso -
@@ -535,21 +535,36 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       con la descrizione di cosa consentono (`DESCRIZIONI_PERMESSI`). La
       migrazione copia la mappatura GEBAN di oggi sulle integrazioni di
       contesto `geban`; un'integrazione nuova nasce senza ruoli.
-- [ ] T089 Loader dal database al posto di `_load_sistemi_richiedenti_cached`:
+- [x] T089 Loader dal database al posto di `_load_sistemi_richiedenti_cached`:
       `_permessi_nel_contesto` e `_principal_from_payload` leggono i ruoli
       dell'integrazione del contesto **a ogni richiesta** (niente cache eterna:
       una revoca vale subito). Un contesto senza integrazione registrata non
       concede nulla. Il YAML resta solo come dato di prova dei test.
-- [ ] T090 API admin `GET/PUT /configurazione/integrazioni/{id}/accessi`
+- [x] T090 API admin `GET/PUT /configurazione/integrazioni/{id}/accessi`
       (ruoli e client tecnici, definizione intera come le sezioni), audit
       `ACCESSI_MODIFICATI` con prima e dopo, contratto `integrazioni-api`.
-- [ ] T091 Scheda "Profilo di accesso" nella pagina dell'integrazione: griglia
+- [x] T091 Scheda "Profilo di accesso" nella pagina dell'integrazione: griglia
       ruoli x permessi con le descrizioni, aggiungi/togli ruolo, client
       tecnici; "Copia la mappatura di un'altra integrazione".
-- [ ] T092 Test reali su Postgres: GEBAN dopo la migrazione ottiene gli stessi
+- [x] T092 Test reali su Postgres: GEBAN dopo la migrazione ottiene gli stessi
       permessi di prima (stessi token, stesso esito); un contesto registrato
       con `ROLE_MANAGER` mappato apre il builder senza deploy; un contesto non
       registrato non apre nulla; una revoca vale alla richiesta successiva.
+
+  *Fatti 2026-10-05.* Migrazione `0028`; `app/configurazione/accessi.py`
+  traduce le righe negli stessi `SistemaRichiedente` del file, cosi' la regola
+  `permessi_da_ruoli_esterni` resta una sola. `require_principal` calcola i
+  permessi per contesto con la sessione della richiesta e li porta nel
+  principal (`permessi_contesto`). Il file si usa solo se indicato con
+  `GEMODO_INTEGRATION_PROFILES_PATH` (default tolto: prima puntava al file
+  dentro l'immagine). Contratto `integrazioni-api` 0.7.0. Scheda "Profilo di
+  accesso" (prima un segnaposto "Permessi" senza link). Gli e2e che usano il
+  builder concedono `ROLE_MANAGER` dalla scheda (`e2e/support/accessi.ts`).
+  Test: `tests/configurazione/test_profilo_accesso.py` (28, fra cui GEBAN dal
+  database = GEBAN dal file per 5 ruoli x 3 client),
+  `tests/integration/test_migrazione_accessi_0028.py`,
+  `integrazione-accessi.component.spec.ts`. Decisione
+  `DEC-001-PROFILO-ACCESSO-NELL-INTEGRAZIONE`.
 
 **Checkpoint**: profili, uffici e registro contratti dati sono dati reali
 interrogabili dal DB; `security.py` non dipende piu' dalla cache YAML in memoria

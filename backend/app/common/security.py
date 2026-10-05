@@ -12,9 +12,12 @@ import logging
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError, PyJWKClient
+from sqlalchemy.orm import Session
 
 from app.common.errors import AuthenticationError, AuthorizationError
+from app.configurazione.accessi import sistemi_dal_database
 from app.core.settings import Settings, get_settings
+from app.db.session import get_db
 from app.quality.integration_profile import (
     client_ids_attivi,
     load_sistemi_richiedenti,
@@ -42,6 +45,10 @@ class PrincipalGEMODO:
     issuer: str
     ruoli_diretti: tuple[str, ...] = ()
     ruoli_contesto: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    # I permessi GEMODO che ogni contesto del token concede da solo, calcolati
+    # una volta quando il principal nasce dalla richiesta (001 T089). Assente
+    # su un principal costruito a mano: allora li calcola il profilo da file.
+    permessi_contesto: tuple[tuple[str, tuple[str, ...]], ...] | None = None
 
     def has_any_role(self, required_roles: Iterable[str]) -> bool:
         available = set(self.ruoli)
@@ -88,18 +95,41 @@ def _load_sistemi_richiedenti_cached(path: str):
     return tuple(load_sistemi_richiedenti(Path(path)))
 
 
-def _configured_sistemi(settings: Settings):
-    if settings.integration_profiles_path is None:
+def _configured_sistemi(settings: Settings, db: Session | None = None):
+    """Chi puo' fare cosa: il profilo di accesso delle integrazioni (001 T089).
+
+    La fonte e' il database. Il file YAML vale solo se lo si indica
+    esplicitamente con ``GEMODO_INTEGRATION_PROFILES_PATH``: e' il dato di
+    prova dei test, non la configurazione di un ambiente.
+    """
+    if settings.integration_profiles_path is not None:
+        path = Path(settings.integration_profiles_path)
+        if not path.exists():
+            return ()
+        return _load_sistemi_richiedenti_cached(str(path))
+    if db is None:
         return ()
-    path = Path(settings.integration_profiles_path)
-    if not path.exists():
-        return ()
-    return _load_sistemi_richiedenti_cached(str(path))
+    return sistemi_dal_database(db)
 
 
-def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> PrincipalGEMODO:
+def _permessi_per_contesto(
+    sistemi, client_id: str, context_roles: dict[str, tuple[str, ...]], interactive_client: bool,
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Per ogni contesto del token, i permessi che concede da solo, mai mescolati con gli altri."""
+    return tuple(sorted(
+        (contesto, tuple(sorted(permessi_da_ruoli_esterni(
+            sistemi, client_id=client_id, context_roles={contesto: ruoli},
+            interactive_client=interactive_client,
+        ))))
+        for contesto, ruoli in context_roles.items()
+    ))
+
+
+def _principal_from_payload(
+    payload: dict[str, Any], settings: Settings, db: Session | None = None,
+) -> PrincipalGEMODO:
     client_id = payload.get("azp") or payload.get("client_id")
-    sistemi = list(_configured_sistemi(settings))
+    sistemi = list(_configured_sistemi(settings, db))
     allowed_clients = {
         GEBAN_BACKEND_CLIENT_ID,
         *settings.gemodo_allowed_interactive_clients,
@@ -116,6 +146,7 @@ def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> Prin
         interactive_client=str(client_id) in settings.gemodo_allowed_interactive_clients,
     )
     normalized_roles = tuple(dict.fromkeys([*direct_roles, *sorted(external_permissions)]))
+    interattivo = str(client_id) in settings.gemodo_allowed_interactive_clients
     return PrincipalGEMODO(
         subject=str(payload.get("sub") or ""),
         client_id=str(client_id),
@@ -124,6 +155,7 @@ def _principal_from_payload(payload: dict[str, Any], settings: Settings) -> Prin
         issuer=str(payload.get("iss") or ""),
         ruoli_diretti=direct_roles,
         ruoli_contesto=tuple(sorted(context_roles.items())),
+        permessi_contesto=_permessi_per_contesto(sistemi, str(client_id), context_roles, interattivo),
     )
 
 
@@ -132,6 +164,7 @@ def decode_principal_from_token(
     *,
     settings: Settings | None = None,
     signing_key: str | bytes | None = None,
+    db: Session | None = None,
 ) -> PrincipalGEMODO:
     settings = settings or get_settings()
     try:
@@ -155,10 +188,10 @@ def decode_principal_from_token(
     except InvalidTokenError as exc:
         logger.warning("Authentication rejected: jwt_validation=%s", type(exc).__name__)
         raise AuthenticationError() from exc
-    return _principal_from_payload(payload, settings)
+    return _principal_from_payload(payload, settings, db)
 
 
-def mock_principal(settings: Settings) -> PrincipalGEMODO:
+def mock_principal(settings: Settings, db: Session | None = None) -> PrincipalGEMODO:
     ruoli_contesto: tuple[tuple[str, tuple[str, ...]], ...] = ()
     if settings.gemodo_mock_context is not None:
         ruoli_contesto = ((settings.gemodo_mock_context, settings.gemodo_mock_context_roles),)
@@ -170,19 +203,24 @@ def mock_principal(settings: Settings) -> PrincipalGEMODO:
         issuer=settings.keycloak_issuer_url,
         ruoli_diretti=settings.gemodo_mock_roles,
         ruoli_contesto=ruoli_contesto,
+        permessi_contesto=_permessi_per_contesto(
+            list(_configured_sistemi(settings, db)), settings.gemodo_mock_client_id,
+            dict(ruoli_contesto), settings.gemodo_mock_client_id in settings.gemodo_allowed_interactive_clients,
+        ),
     )
 
 
 def require_principal(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
 ) -> PrincipalGEMODO:
     if settings.gemodo_use_mock_principal:
-        return mock_principal(settings)
+        return mock_principal(settings, db)
     if credentials is None or credentials.scheme.lower() != "bearer":
         logger.warning("Authentication rejected: bearer_missing_or_wrong_scheme")
         raise AuthenticationError()
-    return decode_principal_from_token(credentials.credentials, settings=settings)
+    return decode_principal_from_token(credentials.credentials, settings=settings, db=db)
 
 
 def require_documenti_viewer(principal: PrincipalGEMODO = Depends(require_principal)) -> PrincipalGEMODO:
@@ -208,6 +246,8 @@ def _permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str, set
     ruoli_nel_contesto = dict(principal.ruoli_contesto).get(codice_contesto, ())
     if not ruoli_nel_contesto:
         return set()
+    if principal.permessi_contesto is not None:
+        return set(dict(principal.permessi_contesto).get(codice_contesto, ()))
     sistemi = list(_configured_sistemi(settings))
     return permessi_da_ruoli_esterni(
         sistemi,

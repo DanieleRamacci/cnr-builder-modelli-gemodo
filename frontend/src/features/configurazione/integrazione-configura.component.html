@@ -52,7 +52,7 @@
     <a routerLink="/configurazione/tipi-documento" [queryParams]="{ integrazioneId: corrente.id }"
       >Policy dati</a
     >
-    <span>Permessi</span>
+    <a [routerLink]="['/configurazione/contesti', corrente.id, 'accessi']">Profilo di accesso</a>
   </nav>
 
   <div class="mm-two-columns">

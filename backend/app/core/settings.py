@@ -85,10 +85,9 @@ def get_settings() -> Settings:
         ),
         gemodo_mock_context=os.getenv("GEMODO_MOCK_CONTEXT") or None,
         gemodo_mock_context_roles=_tuple_env("GEMODO_MOCK_CONTEXT_ROLES", ""),
-        integration_profiles_path=os.getenv(
-            "GEMODO_INTEGRATION_PROFILES_PATH",
-            str(repo_root / "infra" / "local" / "integration-profiles.local.yaml"),
-        ),
+        # 001 T089: il profilo di accesso sta nel database; il file si usa solo
+        # se indicato esplicitamente (i test), mai per default.
+        integration_profiles_path=os.getenv("GEMODO_INTEGRATION_PROFILES_PATH") or None,
         gemodo_integrazioni_allowlist=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST"),
         gemodo_integrazioni_allowlist_privato=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO"),
         gemodo_storage_dir=os.getenv("GEMODO_STORAGE_DIR", str(repo_root / "data" / "documenti-generati")),

@@ -12,6 +12,8 @@ from app.builder.schemas import (
 )
 from app.common.security import PrincipalGEMODO
 from app.configurazione.schemas import (
+    AccessiIntegrazione,
+    AccessiIntegrazioneInput,
     IntegrazioneAdmin,
     IntegrazioneCreate,
     IntegrazioneUpdate,
@@ -84,6 +86,18 @@ def ottieni_integrazione(integrazione_id: uuid.UUID, principal: Admin, service: 
 @router_integrazioni.put("/{integrazione_id}", response_model=IntegrazioneAdmin)
 def configura_integrazione(integrazione_id: uuid.UUID, request: IntegrazioneUpdate, principal: Admin, service: ServiceIntegrazioni):
     return service.configura(integrazione_id, request, principal)
+
+
+@router_integrazioni.get("/{integrazione_id}/accessi", response_model=AccessiIntegrazione)
+def accessi_integrazione(integrazione_id: uuid.UUID, principal: Admin, service: ServiceIntegrazioni):
+    return service.accessi(integrazione_id)
+
+
+@router_integrazioni.put("/{integrazione_id}/accessi", response_model=AccessiIntegrazione)
+def imposta_accessi_integrazione(
+    integrazione_id: uuid.UUID, request: AccessiIntegrazioneInput, principal: Admin, service: ServiceIntegrazioni,
+):
+    return service.imposta_accessi(integrazione_id, request, principal)
 
 
 @router_integrazioni.delete("/{integrazione_id}", status_code=204)

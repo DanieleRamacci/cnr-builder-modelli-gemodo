@@ -17,3 +17,12 @@ pytest_plugins = ["tests.support.quality_fixtures"]
 
 # Existing contract fixtures intentionally exercise the historical demo catalog.
 os.environ.setdefault("GEMODO_KEEP_DEMO_MODELS", "1")
+
+# 001 T089: in un ambiente il profilo di accesso sta nel database. I test che
+# non riguardano la sua fonte usano il file di prova, indicato esplicitamente;
+# quelli che la riguardano tolgono la variabile (tests/configurazione/
+# test_profilo_accesso.py).
+os.environ.setdefault(
+    "GEMODO_INTEGRATION_PROFILES_PATH",
+    str(Path(__file__).resolve().parents[2] / "infra" / "local" / "integration-profiles.local.yaml"),
+)

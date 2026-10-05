@@ -1326,3 +1326,25 @@ decisions:
       valida. E' un rilassamento retrocompatibile; GEBAN deve esserne informato.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-09-23
+
+  - id: DEC-001-PROFILO-ACCESSO-NELL-INTEGRAZIONE
+    titolo: Il profilo di accesso e' una parte dell'integrazione, nel database
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/006-sicurezza-autorizzazioni-audit
+      - specs/010-configurazione-cataloghi-integrazioni
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Decisione del product owner 2026-10-05. Chi puo' fare cosa non sta piu'
+      in infra/local/integration-profiles.local.yaml (letto una volta
+      all'avvio) ma nelle tabelle ruolo_integrazione e client_integrazione
+      (migrazione 0028), modificabili dall'admin nella scheda "Profilo di
+      accesso" e lette a ogni richiesta. Il ruolo ACE si scrive senza
+      #contesto; i permessi sono un catalogo chiuso di tre. Sostituisce la
+      forma del 2026-09-16 di 001 T088-T092 (tre tabelle parallele
+      all'integrazione). Il file resta il dato di prova dei test, usato solo
+      se indicato con GEMODO_INTEGRATION_PROFILES_PATH. Il perimetro fine per
+      profilo (001 Phase 9) resta rinviato. Coerente con ADR 0003.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-10-05

@@ -111,6 +111,27 @@ def test_senza_tipi_si_cancella_anche_se_ha_un_endpoint(admin_client):
     assert "INTEGRAZIONE_CREATA" in eventi
     assert eventi["INTEGRAZIONE_CANCELLATA"]["codice"] == codice
     assert eventi["INTEGRAZIONE_CANCELLATA"]["codice_contesto"] == creata["codice_contesto"]
+    assert eventi["INTEGRAZIONE_CANCELLATA"]["accessi"] == {"ruoli": [], "client": []}
+
+
+@pytest.mark.integration
+def test_gli_accessi_seguono_l_integrazione_e_restano_nell_audit(admin_client):
+    client, engine = admin_client
+    _, creata = crea(client)
+    ruoli = [{"ruolo": "ROLE_MANAGER", "permessi": ["GEMODO_MODELLI_GESTORE"]}]
+    assert client.put(_url(creata["id"]) + "/accessi", json={"ruoli": ruoli, "client": ["sw-prova"]}).status_code == 200
+
+    assert client.delete(_url(creata["id"])).status_code == 204
+
+    with Session(engine) as db:
+        rimasti = db.scalar(sa.text("SELECT count(*) FROM ruolo_integrazione WHERE integrazione_id = :id"),
+                            {"id": uuid.UUID(creata["id"])})
+        cancellata = db.scalar(sa.select(AuditEventoIntegrazione.payload_minimo).where(
+            AuditEventoIntegrazione.integrazione_id == uuid.UUID(creata["id"]),
+            AuditEventoIntegrazione.tipo_evento == "INTEGRAZIONE_CANCELLATA",
+        ))
+    assert rimasti == 0
+    assert cancellata["accessi"] == {"ruoli": ruoli, "client": ["sw-prova"]}
 
 
 @pytest.mark.integration

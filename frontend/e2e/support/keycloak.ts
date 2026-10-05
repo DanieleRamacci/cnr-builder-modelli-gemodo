@@ -7,9 +7,9 @@ import { expect, request, type APIRequestContext, type Page } from '@playwright/
  * un utente, un mapper di attributo che emula il claim `contexts` e allarga i
  * redirect URI del client. Niente di tutto questo tocca il realm CNR.
  *
- * Il contesto DEVE essere fra quelli mappati in
- * `infra/local/integration-profiles.local.yaml` (`ROLE_MANAGER#geban` ->
- * permessi GEMODO, FR-018): un codice arbitrario non concede alcun permesso.
+ * Il contesto concede permessi solo se un'integrazione registrata ne ha il
+ * profilo di accesso (001 T091, `support/accessi.ts`): un ruolo non mappato
+ * non concede nulla.
  */
 export const ISSUER = 'http://localhost:8081/realms/gemodo-local';
 const REALM_ADMIN = 'http://localhost:8081/admin/realms/gemodo-local';

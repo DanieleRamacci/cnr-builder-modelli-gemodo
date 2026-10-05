@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { concediAlManager } from './support/accessi';
 import { accedi, creaUtenteUsaEGetta, type UtenteUsaEGetta } from './support/keycloak';
 
 /**
@@ -59,6 +60,7 @@ test('admin configures a dimension policy and publishes two models that differ o
   // appartengono a una sola integrazione per contesto (FR-024), e gli altri
   // test della suite ne registrano altre.
   const sourceId = new URL(page.url()).pathname.split('/').at(-2)!;
+  await concediAlManager(page);
 
   // 2. CONTRATTI e' scoperto dal discovery, non dichiarato a mano.
   await page.getByRole('link', { name: 'Policy dati', exact: true }).click();

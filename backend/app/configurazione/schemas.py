@@ -157,6 +157,55 @@ class UltimaVerifica(BaseModel):
     errori: list[ErroreVerifica]
 
 
+PermessoRuolo = Literal["DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE", "GEMODO_MODELLI_GESTORE"]
+
+
+class RuoloAccesso(Input):
+    """Un ruolo ACE nel contesto dell'integrazione e cio' che concede (001 T090).
+
+    Senza `#contesto`: il contesto e' quello dell'integrazione.
+    """
+
+    ruolo: Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[^\s#]+$")]
+    permessi: Annotated[list[PermessoRuolo], Field(min_length=1)]
+
+    @model_validator(mode="after")
+    def senza_doppioni(self) -> RuoloAccesso:
+        if len(set(self.permessi)) != len(self.permessi):
+            raise ValueError("Un permesso compare due volte")
+        return self
+
+
+class AccessiIntegrazioneInput(Input):
+    """Il profilo di accesso intero: ogni invio sostituisce il precedente."""
+
+    ruoli: list[RuoloAccesso] = Field(default_factory=list)
+    client: list[Annotated[str, Field(min_length=1, max_length=255, pattern=r"^\S+$")]] = Field(
+        default_factory=list
+    )
+
+    @model_validator(mode="after")
+    def senza_doppioni(self) -> AccessiIntegrazioneInput:
+        ruoli = [r.ruolo for r in self.ruoli]
+        if len(set(ruoli)) != len(ruoli):
+            raise ValueError("Un ruolo compare due volte")
+        if len(set(self.client)) != len(self.client):
+            raise ValueError("Un client compare due volte")
+        return self
+
+
+class PermessoDescritto(BaseModel):
+    codice: str
+    descrizione: str
+
+
+class AccessiIntegrazione(BaseModel):
+    codice_contesto: str
+    ruoli: list[RuoloAccesso]
+    client: list[str]
+    permessi_disponibili: list[PermessoDescritto]
+
+
 class IntegrazioneAdmin(BaseModel):
     id: uuid.UUID
     codice: str
