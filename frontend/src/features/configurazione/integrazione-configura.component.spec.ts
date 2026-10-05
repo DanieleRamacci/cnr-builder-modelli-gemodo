@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import Keycloak from 'keycloak-js';
 import { of, throwError } from 'rxjs';
 
@@ -31,6 +31,7 @@ describe('IntegrazioneConfiguraComponent', () => {
     ottieni: ReturnType<typeof vi.fn>;
     configura: ReturnType<typeof vi.fn>;
     verifica: ReturnType<typeof vi.fn>;
+    elimina?: ReturnType<typeof vi.fn>;
   };
 
   function setup(iniziale: IntegrazioneAdmin) {
@@ -38,6 +39,7 @@ describe('IntegrazioneConfiguraComponent', () => {
       ottieni: vi.fn().mockReturnValue(of(iniziale)),
       configura: vi.fn(),
       verifica: vi.fn(),
+      elimina: vi.fn(),
     };
     TestBed.configureTestingModule({
       imports: [IntegrazioneConfiguraComponent],
@@ -55,6 +57,60 @@ describe('IntegrazioneConfiguraComponent', () => {
     fixture = TestBed.createComponent(IntegrazioneConfiguraComponent);
     fixture.detectChanges();
   }
+
+  /** Il dialogo di conferma, con showModal/close che jsdom non implementa. */
+  function dialogoConferma(): HTMLDialogElement {
+    const dialog = (fixture.nativeElement as HTMLElement).querySelector('dialog')!;
+    dialog.showModal = vi.fn();
+    dialog.close = vi.fn();
+    return dialog;
+  }
+
+  function pulsante(testo: string, dentro: ParentNode = fixture.nativeElement): HTMLButtonElement {
+    return Array.from(dentro.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === testo,
+    ) as HTMLButtonElement;
+  }
+
+  it('elimina l integrazione dopo la conferma e torna all elenco (010 T103)', () => {
+    setup(integrazione({ codice: 'test', nome: 'test' }));
+    service.elimina!.mockReturnValue(of(undefined));
+    const naviga = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const dialog = dialogoConferma();
+
+    pulsante('Elimina integrazione').click();
+    expect(dialog.showModal).toHaveBeenCalled();
+    expect(service.elimina).not.toHaveBeenCalled();
+
+    pulsante('Elimina', dialog).click();
+
+    expect(service.elimina).toHaveBeenCalledWith(integrazione().id);
+    expect(naviga).toHaveBeenCalledWith(['/configurazione']);
+  });
+
+  it('se ci sono modelli, dice quali e resta sulla pagina (010 T103)', () => {
+    setup(integrazione());
+    service.elimina!.mockReturnValue(
+      throwError((): ApiError => ({
+        status: 409,
+        codice: 'INTEGRAZIONE_HA_MODELLI',
+        messaggio: 'Non cancellabile: 1 modelli usano questa integrazione; eliminali prima',
+        dettagli: [{ codice: 'bando-td', nome: 'Bando TD', stato: 'PUBBLICATO' }],
+      })),
+    );
+    const naviga = vi.spyOn(TestBed.inject(Router), 'navigate');
+    const dialog = dialogoConferma();
+
+    pulsante('Elimina integrazione').click();
+    pulsante('Elimina', dialog).click();
+    fixture.detectChanges();
+
+    const testo = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(testo).toContain('1 modelli usano questa integrazione');
+    expect(testo).toContain('Bando TD');
+    expect(testo).toContain('bando-td');
+    expect(naviga).not.toHaveBeenCalled();
+  });
 
   it('keeps the saved integration path when an explicit login is required (T035)', () => {
     const login = vi.fn();

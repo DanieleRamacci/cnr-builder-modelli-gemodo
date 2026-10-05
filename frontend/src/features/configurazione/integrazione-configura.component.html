@@ -207,4 +207,59 @@
       </div>
     </aside>
   </div>
+
+  <section class="mm-card mt-4" aria-labelledby="elimina-titolo">
+    <h2 id="elimina-titolo" class="h5">Elimina integrazione</h2>
+    <p class="text-muted small">
+      Codice e contesto non si modificano: un'integrazione registrata per sbaglio si elimina e si
+      registra di nuovo. Si puo' eliminare solo se nessun modello la usa; i suoi tipi documento
+      vengono eliminati con lei, lo storico delle operazioni resta.
+    </p>
+    @if (erroreEliminazione(); as errore) {
+      <div class="alert alert-danger" role="alert">
+        <p class="mb-1">{{ errore.messaggio }}</p>
+        @if (errore.dettagli?.length) {
+          <ul class="mb-0">
+            @for (modello of errore.dettagli; track modello['codice']) {
+              <li>
+                {{ modello['nome'] }} <code>{{ modello['codice'] }}</code>
+                @if (modello['stato']) {
+                  <span class="text-muted">· {{ modello['stato'] }}</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+    <button
+      type="button"
+      class="btn btn-outline-danger"
+      [disabled]="eliminando() || salvando() || verificando()"
+      (click)="chiediEliminazione(conferma)"
+    >
+      Elimina integrazione
+    </button>
+  </section>
+
+  <dialog #conferma aria-labelledby="conferma-titolo">
+    <h2 id="conferma-titolo" class="h4">Eliminare l'integrazione?</h2>
+    <p>
+      {{ corrente.nome }} (<code>{{ corrente.codice }}</code
+      >, contesto <code>{{ corrente.codice_contesto }}</code
+      >)
+    </p>
+    <p>
+      Vengono eliminati anche l'endpoint e i tipi documento dell'integrazione. Lo storico delle
+      operazioni resta.
+    </p>
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="conferma.close()">
+        Annulla
+      </button>
+      <button type="button" class="btn btn-danger" (click)="confermaEliminazione(conferma)">
+        Elimina
+      </button>
+    </div>
+  </dialog>
 }

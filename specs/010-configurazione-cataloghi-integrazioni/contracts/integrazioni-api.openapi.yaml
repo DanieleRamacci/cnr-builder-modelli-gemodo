@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Registro Software E Discovery Autorizzato
-  version: 0.5.0
+  version: 0.6.0
   description: >
     Contratto T078, implementato (T081 registro/configurazione/verifica admin,
     T082 resolver builder dal registro, T083 letture manager). La matrice di
@@ -13,6 +13,7 @@ info:
     la prima policy salvata materializza solo l'identita' locale minima del tipo,
     mai una copia dell'albero esterno.
     Policy operativa e scenari in integrazioni-policy.md.
+    0.6.0 (010 T103): cancellazione di un'integrazione registrata.
 servers:
   - url: /api/v1
 security:
@@ -93,6 +94,25 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/InvalidInput'}
+    delete:
+      operationId: deleteIntegrazione
+      summary: Cancella un'integrazione registrata, con i suoi tipi documento
+      description: >
+        Il refuso alla registrazione si corregge cancellando e ricreando: codice
+        e contesto restano immutabili. Senza modelli si cancella sempre, anche
+        se gia' connessa; i tipi documento e i modelli gia' eliminati la
+        seguono. Rifiutata, con l'elenco dei modelli in `dettagli`, se ha
+        modelli non eliminati (INTEGRAZIONE_HA_MODELLI) o modelli che hanno
+        generato documenti, che restano agli atti (INTEGRAZIONE_HA_DOCUMENTI).
+        L'audit dell'integrazione e dei suoi tipi documento resta.
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '204':
+          description: Cancellata; registrato INTEGRAZIONE_CANCELLATA
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/NonCancellabile'}
   /configurazione/integrazioni/{integrazioneId}/verifica:
     parameters:
       - {$ref: '#/components/parameters/IntegrazioneId'}
@@ -472,7 +492,27 @@ components:
       properties:
         codice: {type: string}
         messaggio: {type: string}
+        dettagli:
+          type: array
+          nullable: true
+          items: {type: object}
   responses:
+    NonCancellabile:
+      description: L'integrazione ha modelli vivi o modelli che hanno generato documenti
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Errore'}
+          examples:
+            modelli:
+              value:
+                codice: INTEGRAZIONE_HA_MODELLI
+                messaggio: "Non cancellabile: 1 modelli usano questa integrazione; eliminali prima"
+                dettagli: [{codice: bando-ricercatore-td, nome: Bando ricercatore TD, stato: PUBBLICATO}]
+            documenti:
+              value:
+                codice: INTEGRAZIONE_HA_DOCUMENTI
+                messaggio: "Non cancellabile: modelli di questa integrazione hanno generato documenti, che restano agli atti"
+                dettagli: [{codice: bando-ricercatore-td, nome: Bando ricercatore TD}]
     Unauthorized:
       description: JWT assente o non valido
       content:

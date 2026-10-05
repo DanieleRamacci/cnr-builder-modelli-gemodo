@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.builder import repository as builder_repository
-from app.catalog.models import TipoDocumento
+from app.catalog.models import ModelloDocumento, TipoDocumento
 from app.common.errors import DomainError, ErrorCode
 from app.common.security import PrincipalGEMODO, ensure_roles, verify_scrittura_su_contesto
 from app.configurazione import repository
@@ -296,6 +296,52 @@ class IntegrazioniService:
             integrazione_id=integrazione_id, tipo_evento=evento,
             soggetto_id=principal.subject, client_id=principal.client_id, payload_minimo=payload,
         ))
+
+    def elimina(self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO) -> None:
+        """Cancella un'integrazione registrata, con i suoi tipi documento (010 T103).
+
+        Il refuso alla registrazione si corregge cancellando e ricreando: codice
+        e contesto sono identita' e non si rinominano. Si cancella sempre
+        un'integrazione senza modelli, anche gia' connessa; i tipi documento la
+        seguono, e i modelli gia' eliminati senza documenti generati con loro.
+        Si rifiuta, dicendo quali, se ha modelli vivi o modelli che hanno
+        prodotto documenti: quelli restano agli atti. L'audit resta (T106).
+        """
+        source = self._integrazione(integrazione_id, lock=True)
+        tipi = list(self.db.scalars(select(TipoDocumento).where(TipoDocumento.integrazione_id == source.id)))
+        modelli = list(self.db.scalars(
+            select(ModelloDocumento).where(ModelloDocumento.tipo_documento_id.in_([t.id for t in tipi]))
+        )) if tipi else []
+        vivi = [m for m in modelli if m.stato != repository.STATO_MODELLO_ELIMINATO]
+        if vivi:
+            raise DomainError(
+                "INTEGRAZIONE_HA_MODELLI",
+                f"Non cancellabile: {len(vivi)} modelli usano questa integrazione; eliminali prima",
+                status_code=409,
+                dettagli=[{"codice": m.codice, "nome": m.nome, "stato": m.stato} for m in vivi],
+            )
+        con_documenti = builder_repository.modelli_con_documenti(self.db, [m.id for m in modelli])
+        if con_documenti:
+            raise DomainError(
+                "INTEGRAZIONE_HA_DOCUMENTI",
+                "Non cancellabile: modelli di questa integrazione hanno generato documenti, "
+                "che restano agli atti",
+                status_code=409,
+                dettagli=[{"codice": m.codice, "nome": m.nome} for m in modelli if m.id in con_documenti],
+            )
+        self._audit(source.id, principal, "INTEGRAZIONE_CANCELLATA", {
+            "codice": source.codice,
+            "nome": source.nome,
+            "codice_contesto": source.codice_contesto,
+            "tipi_documento": sorted(t.codice for t in tipi),
+            "modelli_eliminati": sorted(m.codice for m in modelli),
+        })
+        # Le cascate sono quelle del database: modelli, versioni, policy,
+        # definizioni e storico seguono il tipo; l'endpoint segue l'integrazione.
+        if tipi:
+            self.db.execute(delete(TipoDocumento).where(TipoDocumento.integrazione_id == source.id))
+        self.db.execute(delete(Integrazione).where(Integrazione.id == source.id))
+        self.db.commit()
 
     def _mappa_live(
         self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO, *, consenti_gestore: bool = False,

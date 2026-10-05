@@ -516,23 +516,40 @@ annotazioni puntuali segnano dove la sourcing di produzione cambia.
       catalogo. Solo `registro_contratti_dati` per BANDO_CONCORSO segue la
       stessa nota di T078/T079/T080: fixture locale, sincronizzata in
       produzione dall'adapter di `010`)*
-- [ ] T088 [P] Aggiungere modelli SQLAlchemy per le nuove tabelle in un nuovo
-      `backend/app/quality/models.py`, stessa forma dei Pydantic gia' esistenti in
-      `backend/app/quality/schemas.py`
-- [ ] T089 Aggiungere loader DB-backed (`load_sistemi_richiedenti_db` o simile) in
-      `backend/app/quality/integration_profile.py` che sostituisce
-      `load_sistemi_richiedenti`/`_load_sistemi_richiedenti_cached` leggendo dalle
-      tabelle invece che dal file YAML in cache eterna, restituendo gli stessi
-      Pydantic `SistemaRichiedente`/`ProfiloDiIntegrazione` (depends on T087, T088)
-- [ ] T090 Aggiornare `_configured_sistemi` in `backend/app/common/security.py`
-      per usare il loader DB-backed (T089) invece di
-      `_load_sistemi_richiedenti_cached` sullo YAML
-- [ ] T091 Validare i riferimenti di `contratti_dati_ammessi` al caricamento
-      (FR-029): il loader (T089) MUST rifiutare un `ProfiloDiIntegrazione` che
-      referenzia un `RegistroContrattiDati` inesistente, non ignorarlo
-      silenziosamente, in `backend/app/quality/integration_profile.py`
-- [ ] T092 [P] Aggiungere test reali su Postgres per il loader DB-backed e la
-      validazione T091 in `backend/tests/integration/test_integration_profiles_db.py`
+> **Riscritti il 2026-10-05 (decisione del product owner)**. La forma del
+> 2026-09-16 - tre tabelle `sistema_richiedente`, `client_applicativo`,
+> `profilo_integrazione`, copia del YAML - e' superata: nel frattempo la `010`
+> ha creato la tabella `integrazione`, che e' gia' il sistema richiedente
+> (codice, nome, contesto). Tre tabelle parallele avrebbero fatto esistere
+> GEBAN due volte, scollegato. Il profilo di accesso diventa quindi una parte
+> dell'integrazione. Motivo concreto: un contesto nuovo registrato
+> dall'interfaccia (es. `test`) non dava permessi a nessuno, perche' il YAML
+> mappa solo `#geban`, e per cambiarlo serviva un nuovo deploy. Il perimetro
+> fine (tipi, categorie, tipologie, modelli) resta fuori: Phase 9 rinviata.
+
+- [ ] T088 Migrazione e modelli: `ruolo_integrazione` (integrazione,
+      ruolo ACE **senza** `#contesto`, permessi GEMODO) e
+      `client_tecnico_integrazione` (integrazione, `client_id`), entrambe in
+      `CASCADE` dall'integrazione. I permessi sono un catalogo chiuso -
+      `DOCUMENTI_VIEWER`, `DOCUMENTI_GENERATORE`, `GEMODO_MODELLI_GESTORE` -
+      con la descrizione di cosa consentono (`DESCRIZIONI_PERMESSI`). La
+      migrazione copia la mappatura GEBAN di oggi sulle integrazioni di
+      contesto `geban`; un'integrazione nuova nasce senza ruoli.
+- [ ] T089 Loader dal database al posto di `_load_sistemi_richiedenti_cached`:
+      `_permessi_nel_contesto` e `_principal_from_payload` leggono i ruoli
+      dell'integrazione del contesto **a ogni richiesta** (niente cache eterna:
+      una revoca vale subito). Un contesto senza integrazione registrata non
+      concede nulla. Il YAML resta solo come dato di prova dei test.
+- [ ] T090 API admin `GET/PUT /configurazione/integrazioni/{id}/accessi`
+      (ruoli e client tecnici, definizione intera come le sezioni), audit
+      `ACCESSI_MODIFICATI` con prima e dopo, contratto `integrazioni-api`.
+- [ ] T091 Scheda "Profilo di accesso" nella pagina dell'integrazione: griglia
+      ruoli x permessi con le descrizioni, aggiungi/togli ruolo, client
+      tecnici; "Copia la mappatura di un'altra integrazione".
+- [ ] T092 Test reali su Postgres: GEBAN dopo la migrazione ottiene gli stessi
+      permessi di prima (stessi token, stesso esito); un contesto registrato
+      con `ROLE_MANAGER` mappato apre il builder senza deploy; un contesto non
+      registrato non apre nulla; una revoca vale alla richiesta successiva.
 
 **Checkpoint**: profili, uffici e registro contratti dati sono dati reali
 interrogabili dal DB; `security.py` non dipende piu' dalla cache YAML in memoria

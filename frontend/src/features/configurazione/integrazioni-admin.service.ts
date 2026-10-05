@@ -31,6 +31,11 @@ export class IntegrazioniAdminService {
     return this.api.put<IntegrazioneAdmin>(`${BASE}/${id}`, request);
   }
 
+  /** 010 T103: rifiutata (409) se l'integrazione ha modelli o documenti generati. */
+  elimina(id: string): Observable<void> {
+    return this.api.delete<void>(`${BASE}/${id}`);
+  }
+
   verifica(id: string, revisioneAttesa: number): Observable<IntegrazioneAdmin> {
     return this.api.post<IntegrazioneAdmin>(`${BASE}/${id}/verifica`, {
       revisione_attesa: revisioneAttesa,

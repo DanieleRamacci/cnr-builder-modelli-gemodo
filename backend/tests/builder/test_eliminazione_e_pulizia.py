@@ -22,10 +22,11 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from app.catalog.models import ModelloDocumento, TipoDocumento
+from app.catalog.models import AuditEventoModello, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.common.security import PrincipalGEMODO, require_principal
 from app.configurazione import repository as configurazione_repository
 from app.main import app
+from app.storage.models import DocumentoGenerato
 
 from tests.builder.test_builder_flow_api import (  # noqa: F401  (fixtures)
     CAMPI_BASE,
@@ -115,9 +116,8 @@ def tipo_isolato(db_engine):
         db.commit()
     yield tipo_id
     with Session(db_engine) as db:
-        # L'audit della disattivazione referenzia il tipo e la sua FK non e' in
-        # CASCADE: va rimosso prima. E' lo stesso ostacolo che incontrera' il
-        # reset previsto da 010 T104.
+        # Dal 010 T106 l'audit non blocca piu' la cancellazione del tipo: lo si
+        # toglie solo per non lasciare eventi di prova nel database condiviso.
         db.execute(
             sa.text("DELETE FROM audit_evento_configurazione WHERE tipo_documento_id = :id"),
             {"id": tipo_id},
@@ -213,4 +213,51 @@ def test_edizione_derivata_ricreabile_dopo_eliminazione(builder_client, db_engin
             )
         )
         db.execute(sa.delete(ModelloDocumento).where(ModelloDocumento.id == origine["id"]))
+        db.commit()
+
+
+@pytest.mark.integration
+def test_un_modello_senza_documenti_si_cancella_davvero(builder_client, db_engine):
+    """010 T105: i residui non si accumulano, e la storia del modello resta."""
+    modello = _crea_modello(builder_client)
+    _pubblica(builder_client, modello["id"])
+
+    assert builder_client.delete(f"/api/v1/builder/modelli/{modello['id']}").status_code == 204
+
+    with Session(db_engine) as db:
+        assert db.get(ModelloDocumento, uuid.UUID(modello["id"])) is None
+        eventi = list(db.scalars(sa.select(AuditEventoModello).where(
+            AuditEventoModello.modello_documento_id == uuid.UUID(modello["id"])
+        )))
+    tipi = {e.tipo_evento for e in eventi}
+    assert {"MODELLO_CREATO", "VERSIONE_PUBBLICATO", "MODELLO_ELIMINATO"} <= tipi
+    eliminato = next(e for e in eventi if e.tipo_evento == "MODELLO_ELIMINATO")
+    assert eliminato.payload_minimo["codice"] == modello["codice"]
+    assert eliminato.payload_minimo["cancellato"] is True
+
+
+@pytest.mark.integration
+def test_un_modello_che_ha_generato_documenti_resta_eliminato(builder_client, db_engine):
+    """I documenti generati restano agli atti: il modello da cui vengono non sparisce."""
+    modello = _crea_modello(builder_client)
+    versione_id = _pubblica(builder_client, modello["id"])
+    with Session(db_engine) as db:
+        db.add(DocumentoGenerato(
+            riferimento=f"doc-{uuid.uuid4().hex[:16]}", sistema_richiedente="GEBAN",
+            external_context_id=uuid.uuid4().hex, modello_versione_id=uuid.UUID(versione_id),
+            stato="FALLITO", hash_dati="0" * 64, nome_file="prova.pdf",
+            errore_messaggio="prova", creato_da="test",
+        ))
+        db.commit()
+
+    assert builder_client.delete(f"/api/v1/builder/modelli/{modello['id']}").status_code == 204
+
+    with Session(db_engine) as db:
+        rimasto = db.get(ModelloDocumento, uuid.UUID(modello["id"]))
+        assert rimasto is not None and rimasto.stato == "ELIMINATO"
+        assert db.get(ModelloDocumentoVersione, uuid.UUID(versione_id)).stato == "ARCHIVIATO"
+        db.execute(sa.delete(DocumentoGenerato).where(
+            DocumentoGenerato.modello_versione_id == uuid.UUID(versione_id)
+        ))
+        db.execute(sa.delete(ModelloDocumento).where(ModelloDocumento.id == uuid.UUID(modello["id"])))
         db.commit()

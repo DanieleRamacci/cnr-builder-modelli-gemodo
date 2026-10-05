@@ -38,7 +38,9 @@ class AuditEventoIntegrazione(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrazione.id"), nullable=False)
+    # 010 T106: nessuna chiave esterna, cosi' l'evento sopravvive all'integrazione
+    # cancellata e ne conserva l'identificativo; il codice sta in `payload_minimo`.
+    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     tipo_evento: Mapped[str] = mapped_column(String(64), nullable=False)
     soggetto_id: Mapped[str] = mapped_column(String(255), nullable=False)
     client_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -105,7 +107,7 @@ class EndpointIntegrazione(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrazione.id"), nullable=False)
+    integrazione_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrazione.id", ondelete="CASCADE"), nullable=False)
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     timeout_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=5000, server_default="5000")
     stato: Mapped[str] = mapped_column(String(32), nullable=False, default="DEFINITO", server_default="DEFINITO")
@@ -139,7 +141,8 @@ class AuditEventoConfigurazione(Base):
     __tablename__ = "audit_evento_configurazione"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tipo_documento.id"), nullable=False)
+    # 010 T106: come l'audit dell'integrazione, sopravvive al tipo documento cancellato.
+    tipo_documento_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     tipo_evento: Mapped[str] = mapped_column(String(64), nullable=False)
     soggetto_id: Mapped[str] = mapped_column(String(255), nullable=False)
     client_id: Mapped[str] = mapped_column(String(255), nullable=False)

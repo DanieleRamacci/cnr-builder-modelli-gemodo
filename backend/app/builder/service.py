@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from fastapi import Depends
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
@@ -1147,14 +1147,26 @@ class BuilderService:
         self.db.refresh(modello)
         if modello.stato == "ELIMINATO":
             raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
-        modello.stato = "ELIMINATO"
-        for versione in modello.versioni:
-            self.db.refresh(versione)
-            if versione.stato == "PUBBLICATO":
-                builder_repository.transizione_stato(self.db, versione, nuovo_stato="ARCHIVIATO")
+        # 010 T105: si decide adesso, non con una pulizia periodica. Un modello
+        # che non ha mai prodotto documenti si cancella davvero; uno che li ha
+        # prodotti resta `ELIMINATO`, perche' quei documenti devono poter dire
+        # da quale versione sono nati. L'audit sopravvive in entrambi i casi.
+        cancellato = not builder_repository.modelli_con_documenti(self.db, [modello.id])
         registra_evento(self.db, tipo_evento="MODELLO_ELIMINATO", principal=principal,
                        modello_documento_id=modello.id, modello_versione_id=None,
-                       payload_minimo={"codice": modello.codice})
+                       payload_minimo={"codice": modello.codice, "nome": modello.nome,
+                                       "cancellato": cancellato})
+        if cancellato:
+            # Le cascate sono quelle del database (versioni, campi, sezioni);
+            # l'ORM qui non le dichiara e proverebbe a svuotare le chiavi.
+            self.db.execute(delete(ModelloDocumento).where(ModelloDocumento.id == modello.id))
+            self.db.expunge(modello)
+        else:
+            modello.stato = "ELIMINATO"
+            for versione in modello.versioni:
+                self.db.refresh(versione)
+                if versione.stato == "PUBBLICATO":
+                    builder_repository.transizione_stato(self.db, versione, nuovo_stato="ARCHIVIATO")
         self.db.commit()
 
     def _resolve_tipo_documento(self, codice_tipo_documento: str):

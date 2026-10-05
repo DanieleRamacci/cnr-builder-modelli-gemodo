@@ -129,7 +129,10 @@ export interface paths {
         get: operations["getModelloDettaglio"];
         put?: never;
         post?: never;
-        /** Elimina logicamente un modello conservando versioni, audit e PDF */
+        /**
+         * Elimina un modello; lo storico e i PDF gia' prodotti restano
+         * @description 010 T105: un modello che non ha mai generato documenti viene cancellato con le sue versioni; uno che ne ha generati resta in stato ELIMINATO, con le versioni pubblicate archiviate, perche' quei documenti devono poter dire da quale versione sono nati. In entrambi i casi l'audit del modello resta, e l'evento MODELLO_ELIMINATO dice quale dei due e' avvenuto.
+         */
         delete: operations["eliminaModello"];
         options?: never;
         head?: never;

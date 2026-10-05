@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import Keycloak from 'keycloak-js';
 
 import { IntegrazioniAdminService, type IntegrazioneAdmin } from './integrazioni-admin.service';
@@ -30,6 +30,7 @@ const BADGE: Record<
 export class IntegrazioneConfiguraComponent {
   private readonly service = inject(IntegrazioniAdminService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly keycloak = inject(Keycloak, { optional: true });
   protected readonly sessioneScaduta = signal(false);
@@ -54,6 +55,9 @@ export class IntegrazioneConfiguraComponent {
   protected readonly verificando = signal(false);
   protected readonly erroreServer = signal<string | null>(null);
   protected readonly infoServer = signal<string | null>(null);
+  protected readonly eliminando = signal(false);
+  /** Perche' la cancellazione e' stata rifiutata, e i modelli che la impediscono. */
+  protected readonly erroreEliminazione = signal<ApiError | null>(null);
 
   constructor() {
     this.caricaStatoCorrente();
@@ -142,6 +146,33 @@ export class IntegrazioneConfiguraComponent {
           }
         },
       });
+  }
+
+  protected chiediEliminazione(dialog: HTMLDialogElement): void {
+    if (this.eliminando()) return;
+    this.erroreEliminazione.set(null);
+    dialog.showModal();
+  }
+
+  /**
+   * 010 T103: un'integrazione registrata per sbaglio si cancella e si ricrea.
+   * Il backend rifiuta se ci sono modelli, o documenti generati, e dice quali.
+   */
+  protected confermaEliminazione(dialog: HTMLDialogElement): void {
+    if (this.eliminando()) return;
+    dialog.close();
+    this.eliminando.set(true);
+    this.service.elimina(this.id).subscribe({
+      next: () => {
+        this.eliminando.set(false);
+        void this.router.navigate(['/configurazione']);
+      },
+      error: (error: ApiError) => {
+        this.sessioneScaduta.set(error.status === 401);
+        this.eliminando.set(false);
+        this.erroreEliminazione.set(error);
+      },
+    });
   }
 
   protected avviaVerifica(): void {

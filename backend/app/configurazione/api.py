@@ -86,6 +86,11 @@ def configura_integrazione(integrazione_id: uuid.UUID, request: IntegrazioneUpda
     return service.configura(integrazione_id, request, principal)
 
 
+@router_integrazioni.delete("/{integrazione_id}", status_code=204)
+def elimina_integrazione(integrazione_id: uuid.UUID, principal: Admin, service: ServiceIntegrazioni):
+    service.elimina(integrazione_id, principal)
+
+
 @router_integrazioni.post("/{integrazione_id}/verifica", response_model=IntegrazioneAdmin)
 def verifica_integrazione(integrazione_id: uuid.UUID, request: VerificaRequest, principal: Admin, service: ServiceIntegrazioni):
     return service.verifica(integrazione_id, request.revisione_attesa, principal)

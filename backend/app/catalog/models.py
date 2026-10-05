@@ -308,9 +308,9 @@ class AuditEventoModello(Base):
     soggetto_id: Mapped[str] = mapped_column(String(255), nullable=False)
     client_id: Mapped[str] = mapped_column(String(255), nullable=False)
     ruoli: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
-    modello_documento_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("modello_documento.id", ondelete="CASCADE"), nullable=False
-    )
+    # 010 T106: nessuna chiave esterna, cosi' l'evento sopravvive al modello
+    # cancellato (prima spariva a cascata) e ne conserva l'identificativo.
+    modello_documento_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     modello_versione_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("modello_versione.id", ondelete="SET NULL"), nullable=True
     )

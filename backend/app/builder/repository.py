@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from copy import deepcopy
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.catalog.models import (
@@ -18,12 +18,41 @@ from app.catalog.models import (
     SezioneModello,
     TipoDocumento,
 )
+from app.storage.models import DocumentoGenerato
 from app.documentale.schemas import (
     CornicePagina,
     FORMATO_DOCUMENTALE,
     BloccoDocumento,
     ModelloDocumentaleControllato,
 )
+
+def modelli_con_documenti(db: Session, modello_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
+    """I modelli, fra quelli dati, con almeno un documento generato da una loro versione (010 T105).
+
+    Sono i modelli che non si cancellano mai davvero: il documento resta agli
+    atti e deve poter dire da quale versione e' nato. Il database lo impone gia'
+    (`documento_generato` e `generazione_documento` riferiscono la versione
+    senza cascata); qui lo si sa prima, per spiegarlo invece di fallire.
+    `generazione_documento` e' la tabella del primo schema, senza modello ORM.
+    """
+    if not modello_ids:
+        return set()
+    versioni = select(ModelloDocumentoVersione.id).where(
+        ModelloDocumentoVersione.modello_documento_id == ModelloDocumento.id
+    )
+    con_documenti = (
+        select(ModelloDocumento.id)
+        .where(ModelloDocumento.id.in_(modello_ids))
+        .where(
+            select(DocumentoGenerato.id).where(DocumentoGenerato.modello_versione_id.in_(versioni)).exists()
+            | text(
+                "EXISTS (SELECT 1 FROM generazione_documento g JOIN modello_versione v "
+                "ON v.id = g.modello_versione_id WHERE v.modello_documento_id = modello_documento.id)"
+            )
+        )
+    )
+    return set(db.scalars(con_documenti))
+
 
 # Valore del filtro livello che seleziona i modelli generici, cioe' quelli che
 # non valorizzano la dimensione. Serve un token esplicito perche' "assente" in

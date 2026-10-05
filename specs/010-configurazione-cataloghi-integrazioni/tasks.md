@@ -924,7 +924,7 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
 - [x] T102 [FR-029] (`configurazione/repository.py`; test in `backend/tests/builder/test_eliminazione_e_pulizia.py`) `conta_modelli` esclude i modelli `ELIMINATO`, cosi' che
       disattivare un tipo documento torni possibile dopo aver eliminato i suoi
       modelli. Test che copre il ciclo crea -> elimina -> disattiva
-- [ ] T106 **Prerequisito di T103 e T105**: rendere nullable
+- [x] T106 **Prerequisito di T103 e T105**: rendere nullable
       `audit_evento_modello.modello_documento_id` e
       `audit_evento_integrazione.integrazione_id`, oggi entrambe `NOT NULL`.
       Senza questo, una cancellazione fisica o fallisce o costringe a
@@ -935,8 +935,18 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
       codici come testo: quello dell'integrazione gia' lo fa
       (`{"codice": source.codice}` su INTEGRAZIONE_CREATA), cosi' la storia
       resta leggibile anche senza la riga
+      *Fatto 2026-10-05, migrazione `0027`, in forma diversa da quella scritta
+      qui*: non `nullable` + `SET NULL`, ma **nessuna chiave esterna**
+      sull'audit di integrazioni, tipi documento e modelli, con
+      l'identificativo conservato. `SET NULL` avrebbe svuotato proprio cio' che
+      tiene insieme gli eventi di un oggetto cancellato, e molti payload non
+      portano altro (`VERSIONE_PUBBLICATO`: solo lo stato). Trovato nel farlo:
+      `audit_evento_modello` era in `CASCADE` verso il modello, quindi una
+      cancellazione fisica avrebbe cancellato anche la storia. L'endpoint segue
+      l'integrazione (`CASCADE`). Il `downgrade` rifiuta se esistono eventi di
+      righe cancellate. Test: `tests/integration/test_migrazione_audit_0027.py`
 
-- [ ] T103 `DELETE /api/v1/configurazione/integrazioni/{id}`: oggi non esiste
+- [x] T103 `DELETE /api/v1/configurazione/integrazioni/{id}`: oggi non esiste
       (405). **Impostazione corretta (rivista 2026-09-23)**: `codice` e
       `codice_contesto` NON devono diventare modificabili - sono identita', e
       la FK composita `(integrazione_id, codice_contesto)` esiste apposta per
@@ -948,6 +958,15 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
       integrazione con tipi ma nessun modello -> cancellabile, con i tipi a
       cascata; integrazione con modelli vivi -> rifiutata, indicando quanti e
       quali, non un generico "non si puo'". Dipende da T106
+      *Fatto 2026-10-05* (contratto `integrazioni-api` 0.6.0): 409
+      `INTEGRAZIONE_HA_MODELLI` con i modelli vivi in `dettagli`, e
+      `INTEGRAZIONE_HA_DOCUMENTI` se un modello gia' eliminato ha generato
+      documenti (che restano agli atti); i modelli eliminati senza documenti
+      seguono i tipi. Evento `INTEGRAZIONE_CANCELLATA` con codice, contesto,
+      tipi e modelli. Pulsante "Elimina integrazione" con conferma nella
+      pagina dell'integrazione. Test:
+      `tests/configurazione/test_eliminazione_integrazione.py` (Postgres) e
+      `integrazione-configura.component.spec.ts`
 - [ ] T104 Endpoint o comando di reset dietro `GEMODO_ALLOW_DATABASE_RESET`.
       **La variabile e' gia' dichiarata in `docker-compose.coolify.yml:66` ma
       non esiste nel codice**: zero occorrenze in `backend/app`. Deve azzerare
@@ -958,13 +977,18 @@ zero, e' possibile?". Risposta misurata: **no**. Vedi FR-029 e `002` FR-018.
       quasi superfluo - si riporta l'ambiente a zero passando dalle API
       ordinarie, senza esporre una rotta che azzera il database. Rivalutare se
       serva ancora dopo averli implementati
-- [ ] T105 Residui: **decidere al momento dell'eliminazione**, non con una
+- [x] T105 Residui: **decidere al momento dell'eliminazione**, non con una
       pulizia periodica. Un modello le cui versioni hanno prodotto documenti
       resta `ELIMINATO` come oggi, e deve restarci: `generazione_documento` ha
       `ON DELETE RESTRICT` verso `modello_versione`, quindi il database stesso
       impedisce di sbagliare. Un modello senza alcun documento generato viene
       **cancellato fisicamente subito**. Cosi' i residui non si accumulano mai e
       non serve alcun job di purge. Dipende da T106
+      *Fatto 2026-10-05*: `BuilderService.elimina` cancella davvero il
+      modello senza documenti (`documento_generato` o la tabella storica
+      `generazione_documento`), altrimenti lo lascia `ELIMINATO` come prima.
+      `MODELLO_ELIMINATO` porta codice, nome e `cancellato`. Test in
+      `tests/builder/test_eliminazione_e_pulizia.py`
 
 - [ ] T107 [P] Nota, non urgente: `uq_integrazione_codice` e' un vincolo unico
       **globale**, non per contesto. Due contesti diversi non possono avere

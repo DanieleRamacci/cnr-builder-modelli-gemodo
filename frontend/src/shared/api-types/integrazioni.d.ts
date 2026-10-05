@@ -38,7 +38,11 @@ export interface paths {
          */
         put: operations["configureIntegrazione"];
         post?: never;
-        delete?: never;
+        /**
+         * Cancella un'integrazione registrata, con i suoi tipi documento
+         * @description Il refuso alla registrazione si corregge cancellando e ricreando: codice e contesto restano immutabili. Senza modelli si cancella sempre, anche se gia' connessa; i tipi documento e i modelli gia' eliminati la seguono. Rifiutata, con l'elenco dei modelli in `dettagli`, se ha modelli non eliminati (INTEGRAZIONE_HA_MODELLI) o modelli che hanno generato documenti, che restano agli atti (INTEGRAZIONE_HA_DOCUMENTI). L'audit dell'integrazione e dei suoi tipi documento resta.
+         */
+        delete: operations["deleteIntegrazione"];
         options?: never;
         head?: never;
         patch?: never;
@@ -309,6 +313,7 @@ export interface components {
         Errore: {
             codice: string;
             messaggio: string;
+            dettagli?: Record<string, never>[] | null;
         };
         /** @description Un nodo dell'albero, a qualunque livello. Ha SEMPRE `codice` e `descrizione`; ha POI o `figli` (per scendere di un altro livello, stesso schema ricorsivo) o `campi` (se e' un nodo foglia) - mai entrambi, mai nessuno dei due. Il numero di livelli non e' fissato dal contratto: per `BANDO_CONCORSO` sono due (tipologia, poi profilo), un altro tipo documento potrebbe averne uno solo, tre o piu' - vedi il secondo esempio (`ALTRO_TIPO_DOCUMENTO_ESEMPIO`, tre livelli) qui sopra. `figli`/`campi` restano le uniche chiavi strutturali fisse (necessarie per un parsing ricorsivo deterministico lato GEMODO, indipendentemente da quanti livelli ci sono); il nome concettuale di ciascun livello (tipologia, profilo, o qualunque cosa abbia senso per il vostro dominio) e' invece libero e va nel campo `tipo_livello` sotto - puramente informativo, non usato per il parsing. */
         NodoCategorizzazione: {
@@ -378,6 +383,15 @@ export interface components {
         };
     };
     responses: {
+        /** @description L'integrazione ha modelli vivi o modelli che hanno generato documenti */
+        NonCancellabile: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Errore"];
+            };
+        };
         /** @description JWT assente o non valido */
         Unauthorized: {
             headers: {
@@ -587,6 +601,30 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["InvalidInput"];
+        };
+    };
+    deleteIntegrazione: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integrazioneId: components["parameters"]["IntegrazioneId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancellata; registrato INTEGRAZIONE_CANCELLATA */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["NonCancellabile"];
         };
     };
     verifyIntegrazione: {
