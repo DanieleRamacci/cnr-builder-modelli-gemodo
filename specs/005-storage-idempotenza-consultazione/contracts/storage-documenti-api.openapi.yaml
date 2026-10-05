@@ -1,13 +1,15 @@
 openapi: 3.0.3
 info:
-  title: GEMODO - Storage E Consultazione Documenti (Incremento MVP FR-019/020)
-  version: 0.1.0
+  title: GEMODO - Registro delle generazioni
+  version: 0.2.0
   description: >
-    Stato e download del documento generato da 004. Riferimento opaco, mai il
-    path fisico o l'id interno. Idempotenza sulla chiave sistema_richiedente +
-    external_context_id + modello_versione_id, non descritta qui (e' interna a
-    004/generaDocumento) ma osservabile: un riferimento gia' esistente per la
-    stessa chiave/dati e' lo stesso restituito da una richiesta precedente.
+    Dalla 0.2.0 (spec 013) GEMODO non conserva i PDF: il documento si riceve
+    solo dalla risposta di `POST /documenti/genera`, e il download della 0.1.0
+    non c'e' piu'. Ogni chiamata a `genera` lascia una riga nel registro delle
+    generazioni, con le impronte SHA-256 dei dati ricevuti e del PDF
+    consegnato; la stessa chiave (sistema + external_context_id + versione del
+    modello) si ripete quante volte serve. Per riferimento si legge la riga,
+    solo con GEMODO_ADMIN.
 servers:
   - url: /api/v1
 security:
@@ -18,36 +20,16 @@ paths:
       - {$ref: '#/components/parameters/Riferimento'}
     get:
       operationId: getStatoDocumento
-      summary: Stato e metadati minimi del documento generato
+      summary: Una generazione del registro, per riferimento (solo GEMODO_ADMIN)
       responses:
         '200':
-          description: Stato corrente, anche per una generazione FALLITA
+          description: La riga del registro, qualunque sia l'esito
           content:
             application/json:
               schema: {$ref: '#/components/schemas/StatoDocumento'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
-  /documenti/{riferimento}/download:
-    parameters:
-      - {$ref: '#/components/parameters/Riferimento'}
-    get:
-      operationId: downloadDocumento
-      summary: Scarica il file, solo se la generazione e' COMPLETATO
-      responses:
-        '200':
-          description: Byte del PDF
-          content:
-            application/pdf:
-              schema: {type: string, format: binary}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409':
-          description: Documento non ancora disponibile (FALLITO)
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/Errore'}
 components:
   securitySchemes:
     KeycloakBearer: {type: http, scheme: bearer, bearerFormat: JWT}
@@ -61,15 +43,20 @@ components:
     StatoDocumento:
       type: object
       additionalProperties: false
-      required: [riferimento, stato, tipo_output, nome_file, creato_il, modello_versione_id]
+      required: [riferimento, stato, tipo_output, sistema_richiedente, external_context_id, nome_file, hash_dati, creato_il, creato_da, modello_versione_id]
       properties:
         riferimento: {type: string}
-        stato: {type: string, enum: [COMPLETATO, FALLITO]}
+        stato: {type: string, enum: [COMPLETATO, FALLITO, DATI_NON_VALIDI]}
         tipo_output: {type: string, enum: [TEST]}
+        sistema_richiedente: {type: string}
+        external_context_id: {type: string}
         nome_file: {type: string}
-        hash_file: {type: string, nullable: true}
+        hash_dati: {type: string, description: "SHA-256 dei dati ricevuti, con le chiavi ordinate"}
+        hash_file: {type: string, nullable: true, description: "SHA-256 del PDF consegnato; assente se non e' stato generato"}
         dimensione_byte: {type: integer, nullable: true}
         creato_il: {type: string, format: date-time}
+        creato_da: {type: string, description: Soggetto del token che ha chiesto la generazione}
+        client_id: {type: string, nullable: true}
         modello_versione_id: {type: integer, format: int64}
         errore_messaggio: {type: string, nullable: true}
     Errore:
@@ -86,7 +73,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Errore'}
     Forbidden:
-      description: Nessun ruolo di lettura documenti
+      description: Non e' un amministratore GEMODO
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Errore'}

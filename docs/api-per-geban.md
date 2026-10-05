@@ -192,29 +192,25 @@ documento. Contratto: **`/docs/generazione-documenti`**.
 
 - Se i dati sono validi ricevete **direttamente il PDF** (`application/pdf`), con
   `Content-Disposition` e l'header `X-Riferimento-Documentale`.
-- Se non lo sono ricevete un JSON con gli errori.
+- Se non lo sono ricevete un JSON con gli errori, **sempre con HTTP 200**:
+  distinguete i due casi dal `Content-Type`, non dal codice HTTP.
 
-**La generazione è idempotente** sulla coppia `sistema_richiedente` +
-`external_context_id`:
+**Potete chiamare `genera` quante volte serve con la stessa chiave**
+(`sistema_richiedente` + `external_context_id`), anche con dati diversi: ogni
+chiamata produce il PDF con i dati che inviate. Usate come `external_context_id`
+l'identificativo stabile del vostro procedimento, per esempio la chiave del
+bando, e rigeneratelo a ogni correzione fino al definitivo.
 
-- stessa coppia e **stessi dati** → vi restituiamo il documento già prodotto, non
-  ne creiamo un altro;
-- stessa coppia e **dati diversi** → `409`, perché sarebbe un documento diverso
-  sotto lo stesso riferimento.
+GEMODO **non conserva il PDF**: lo ricevete nella risposta e conservarlo e'
+compito vostro. Di ogni chiamata GEMODO registra chi l'ha fatta, quando, per
+quale chiave e da quale versione del modello, con le impronte dei dati ricevuti
+e del PDF consegnato: servono a verificare, se un documento viene contestato,
+che e' proprio quello prodotto da GEMODO. Il riferimento in
+`X-Riferimento-Documentale` identifica la singola generazione ed e' diverso a
+ogni chiamata.
 
-Usate quindi come `external_context_id` un identificativo stabile del vostro
-procedimento, non un valore casuale a ogni tentativo.
-
-## 6. Riprendere un documento già generato
-
-```http
-GET /api/v1/documenti/{riferimento}
-GET /api/v1/documenti/{riferimento}/download
-```
-
-Ruolo: `DOCUMENTI_VIEWER`. Contratto: **`/docs/storage-documenti`**.
-Il riferimento è quello restituito nell'header `X-Riferimento-Documentale`.
-Il download è possibile solo quando la generazione è `COMPLETATO`.
+Se GEMODO non riesce a registrare la generazione non consegna il PDF e risponde
+`503` (`REGISTRO_GENERAZIONI_NON_DISPONIBILE`): ripetete la chiamata.
 
 ## Errori che incontrerete
 
@@ -223,6 +219,7 @@ Il download è possibile solo quando la generazione è `COMPLETATO`.
 | `ACCESSO_NON_AUTENTICATO` | Token assente, scaduto o non valido |
 | `MODELLO_VERSIONE_NON_TROVATO` | Versione inesistente, oppure fuori dal vostro contesto |
 | `MODELLO_VERSIONE_NON_PUBBLICATO` | La versione esiste ma è ancora bozza |
+| `REGISTRO_GENERAZIONI_NON_DISPONIBILE` | La generazione non si è potuta registrare: il PDF non è stato consegnato, ripetete la chiamata |
 | `INTEGRAZIONE_NON_CONNESSA` | L'integrazione non ha superato la verifica dell'endpoint |
 | `DISCOVERY_NON_DISPONIBILE` | Il vostro endpoint non ha risposto, o ha risposto fuori forma |
 | `DIMENSIONE_NON_DICHIARATA` | Il payload indica una dimensione non dichiarata dalla foglia scelta |

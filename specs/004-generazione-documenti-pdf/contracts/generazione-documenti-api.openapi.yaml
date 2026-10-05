@@ -1,15 +1,17 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Generazione Documenti (Incremento MVP FR-019/020)
-  version: 0.3.0
+  version: 0.4.0
   description: >
     Sostituisce la risposta simulata storica di 001 (GenerazioneDocumentoResponse,
     ora ritirata in geban-catalog-api.openapi.yaml). Produce un PDF reale, sempre
-    non ufficiale (etichettato TEST): non esiste ancora un percorso "ufficiale"
-    (FR-001..018 di questa spec restano non implementati). Persistenza e
-    consultazione successiva sono descritte in storage-documenti-api.openapi.yaml
-    (005); dal 2026-09-21 una sola chiamata basta per ottenere il file (vedi sotto),
-    il riferimento resta disponibile solo per riscaricare/consultare in seguito.
+    non ufficiale (etichettato TEST). Una sola chiamata basta per ottenere il file.
+    Dalla 0.4.0 (spec 013) GEMODO non conserva il PDF e non blocca piu' le
+    ripetizioni: la stessa chiave (sistema_richiedente + external_context_id +
+    versione del modello) si puo' usare quante volte serve, anche con dati
+    diversi - per esempio per rigenerare un bando dopo ogni correzione. Ogni
+    chiamata e' una generazione nuova, con un riferimento nuovo, registrata con le
+    impronte dei dati e del PDF (registro: storage-documenti-api.openapi.yaml).
 servers:
   - url: /api/v1
 security:
@@ -20,13 +22,13 @@ paths:
       operationId: generaDocumento
       summary: Valida il payload e, se COMPLETATO, ritorna subito il PDF prodotto
       description: >
-        Una sola chiamata: se la generazione ha successo (o e' il replay
-        idempotente di una precedente generazione riuscita) il corpo della
+        Una sola chiamata: se la generazione ha successo il corpo della
         risposta 200 e' direttamente il file PDF (application/pdf), con
-        l'header X-Riferimento-Documentale per chi vuole riconsultarlo dopo
-        via storage-documenti-api.openapi.yaml. Se lo stato e' FALLITO o
-        DATI_NON_VALIDI, il corpo resta JSON (EsitoGenerazione) come prima -
-        non c'e' file da restituire.
+        l'header X-Riferimento-Documentale che identifica questa generazione
+        nel registro. Se lo stato e' FALLITO o DATI_NON_VALIDI il corpo e'
+        JSON (EsitoGenerazione): non c'e' file. Anche queste chiamate sono
+        registrate. Il PDF si consegna solo dopo la registrazione: se il
+        registro non e' disponibile la risposta e' 503 e la chiamata si ripete.
       requestBody:
         required: true
         content:
@@ -35,7 +37,7 @@ paths:
       responses:
         '200':
           description: >
-            COMPLETATO (anche in replay idempotente): corpo binario PDF.
+            COMPLETATO: corpo binario PDF.
             FALLITO/DATI_NON_VALIDI: corpo JSON EsitoGenerazione.
           headers:
             X-Riferimento-Documentale:
@@ -53,7 +55,14 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409':
-          description: Versione modello non pubblicata, o chiave idempotente in conflitto (005)
+          description: Versione modello non pubblicata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Errore'}
+        '503':
+          description: >
+            REGISTRO_GENERAZIONI_NON_DISPONIBILE - la generazione non si e'
+            potuta registrare e il PDF non e' stato consegnato: ripetere.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Errore'}
@@ -84,11 +93,10 @@ components:
           type: string
           nullable: true
           description: >
-            Assente solo se stato=DATI_NON_VALIDI (nessun tentativo di
-            produzione); presente per FALLITO, per consultare l'errore via
-            storage-documenti-api.openapi.yaml. Per COMPLETATO questo schema
-            non e' il corpo effettivo della risposta (che e' il PDF binario) -
-            il riferimento arriva invece nell'header X-Riferimento-Documentale.
+            Il riferimento della generazione nel registro, presente per ogni
+            esito (dalla 0.4.0 anche per DATI_NON_VALIDI). Per COMPLETATO questo
+            schema non e' il corpo effettivo della risposta (che e' il PDF
+            binario): il riferimento arriva nell'header X-Riferimento-Documentale.
         validazione:
           type: object
           additionalProperties: false

@@ -10,6 +10,14 @@
 
 ## Clarifications
 
+### Superata in parte dalla 013 (2026-10-05)
+
+GEMODO non conserva piu' i PDF e la stessa chiave si ripete anche con dati
+diversi: FR-005, FR-007, FR-012, la conservazione e il download sono superati
+da [013](../013-generazione-registro-verifica/spec.md). Resta il riferimento
+di ogni generazione, ora riga del registro delle generazioni.
+
+
 ### Decisione MVP 2026-09-17 - ADR 0002
 
 Anche il PDF di test segue storage, riferimento stabile, stato, download

@@ -1,8 +1,9 @@
-"""Real document generation, superseding the retired simulated placeholder (004, MVP FR-019/020 slice)."""
+"""Generazione dei documenti (004) con il registro delle generazioni al posto dell'archivio (013)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -18,8 +19,6 @@ from app.generazione.renderer import (
     sostituisci_placeholder,
 )
 from app.generazione.schemas import EsitoGenerazione
-from app.storage import archivio
-from app.storage.models import DocumentoGenerato
 from app.storage.service import StorageDocumentiService, get_storage_documenti_service, hash_dati
 from app.validation.schemas import ValidazioneRequest, ValidazioneResponse
 from app.validation.service import PayloadValidationService, get_payload_validation_service
@@ -41,28 +40,34 @@ class GenerazioneDocumentiService:
         self.storage = storage
 
     def genera(self, request: ValidazioneRequest, principal: PrincipalGEMODO) -> RisultatoGenerazione:
+        """Genera e consegna; ogni chiamata lascia una riga nel registro (013).
+
+        La stessa chiave si ripete quante volte serve, anche con dati diversi:
+        GEBAN rigenera il bando a ogni correzione. GEMODO non conserva il PDF,
+        ne registra l'impronta; e lo consegna solo a registrazione avvenuta.
+        """
         validazione = self.validazione.validate_payload(request, principal)  # 404/409 se versione assente/non pubblicata/fuori contesto
         version = catalog_repository.get_model_version_by_public_id(self.db, request.modello_versione_id)
-        hash_richiesta = hash_dati(request.dati)
-        esistente = self.storage.esistente_per_chiave(
-            sistema_richiedente=request.sistema_richiedente, external_context_id=request.external_context_id,
-            modello_versione_id=version.id, hash_richiesta=hash_richiesta,
+        nome_file = f"{version.modello.codice}-v{version.versione}-{request.external_context_id}.pdf"
+        registra = partial(
+            self.storage.registra, sistema_richiedente=request.sistema_richiedente,
+            external_context_id=request.external_context_id, modello_versione_id=version.id,
+            hash_richiesta=hash_dati(request.dati), nome_file=nome_file, principal=principal,
         )
-        if esistente is not None:
-            return self._risposta_idempotente(esistente, validazione, request)
         if not validazione.valido:
+            campi = sorted({errore.campo or errore.codice for errore in validazione.errori})
+            riga = registra(stato="DATI_NON_VALIDI", errore_messaggio="Dati non validi: " + ", ".join(campi))
             return RisultatoGenerazione(
                 self._risposta(
                     stato="DATI_NON_VALIDI",
                     messaggio="Documento non generato: i dati ricevuti non sono coerenti con il contratto del modello.",
-                    request=request, validazione=validazione, riferimento=None,
+                    request=request, validazione=validazione, riferimento=riga.riferimento,
                 ),
                 contenuto=None, nome_file=None,
             )
 
         titolo = f"{version.modello.tipo_documento.nome} - {version.modello.nome}"
         campi = catalog_repository.list_required_fields(self.db, version.id)
-        nome_file = f"{version.modello.codice}-v{version.versione}-{request.external_context_id}.pdf"
 
         # 003 T018/T019: se la versione ha sezioni, il documento e' quello
         # composto. Un modello senza sezioni - ogni modello creato prima della
@@ -90,56 +95,32 @@ class GenerazioneDocumentiService:
         except PlaceholderSenzaValore as mancanti:
             # Un segnaposto senza valore non e' un errore di produzione del
             # file: e' il documento che non si puo' comporre con questi dati.
+            messaggio = "Documento non generato: mancano i valori per " + ", ".join(mancanti.mancanti)
+            riga = registra(stato="DATI_NON_VALIDI", errore_messaggio=messaggio)
             return RisultatoGenerazione(
                 self._risposta(
-                    stato="DATI_NON_VALIDI",
-                    messaggio=(
-                        "Documento non generato: mancano i valori per "
-                        + ", ".join(mancanti.mancanti)
-                    ),
-                    request=request, validazione=validazione, riferimento=None,
+                    stato="DATI_NON_VALIDI", messaggio=messaggio,
+                    request=request, validazione=validazione, riferimento=riga.riferimento,
                 ),
                 contenuto=None, nome_file=None,
             )
         except Exception:
-            fallito = self.storage.registra_fallimento(
-                sistema_richiedente=request.sistema_richiedente, external_context_id=request.external_context_id,
-                modello_versione_id=version.id, hash_richiesta=hash_richiesta, nome_file=nome_file,
-                errore_messaggio="Errore durante la produzione del documento", creato_da=principal.subject,
-            )
+            riga = registra(stato="FALLITO", errore_messaggio="Errore durante la produzione del documento")
             return RisultatoGenerazione(
                 self._risposta(
                     stato="FALLITO", messaggio="Documento non generato: errore durante la produzione del file.",
-                    request=request, validazione=validazione, riferimento=fallito.riferimento,
+                    request=request, validazione=validazione, riferimento=riga.riferimento,
                 ),
                 contenuto=None, nome_file=None,
             )
 
-        documento = self.storage.registra_successo(
-            sistema_richiedente=request.sistema_richiedente, external_context_id=request.external_context_id,
-            modello_versione_id=version.id, hash_richiesta=hash_richiesta, nome_file=nome_file,
-            contenuto=contenuto, creato_da=principal.subject,
-        )
+        riga = registra(stato="COMPLETATO", contenuto=contenuto)
         return RisultatoGenerazione(
             self._risposta(
                 stato="COMPLETATO", messaggio="Documento di test generato correttamente.",
-                request=request, validazione=validazione, riferimento=documento.riferimento,
+                request=request, validazione=validazione, riferimento=riga.riferimento,
             ),
             contenuto=contenuto, nome_file=nome_file,
-        )
-
-    def _risposta_idempotente(
-        self, documento: DocumentoGenerato, validazione: ValidazioneResponse, request: ValidazioneRequest,
-    ) -> RisultatoGenerazione:
-        esito = self._risposta(
-            stato=documento.stato,
-            messaggio="Richiesta gia' elaborata in precedenza con gli stessi dati: risultato invariato.",
-            request=request, validazione=validazione, riferimento=documento.riferimento,
-        )
-        if documento.stato != "COMPLETATO":
-            return RisultatoGenerazione(esito, contenuto=None, nome_file=None)
-        return RisultatoGenerazione(
-            esito, contenuto=archivio.leggi(documento.percorso_file), nome_file=documento.nome_file,
         )
 
     @staticmethod

@@ -1373,3 +1373,26 @@ decisions:
       della produzione.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-10-05
+
+  - id: DEC-013-GENERA-SENZA-ARCHIVIO
+    titolo: GEMODO genera e consegna il PDF senza conservarlo, e registra ogni generazione
+    owner_spec: specs/013-generazione-registro-verifica
+    spec_interessate:
+      - specs/004-generazione-documenti-pdf
+      - specs/005-storage-idempotenza-consultazione
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Decisione del product owner 2026-10-05 dopo il riscontro di GEBAN: lo
+      stesso bando si rigenera a ogni correzione con la stessa chiave
+      (external_context_id), e la regola della 005 (stessa chiave con dati
+      diversi = 409) lo bloccava. GEMODO non conserva piu' il PDF ne' blocca le
+      ripetizioni; ogni chiamata a genera lascia una riga nel registro delle
+      generazioni (migrazione 0029) con chi, quando, chiave, versione del
+      modello, esito e impronte SHA-256 dei dati e del PDF, e il PDF si
+      consegna solo a riga registrata. Il download e' tolto; la lettura per
+      riferimento e' degli amministratori. Supera FR-005, FR-007, FR-012 e la
+      conservazione della 005, e per la conservazione l'ADR 0002. Un modulo di
+      archiviazione, se servira', sara' a parte.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-10-05

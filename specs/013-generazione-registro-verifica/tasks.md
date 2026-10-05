@@ -2,9 +2,21 @@
 
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 
+**Primo passo fatto il 2026-10-05** (sblocca GEBAN): migrazione `0029`,
+generazione senza archivio ne' conflitti, registro di ogni chiamata, download
+tolto, lettura per riferimento solo admin; contratti 004 0.4.0 e 005 0.2.0,
+`docs/api-per-geban.md`, catalogo errori (T002 e T016 in parte). Verifica: 560
+test backend su Postgres reale; e2e su stack reale con lo stesso bando generato
+tre volte con la stessa chiave (tre PDF, tre righe di registro, download 404).
+
+**Prossimi, nell'ordine deciso dal product owner**: la pagina dei log (Phase 4
+e T013), poi la "firma" del PDF: riferimento nei metadati e verifica di PDF e
+dati (T005, T007, T008, T014). Nella pagina dei log mostrare anche lo
+username: oggi il registro ha il `sub` del token (`creato_da`).
+
 ## Phase 1: Decisione e contratti
 
-- [ ] T001 Nota nelle Clarifications di `005` (FR-005/007/012 e conservazione
+- [x] T001 Nota nelle Clarifications di `005` (FR-005/007/012 e conservazione
       superati da 013) e di `004` (FR-018); decisione nel
       `docs/decision-register.yaml`.
 - [ ] T002 Contratto 004: niente 409, riferimento nuovo a ogni chiamata,
@@ -14,17 +26,17 @@
 
 ## Phase 2: US1 - Rigenerare con la stessa chiave (P1)
 
-- [ ] T003 Migrazione: via il vincolo di unicita' della chiave e il vincolo che
+- [x] T003 Migrazione: via il vincolo di unicita' della chiave e il vincolo che
       richiede il file; esito `DATI_NON_VALIDI`; client e ruoli; indice
       sull'impronta del PDF. Righe esistenti intatte. Test della migrazione su
       Postgres reale.
-- [ ] T004 `genera`: niente ricerca della generazione precedente, niente file;
+- [x] T004 `genera`: niente ricerca della generazione precedente, niente file;
       registra ogni chiamata (anche dati non validi) e consegna il PDF solo a
       riga registrata (FR-006). Test: stessa chiave e dati diversi due volte,
       stessi dati due volte, dati non validi, registro non scrivibile -> errore
       e nessun PDF.
 - [ ] T005 Riferimento nei metadati del PDF. Test: si estrae dal PDF ricevuto.
-- [ ] T006 Via `archivio.py` dal flusso, `gemodo_storage_dir`, i codici
+- [x] T006 Via `archivio.py` dal flusso, `gemodo_storage_dir`, i codici
       d'errore non piu' usati; test esistenti dell'idempotenza capovolti.
 
 ## Phase 3: US2/US3 - Verifica (P1/P2)
@@ -34,7 +46,7 @@
       cambiato no, PDF estraneo no, non admin 403.
 - [ ] T008 API admin "verifica dati": riferimento + dati, corrispondono o no;
       ordine dei campi indifferente. Test.
-- [ ] T009 `GET /documenti/{riferimento}` solo admin, download tolto. Test.
+- [x] T009 `GET /documenti/{riferimento}` solo admin, download tolto. Test.
 
 ## Phase 4: US4 - Registro attivita' (P2)
 

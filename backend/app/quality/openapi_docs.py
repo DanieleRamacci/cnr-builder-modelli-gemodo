@@ -97,9 +97,7 @@ FLUSSO_GEBAN = [
     ("GET", "/api/v1/catalogo/modelli", "Cerca i modelli pubblicati per tipo documento, percorso, livello e lingua"),
     ("GET", "/api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti", "Il contratto dati della versione: quali campi inviare"),
     ("POST", "/api/v1/documenti/valida", "Verifica i dati senza produrre nulla"),
-    ("POST", "/api/v1/documenti/genera", "Genera il documento; idempotente sulla coppia sistema + contesto esterno"),
-    ("GET", "/api/v1/documenti/{riferimento}", "Stato e metadati di un documento gia' generato"),
-    ("GET", "/api/v1/documenti/{riferimento}/download", "Scarica il PDF, se stato e autorizzazione lo consentono"),
+    ("POST", "/api/v1/documenti/genera", "Genera il documento e lo restituisce; si ripete quante volte serve"),
 ]
 
 

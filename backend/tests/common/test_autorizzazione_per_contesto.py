@@ -162,7 +162,7 @@ def test_valida_e_genera_negano_accesso_fuori_contesto(db_engine, client):
 
 
 @pytest.mark.integration
-def test_genera_e_download_funzionano_nel_proprio_contesto(db_engine, client):
+def test_genera_funziona_nel_proprio_contesto_e_il_registro_resta_agli_admin(db_engine, client):
     geban = _crea_versione(db_engine, codice_contesto="geban")
     principal = _principal(("geban", ("ROLE_COORDINATOR#geban",)))
     payload = _payload(geban["public_id"], "geban")
@@ -173,27 +173,10 @@ def test_genera_e_download_funzionano_nel_proprio_contesto(db_engine, client):
     riferimento = esito.headers["x-riferimento-documentale"]
     assert riferimento
 
-    stato = _as(client, principal).get(f"/api/v1/documenti/{riferimento}")
-    assert stato.status_code == 200, stato.text
-    download = _as(client, principal).get(f"/api/v1/documenti/{riferimento}/download")
-    assert download.status_code == 200
-    assert download.content.startswith(b"%PDF")
-
-    # A caller who genuinely holds DOCUMENTI_VIEWER/GENERATORE (so the coarse route
-    # dependency lets them through, unlike test_ruoli_diretti_senza_contesto_sono_negati)
-    # but no role at all in "geban" - the manifest only maps roles for "geban", so this
-    # must be built directly rather than via _principal(), which would zero out `ruoli`
-    # for any context/role combo the manifest doesn't resolve.
-    estraneo = PrincipalGEMODO(
-        "estraneo-test", CLIENT_ID, ("gemodo-backend",), ("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"),
-        "https://sso.example.test", ruoli_diretti=("DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"),
-        ruoli_contesto=(("altro-contesto-senza-ruoli", ("ROLE_COORDINATOR#geban",)),),
-    )
-    stato_negato = _as(client, estraneo).get(f"/api/v1/documenti/{riferimento}")
-    download_negato = _as(client, estraneo).get(f"/api/v1/documenti/{riferimento}/download")
-    assert stato_negato.status_code == 404
-    assert download_negato.status_code == 404
-    assert stato_negato.json()["codice"] == "DOCUMENTO_NON_TROVATO"
+    # 013: il PDF si riceve solo da `genera`; la riga del registro e' cosa da
+    # amministratori, e il download non c'e' piu'.
+    assert _as(client, principal).get(f"/api/v1/documenti/{riferimento}").status_code == 403
+    assert _as(client, principal).get(f"/api/v1/documenti/{riferimento}/download").status_code == 404
 
 
 @pytest.mark.integration

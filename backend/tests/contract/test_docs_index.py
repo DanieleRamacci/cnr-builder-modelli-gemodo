@@ -37,14 +37,15 @@ def test_index_lists_every_published_contract(client):
 def test_index_points_to_the_geban_integration_guide(client):
     corpo = client.get("/docs").text
     assert "geban" in corpo.lower()
-    # I quattro endpoint che GEMODO espone a GEBAN piu' i due di consultazione.
+    # Gli endpoint che GEMODO espone a GEBAN. Dalla 013 il PDF si riceve solo da
+    # `genera`: la consultazione per riferimento e' degli amministratori.
     for rotta in (
         "/api/v1/catalogo/modelli",
         "/api/v1/documenti/valida",
         "/api/v1/documenti/genera",
-        "/api/v1/documenti/{riferimento}",
     ):
         assert rotta in corpo, f"{rotta} non citata nell'indice"
+    assert "/download" not in corpo
 
 
 def test_runtime_explorer_is_still_reachable(client):

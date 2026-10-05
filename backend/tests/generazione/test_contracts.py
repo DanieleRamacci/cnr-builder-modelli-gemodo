@@ -26,9 +26,16 @@ def test_generazione_contract_matches_real_states():
 
 
 def test_storage_contract_matches_real_states():
+    # 013: il registro tiene anche le chiamate con dati non validi.
     contract = yaml.safe_load(STORAGE.read_text())
     stato = contract["components"]["schemas"]["StatoDocumento"]["properties"]["stato"]
-    assert set(stato["enum"]) == {"COMPLETATO", "FALLITO"}
+    assert set(stato["enum"]) == {"COMPLETATO", "FALLITO", "DATI_NON_VALIDI"}
+
+
+def test_il_download_non_e_piu_nel_contratto():
+    # 013: GEMODO non conserva il PDF, quindi non c'e' niente da riscaricare.
+    contract = yaml.safe_load(STORAGE.read_text())
+    assert not any(path.endswith("/download") for path in contract["paths"])
 
 
 def test_old_simulated_generation_endpoint_is_withdrawn():

@@ -5,28 +5,39 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.catalog.models import Base, ModelloDocumentoVersione
 
 
 class DocumentoGenerato(Base):
+    """Una chiamata a `genera` e il suo esito: il registro delle generazioni (013).
+
+    GEMODO consegna il PDF e non lo conserva: della generazione restano chi,
+    quando, per quale chiave e da quale versione del modello, e le impronte
+    SHA-256 dei dati ricevuti e del PDF consegnato, che bastano a verificare un
+    documento contestato. La stessa chiave si ripete: GEBAN rigenera il bando a
+    ogni correzione. `percorso_file` resta solo per le righe di prima.
+    """
+
     __tablename__ = "documento_generato"
     __table_args__ = (
         UniqueConstraint("riferimento", name="uq_documento_generato_riferimento"),
-        UniqueConstraint(
-            "sistema_richiedente", "external_context_id", "modello_versione_id",
-            name="uq_documento_generato_chiave_idempotente",
-        ),
-        CheckConstraint("stato IN ('COMPLETATO', 'FALLITO')", name="ck_documento_generato_stato"),
         CheckConstraint(
-            "(stato = 'COMPLETATO' AND hash_file IS NOT NULL AND percorso_file IS NOT NULL "
-            "AND dimensione_byte IS NOT NULL AND errore_messaggio IS NULL) "
-            "OR (stato = 'FALLITO' AND hash_file IS NULL AND percorso_file IS NULL AND errore_messaggio IS NOT NULL)",
+            "stato IN ('COMPLETATO', 'FALLITO', 'DATI_NON_VALIDI')", name="ck_documento_generato_stato",
+        ),
+        CheckConstraint(
+            "(stato = 'COMPLETATO' AND hash_file IS NOT NULL AND dimensione_byte IS NOT NULL "
+            "AND errore_messaggio IS NULL) "
+            "OR (stato IN ('FALLITO', 'DATI_NON_VALIDI') AND hash_file IS NULL "
+            "AND percorso_file IS NULL AND errore_messaggio IS NOT NULL)",
             name="ck_documento_generato_stato_coerente",
         ),
+        Index("ix_documento_generato_hash_file", "hash_file"),
+        Index("ix_documento_generato_chiave", "sistema_richiedente", "external_context_id", "modello_versione_id"),
+        Index("ix_documento_generato_created_at", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -43,6 +54,8 @@ class DocumentoGenerato(Base):
     dimensione_byte: Mapped[int | None] = mapped_column(Integer, nullable=True)
     errore_messaggio: Mapped[str | None] = mapped_column(Text, nullable=True)
     creato_da: Mapped[str] = mapped_column(String(255), nullable=False)
+    client_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ruoli: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     versione: Mapped[ModelloDocumentoVersione] = relationship()

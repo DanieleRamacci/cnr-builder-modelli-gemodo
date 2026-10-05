@@ -733,6 +733,38 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     }
     expect(anteprima.x['a)']).toBeCloseTo(x['a)'], 0);
   }
+  // 013, riscontro GEBAN del 2026-10-05: lo stesso bando si rigenera a ogni
+  // correzione con la stessa chiave. Ogni volta il PDF coi dati nuovi e un
+  // riferimento nuovo; GEMODO non lo conserva, quindi non c'e' download.
+  {
+    const chiaveBando = `e2e-bando-${Date.now()}`;
+    const generaBando = (titolo: string) =>
+      page.request.post('/api/v1/documenti/genera', {
+        headers: { Authorization: `Bearer ${token}` },
+        data: {
+          sistema_richiedente: 'GEBAN',
+          external_context_id: chiaveBando,
+          modello_versione_id: Number(idApi),
+          dati: { titolo_it: titolo },
+        },
+      });
+    const riferimenti = new Set<string>();
+    for (const titolo of ['Prima stesura', 'Seconda stesura corretta', 'Definitivo']) {
+      const risposta = await generaBando(titolo);
+      expect(risposta.status(), await risposta.text()).toBe(200);
+      expect(risposta.headers()['content-type']).toBe('application/pdf');
+      const percorso = testInfo.outputPath(`bando-013-${riferimenti.size}.pdf`);
+      writeFileSync(percorso, await risposta.body());
+      expect(fontPerParola(percorso).testo).toContain(`Premesso che ${titolo}`);
+      riferimenti.add(risposta.headers()['x-riferimento-documentale']);
+    }
+    expect(riferimenti.size).toBe(3);
+    const [primo] = riferimenti;
+    const download = await page.request.get(`/api/v1/documenti/${primo}/download`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(download.status()).toBe(404);
+  }
   await page.screenshot({ path: testInfo.outputPath('contesti-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('contesti-mobile.png'), fullPage: true });

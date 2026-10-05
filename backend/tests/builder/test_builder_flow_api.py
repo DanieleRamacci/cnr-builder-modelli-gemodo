@@ -805,25 +805,21 @@ def test_flusso_completo_creazione_pubblicazione_e_generazione_documento(builder
     assert stato.json()["stato"] == "COMPLETATO"
     assert stato.json()["modello_versione_id"] == modello_versione_id
 
-    download = builder_client.get(f"/api/v1/documenti/{riferimento}/download")
-    assert download.status_code == 200, download.text
-    assert download.headers["content-type"] == "application/pdf"
-    assert download.content == generazione.content
-    assert "Bando pytest" in estrai_testo(download.content)
+    assert "Bando pytest" in estrai_testo(generazione.content)
 
+    # 013: GEMODO non conserva il PDF; la stessa chiave si ripete, anche con
+    # dati diversi, e ogni generazione ha il suo riferimento.
+    assert builder_client.get(f"/api/v1/documenti/{riferimento}/download").status_code == 404
     replay = builder_client.post("/api/v1/documenti/genera", json=payload)
     assert replay.status_code == 200, replay.text
-    assert replay.headers["x-riferimento-documentale"] == riferimento
-    assert replay.content == generazione.content
-
+    assert replay.headers["x-riferimento-documentale"] != riferimento
     payload_diverso = {**payload, "dati": {**payload["dati"], "numero_posti": 99}}
-    conflitto = builder_client.post("/api/v1/documenti/genera", json=payload_diverso)
-    assert conflitto.status_code == 409, conflitto.text
-    assert conflitto.json()["codice"] == "RICHIESTA_IDEMPOTENTE_IN_CONFLITTO"
+    corretto = builder_client.post("/api/v1/documenti/genera", json=payload_diverso)
+    assert corretto.status_code == 200, corretto.text
+    assert corretto.headers["content-type"] == "application/pdf"
+    # Il modello cancellato lascia il registro: la generazione resta consultabile.
     assert builder_client.delete(f"/api/v1/builder/modelli/{modello['id']}").status_code == 204
-    retained = builder_client.get(f"/api/v1/documenti/{riferimento}/download")
-    assert retained.status_code == 200
-    assert retained.content == download.content
+    assert builder_client.get(f"/api/v1/documenti/{riferimento}").status_code == 200
 
 
 @pytest.mark.integration

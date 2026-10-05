@@ -10,6 +10,13 @@
 
 ## Clarifications
 
+### Nota 2026-10-05 - spec 013
+
+Il rinvio di FR-018 alla 005 per conservazione e idempotenza e' superato dalla
+[013](../013-generazione-registro-verifica/spec.md): GEMODO genera e consegna
+senza conservare il PDF, e registra ogni generazione.
+
+
 ### Decisione MVP 2026-09-17 - ADR 0002
 
 Prima consegna: PDF funzionale non ufficiale riconoscibile come TEST con

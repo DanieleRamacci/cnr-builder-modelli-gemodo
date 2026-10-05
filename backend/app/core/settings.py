@@ -53,7 +53,6 @@ class Settings:
     gemodo_mock_context_roles: tuple[str, ...] = ()
     gemodo_integrazioni_allowlist: tuple[str, ...] = ()
     gemodo_integrazioni_allowlist_privato: tuple[str, ...] = ()
-    gemodo_storage_dir: str = ""
     gemodo_enforce_contesto_consumatore: bool = False
     gemodo_cors_allowed_origins: tuple[str, ...] = ()
 
@@ -90,7 +89,6 @@ def get_settings() -> Settings:
         integration_profiles_path=os.getenv("GEMODO_INTEGRATION_PROFILES_PATH") or None,
         gemodo_integrazioni_allowlist=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST"),
         gemodo_integrazioni_allowlist_privato=_tuple_env("GEMODO_INTEGRAZIONI_ALLOWLIST_PRIVATO"),
-        gemodo_storage_dir=os.getenv("GEMODO_STORAGE_DIR", str(repo_root / "data" / "documenti-generati")),
         gemodo_enforce_contesto_consumatore=_bool_env("GEMODO_ENFORCE_CONTESTO_CONSUMATORE", False),
         gemodo_cors_allowed_origins=_origin_tuple_env("GEMODO_CORS_ALLOWED_ORIGINS"),
     )
