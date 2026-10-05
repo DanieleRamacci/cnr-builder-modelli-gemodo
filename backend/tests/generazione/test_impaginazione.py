@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from io import BytesIO
 
+import pytest
+
 from pypdf import PdfReader
 
 from app.documentale.schemas import BloccoDocumento
-from app.generazione.renderer import InizioPagina, render_documento
+from app.generazione.renderer import InizioPagina, _interlinea, render_documento
 
 
 def paragrafo(ordine: int, testo: str, tipo: str = "PARAGRAFO") -> BloccoDocumento:
@@ -35,6 +37,10 @@ def misura(blocchi: list[BloccoDocumento]) -> tuple[list[InizioPagina], PdfReade
     inizi: list[InizioPagina] = []
     pdf = render_documento(titolo="Impaginazione", blocchi=blocchi, inizi_pagina=inizi)
     return inizi, PdfReader(BytesIO(pdf))
+
+
+def dove(inizio: InizioPagina) -> tuple[int, int | None, int | None, int]:
+    return inizio.pagina, inizio.ordine, inizio.voce, inizio.riga
 
 
 def prima_riga(lettore: PdfReader, pagina: int) -> str:
@@ -92,7 +98,7 @@ def test_un_interruzione_di_pagina_e_annotata_sul_suo_blocco():
     })
     inizi, lettore = misura([paragrafo(0, "Prima."), interruzione, paragrafo(2, "Dopo.")])
 
-    assert inizi == [InizioPagina(pagina=2, ordine=1, voce=None, riga=0)]
+    assert [dove(inizio) for inizio in inizi] == [(2, 1, None, 0)]
     assert prima_riga(lettore, 2) == "Dopo."
 
 
@@ -101,3 +107,59 @@ def test_senza_richiesta_il_pdf_e_identico():
     assert len(PdfReader(BytesIO(render_documento(titolo="x", blocchi=blocchi))).pages) == len(
         misura(blocchi)[1].pages
     )
+
+
+def vuoto(ordine: int) -> BloccoDocumento:
+    return BloccoDocumento.model_validate({
+        "id": f"v{ordine}", "tipo": "PARAGRAFO", "posizionamento": "BODY", "ordine": ordine,
+        "frammenti": [],
+    })
+
+
+def test_andare_a_capo_porta_il_testo_verso_la_pagina_dopo():
+    # Riscontro del 2026-10-05: un capoverso vuoto non occupava posto nel PDF,
+    # quindi gli "a capo" davanti a un capoverso spezzato non lo spostavano e
+    # il confine disegnato nell'editor scendeva insieme al testo.
+    riempitivo = [paragrafo(i, f"Riga {i}.") for i in range(capienza_prima_pagina() - 3)]
+    parole = " ".join(f"parola{n:03d}" for n in range(400))
+    lungo = len(riempitivo) + 3
+
+    def spezzato(blocchi: list[BloccoDocumento]) -> InizioPagina:
+        inizi, _ = misura([*riempitivo, *blocchi, paragrafo(lungo, parole)])
+        return next(inizio for inizio in inizi if inizio.ordine == lungo)
+
+    senza = spezzato([])
+    con_uno = spezzato([vuoto(lungo - 1)])
+    # Un capoverso vuoto e' una riga bianca piu' lo spazio dopo il capoverso:
+    # sulla pagina prima resta una riga in meno del capoverso lungo.
+    assert senza.riga >= 3
+    assert con_uno.riga == senza.riga - 1
+
+
+def test_una_riga_vuota_in_fondo_alla_pagina_comincia_la_pagina_dopo():
+    capienza = capienza_prima_pagina()
+    riempitivo = [paragrafo(i, f"Riga {i}.") for i in range(capienza)]
+    inizi, lettore = misura([*riempitivo, vuoto(capienza), paragrafo(capienza + 1, "Dopo.")])
+
+    assert dove(inizi[0]) == (2, capienza, None, 0)
+    assert prima_riga(lettore, 2) == "Dopo."
+
+
+def test_fra_due_fogli_ci_sono_il_vuoto_in_fondo_e_i_margini_del_pdf():
+    # 012 T083: l'editor disegna fra due fogli lo spazio che il PDF lascia.
+    # Capoversi di una riga: in fondo resta meno di un capoverso; senza
+    # cornice i margini sono quelli di fpdf (15 mm sotto, 10 mm sopra).
+    inizi, _ = misura([paragrafo(i, f"Capoverso {i}.") for i in range(120)])
+    for inizio in inizi:
+        assert 0 <= inizio.libero < _interlinea(11) + 2
+        assert inizio.basso == pytest.approx(15)
+        assert inizio.alto == pytest.approx(10)
+
+
+def test_dopo_un_interruzione_il_resto_della_pagina_resta_vuoto():
+    interruzione = BloccoDocumento.model_validate({
+        "id": "i", "tipo": "INTERRUZIONE_PAGINA", "posizionamento": "BODY", "ordine": 1,
+    })
+    inizi, _ = misura([paragrafo(0, "Prima."), interruzione, paragrafo(2, "Dopo.")])
+
+    assert inizi[0].libero > 200

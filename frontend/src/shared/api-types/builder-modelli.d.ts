@@ -717,6 +717,9 @@ export interface components {
                 /** @description indice della voce, se il blocco e' un elenco */
                 voce: number | null;
                 riga: number;
+                spazio_libero_mm: number;
+                margine_basso_mm: number;
+                margine_alto_mm: number;
             }[];
         };
         ErroreConViolazioni: {

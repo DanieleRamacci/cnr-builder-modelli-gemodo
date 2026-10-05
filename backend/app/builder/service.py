@@ -959,6 +959,9 @@ class BuilderService:
                 "blocco": blocchi[inizio.ordine][1] if inizio.ordine is not None else None,
                 "voce": inizio.voce,
                 "riga": inizio.riga,
+                "spazio_libero_mm": round(inizio.libero, 2),
+                "margine_basso_mm": round(inizio.basso, 2),
+                "margine_alto_mm": round(inizio.alto, 2),
             }
             for inizio in inizi
         ]

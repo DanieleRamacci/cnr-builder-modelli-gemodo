@@ -231,6 +231,11 @@ class InizioPaginaResponse(BaseModel):
     elenco; `riga` e' quante righe di quel blocco restano sulla pagina prima
     (0: il blocco comincia sulla pagina nuova). Senza blocco, la pagina e'
     cominciata fra due blocchi.
+
+    Le misure in mm sono lo spazio fra i due fogli, come nel PDF (012 T083):
+    il vuoto rimasto in fondo alla pagina prima, la zona del suo pie' di
+    pagina e quella dell'intestazione della pagina nuova. L'editor ci disegna
+    pie' di pagina e intestazione, perche' si veda quanto posto prendono.
     """
 
     pagina: int
@@ -238,6 +243,9 @@ class InizioPaginaResponse(BaseModel):
     blocco: str | None
     voce: int | None
     riga: int
+    spazio_libero_mm: float
+    margine_basso_mm: float
+    margine_alto_mm: float
 
 
 class ImpaginazioneResponse(BaseModel):

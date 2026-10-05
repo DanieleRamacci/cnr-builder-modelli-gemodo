@@ -1012,13 +1012,28 @@ describe('2b ridotta: anteprima modello', () => {
     expect(prima.request.body.sezioni[0].codice).toBe('art');
     prima.flush({
       pagine: 2,
-      inizi_pagina: [{ pagina: 2, sezione: 'art', blocco: 'p1', voce: null, riga: 0 }],
+      inizi_pagina: [
+        {
+          pagina: 2,
+          sezione: 'art',
+          blocco: 'p1',
+          voce: null,
+          riga: 0,
+          spazio_libero_mm: 4,
+          margine_basso_mm: 22,
+          margine_alto_mm: 41,
+        },
+      ],
     });
     fixture.detectChanges();
     fixture.detectChanges();
 
     expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('2 pagine nel PDF');
-    const confini = root.querySelectorAll('app-editor-sezione [data-fine-pagina]');
+    // Fra i due fogli: lo spazio nel testo, prima del capoverso che apre la
+    // pagina, e sopra di lui la fascia con il numero della pagina.
+    const confini = root.querySelectorAll('[data-fra-fogli] [data-fine-pagina]');
+    const spazio = root.querySelector('[data-section-text="art"] > [data-salto-pagina="2"]');
+    expect(spazio?.nextElementSibling?.getAttribute('data-block-id')).toBe('p1');
     expect(Array.from(confini).map((c) => c.textContent?.trim())).toEqual(['Pagina 2']);
 
     // Si scrive, senza salvare: il renderer misura il testo sullo schermo.
@@ -1030,6 +1045,7 @@ describe('2b ridotta: anteprima modello', () => {
       { testo: 'secondo capoverso allungato' },
     ]);
     dopo.flush({ pagine: 1, inizi_pagina: [] });
+    fixture.detectChanges();
     fixture.detectChanges();
     expect(root.querySelector('[data-fine-pagina]')).toBeNull();
     expect(root.querySelector('[data-pagine]')?.textContent?.trim()).toBe('1 pagina nel PDF');

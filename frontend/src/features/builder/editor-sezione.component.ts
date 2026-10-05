@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { ReplaceStep } from 'prosemirror-transform';
 import { TextSelection, type Command, type EditorState, type Transaction } from 'prosemirror-state';
-import { EditorView } from 'prosemirror-view';
+import { Decoration, DecorationSet, EditorView } from 'prosemirror-view';
 
 import { MenuSegnapostoComponent, type VoceSegnaposto } from './menu-segnaposto.component';
 import { convertiAppunti } from './frammenti';
@@ -37,14 +37,20 @@ export type Intervallo = { da: number; a: number };
 /**
  * Dove comincia una pagina dentro questa sezione, come lo misura il renderer
  * (012 T080): il blocco (la voce, se e' un elenco) e quante sue righe restano
- * sulla pagina prima.
+ * sulla pagina prima; e lo spazio fra i due fogli, in mm del PDF (T083).
  */
 export type InizioPaginaSezione = {
   pagina: number;
   blocco: string | null;
   voce: number | null;
   riga: number;
+  spazio_libero_mm: number;
+  margine_basso_mm: number;
+  margine_alto_mm: number;
 };
+
+/** Lo stacco fra due fogli, in pixel: non e' nel PDF, separa i fogli a schermo. */
+export const STACCO_FOGLI = 24;
 
 export type ModificaSezione = {
   blocchi: BloccoDocumento[];
@@ -78,16 +84,10 @@ const COMANDO = 'gemodo-comando';
     // Il menu `/` e' fisso rispetto alla finestra: se il foglio scorre non
     // starebbe piu' sotto il cursore, quindi si chiude.
     '(window:scroll)': 'chiudiMenuSlash()',
-    '(window:resize)': 'chiudiMenuSlash(); misuraPagine()',
+    '(window:resize)': 'chiudiMenuSlash()',
   },
   template: `
     <div #area></div>
-    <!-- Dove finisce un foglio del PDF: sopra il testo, senza prenderne il posto. -->
-    @for (segno of segniPagina(); track segno.pagina) {
-      <div class="fine-pagina" aria-hidden="true" data-fine-pagina [style.top.px]="segno.top">
-        <span>Pagina {{ segno.pagina }}</span>
-      </div>
-    }
     @if (menuSlash(); as menu) {
       <app-menu-segnaposto
         [voci]="vociSlash()"
@@ -105,8 +105,6 @@ export class EditorSezioneComponent implements AfterViewInit {
   readonly blocchi = input.required<BloccoDocumento[]>();
   /** I segnaposto che il menu `/` propone: i campi della versione. */
   readonly campi = input<VoceSegnaposto[]>([]);
-  /** Le pagine che cominciano in questa sezione, misurate sull'anteprima. */
-  readonly inizi = input<readonly InizioPaginaSezione[]>([]);
 
   readonly modificato = output<ModificaSezione>();
   readonly attivato = output<void>();
@@ -121,6 +119,8 @@ export class EditorSezioneComponent implements AfterViewInit {
   /** Il cursore e' mai stato nella sezione? Se no, un segnaposto va in fondo. */
   private toccato = false;
   private slashDa: number | null = null;
+  /** Lo spazio fra due fogli, nel testo dove il PDF va a pagina nuova (T083). */
+  private salti = DecorationSet.empty;
 
   /**
    * Il menu dei segnaposto aperto da `/` (012 T064): dove sta la `/`, cosa e'
@@ -133,9 +133,6 @@ export class EditorSezioneComponent implements AfterViewInit {
     x: number;
     y: number;
   } | null>(null);
-  /** I confini dei fogli, in pixel dall'alto della sezione. */
-  protected readonly segniPagina = signal<{ pagina: number; top: number }[]>([]);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly vociSlash = computed<VoceSegnaposto[]>(() => {
     const filtro = this.menuSlash()?.filtro.toLocaleLowerCase() ?? '';
     return this.campi()
@@ -150,10 +147,6 @@ export class EditorSezioneComponent implements AfterViewInit {
     effect(() => {
       const blocchi = this.blocchi();
       if (this.vista) this.sincronizza(blocchi);
-    });
-    effect(() => {
-      this.inizi();
-      if (this.vista) this.misuraPagine();
     });
     inject(DestroyRef).onDestroy(() => this.vista?.destroy());
   }
@@ -175,6 +168,7 @@ export class EditorSezioneComponent implements AfterViewInit {
         'data-section-text': this.codice(),
       }),
       dispatchTransaction: (tr) => this.applica(tr),
+      decorations: () => this.salti,
       handleTextInput: (vista, da, _a, testo) => {
         this.slashDa = testo === '/' && apreComando(vista.state, da) ? da : null;
         return false;
@@ -199,33 +193,78 @@ export class EditorSezioneComponent implements AfterViewInit {
   }
 
   /**
-   * Porta i confini dei fogli sul testo: all'inizio della riga annotata dal
-   * renderer, nel blocco che la contiene. Il foglio dell'editor ha le misure
-   * del PDF (012 T078), quindi la riga N del blocco qui e' la riga N li'. Se il
-   * blocco non c'e' piu' (cancellato dopo l'ultimo salvataggio) il segno
-   * aspetta la misura successiva.
+   * Mette fra il testo lo spazio che separa due fogli del PDF (012 T083): il
+   * vuoto in fondo al foglio che finisce, il suo pie' di pagina, lo stacco e
+   * l'intestazione del foglio dopo. Va all'inizio della riga annotata dal
+   * renderer, nel blocco che la contiene: il foglio dell'editor ha le misure
+   * del PDF (012 T078), quindi la riga N del blocco qui e' la riga N li'. Le
+   * righe si contano senza gli spazi della misura prima, che si tolgono e si
+   * rimettono nello stesso giro, prima che il browser disegni. Se il blocco
+   * non c'e' piu' lo spazio aspetta la misura successiva.
    */
-  protected misuraPagine(): void {
-    const radice = this.vista?.dom;
-    if (!radice) return;
-    const origine = this.host.nativeElement.getBoundingClientRect().top;
-    const segni: { pagina: number; top: number }[] = [];
-    for (const inizio of this.inizi()) {
-      const candidati = Array.from(radice.children).filter(
-        (figlio): figlio is HTMLElement =>
-          figlio instanceof HTMLElement && figlio.getAttribute('data-block-id') === inizio.blocco,
+  impagina(inizi: readonly InizioPaginaSezione[]): void {
+    const vista = this.vista;
+    if (!vista) return;
+    this.salti = DecorationSet.empty;
+    vista.setProps({});
+    const figli = Array.from(vista.dom.children);
+    const salti: Decoration[] = [];
+    for (const inizio of inizi) {
+      const candidati = figli.filter(
+        (figlio) => figlio.getAttribute('data-block-id') === inizio.blocco,
       );
       const elemento = candidati[inizio.voce ?? 0];
-      if (!elemento) continue;
-      const box = elemento.getBoundingClientRect();
-      if (elemento.classList.contains('page-break')) {
-        segni.push({ pagina: inizio.pagina, top: box.bottom - origine });
-        continue;
-      }
-      const interlinea = parseFloat(getComputedStyle(elemento).lineHeight) || 0;
-      segni.push({ pagina: inizio.pagina, top: box.top - origine + inizio.riga * interlinea });
+      if (!(elemento instanceof HTMLElement)) continue;
+      const dove = this.posizioneSalto(vista, figli.indexOf(elemento), elemento, inizio.riga);
+      if (!dove) continue;
+      salti.push(
+        Decoration.widget(dove.pos, () => spazioFraFogli(inizio, dove.inRiga), {
+          side: -1,
+          marks: [],
+          ignoreSelection: true,
+          key: `salto-${inizio.pagina}-${altezzaFraFogli(inizio)}-${dove.inRiga}`,
+        }),
+      );
     }
-    this.segniPagina.set(segni);
+    this.salti = DecorationSet.create(vista.state.doc, salti);
+    vista.setProps({});
+  }
+
+  /**
+   * La posizione del testo dove comincia la pagina: prima del blocco se ci
+   * comincia intero, dopo un'interruzione di pagina, altrimenti all'inizio
+   * della riga `riga` del blocco.
+   */
+  private posizioneSalto(
+    vista: EditorView,
+    indice: number,
+    elemento: HTMLElement,
+    riga: number,
+  ): { pos: number; inRiga: boolean } | null {
+    const { doc } = vista.state;
+    if (indice < 0 || indice >= doc.childCount) return null;
+    let inizioNodo = 0;
+    for (let i = 0; i < indice; i += 1) inizioNodo += doc.child(i).nodeSize;
+    const nodo = doc.child(indice);
+    if (!nodo.isTextblock) return { pos: inizioNodo + nodo.nodeSize, inRiga: false };
+    if (riga === 0) return { pos: inizioNodo, inRiga: false };
+    const box = elemento.getBoundingClientRect();
+    const interlinea = parseFloat(getComputedStyle(elemento).lineHeight) || 0;
+    const rientro = parseFloat(getComputedStyle(elemento).paddingLeft) || 0;
+    let trovata: { pos: number } | null = null;
+    try {
+      trovata = vista.posAtCoords({
+        left: box.left + rientro + 1,
+        top: box.top + (riga + 0.5) * interlinea,
+      });
+    } catch {
+      // Senza impaginazione del browser (i test unitari) non si misura.
+    }
+    const pos = trovata?.pos;
+    if (pos === undefined || pos <= inizioNodo + 1 || pos >= inizioNodo + nodo.nodeSize - 1) {
+      return { pos: inizioNodo, inRiga: false };
+    }
+    return { pos, inRiga: true };
   }
 
   /** Lo stato dell'editor, per chi deve leggerlo (un collegamento gia' presente). */
@@ -287,8 +326,9 @@ export class EditorSezioneComponent implements AfterViewInit {
     const vista = this.vista!;
     const prima = vista.state;
     const { state: dopo, transactions } = prima.applyTransaction(tr);
+    // Lo spazio fra i fogli segue il testo finche' non arriva la misura nuova.
+    for (const fatta of transactions) this.salti = this.salti.map(fatta.mapping, fatta.doc);
     vista.updateState(dopo);
-    if (!dopo.doc.eq(prima.doc) && this.inizi().length) this.misuraPagine();
     if (this.slashDa !== null && dopo.doc.textBetween(this.slashDa, this.slashDa + 1) === '/') {
       this.apriMenuSlash(this.slashDa);
     }
@@ -470,4 +510,25 @@ function digitazione(
       !tr.getMeta('uiEvent') &&
       tr.steps.every((passo) => passo instanceof ReplaceStep),
   );
+}
+
+/** Quanto e' alto lo spazio fra due fogli, come espressione CSS sul foglio. */
+function altezzaFraFogli(inizio: InizioPaginaSezione): string {
+  const mm = inizio.spazio_libero_mm + inizio.margine_basso_mm + inizio.margine_alto_mm;
+  return `calc(var(--foglio-mm) * ${mm.toFixed(2)} + ${STACCO_FOGLI}px)`;
+}
+
+/**
+ * Lo spazio fra due fogli: vuoto, alto quanto quello del PDF. Il foglio ci
+ * disegna sopra pie' di pagina e intestazione. Dentro un capoverso e' un
+ * blocco in linea largo quanto la riga: la riga prima resta giustificata.
+ */
+function spazioFraFogli(inizio: InizioPaginaSezione, inRiga: boolean): HTMLElement {
+  const spazio = document.createElement(inRiga ? 'span' : 'div');
+  spazio.className = inRiga ? 'salto-foglio in-riga' : 'salto-foglio';
+  spazio.contentEditable = 'false';
+  spazio.setAttribute('aria-hidden', 'true');
+  spazio.setAttribute('data-salto-pagina', String(inizio.pagina));
+  spazio.style.height = altezzaFraFogli(inizio);
+  return spazio;
 }

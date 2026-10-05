@@ -368,6 +368,57 @@
     background: #fff;
     box-shadow: 0 2px 10px rgb(23 50 77 / 14%);
   }
+
+  // Fra due fogli del PDF (012 T080, T083): sopra lo spazio che l'editor
+  // lascia nel testo, il pie' di pagina del foglio che finisce, lo stacco
+  // grigio fra i fogli e l'intestazione del foglio dopo. Larga quanto il
+  // foglio, non si seleziona: il testo sta sopra e sotto, non dentro.
+  .fra-fogli {
+    position: absolute;
+    z-index: 1;
+    right: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+  }
+
+  .zona-piede,
+  .zona-testa {
+    overflow: hidden;
+    padding-right: calc(var(--foglio-mm) * 10);
+    padding-left: calc(var(--foglio-mm) * 10);
+    background: #fff;
+  }
+
+  .zona-piede {
+    flex: none;
+    box-shadow: 0 6px 8px -6px rgb(23 50 77 / 18%);
+  }
+
+  .stacco {
+    position: relative;
+    flex: none;
+    background: #e8edf2;
+
+    span {
+      position: absolute;
+      top: 50%;
+      right: calc(var(--foglio-mm) * 2);
+      transform: translateY(-50%);
+      padding: 0 8px;
+      border-radius: 9px;
+      background: #5a6772;
+      color: #fff;
+      font-size: 11px;
+      line-height: 18px;
+    }
+  }
+
+  .zona-testa {
+    flex: none;
+    box-shadow: 0 -6px 8px -6px rgb(23 50 77 / 18%);
+  }
 }
 
 // Il segnaposto come elemento visivo, nel pannello.

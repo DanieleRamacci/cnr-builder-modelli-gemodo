@@ -119,12 +119,21 @@ class InizioPagina:
     rimaste sulla pagina prima: 0 se il blocco comincia sulla pagina nuova.
     Senza blocco (`ordine` assente) la pagina e' cominciata fra un blocco e
     l'altro. L'editor la usa per disegnare dove finisce un foglio.
+
+    Le misure, in mm, sono lo spazio fra il foglio che finisce e il testo
+    della pagina nuova (012 T083): `libero` e' cio' che resta vuoto in fondo
+    alla pagina prima (meno di una riga, o il resto della pagina dopo
+    un'interruzione), `basso` la zona del pie' di pagina, `alto` quella
+    dell'intestazione della pagina nuova.
     """
 
     pagina: int
     ordine: int | None
     voce: int | None
     riga: int
+    libero: float = 0.0
+    basso: float = 0.0
+    alto: float = 0.0
 
 
 def _righe_testata(frammenti: list[FrammentoTesto]) -> list[list[FrammentoTesto]]:
@@ -173,13 +182,20 @@ class _PdfConCornice(FPDF):
 
     def add_page(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         if self.inizi_pagina is not None and self.page > 0:
+            misure = {
+                "libero": max(0.0, self.page_break_trigger - self.get_y()),
+                "basso": self.h - self.page_break_trigger,
+                "alto": self.t_margin,
+            }
             if self._segno is None:
-                self.inizi_pagina.append(InizioPagina(self.page + 1, None, None, 0))
+                self.inizi_pagina.append(InizioPagina(self.page + 1, None, None, 0, **misure))
             else:
                 scritte = round((self.get_y() - self._y_segno) / self._interlinea)
                 self._righe_segno += max(0, scritte)
                 ordine, voce = self._segno
-                self.inizi_pagina.append(InizioPagina(self.page + 1, ordine, voce, self._righe_segno))
+                self.inizi_pagina.append(
+                    InizioPagina(self.page + 1, ordine, voce, self._righe_segno, **misure)
+                )
         super().add_page(*args, **kwargs)
         self._y_segno = self.get_y()
 
@@ -277,10 +293,17 @@ def _scrivi_frammenti(
     `markdown=True` lo farebbe interpretando `**` nel testo, cioe' rimettendo
     una sintassi dentro il contenuto: escluso dalla spec.
     """
-    if not frammenti:
-        return
     if isinstance(pdf, _PdfConCornice):
         pdf.misura_righe(dimensione)
+    if not "".join(frammento.testo for frammento in frammenti):
+        # Un capoverso vuoto e' una riga bianca, come in Word e come
+        # nell'editor: chi va a capo per spingere il testo alla pagina dopo
+        # deve vederlo succedere anche nel PDF (riscontro del 2026-10-05).
+        altezza = _interlinea(dimensione)
+        if pdf.get_y() + altezza > pdf.page_break_trigger:
+            pdf.add_page()
+        pdf.ln(altezza + spazio_dopo)
+        return
     with pdf.text_columns(text_align=allineamento, line_height=1.35,
                           l_margin=pdf.l_margin + rientro) as colonne:
         with colonne.paragraph(bottom_margin=spazio_dopo) as paragrafo:

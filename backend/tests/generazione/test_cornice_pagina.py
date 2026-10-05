@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from io import BytesIO
 
+import pytest
 from PIL import Image
 from pypdf import PdfReader
 
 from app.documentale.schemas import BloccoDocumento, CornicePagina
-from app.generazione.renderer import render_documento
+from app.generazione.renderer import InizioPagina, render_documento
 from app.quality.document_model import violazioni_cornice
 
 CORNICE = CornicePagina.model_validate({
@@ -163,3 +164,16 @@ def test_la_cornice_rifiuta_markup_e_troppe_righe():
     assert any("markup" in v for v in violazioni)
     assert any("4 righe" in v for v in violazioni)
     assert any("una sola riga" in v for v in violazioni)
+
+
+def test_t083_fra_due_fogli_le_zone_sono_quelle_della_cornice():
+    # L'editor disegna pie' di pagina e intestazione fra i fogli: le zone che
+    # il renderer annota sono quelle che la cornice occupa davvero.
+    inizi: list[InizioPagina] = []
+    render_documento(
+        titolo="Bando", blocchi=[paragrafo(i, f"Capoverso {i}.") for i in range(90)],
+        cornice=CORNICE, logo=logo_png(), inizi_pagina=inizi,
+    )
+    # Logo, due righe e la linea: 8 + 16 + 2 + 2 * 4,5 + 6 mm.
+    assert inizi and all(inizio.alto == pytest.approx(8 + 16 + 2 + 9 + 6) for inizio in inizi)
+    assert all(inizio.basso == pytest.approx(22) for inizio in inizi)

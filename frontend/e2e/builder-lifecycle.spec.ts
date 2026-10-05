@@ -64,9 +64,17 @@ async function selezionaParola(page: Page, editor: Locator, parola: string): Pro
     }
     throw new Error(`parola non trovata: ${parola}`);
   }, parola);
-  // L'editor (ProseMirror) legge la selezione all'evento `selectionchange`,
-  // che il browser manda dopo: col mouse arriva prima di qualunque tasto.
-  await page.waitForTimeout(100);
+  await allineaSelezione(page);
+}
+
+/**
+ * L'editor (ProseMirror) legge la selezione all'evento `selectionchange`, che
+ * il browser manda dopo: con le mani arriva prima di qualunque tasto, coi
+ * tasti di Playwright no, e il tasto agirebbe sulla selezione di prima
+ * (tutto il testo, dopo un Ctrl+A). Lo si manda subito.
+ */
+async function allineaSelezione(page: Page): Promise<void> {
+  await page.evaluate(() => document.dispatchEvent(new Event('selectionchange')));
 }
 
 /**
@@ -402,27 +410,93 @@ test('ACE manager creates a draft and publishes from the context list', async ({
     });
   expect(pagineAnteprima).toBe(pagine);
   await page.getByRole('button', { name: 'Chiudi', exact: true }).click();
-  // Riscontro del 2026-10-02 (T081): il confine sta fermo sul foglio, e' il
-  // testo a scorrere. Cinque righe vuote in cima ai visti spostano in basso il
-  // testo, non il confine di pagina, che si riposiziona appena misurato.
-  const sulFoglio = () =>
+  // Riscontro del 2026-10-05 (T082, T083): fra due fogli c'e' lo spazio che
+  // c'e' nel PDF, con pie' di pagina e intestazione; il fondo del foglio sta
+  // fermo, e' il testo a passare alla pagina dopo. Si va a capo davanti al
+  // capoverso che apre la pagina 2: dopo la misura nuova il pie' di pagina
+  // della pagina 1 e' dov'era, e il capoverso e' sotto la fascia.
+  const sulFoglio = (selettore: string, lato: 'top' | 'bottom' = 'top') =>
     page
-      .locator('[data-fine-pagina]')
+      .locator(selettore)
       .first()
-      .evaluate((segno) => {
-        const foglio = segno.closest('.pagina')!.getBoundingClientRect();
-        return segno.getBoundingClientRect().top - foglio.top;
-      });
-  const confinePrima = await sulFoglio();
-  await testoVisti.locator(':scope > p').first().click();
-  await page.keyboard.press('Home');
-  for (let i = 0; i < 5; i += 1) await page.keyboard.press('Enter');
-  await expect.poll(sulFoglio).toBeLessThan(confinePrima + 40);
-  const interlinea = await testoVisti
-    .locator(':scope > p')
-    .first()
-    .evaluate((p) => parseFloat(getComputedStyle(p).lineHeight));
-  expect(Math.abs((await sulFoglio()) - confinePrima)).toBeLessThan(interlinea * 1.5);
+      .evaluate((elemento, lato) => {
+        const foglio = elemento.closest('.pagina')!.getBoundingClientRect();
+        return elemento.getBoundingClientRect()[lato] - foglio.top;
+      }, lato);
+  const piedePrima = await sulFoglio('[data-zona-piede]');
+  const inizioPagina2 = await testoVisti.evaluate((testo) => {
+    const spazio = testo.querySelector('[data-salto-pagina="2"]')!;
+    const capoverso = spazio.closest('p') ?? spazio.nextElementSibling!;
+    return (capoverso.textContent ?? '').slice(0, 40);
+  });
+  const apre = testoVisti.locator(':scope > p', { hasText: inizioPagina2 }).first();
+  // Fra due fogli c'e' tutto lo spazio del PDF: pie' di pagina e intestazione.
+  const fascia = page.locator('[data-fra-fogli]').first();
+  await expect(fascia.locator('[data-zona-piede]')).toContainText('Piazzale Aldo Moro 7');
+  await expect(fascia.locator('[data-zona-testa] [data-cornice-testata]')).toContainText(
+    'Consiglio Nazionale delle Ricerche',
+  );
+  expect(await sulFoglio('[data-fra-fogli]', 'bottom')).toBeGreaterThan(piedePrima + 60);
+  const misurato = page.waitForResponse(
+    (risposta) =>
+      risposta.url().endsWith('/impaginazione') && risposta.request().method() === 'POST',
+  );
+  await apre.click({ position: { x: 2, y: 4 } });
+  await allineaSelezione(page);
+  for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
+  await expect(testoVisti.locator(':scope > p').filter({ hasText: /^$/ })).toHaveCount(3);
+  const nuova = await (await misurato).json();
+  expect(nuova.pagine).toBeGreaterThanOrEqual(pagine);
+  await expect
+    .poll(async () => Math.abs((await sulFoglio('[data-zona-piede]')) - piedePrima))
+    .toBeLessThan(3);
+  const sotto = await sulFoglio('[data-fra-fogli]', 'bottom');
+  expect(
+    await apre.evaluate(
+      (p) => p.getBoundingClientRect().top - p.closest('.pagina')!.getBoundingClientRect().top,
+    ),
+  ).toBeGreaterThanOrEqual(sotto - 1);
+  // Una riga vuota davanti all'ultimo capoverso della pagina 1: non ci sta
+  // piu' intero e la pagina finisce a meta'. Lo spazio fra i fogli va dentro
+  // il capoverso, all'inizio della riga che passa alla pagina 2.
+  const ultimoSopra = await testoVisti.evaluate((testo) => {
+    const spazio = testo.querySelector('[data-salto-pagina="2"]')!;
+    const capoversi = Array.from(testo.querySelectorAll(':scope > p')).filter(
+      (p) =>
+        p.textContent && p.getBoundingClientRect().bottom <= spazio.getBoundingClientRect().top,
+    );
+    return (capoversi.at(-1)!.textContent ?? '').slice(0, 40);
+  });
+  const spezzato = testoVisti.locator(':scope > p', { hasText: ultimoSopra }).first();
+  const rimisurato = page.waitForResponse(
+    (risposta) =>
+      risposta.url().endsWith('/impaginazione') && risposta.request().method() === 'POST',
+  );
+  await spezzato.click({ position: { x: 2, y: 4 } });
+  await allineaSelezione(page);
+  await page.keyboard.press('Enter');
+  const dentro = (await (await rimisurato).json()).inizi_pagina[0];
+  expect(dentro.riga).toBeGreaterThan(0);
+  await expect(spezzato.locator('[data-salto-pagina="2"]')).toHaveCount(1);
+  await expect
+    .poll(async () => Math.abs((await sulFoglio('[data-zona-piede]')) - piedePrima))
+    .toBeLessThan(3);
+  // Il testo continua sotto la fascia, e le righe sopra restano giustificate.
+  const righe = await spezzato.evaluate((p) => {
+    const spazio = p.querySelector('[data-salto-pagina]')!.getBoundingClientRect();
+    const intervallo = document.createRange();
+    intervallo.selectNodeContents(p);
+    const rettangoli = Array.from(intervallo.getClientRects()).filter((r) => r.width > 0);
+    return {
+      // Mezzo pixel di qua o di la': le righe stanno su frazioni di pixel.
+      sopra: rettangoli.filter((r) => r.bottom <= spazio.top + 2).length,
+      sotto: rettangoli.filter((r) => r.top >= spazio.bottom - 2).length,
+    };
+  });
+  expect(righe.sopra).toBeGreaterThan(0);
+  expect(righe.sotto).toBeGreaterThan(0);
+  await page.locator('[data-fra-fogli]').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-fogli-capoverso.png') });
   // Capoversi e voci hanno il corpo del PDF, non quello di Bootstrap Italia;
   // e il testo col cursore non ha la cornice nera di focus.
   const stili = await testoVisti.evaluate((testo) => ({
@@ -432,7 +506,7 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   }));
   expect(stili.p).toBe(stili.li);
   expect(stili.cornice).toBe('none');
-  await page.locator('[data-fine-pagina]').first().scrollIntoViewIfNeeded();
+  await page.locator('[data-fra-fogli]').first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('builder-2b-fogli.png') });
   // La sezione di prova esce dal documento: il resto del flusso confronta il
   // PDF generato con quello di sempre.

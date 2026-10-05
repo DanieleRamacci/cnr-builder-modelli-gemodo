@@ -77,7 +77,7 @@ import { righeIntestazione, type CornicePagina } from './cornice.model';
         <div class="piede" data-cornice-piede>
           <span>{{ testoPiede() }}</span>
           @if (piede.numerazione_pagine) {
-            <span>Pagina 1 di N</span>
+            <span>Pagina {{ pagina() }} di {{ pagine() ?? 'N' }}</span>
           }
         </div>
       }
@@ -88,6 +88,9 @@ export class CorniceAnteprimaComponent {
   readonly cornice = input<CornicePagina | null>(null);
   readonly parte = input<'intestazione' | 'piede'>('intestazione');
   readonly logoUrl = input<SafeUrl | string | null>(null);
+  /** Il numero che il pie' di pagina scrive, e il totale se e' noto. */
+  readonly pagina = input(1);
+  readonly pagine = input<number | null>(null);
 
   protected readonly righe = computed(() =>
     righeIntestazione(this.cornice()?.intestazione?.testo ?? []),

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Builder Modelli
-  version: 0.12.1
+  version: 0.13.0
   description: >
     Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
     integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
@@ -546,8 +546,8 @@ paths:
               example:
                 pagine: 3
                 inizi_pagina:
-                  - {pagina: 2, sezione: VISTI, blocco: VISTI-b14, voce: null, riga: 2}
-                  - {pagina: 3, sezione: Art. 2 - Requisiti, blocco: art2-elenco, voce: 3, riga: 0}
+                  - {pagina: 2, sezione: VISTI, blocco: VISTI-b14, voce: null, riga: 2, spazio_libero_mm: 3.1, margine_basso_mm: 22, margine_alto_mm: 41}
+                  - {pagina: 3, sezione: Art. 2 - Requisiti, blocco: art2-elenco, voce: 3, riga: 0, spazio_libero_mm: 12.4, margine_basso_mm: 22, margine_alto_mm: 41}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -1081,18 +1081,24 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [pagina, sezione, blocco, voce, riga]
+            required: [pagina, sezione, blocco, voce, riga, spazio_libero_mm, margine_basso_mm, margine_alto_mm]
             description: >
               Il blocco che si sta scrivendo quando la pagina finisce, nominato come
               lo conosce l'editor (codice della sezione e `id` del blocco), e quante
               sue righe restano sulla pagina prima: 0 se il blocco comincia sulla
               pagina nuova. Senza blocco, la pagina e' cominciata fra due blocchi.
+              Le misure (dalla 0.13.0, 012 T083) sono lo spazio fra i due fogli
+              come nel PDF: il vuoto in fondo alla pagina prima, la zona del suo
+              pie' di pagina e quella dell'intestazione della pagina nuova.
             properties:
               pagina: {type: integer, minimum: 2}
               sezione: {type: string, nullable: true}
               blocco: {type: string, nullable: true}
               voce: {type: integer, minimum: 0, nullable: true, description: "indice della voce, se il blocco e' un elenco"}
               riga: {type: integer, minimum: 0}
+              spazio_libero_mm: {type: number, minimum: 0}
+              margine_basso_mm: {type: number, minimum: 0}
+              margine_alto_mm: {type: number, minimum: 0}
     ErroreConViolazioni:
       type: object
       additionalProperties: false

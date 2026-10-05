@@ -740,3 +740,48 @@ pagina, per sapere quanto spazio prende cio' che si incolla.
   ai visti: il confine resta entro una riga dal punto in cui era sul foglio;
   corpo dei capoversi uguale a quello delle voci; nessuna cornice di focus.
 
+- [x] T082 Il confine resta fermo sul foglio anche andando a capo (riscontro
+      del 2026-10-05: il segno di fine pagina scendeva ancora insieme al
+      testo). Due cause: il renderer scartava i capoversi vuoti, quindi per il
+      PDF gli "a capo" non spostavano nulla e la misura nuova rimetteva il
+      segno sullo stesso capoverso; e l'editor riagganciava il segno al blocco
+      a ogni battuta. Ora un capoverso vuoto e' una riga bianca anche nel PDF
+      (interlinea e spazio dopo, come sullo schermo; in fondo alla pagina
+      apre la pagina dopo), e la misura nuova rimette il confine in fondo al
+      foglio. Con T083 il confine prende spazio nel testo: fino alla misura
+      nuova (mezzo secondo) segue il testo, poi torna al suo posto.
+
+  Verifica: test del renderer (una riga vuota davanti al capoverso spezzato
+  ne lascia una riga in meno sulla pagina prima; una riga vuota in fondo alla
+  pagina apre la pagina dopo), 556 test backend, 195 frontend; e2e su stack
+  reale: tre "a capo" davanti al capoverso su cui cade il confine, il
+  capoverso scende e il confine no, ne' prima ne' dopo la misura nuova. Con il
+  renderer di prima lo stesso e2e fallisce (il segno resta attaccato al
+  capoverso). L'e2e di T081 passava senza provare nulla: dopo il Ctrl+A dei
+  visti l'editor non aveva ancora letto la selezione nuova e gli Invio non
+  facevano niente; ora gli e2e mandano subito `selectionchange`
+  (`allineaSelezione`) invece di aspettare 100 ms.
+
+- [x] T083 Fra due fogli lo spazio del PDF, con pie' di pagina e
+      intestazione (riscontro del 2026-10-05: scrivendo non si vedeva quanto
+      posto prendono sulle pagine dopo la prima). `impaginazione` (contratto
+      002 0.13.0) dice per ogni pagina, in mm, il vuoto rimasto in fondo alla
+      pagina prima, la zona del pie' di pagina e quella dell'intestazione,
+      misurati dal renderer al salto pagina. L'editor mette nel testo uno
+      spazio alto quanto quelle tre piu' lo stacco fra i fogli: fra due
+      blocchi se la pagina comincia con un blocco, dentro il capoverso (un
+      blocco in linea largo quanto la riga, cosi' la riga prima resta
+      giustificata) se la pagina finisce a meta'. Il foglio ci disegna sopra
+      il pie' di pagina vero, con "Pagina N di M", lo stacco e l'intestazione
+      vera, con il logo.
+
+  Verifica: test del renderer (zone uguali ai margini di fpdf senza cornice,
+  a quelli della cornice con logo e due righe; dopo un'interruzione il resto
+  della pagina resta vuoto), contratto, 557 test backend, 195 frontend; e2e
+  su stack reale con la cornice del tipo documento: fra pagina 1 e 2 ci sono
+  pie' di pagina e intestazione; tre "a capo" davanti al capoverso che apre
+  la pagina 2 lo lasciano sotto la fascia e, misurato di nuovo, il pie' di
+  pagina della pagina 1 e' dov'era (entro 3 px); una riga vuota davanti
+  all'ultimo capoverso della pagina 1 lo spezza, con righe sopra e sotto la
+  fascia. Tutta la suite e2e (4 test) verde.
+

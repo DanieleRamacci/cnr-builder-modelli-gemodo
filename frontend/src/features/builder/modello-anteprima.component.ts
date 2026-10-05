@@ -5,10 +5,12 @@ import {
   computed,
   effect,
   ChangeDetectorRef,
+  ElementRef,
   Injector,
   afterNextRender,
   inject,
   signal,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -21,6 +23,7 @@ import { CorniceAnteprimaComponent } from './cornice-anteprima.component';
 import { NOMI_MASCHERE, urlCornice, type CorniceModello } from './cornice.model';
 import {
   EditorSezioneComponent,
+  STACCO_FOGLI,
   type InizioPaginaSezione,
   type Intervallo,
   type ModificaSezione,
@@ -59,7 +62,7 @@ import {
 
 type Dettaglio = components['schemas']['ModelloDettaglio'];
 type Impaginazione = components['schemas']['Impaginazione'];
-const NESSUN_INIZIO: readonly InizioPaginaSezione[] = [];
+type InizioPagina = Impaginazione['inizi_pagina'][number];
 type Versione = Dettaglio['versioni'][number];
 type CampoVersione = Versione['campi'][number];
 type Nodo = {
@@ -151,6 +154,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
   host: {
     // Annulla e ripeti anche quando il fuoco e' su un pulsante della toolbar.
     '(document:keydown)': 'tastoDocumento($event)',
+    '(window:resize)': 'disegnaFogli()',
   },
   styleUrl: './modello-anteprima.component.scss',
   template: `
@@ -596,7 +600,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 {{ pagine.pagine === 1 ? '1 pagina' : pagine.pagine + ' pagine' }} nel PDF
               </p>
             }
-            <div class="pagina" id="anteprima-documento" data-document-preview>
+            <div class="pagina" #foglio id="anteprima-documento" data-document-preview>
               <!-- La cornice vera del tipo documento, come nel PDF (012 T070, FR-008):
                  prima qui c'erano un'intestazione e una firma finte del prototipo. -->
               <div class="document-frame" data-sheet-intestazione>
@@ -638,7 +642,6 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                         [codice]="sezione.codice"
                         [blocchi]="sezione.contenuto"
                         [campi]="vociCampi()"
-                        [inizi]="iniziPerSezione().get(sezione.codice) ?? nessunInizio"
                         (modificato)="aggiornaSezione(sezione.codice, $event)"
                         (attivato)="sezioneAttiva.set(sezione.codice)"
                         (uscito)="autosalva($event)"
@@ -729,6 +732,52 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   >
                 }
               </div>
+              <!-- Fra due fogli del PDF (012 T083): sopra lo spazio che l'editor
+                 lascia nel testo, il pie' di pagina del foglio che finisce e
+                 l'intestazione di quello dopo, alti quanto nel PDF. -->
+              @for (fascia of fasce(); track fascia.pagina) {
+                <div
+                  class="fra-fogli"
+                  aria-hidden="true"
+                  data-fra-fogli
+                  [style.top.px]="fascia.top"
+                  [style.height.px]="fascia.altezza"
+                >
+                  <div
+                    class="zona-piede"
+                    data-zona-piede
+                    [style.margin-top]="inMm(fascia.spazio_libero_mm)"
+                    [style.height]="inMm(fascia.margine_basso_mm)"
+                    [style.padding-top]="inMm(fascia.margine_basso_mm - PIEDE_DAL_FONDO)"
+                  >
+                    @if (cornice()?.cornice?.pie_pagina) {
+                      <app-cornice-anteprima
+                        [cornice]="cornice()!.cornice"
+                        parte="piede"
+                        [pagina]="fascia.pagina - 1"
+                        [pagine]="impaginazione()?.pagine ?? null"
+                      />
+                    }
+                  </div>
+                  <div class="stacco" data-fine-pagina [style.height.px]="STACCO">
+                    <span>Pagina {{ fascia.pagina }}</span>
+                  </div>
+                  <div
+                    class="zona-testa"
+                    data-zona-testa
+                    [style.height]="inMm(fascia.margine_alto_mm)"
+                    [style.padding-top]="inMm(TESTATA_DALL_ALTO)"
+                  >
+                    @if (cornice()?.cornice?.intestazione) {
+                      <app-cornice-anteprima
+                        [cornice]="cornice()!.cornice"
+                        parte="intestazione"
+                        [logoUrl]="logoCornice()"
+                      />
+                    }
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </section>
@@ -1205,7 +1254,6 @@ export class ModelloAnteprimaComponent {
    */
   protected readonly impaginazione = signal<Impaginazione | null>(null);
   private readonly daMisurare = new Subject<SezioneDocumento[]>();
-  protected readonly nessunInizio = NESSUN_INIZIO;
   protected readonly iniziPerSezione = computed(() => {
     const perSezione = new Map<string, InizioPaginaSezione[]>();
     for (const inizio of this.impaginazione()?.inizi_pagina ?? []) {
@@ -1225,6 +1273,13 @@ export class ModelloAnteprimaComponent {
   });
 
   private readonly editori = viewChildren(EditorSezioneComponent);
+  private readonly foglio = viewChild<ElementRef<HTMLElement>>('foglio');
+  /** Lo spazio fra due fogli, in pixel dall'alto del foglio, con le sue misure. */
+  protected readonly fasce = signal<(InizioPagina & { top: number; altezza: number })[]>([]);
+  /** Dove il PDF scrive pie' di pagina e intestazione, in mm (renderer.py). */
+  protected readonly PIEDE_DAL_FONDO = 14;
+  protected readonly TESTATA_DALL_ALTO = 8;
+  protected readonly STACCO = STACCO_FOGLI;
   /** L'editor della sezione selezionata: e' quello su cui agisce la toolbar. */
   protected readonly editorAttivo = computed(
     () => this.editori().find((editor) => editor.codice() === this.sezioneAttiva()) ?? null,
@@ -1266,10 +1321,66 @@ export class ModelloAnteprimaComponent {
       const sezioni = this.sezioniLocali();
       if (this.sezioni()?.modificabile) this.daMisurare.next(this.riordina(sezioni));
     });
+    // I segni si spostano solo quando arriva una misura nuova: mentre si
+    // scrive restano fermi sul foglio e il testo gli scorre sotto, finche' il
+    // renderer non dice dove cade adesso il confine (riscontro del 2026-10-05).
+    effect(() => {
+      this.iniziPerSezione();
+      afterNextRender(() => this.disegnaFogli(), { injector: this.injector });
+    });
+    // Mentre si scrive lo spazio fra i fogli segue il testo, e la fascia lui.
+    effect(() => {
+      this.sezioniLocali();
+      afterNextRender(() => this.posizionaFasce(), { injector: this.injector });
+    });
+    // L'intestazione puo' cambiare altezza dopo la misura (il logo arriva dopo):
+    // tutto il testo scende, e le fasce con lui.
+    effect((pulisci) => {
+      const testata = this.foglio()?.nativeElement.querySelector('[data-sheet-intestazione]');
+      if (!testata || typeof ResizeObserver === 'undefined') return;
+      const osservatore = new ResizeObserver(() => this.posizionaFasce());
+      osservatore.observe(testata);
+      pulisci(() => osservatore.disconnect());
+    });
     this.carica();
     this.destroyRef.onDestroy(() => {
       if (this.indirizzoLogoCornice) URL.revokeObjectURL(this.indirizzoLogoCornice);
     });
+  }
+
+  /**
+   * Porta lo spazio fra i fogli nel testo, dove l'ultima misura lo mette
+   * (012 T080, T083), e ci disegna sopra le fasce.
+   */
+  protected disegnaFogli(): void {
+    const inizi = this.iniziPerSezione();
+    for (const editor of this.editori()) editor.impagina(inizi.get(editor.codice()) ?? []);
+    this.posizionaFasce();
+  }
+
+  /** Le fasce sopra gli spazi che gli editor hanno lasciato nel testo. */
+  protected posizionaFasce(): void {
+    const foglio = this.foglio()?.nativeElement;
+    const impaginazione = this.impaginazione();
+    if (!foglio || !impaginazione) {
+      this.fasce.set([]);
+      return;
+    }
+    const origine = foglio.getBoundingClientRect().top;
+    const fasce: (InizioPagina & { top: number; altezza: number })[] = [];
+    for (const spazio of Array.from(foglio.querySelectorAll('[data-salto-pagina]'))) {
+      const pagina = Number(spazio.getAttribute('data-salto-pagina'));
+      const inizio = impaginazione.inizi_pagina.find((voce) => voce.pagina === pagina);
+      if (!inizio) continue;
+      const box = spazio.getBoundingClientRect();
+      fasce.push({ ...inizio, top: box.top - origine, altezza: box.height });
+    }
+    this.fasce.set(fasce);
+  }
+
+  /** Millimetri del PDF sul foglio dell'editor. */
+  protected inMm(mm: number): string {
+    return `calc(var(--foglio-mm) * ${Math.max(0, mm).toFixed(2)})`;
   }
 
   protected contesto(): string {
