@@ -1,0 +1,166 @@
+<nav class="mm-breadcrumb" aria-label="Percorso">
+  <a routerLink="/configurazione">Impostazioni</a> <span class="mx-1">/</span>
+  <strong>Registro attività</strong>
+</nav>
+
+<header class="mm-page-header">
+  <div>
+    <h1>Registro attività</h1>
+    <p>
+      Chi ha fatto cosa in GEMODO: documenti generati e validazioni chiamate via API, modelli,
+      configurazione, integrazioni e accessi negati. Le consultazioni non sono registrate.
+    </p>
+  </div>
+</header>
+
+<form class="filtri mm-card" (ngSubmit)="applica()" data-filtri-attivita>
+  <label>
+    Dal
+    <input type="date" class="form-control" name="da" [(ngModel)]="filtri.da" />
+  </label>
+  <label>
+    Al
+    <input type="date" class="form-control" name="a" [(ngModel)]="filtri.a" />
+  </label>
+  <label>
+    Attività
+    <select
+      class="form-select"
+      name="categoria"
+      [(ngModel)]="filtri.categoria"
+      data-filtro-categoria
+    >
+      <option value="">Tutte</option>
+      @for (categoria of categorie; track categoria.valore) {
+        <option [value]="categoria.valore">{{ categoria.etichetta }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    Esito
+    <select class="form-select" name="esito" [(ngModel)]="filtri.esito" data-filtro-esito>
+      <option value="">Tutti</option>
+      @for (esito of esiti; track esito.valore) {
+        <option [value]="esito.valore">{{ esito.etichetta }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    Utente
+    <input
+      class="form-control"
+      name="utente"
+      placeholder="Nome utente o client"
+      [(ngModel)]="filtri.utente"
+      data-filtro-utente
+    />
+  </label>
+  <label class="cerca">
+    Cerca
+    <input
+      class="form-control"
+      name="testo"
+      placeholder="Modello, chiave del bando, azione…"
+      [(ngModel)]="filtri.testo"
+      data-filtro-testo
+    />
+  </label>
+  <div class="azioni">
+    <button type="submit" class="btn btn-primary" data-applica-filtri>Applica</button>
+    <button type="button" class="btn btn-outline-primary" (click)="azzera()">Azzera</button>
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      data-esporta-csv
+      [disabled]="esportando()"
+      (click)="esporta()"
+    >
+      {{ esportando() ? 'Esportazione…' : 'Esporta CSV' }}
+    </button>
+  </div>
+</form>
+
+@if (errore()) {
+  <div class="alert alert-danger mt-3" role="alert">{{ errore() }}</div>
+}
+
+@if (caricamento() && eventi().length === 0) {
+  <p class="mt-4" role="status">Caricamento…</p>
+} @else if (eventi().length === 0 && !errore()) {
+  <p class="mt-4 text-muted" data-registro-vuoto>Nessuna attività con questi filtri.</p>
+} @else {
+  <table class="registro mt-3" data-registro-attivita>
+    <thead>
+      <tr>
+        <th scope="col">Quando</th>
+        <th scope="col">Utente</th>
+        <th scope="col">Attività</th>
+        <th scope="col">Oggetto</th>
+        <th scope="col">Contesto</th>
+        <th scope="col">Esito</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (evento of eventi(); track $index; let i = $index) {
+        <tr
+          class="riga"
+          [class.aperta]="aperto() === i"
+          data-evento
+          tabindex="0"
+          [attr.aria-expanded]="aperto() === i"
+          (click)="alterna(i)"
+          (keydown.enter)="alterna(i)"
+        >
+          <td class="quando">{{ quando(evento) }}</td>
+          <td>
+            <span class="chi" [title]="evento.soggetto ?? ''">{{ chi(evento) }}</span>
+            @if (evento.client_id) {
+              <small>{{ evento.client_id }}</small>
+            }
+          </td>
+          <td>
+            <span class="categoria">{{ categoria(evento) }}</span>
+            @if (evento.azione !== evento.categoria) {
+              <small>{{ azione(evento) }}</small>
+            }
+          </td>
+          <td class="oggetto" [title]="evento.oggetto_id ?? ''">{{ oggetto(evento) }}</td>
+          <td>{{ evento.contesto ?? '' }}</td>
+          <td>
+            <span class="esito" [attr.data-tono]="esito(evento).tono" data-esito>{{
+              esito(evento).etichetta
+            }}</span>
+          </td>
+        </tr>
+        @if (aperto() === i) {
+          <tr class="dettaglio" data-dettaglio-evento>
+            <td colspan="6">
+              <dl>
+                @if (evento.soggetto) {
+                  <dt>Id utente (token)</dt>
+                  <dd>{{ evento.soggetto }}</dd>
+                }
+                @if (evento.oggetto_id) {
+                  <dt>Riferimento</dt>
+                  <dd>{{ evento.oggetto_id }}</dd>
+                }
+              </dl>
+              <pre>{{ dettaglio(evento) }}</pre>
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+  @if (altri()) {
+    <button
+      type="button"
+      class="btn btn-outline-primary mt-3"
+      data-carica-altri
+      [disabled]="caricamento()"
+      (click)="carica(true)"
+    >
+      {{ caricamento() ? 'Caricamento…' : 'Carica altri' }}
+    </button>
+  }
+}

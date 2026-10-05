@@ -41,7 +41,7 @@ describe('header applicativo (design handoff)', () => {
 
   it('shows the admin navigation without the retired Tipi documento entry', () => {
     const root = setup(['GEMODO_ADMIN']);
-    expect(voci(root)).toEqual(['Contesti', 'Impostazioni']);
+    expect(voci(root)).toEqual(['Contesti', 'Impostazioni', 'Registro attività']);
     expect(root.textContent).not.toContain('Tipi documento');
   });
 
@@ -52,7 +52,7 @@ describe('header applicativo (design handoff)', () => {
 
   it('shows the full design navigation for users with both roles', () => {
     const root = setup(['GEMODO_ADMIN', 'GEMODO_MODELLI_GESTORE']);
-    expect(voci(root)).toEqual(['Contesti', 'Modelli', 'Impostazioni']);
+    expect(voci(root)).toEqual(['Contesti', 'Modelli', 'Impostazioni', 'Registro attività']);
   });
 
   it('shows the user initials in the avatar, not a generic icon', () => {

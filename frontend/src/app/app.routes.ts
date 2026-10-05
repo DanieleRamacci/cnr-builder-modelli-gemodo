@@ -128,6 +128,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'attivita',
+        loadComponent: () =>
+          import('../features/configurazione/registro-attivita.component').then(
+            (m) => m.RegistroAttivitaComponent,
+          ),
+      },
+      {
         path: ':id',
         loadComponent: () =>
           import('../features/configurazione/integrazione-configura.component').then(

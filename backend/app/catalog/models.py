@@ -314,5 +314,6 @@ class AuditEventoModello(Base):
     modello_versione_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("modello_versione.id", ondelete="SET NULL"), nullable=True
     )
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payload_minimo: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

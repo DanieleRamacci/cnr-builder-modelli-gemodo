@@ -9,7 +9,7 @@ from typing import Any, Iterable
 
 import jwt
 import logging
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError, PyJWKClient
 from sqlalchemy.orm import Session
@@ -48,6 +48,9 @@ class PrincipalGEMODO:
     # una volta quando il principal nasce dalla richiesta (001 T089). Assente
     # su un principal costruito a mano: allora li calcola il profilo da file.
     permessi_contesto: tuple[tuple[str, tuple[str, ...]], ...] | None = None
+    # Il nome con cui l'utente si riconosce (`preferred_username`), per i
+    # registri: `subject` e' l'id tecnico del token (013).
+    username: str = ""
 
     def has_any_role(self, required_roles: Iterable[str]) -> bool:
         available = set(self.ruoli)
@@ -158,6 +161,7 @@ def _principal_from_payload(
         ruoli_diretti=direct_roles,
         ruoli_contesto=tuple(sorted(context_roles.items())),
         permessi_contesto=_permessi_per_contesto(sistemi, str(client_id), context_roles, interattivo),
+        username=str(payload.get("preferred_username") or payload.get("username_cnr") or ""),
     )
 
 
@@ -209,20 +213,28 @@ def mock_principal(settings: Settings, db: Session | None = None) -> PrincipalGE
             list(_configured_sistemi(settings, db)), settings.gemodo_mock_client_id,
             dict(ruoli_contesto), settings.gemodo_mock_client_id in settings.gemodo_allowed_interactive_clients,
         ),
+        username=settings.gemodo_mock_subject,
     )
 
 
 def require_principal(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> PrincipalGEMODO:
+    # Per il registro attivita' (013): un accesso negato si registra sullo
+    # stesso database della richiesta, e dice chi era, se lo si sa.
+    request.state.db_bind = db.get_bind()
     if settings.gemodo_use_mock_principal:
-        return mock_principal(settings, db)
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        logger.warning("Authentication rejected: bearer_missing_or_wrong_scheme")
-        raise AuthenticationError()
-    return decode_principal_from_token(credentials.credentials, settings=settings, db=db)
+        principal = mock_principal(settings, db)
+    else:
+        if credentials is None or credentials.scheme.lower() != "bearer":
+            logger.warning("Authentication rejected: bearer_missing_or_wrong_scheme")
+            raise AuthenticationError()
+        principal = decode_principal_from_token(credentials.credentials, settings=settings, db=db)
+    request.state.principal = principal
+    return principal
 
 
 def require_documenti_viewer(principal: PrincipalGEMODO = Depends(require_principal)) -> PrincipalGEMODO:

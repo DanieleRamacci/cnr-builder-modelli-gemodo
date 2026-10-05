@@ -25,6 +25,7 @@ def registra_evento(
         tipo_evento=tipo_evento,
         soggetto_id=principal.subject,
         client_id=principal.client_id,
+        username=principal.username or None,
         ruoli=list(principal.ruoli),
         modello_documento_id=modello_documento_id,
         modello_versione_id=modello_versione_id,

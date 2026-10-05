@@ -9,10 +9,17 @@ tolto, lettura per riferimento solo admin; contratti 004 0.4.0 e 005 0.2.0,
 test backend su Postgres reale; e2e su stack reale con lo stesso bando generato
 tre volte con la stessa chiave (tre PDF, tre righe di registro, download 404).
 
-**Prossimi, nell'ordine deciso dal product owner**: la pagina dei log (Phase 4
-e T013), poi la "firma" del PDF: riferimento nei metadati e verifica di PDF e
-dati (T005, T007, T008, T014). Nella pagina dei log mostrare anche lo
-username: oggi il registro ha il `sub` del token (`creato_da`).
+**Registro attivita' fatto il 2026-10-05** (T010-T013): migrazione `0030`
+(`evento_attivita` e `username` su tutti i registri), validazioni e accessi
+negati registrati senza mai fermare l'azione, `GET /api/v1/admin/attivita` e
+`.csv` solo admin, pagina "Registro attivita'" nel menu degli amministratori.
+Gli eventi senza username (prima della 0030) lo prendono da un altro evento
+dello stesso soggetto. Verifica: 565 test backend, 198 frontend, e2e su stack
+reale (l'admin trova le tre generazioni del bando col nome dell'utente).
+Manca il contratto OpenAPI delle API admin (parte di T002).
+
+**Prossimo**: la "firma" del PDF: riferimento nei metadati e verifica di PDF e
+dati (T005, T007, T008, T014).
 
 ## Phase 1: Decisione e contratti
 
@@ -50,18 +57,18 @@ username: oggi il registro ha il `sub` del token (`creato_da`).
 
 ## Phase 4: US4 - Registro attivita' (P2)
 
-- [ ] T010 Tabella degli eventi nuovi e scrittore best-effort: sessione propria,
+- [x] T010 Tabella degli eventi nuovi e scrittore best-effort: sessione propria,
       errori nel log applicativo, dettaglio troncato. Test: database che
       rifiuta la scrittura -> l'azione riesce lo stesso.
-- [ ] T011 Eventi: validazioni, verifiche, accessi negati (401/403, minimo
+- [x] T011 Eventi: validazioni, verifiche, accessi negati (401/403, minimo
       indispensabile). Test.
-- [ ] T012 API admin del registro: unione di eventi nuovi, audit di modelli,
+- [x] T012 API admin del registro: unione di eventi nuovi, audit di modelli,
       configurazione, integrazioni e registro generazioni; filtri, paginazione,
       CSV. Test, compreso 403 per i non admin.
 
 ## Phase 5: Frontend admin
 
-- [ ] T013 Pagina "Registro attivita'": filtri, elenco, dettaglio, esportazione.
+- [x] T013 Pagina "Registro attivita'": filtri, elenco, dettaglio, esportazione.
 - [ ] T014 Pagina "Verifica documento": carica PDF; verifica dati.
 - [ ] T015 e2e su stack reale: generazione ripetuta con la stessa chiave,
       verifica del PDF ricevuto e di uno alterato, verifica dati, registro

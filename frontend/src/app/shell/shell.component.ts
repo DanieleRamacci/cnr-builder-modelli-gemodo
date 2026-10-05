@@ -41,6 +41,11 @@ export class ShellComponent {
     this.profili.carica().subscribe({ error: () => undefined });
   }
 
+  /** Impostazioni, ma non il registro attivita' che ha la sua voce (013). */
+  protected inImpostazioni(): boolean {
+    return /^\/configurazione(?!\/attivita)/.test(this.router.url);
+  }
+
   protected isEditorFullscreen(): boolean {
     return /^\/modelli\/[^/]+\/builder(?:[?#].*)?$/.test(this.router.url);
   }

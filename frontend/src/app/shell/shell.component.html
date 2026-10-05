@@ -13,8 +13,15 @@
           <a routerLink="/contesti" routerLinkActive="active" class="nav-link">Modelli</a>
         }
         @if (isAdmin()) {
-          <a routerLink="/configurazione" routerLinkActive="active" class="nav-link"
+          <a
+            routerLink="/configurazione"
+            class="nav-link"
+            [class.active]="inImpostazioni()"
+            [attr.aria-current]="inImpostazioni() ? 'page' : null"
             >Impostazioni</a
+          >
+          <a routerLink="/configurazione/attivita" routerLinkActive="active" class="nav-link"
+            >Registro attività</a
           >
         }
       </nav>

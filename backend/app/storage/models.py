@@ -55,6 +55,7 @@ class DocumentoGenerato(Base):
     errore_messaggio: Mapped[str | None] = mapped_column(Text, nullable=True)
     creato_da: Mapped[str] = mapped_column(String(255), nullable=False)
     client_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
     ruoli: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 

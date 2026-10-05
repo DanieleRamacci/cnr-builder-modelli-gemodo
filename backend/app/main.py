@@ -15,6 +15,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.attivita.api import router as attivita_router
 from app.builder.api import router as builder_router
 from app.catalog.api import router as catalog_router
 from app.common.errors import install_error_handlers
@@ -62,6 +63,7 @@ app.include_router(storage_router)
 app.include_router(builder_router)
 app.include_router(configurazione_router)
 app.include_router(configurazione_integrazioni_router)
+app.include_router(attivita_router)
 install_error_handlers(app)
 
 

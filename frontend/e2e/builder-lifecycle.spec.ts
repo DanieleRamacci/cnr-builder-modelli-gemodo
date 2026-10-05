@@ -764,6 +764,23 @@ test('ACE manager creates a draft and publishes from the context list', async ({
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(download.status()).toBe(404);
+
+    // 013: l'amministratore vede nel registro attivita' chi ha generato cosa,
+    // col nome dell'utente e non l'id del token.
+    await page.goto('/configurazione/attivita');
+    await page.locator('[data-filtro-testo]').fill(chiaveBando);
+    await page.locator('[data-applica-filtri]').click();
+    const righe = page.locator('[data-evento]');
+    await expect(righe).toHaveCount(3);
+    for (const riga of await righe.all()) {
+      await expect(riga).toContainText(utente.username);
+      await expect(riga).toContainText('Generazioni');
+      await expect(riga.locator('[data-esito]')).toHaveText('Generato');
+    }
+    await righe.first().click();
+    await expect(page.locator('[data-dettaglio-evento]')).toContainText(chiaveBando);
+    await page.screenshot({ path: testInfo.outputPath('registro-attivita.png'), fullPage: true });
+    await page.goBack();
   }
   await page.screenshot({ path: testInfo.outputPath('contesti-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

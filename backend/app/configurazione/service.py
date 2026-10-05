@@ -122,7 +122,8 @@ class ConfigurazioneService:
         tipo.integrazione_id = source.id
         self.db.add(AuditEventoIntegrazione(
             integrazione_id=source.id, tipo_evento="TIPO_ASSOCIATO", soggetto_id=principal.subject,
-            client_id=principal.client_id, payload_minimo={"tipo_documento_id": str(tipo.id)},
+            client_id=principal.client_id, username=principal.username or None,
+            payload_minimo={"tipo_documento_id": str(tipo.id)},
         ))
         try:
             self.db.flush()
@@ -150,7 +151,7 @@ class ConfigurazioneService:
     def _audit(self, tipo_id, principal: PrincipalGEMODO, evento: str, payload: dict):
         self.db.add(AuditEventoConfigurazione(
             tipo_documento_id=tipo_id, tipo_evento=evento, soggetto_id=principal.subject,
-            client_id=principal.client_id, payload_minimo=payload,
+            client_id=principal.client_id, username=principal.username or None, payload_minimo=payload,
         ))
 
     def _salva(self, tipo, struttura, principal, evento):
@@ -298,7 +299,8 @@ class IntegrazioniService:
     def _audit(self, integrazione_id: uuid.UUID, principal: PrincipalGEMODO, evento: str, payload: dict) -> None:
         self.db.add(AuditEventoIntegrazione(
             integrazione_id=integrazione_id, tipo_evento=evento,
-            soggetto_id=principal.subject, client_id=principal.client_id, payload_minimo=payload,
+            soggetto_id=principal.subject, client_id=principal.client_id,
+            username=principal.username or None, payload_minimo=payload,
         ))
 
     def _accessi(self, source: Integrazione) -> AccessiIntegrazione:

@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import pytest
@@ -13,7 +14,7 @@ from tests.support.postgres import postgres_database_url
 @pytest.mark.integration
 def test_registry_is_empty_and_ownership_is_scoped(postgres_database_url, monkeypatch):
     from app.catalog.models import TipoDocumento
-    from app.configurazione.models import AuditEventoIntegrazione, Integrazione
+    from app.configurazione.models import Integrazione
 
     monkeypatch.setenv("DATABASE_URL", postgres_database_url)
     config = Config("alembic.ini")
@@ -61,16 +62,23 @@ def test_registry_is_empty_and_ownership_is_scoped(postgres_database_url, monkey
                 Integrazione(codice=" ", nome="Demo", codice_contesto="geban"),
                 Integrazione(codice="BAD_REV", nome="Demo", codice_contesto="geban", revisione=0),
                 Integrazione(codice="BAD_MODE", nome="Demo", codice_contesto="geban", modalita="PER_NODI"),
-                AuditEventoIntegrazione(integrazione_id=uuid.uuid4(), tipo_evento="CREATA",
-                                        soggetto_id="admin", client_id="demo", payload_minimo={}),
-                AuditEventoIntegrazione(integrazione_id=source.id, tipo_evento="CREATA",
-                                        soggetto_id="admin", client_id="demo", payload_minimo=[]),
             ]
             for row in invalid:
                 with pytest.raises(IntegrityError):
                     with db.begin_nested():
                         db.add(row)
                         db.flush()
+            # Le righe di audit in SQL: l'ORM di oggi scriverebbe anche lo
+            # username, che nasce con la 0030 (013).
+            audit_sql = sa.text(
+                "INSERT INTO audit_evento_integrazione "
+                "(id, integrazione_id, tipo_evento, soggetto_id, client_id, payload_minimo) "
+                "VALUES (gen_random_uuid(), :integrazione, :evento, 'admin', 'demo', CAST(:payload AS jsonb))"
+            )
+            for integrazione, payload in [(uuid.uuid4(), "{}"), (source.id, "[]")]:
+                with pytest.raises(IntegrityError):
+                    with db.begin_nested():
+                        db.execute(audit_sql, {"integrazione": integrazione, "evento": "CREATA", "payload": payload})
             # Un tipo documento il cui contesto non e' quello dell'integrazione.
             # In SQL e non con l'ORM: questo test gira sullo schema 0012, e l'ORM
             # di oggi scriverebbe anche colonne nate dopo (cornice, logo, 012).
@@ -81,8 +89,9 @@ def test_registry_is_empty_and_ownership_is_scoped(postgres_database_url, monkey
                         VALUES (gen_random_uuid(), 'BAD_CTX', 'Demo', 'BOZZA', '010', 'altro', :integrazione)
                     """), {"integrazione": source.id})
             legacy.integrazione_id = source.id
-            db.add(AuditEventoIntegrazione(integrazione_id=source.id, tipo_evento="ASSOCIATA",
-                                          soggetto_id="admin", client_id="demo", payload_minimo={"tipo_id": str(legacy.id)}))
+            db.execute(audit_sql, {
+                "integrazione": source.id, "evento": "ASSOCIATA", "payload": json.dumps({"tipo_id": str(legacy.id)}),
+            })
             db.commit()
             source_id = source.id
 

@@ -68,7 +68,7 @@ class StorageDocumentiService:
             hash_file=hashlib.sha256(contenuto).hexdigest() if contenuto is not None else None,
             dimensione_byte=len(contenuto) if contenuto is not None else None,
             errore_messaggio=errore_messaggio, creato_da=principal.subject,
-            client_id=principal.client_id, ruoli=list(principal.ruoli),
+            client_id=principal.client_id, username=principal.username or None, ruoli=list(principal.ruoli),
         )
         self.db.add(documento)
         try:

@@ -89,8 +89,22 @@ def error_response(error: ApiError) -> JSONResponse:
     return JSONResponse(status_code=error.status_code, content=payload.model_dump(exclude_none=True))
 
 
-async def api_error_handler(_: Request, exc: ApiError) -> JSONResponse:
+async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
+    if exc.status_code in (401, 403):
+        _registra_accesso_negato(request, exc)
     return error_response(exc)
+
+
+def _registra_accesso_negato(request: Request, exc: ApiError) -> None:
+    """Chi ha provato cosa senza permesso (013 FR-012): il minimo, e mai bloccante."""
+    from app.attivita.registro import registra_attivita  # evita l'import circolare con security
+
+    registra_attivita(
+        getattr(request.state, "db_bind", None), categoria="ACCESSO", azione="ACCESSO_NEGATO",
+        esito=str(exc.status_code), principal=getattr(request.state, "principal", None),
+        oggetto_tipo="api", oggetto_id=f"{request.method} {request.url.path}",
+        dettaglio={"codice": str(getattr(exc.codice, "value", exc.codice)), "messaggio": exc.messaggio},
+    )
 
 
 async def request_validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
