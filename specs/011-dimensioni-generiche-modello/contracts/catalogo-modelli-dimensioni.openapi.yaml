@@ -47,6 +47,7 @@ paths:
           schema:
             type: object
             additionalProperties: {type: string}
+          example: {}
           description: >-
             Filtro per dimensione arbitraria, es. ?dimensione[area_geografica]=NORD.
             E' la forma generale di cui lingua e livello_professionale sono i due

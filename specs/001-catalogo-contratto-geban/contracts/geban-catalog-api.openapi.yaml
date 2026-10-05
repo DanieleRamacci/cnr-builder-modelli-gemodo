@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.9.0
+  version: 0.9.1
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -66,10 +66,16 @@ paths:
           required: false
           style: deepObject
           explode: true
-          description: Filtro per dimensione arbitraria, ad esempio dimensione[area_geografica]=NORD.
+          description: >-
+            Filtro per dimensione arbitraria, ad esempio dimensione[area_geografica]=NORD.
+            Facoltativo: senza filtro si omette. In Swagger UI lasciare {} oppure
+            scrivere per esempio {"area_geografica": "NORD"}.
           schema:
             type: object
             additionalProperties: {type: string}
+          # Senza esempio Swagger UI precompila additionalProp1..3 = "string" e
+          # li invia, facendo fallire la ricerca (riscontro GEBAN 2026-10-05).
+          example: {}
         - name: modalita
           in: query
           required: false
