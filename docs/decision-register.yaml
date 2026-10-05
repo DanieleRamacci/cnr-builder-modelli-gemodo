@@ -1348,3 +1348,23 @@ decisions:
       profilo (001 Phase 9) resta rinviato. Coerente con ADR 0003.
     fase_bloccante: NESSUNA
     data_ultima_revisione: 2026-10-05
+
+  - id: DEC-001-ISOLAMENTO-CONTESTO-ACCESO
+    titolo: GEMODO_ENFORCE_CONTESTO_CONSUMATORE acceso nel deploy
+    owner_spec: specs/001-catalogo-contratto-geban
+    spec_interessate:
+      - specs/006-sicurezza-autorizzazioni-audit
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Decisione del product owner 2026-10-05 (001 T115). Dal profilo di accesso
+      nel database (DEC-001-PROFILO-ACCESSO-NELL-INTEGRAZIONE) ogni contesto ha
+      i suoi permessi, quindi catalogo, validazione, generazione e download
+      verificano il contesto della risorsa: docker-compose.coolify.yml lo
+      imposta a true di default. Nel codice il default resta false per test e
+      sviluppo locale. FR-036a: un client tecnico server-server esercita i suoi
+      ruoli diretti di consumo solo nei contesti delle integrazioni che lo
+      ammettono. Da verificare in test online con il token reale di GEBAN prima
+      della produzione.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-10-05

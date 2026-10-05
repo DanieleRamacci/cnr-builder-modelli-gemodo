@@ -206,6 +206,10 @@ Esito del controllo chiesto da 002 T038, su variante, versione e sicurezza.
   valori di dimensione: pubblicarne una nuova archivia la precedente. Il
   catalogo espone solo versioni `PUBBLICATO`; `campi-richiesti` su una versione
   non pubblicata risponde 409.
+- **Aggiornamento 2026-10-05 (001 T115):** l'isolamento per contesto e' acceso
+  in `docker-compose.coolify.yml` e il profilo di accesso sta nel database
+  (scheda "Profilo di accesso" dell'integrazione). Il paragrafo seguente
+  descrive lo stato precedente.
 - **Sicurezza: coerente nel builder, condizionata nel consumo.** Il builder
   verifica sempre il contesto in scrittura (`verify_scrittura_su_contesto`), e
   da 007 T115 l'interfaccia mostra solo cio' che il profilo calcolato dal

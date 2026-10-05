@@ -785,17 +785,27 @@ indistinguibile da risorsa inesistente).
 - [x] T113 Collegare T110 a `backend/app/storage/service.py` (`stato`,
       `contenuto_per_download`) e passare il `PrincipalGEMODO` reale attraverso
       `backend/app/generazione/service.py` fino a `validate_payload` (FR-035/FR-037).
-- [ ] T114 Aggiungere un test esplicito per lo scenario 3 di "Accettazione Sicurezza
+- [x] T114 Aggiungere un test esplicito per lo scenario 3 di "Accettazione Sicurezza
       Per Contesto" (due contesti nello stesso token, permesso di generazione solo
       nel primo: il secondo nega la generazione ma consente comunque la
       consultazione se il ruolo li' mappa solo `DOCUMENTI_VIEWER`) — non ancora
       coperto da T109, che testa solo l'isolamento VIEWER tra contesti, non la
       distinzione VIEWER/GENERATORE all'interno del secondo contesto.
-- [ ] T115 Decidere e documentare quando `GEMODO_ENFORCE_CONTESTO_CONSUMATORE`
+- [x] T115 Decidere e documentare quando `GEMODO_ENFORCE_CONTESTO_CONSUMATORE`
       passa da `false` a `true` di default (readiness per l'uso operativo citata
       dalla clarification 2026-09-17), aggiornare `docs/decision-register.yaml` e
       `docs/quality-coverage-matrix.yaml` (FR-034..038 non hanno ancora una riga in
       quel file) di conseguenza.
+      *Fatti T114 e T115 il 2026-10-05.* Acceso in `docker-compose.coolify.yml`
+      (default `true`) e in `deploy/coolify.env.example`; nel codice resta
+      `false` per test e sviluppo locale. Trovato nel farlo: il client tecnico
+      `geban-backend` (solo ruoli diretti, nessun contesto) col flag acceso
+      sarebbe stato negato ovunque. Nuova FR-036a: esercita i ruoli diretti di
+      consumo solo nei contesti delle integrazioni che lo ammettono. Test
+      `tests/common/test_contesto_consumatore_profilo.py` (token veri, profilo
+      dal database, flag acceso); matrice COV-123..127; decisione
+      `DEC-001-ISOLAMENTO-CONTESTO-ACCESO`. **Resta**: provarlo in test online
+      con il token reale di GEBAN prima della produzione.
 
 **Checkpoint**: verificato per davvero su Postgres reale (Testcontainers) il
 2026-09-17 — `pytest -m integration` 141 passed (0 skipped), `pytest -q` (suite

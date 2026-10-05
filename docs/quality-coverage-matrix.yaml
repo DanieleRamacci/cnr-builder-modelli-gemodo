@@ -277,6 +277,47 @@ coverage:
     contract_ref: backend/tests/support/integration_profiles.py
     stato: COPERTO
 
+  # --- 001 API per contesto (FR-034..FR-038, T115) ---
+  - id: COV-123
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-034
+    scenario_id: E2E-006
+    contract_ref: backend/tests/common/test_autorizzazione_per_contesto.py
+    stato: COPERTO
+    note: "ricerca catalogo filtrata per contesto (test_catalog_search_allows_own_context_denies_other), flag acceso in Coolify dal 2026-10-05 (T115)"
+
+  - id: COV-124
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-035
+    scenario_id: E2E-006
+    contract_ref: backend/tests/common/test_contesto_consumatore_profilo.py
+    stato: COPERTO
+    note: "validazione e generazione verificano il permesso dell'azione nel contesto della versione; T114: nel secondo contesto si consulta ma non si genera"
+
+  - id: COV-125
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-036
+    scenario_id: E2E-006
+    contract_ref: backend/tests/common/test_contesto_consumatore_profilo.py
+    stato: COPERTO
+    note: "contesto senza integrazione o ruolo non mappato non concede nulla; FR-036a client tecnico solo nel contesto che lo ammette"
+
+  - id: COV-126
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-037
+    scenario_id: E2E-006
+    contract_ref: backend/tests/common/test_autorizzazione_per_contesto.py
+    stato: COPERTO
+    note: "fuori contesto per ID: 404 indistinguibile da inesistente; in ricerca: 403"
+
+  - id: COV-127
+    spec_owner: specs/001-catalogo-contratto-geban
+    requirement_id: FR-038
+    scenario_id: E2E-006
+    contract_ref: backend/tests/common/test_autorizzazione_per_contesto.py
+    stato: COPERTO
+    note: "l'autorizzazione precede validazione e rendering (test_valida_e_genera_negano_accesso_fuori_contesto)"
+
   # --- Modello documentale controllato (FR-036..FR-038) ---
   # 003 T017: la titolarita' e' di `009`, che possiede questi requisiti e il
   # validatore (`quality/document_model.py`, DEC-003-CORPO-DOCUMENTO-RIPIANIFICATO).

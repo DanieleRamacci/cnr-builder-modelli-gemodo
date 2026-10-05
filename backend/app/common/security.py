@@ -20,6 +20,7 @@ from app.core.settings import Settings, get_settings
 from app.db.session import get_db
 from app.quality.integration_profile import (
     client_ids_attivi,
+    contesti_del_client,
     load_sistemi_richiedenti,
     permessi_da_ruoli_esterni,
 )
@@ -112,17 +113,38 @@ def _configured_sistemi(settings: Settings, db: Session | None = None):
     return sistemi_dal_database(db)
 
 
+# I permessi di consumo che un client tecnico puo' esercitare con i suoi ruoli
+# diretti, nel contesto dell'integrazione che lo ammette (001 T115). Il builder
+# no: e' per le persone, che arrivano dai contesti ACE.
+PERMESSI_DIRETTI_CLIENT_TECNICO = frozenset({"DOCUMENTI_VIEWER", "DOCUMENTI_GENERATORE"})
+
+
 def _permessi_per_contesto(
-    sistemi, client_id: str, context_roles: dict[str, tuple[str, ...]], interactive_client: bool,
+    sistemi,
+    client_id: str,
+    context_roles: dict[str, tuple[str, ...]],
+    interactive_client: bool,
+    ruoli_diretti: tuple[str, ...] = (),
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """Per ogni contesto del token, i permessi che concede da solo, mai mescolati con gli altri."""
-    return tuple(sorted(
-        (contesto, tuple(sorted(permessi_da_ruoli_esterni(
+    """Per ogni contesto, i permessi che concede da solo, mai mescolati con gli altri.
+
+    Un contesto del token concede cio' che il profilo mappa per i suoi ruoli.
+    Un client tecnico (server-server, senza contesti nel token) esercita i suoi
+    ruoli diretti di consumo solo nei contesti delle integrazioni che lo
+    ammettono: e' cio' che rende possibile isolare i contesti anche per lui.
+    """
+    permessi: dict[str, set[str]] = {
+        contesto: permessi_da_ruoli_esterni(
             sistemi, client_id=client_id, context_roles={contesto: ruoli},
             interactive_client=interactive_client,
-        ))))
+        )
         for contesto, ruoli in context_roles.items()
-    ))
+    }
+    diretti = PERMESSI_DIRETTI_CLIENT_TECNICO.intersection(ruoli_diretti)
+    if diretti and not interactive_client:
+        for contesto in contesti_del_client(sistemi, client_id):
+            permessi.setdefault(contesto, set()).update(diretti)
+    return tuple(sorted((contesto, tuple(sorted(p))) for contesto, p in permessi.items()))
 
 
 def _principal_from_payload(
@@ -155,7 +177,9 @@ def _principal_from_payload(
         issuer=str(payload.get("iss") or ""),
         ruoli_diretti=direct_roles,
         ruoli_contesto=tuple(sorted(context_roles.items())),
-        permessi_contesto=_permessi_per_contesto(sistemi, str(client_id), context_roles, interattivo),
+        permessi_contesto=_permessi_per_contesto(
+            sistemi, str(client_id), context_roles, interattivo, direct_roles,
+        ),
     )
 
 
@@ -206,6 +230,7 @@ def mock_principal(settings: Settings, db: Session | None = None) -> PrincipalGE
         permessi_contesto=_permessi_per_contesto(
             list(_configured_sistemi(settings, db)), settings.gemodo_mock_client_id,
             dict(ruoli_contesto), settings.gemodo_mock_client_id in settings.gemodo_allowed_interactive_clients,
+            settings.gemodo_mock_roles,
         ),
     )
 
@@ -243,11 +268,11 @@ def _permessi_nel_contesto(principal: PrincipalGEMODO, codice_contesto: str, set
     ``permessi_da_ruoli_esterni`` with a single-context dict, never
     ``principal.ruoli`` (already flattened across every context the token carries).
     """
+    if principal.permessi_contesto is not None:
+        return set(dict(principal.permessi_contesto).get(codice_contesto, ()))
     ruoli_nel_contesto = dict(principal.ruoli_contesto).get(codice_contesto, ())
     if not ruoli_nel_contesto:
         return set()
-    if principal.permessi_contesto is not None:
-        return set(dict(principal.permessi_contesto).get(codice_contesto, ()))
     sistemi = list(_configured_sistemi(settings))
     return permessi_da_ruoli_esterni(
         sistemi,
