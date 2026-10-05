@@ -816,3 +816,26 @@ la verifica (non nell'implementazione): `_principal()` non popolava `ruoli`
 aggregato, causando 403 dal gate di route prima del controllo per-contesto;
 `_crea_versione()` non impostava `public_id` su `ModelloDocumento`, causando un 500
 in `search_modelli`. T114/T115 restano aperti.
+
+## Riscontri dall'integrazione GEBAN (2026-10-05)
+
+- [ ] T116 Un errore di forma della richiesta non e' un errore di contesto.
+      Riscontro GEBAN del 2026-10-05: una `POST /documenti/valida` con il JSON
+      del corpo non chiuso (manca l'ultima `}`) riceve
+      `CONTESTO_NON_VALIDO` / "Richiesta non coerente con il contratto API"
+      con dettaglio `body.629: JSON decode error`, e chi integra cerca un
+      problema di contesto o di permessi. Oggi
+      `request_validation_error_handler` e `http_exception_handler`
+      (`backend/app/common/errors.py`) danno `CONTESTO_NON_VALIDO` a ogni
+      richiesta fuori contratto (JSON malformato, campo mancante, tipo
+      sbagliato, campo in piu') e a ogni 404 di percorso o errore HTTP
+      generico. Da fare: un codice per la richiesta fuori contratto (per
+      esempio `RICHIESTA_NON_VALIDA`, 400 o 422) con un messaggio che dica
+      cosa non va ("Il corpo non e' JSON valido", "Campo obbligatorio
+      mancante: dati.numero_posti"), uno per il percorso inesistente (404),
+      e `CONTESTO_NON_VALIDO` solo dove il problema e' davvero il contesto.
+      Cambia il catalogo errori pubblicato: aggiornare i contratti che lo
+      citano (001, 002, 010, 011), `docs/api-per-geban.md` (tabella "Errori
+      che incontrerete") e avvisare GEBAN, perche' chi oggi riconosce
+      l'errore dal codice deve adeguarsi. Test: JSON malformato, campo
+      mancante, tipo sbagliato, percorso inesistente, ciascuno col suo codice.
