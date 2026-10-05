@@ -529,6 +529,30 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
       <div class="corpo">
         <aside class="outline">
           <h2>Sezioni del modello</h2>
+          <!-- In cima, non in fondo all'elenco: con molte sezioni restavano
+               fuori dallo schermo (riscontro del 2026-10-05). -->
+          @if (sezioni()?.modificabile) {
+            <div class="outline-azioni">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-add-section
+                [disabled]="salvandoSezioni()"
+                (click)="aggiungiSezione()"
+              >
+                Aggiungi sezione
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                data-save-sections
+                [disabled]="salvandoSezioni()"
+                (click)="salvaSezioni()"
+              >
+                {{ salvandoSezioni() ? 'Salvataggio...' : 'Salva documento' }}
+              </button>
+            </div>
+          }
           @if (sezioniLocali().length === 0) {
             <p class="vuoto-sezioni">Nessuna sezione configurata.</p>
           }
@@ -589,26 +613,7 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               }
             </div>
           }
-          @if (sezioni()?.modificabile) {
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-primary w-100 mt-2"
-              data-add-section
-              [disabled]="salvandoSezioni()"
-              (click)="aggiungiSezione()"
-            >
-              Aggiungi sezione
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-primary w-100 mt-2"
-              data-save-sections
-              [disabled]="salvandoSezioni()"
-              (click)="salvaSezioni()"
-            >
-              {{ salvandoSezioni() ? 'Salvataggio...' : 'Salva documento' }}
-            </button>
-          } @else if (sezioni()) {
+          @if (sezioni() && !sezioni()?.modificabile) {
             <p class="vuoto-sezioni">
               Versione in sola lettura: le sezioni pubblicate restano consultabili.
             </p>

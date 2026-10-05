@@ -357,6 +357,7 @@
     top: var(--altezza-strumenti);
     align-self: start;
     max-height: calc(100vh - var(--altezza-strumenti));
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
@@ -383,6 +384,13 @@
 .outline {
   padding: 16px 0;
   background: var(--td-surface-50);
+
+  // Uno sopra l'altro: affiancati non stanno nei 232 px della colonna.
+  .outline-azioni {
+    display: grid;
+    gap: 6px;
+    margin: 0 12px 12px;
+  }
 
   h2,
   .vuoto-sezioni {
@@ -777,7 +785,13 @@
 }
 
 .panel-tabs {
+  // Le schede restano in cima mentre la colonna scorre.
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
+  flex: none;
+  background: var(--td-surface-50);
   border-bottom: 1px solid var(--td-border-200);
   font-size: 15px;
 
@@ -799,6 +813,10 @@
 }
 
 .panel-body {
+  // Non si restringe: la colonna e' alta quanto lo schermo e scorre, e il
+  // corpo del pannello, ristretto con `overflow: hidden`, tagliava i
+  // segnaposto in fondo invece di farli scorrere (riscontro del 2026-10-05).
+  flex: none;
   padding: 16px 18px 20px;
   overflow: hidden;
 

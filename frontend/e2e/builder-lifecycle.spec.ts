@@ -587,6 +587,53 @@ test('ACE manager creates a draft and publishes from the context list', async ({
   expect(inCima.sinistra).toContain('outline');
   expect(inCima.destra).toContain('pannello');
   await page.screenshot({ path: testInfo.outputPath('builder-2b-sidebar.png') });
+  // Riscontro del 2026-10-05: con molti segnaposto la colonna di destra
+  // scorre fino all'ultimo, invece di tagliarli; e "Aggiungi sezione" e
+  // "Salva documento" stanno in cima all'elenco delle sezioni.
+  await page.locator('.panel-body').evaluate((corpo) => {
+    const campo = corpo.querySelector('.campo')!;
+    for (let i = 0; i < 40; i += 1) {
+      const copia = campo.cloneNode(true) as HTMLElement;
+      copia.setAttribute('data-copia-prova', '');
+      campo.parentElement!.appendChild(copia);
+    }
+  });
+  const colonna = await page.locator('.pannello').evaluate((pannello) => {
+    pannello.scrollTop = pannello.scrollHeight;
+    const ultimo = Array.from(pannello.querySelectorAll('.campo')).at(-1)!;
+    return {
+      scorre: pannello.scrollHeight > pannello.clientHeight + 100,
+      ultimoVisibile:
+        ultimo.getBoundingClientRect().bottom <= pannello.getBoundingClientRect().bottom + 1,
+      schedeInCima:
+        Math.abs(
+          pannello.querySelector('.panel-tabs')!.getBoundingClientRect().top -
+            pannello.getBoundingClientRect().top,
+        ) < 2,
+    };
+  });
+  expect(colonna).toEqual({ scorre: true, ultimoVisibile: true, schedeInCima: true });
+  await page.screenshot({ path: testInfo.outputPath('builder-2b-segnaposto-molti.png') });
+  await page.locator('.panel-body').evaluate((corpo) => {
+    corpo.querySelectorAll('[data-copia-prova]').forEach((copia) => copia.remove());
+    corpo.closest('.pannello')!.scrollTop = 0;
+  });
+  const azioniInCima = await page
+    .locator('.outline')
+    .evaluate(
+      (outline) =>
+        outline.querySelector('[data-add-section]')!.getBoundingClientRect().bottom <=
+        outline.querySelector('.outline-item')!.getBoundingClientRect().top,
+    );
+  expect(azioniInCima).toBe(true);
+  // E la colonna non scorre di lato: niente resta tagliato a sinistra.
+  expect(
+    await page
+      .locator('.outline')
+      .evaluate(
+        (outline) => outline.scrollWidth <= outline.clientWidth && outline.scrollLeft === 0,
+      ),
+  ).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
 
   // T062: la sezione prende un nome, che compare nella struttura a sinistra.
