@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gemodo:contratto-discovery:0.8.0",
+  "title": "Risposta discovery GEMODO, contratto 0.8.0 (proposta spec 014)",
+  "description": "Grammatica generica: mappa tipo documento -> albero di nodi a profondita' libera; le foglie dichiarano i campi del contratto dati. Le dimensioni sono attributi della foglia con una lista di stringhe. Rispetto alla 0.7.0 aggiunge il campo ripetibile (tipo array con campi) e rende non conformi le chiavi sconosciute dentro un campo, salvo quelle con prefisso '_'.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": { "$ref": "#/$defs/StrutturaTipoDocumento" },
+  "$defs": {
+    "StrutturaTipoDocumento": {
+      "type": "object",
+      "required": ["validita", "nodi"],
+      "properties": {
+        "validita": { "type": "string", "format": "date-time" },
+        "nodi": { "type": "array", "items": { "$ref": "#/$defs/Nodo" } }
+      }
+    },
+    "Nodo": {
+      "type": "object",
+      "required": ["codice", "descrizione"],
+      "properties": {
+        "codice": { "type": "string", "minLength": 1 },
+        "descrizione": { "type": "string" },
+        "tipo_livello": { "type": ["string", "null"] },
+        "figli": { "type": "array", "items": { "$ref": "#/$defs/Nodo" } },
+        "campi": { "type": "array", "items": { "$ref": "#/$defs/Campo" } },
+        "livelli_possibili": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "livello_base": { "type": "string" },
+        "lingue_possibili": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["IT", "EN"] } },
+        "lingue": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["IT", "EN", "ENG"] } }
+      },
+      "oneOf": [
+        { "required": ["figli"], "not": { "required": ["campi"] } },
+        { "required": ["campi"], "not": { "required": ["figli"] } }
+      ],
+      "additionalProperties": true
+    },
+    "CampoBase": {
+      "type": "object",
+      "required": ["codice", "etichetta", "tipo", "obbligatorio", "ordine"],
+      "properties": {
+        "codice": { "type": "string", "minLength": 1 },
+        "etichetta": { "type": "string" },
+        "tipo": { "enum": ["string", "number", "date", "boolean", "array", "object"] },
+        "lingua": { "enum": ["IT", "EN", null] },
+        "obbligatorio": { "type": "boolean" },
+        "ordine": { "type": "integer", "minimum": 1 },
+        "descrizione": { "type": ["string", "null"] },
+        "validazione": { "type": ["object", "null"] }
+      },
+      "patternProperties": { "^_": {} }
+    },
+    "Campo": {
+      "allOf": [{ "$ref": "#/$defs/CampoBase" }],
+      "properties": {
+        "codice": true, "etichetta": true, "tipo": true, "lingua": true,
+        "obbligatorio": true, "ordine": true, "descrizione": true, "validazione": true,
+        "campi": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/SottoCampo" } }
+      },
+      "patternProperties": { "^_": {} },
+      "additionalProperties": false,
+      "if": { "required": ["campi"] },
+      "then": { "properties": { "tipo": { "const": "array" } } }
+    },
+    "SottoCampo": {
+      "allOf": [{ "$ref": "#/$defs/CampoBase" }],
+      "properties": {
+        "codice": true, "etichetta": true, "tipo": { "enum": ["string", "number", "date", "boolean"] },
+        "lingua": true, "obbligatorio": true, "ordine": true, "descrizione": true, "validazione": true
+      },
+      "patternProperties": { "^_": {} },
+      "additionalProperties": false
+    }
+  }
+}

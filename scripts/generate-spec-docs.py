@@ -494,6 +494,8 @@ def write_docs_home(specs: list[SpecInfo]) -> None:
         "## Entrate Principali",
         "",
         "- [API per un sistema esterno](api-per-geban.md) - da qui parte chi deve integrarsi con GEMODO",
+        "- [Contratto dati](contratto-dati.md) - grammatica del discovery, campi, validazione dei dati, casi singolo e multiplo",
+        "- [Matrice flussi integrazione](matrice-flussi-integrazione.md) - casi operativi per contesti, integrazioni, catalogo e generazione",
         "- [Proposta sorgente](spec-kit/source/PROPOSTA-servizio-gestione-modelli-bando.md)",
         "- [Spec Kit Index](spec-kit/index.md)",
         "- [Feature attiva](spec-kit/active-feature.md)",

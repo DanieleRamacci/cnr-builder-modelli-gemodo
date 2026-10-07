@@ -41,18 +41,30 @@ describe('header applicativo (design handoff)', () => {
 
   it('shows the admin navigation without the retired Tipi documento entry', () => {
     const root = setup(['GEMODO_ADMIN']);
-    expect(voci(root)).toEqual(['Contesti', 'Impostazioni', 'Registro attività']);
+    expect(voci(root)).toEqual(['Contesti', 'Impostazioni', 'Registro attività', 'Documentazione']);
     expect(root.textContent).not.toContain('Tipi documento');
   });
 
   it('shows only what a model editor can reach', () => {
     const root = setup(['GEMODO_MODELLI_GESTORE']);
-    expect(voci(root)).toEqual(['Contesti', 'Modelli']);
+    expect(voci(root)).toEqual(['Contesti', 'Modelli', 'Documentazione']);
   });
 
   it('shows the full design navigation for users with both roles', () => {
     const root = setup(['GEMODO_ADMIN', 'GEMODO_MODELLI_GESTORE']);
-    expect(voci(root)).toEqual(['Contesti', 'Modelli', 'Impostazioni', 'Registro attività']);
+    expect(voci(root)).toEqual([
+      'Contesti',
+      'Modelli',
+      'Impostazioni',
+      'Registro attività',
+      'Documentazione',
+    ]);
+  });
+
+  it('shows the documentation entry to every user, even without roles', () => {
+    const root = setup([]);
+    expect(voci(root)).toEqual(['Documentazione']);
+    expect(root.querySelector('nav a')?.getAttribute('href')).toBe('/documentazione');
   });
 
   it('shows the user initials in the avatar, not a generic icon', () => {

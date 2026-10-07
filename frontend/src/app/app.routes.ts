@@ -14,6 +14,20 @@ export const routes: Routes = [
     loadComponent: () => import('./home.component').then((m) => m.HomeComponent),
   },
   {
+    path: 'documentazione',
+    loadComponent: () =>
+      import('../features/documentazione/documentazione.component').then(
+        (m) => m.DocumentazioneComponent,
+      ),
+  },
+  {
+    path: 'documentazione/:pagina',
+    loadComponent: () =>
+      import('../features/documentazione/documentazione.component').then(
+        (m) => m.DocumentazioneComponent,
+      ),
+  },
+  {
     path: 'profilo',
     loadComponent: () => import('./profile.component').then((m) => m.ProfileComponent),
   },

@@ -1,0 +1,39 @@
+<div class="manuale">
+  <aside class="manuale-indice" aria-label="Indice della documentazione">
+    <h1 class="manuale-titolo">Documentazione</h1>
+    @if (indice(); as indice) {
+      @for (sezione of indice.sezioni; track sezione.codice) {
+        <section class="manuale-sezione">
+          <h2 class="manuale-sezione-titolo">{{ sezione.titolo }}</h2>
+          <ul>
+            @for (voce of sezione.pagine; track voce.slug) {
+              <li>
+                <a
+                  [routerLink]="[rotta, voce.slug]"
+                  routerLinkActive="attiva"
+                  [attr.aria-current]="pagina()?.slug === voce.slug ? 'page' : null"
+                  >{{ voce.titolo }}</a
+                >
+              </li>
+            }
+            @if (sezione.codice === 'sviluppatori') {
+              <li>
+                <a href="/docs" target="_blank" rel="noopener">Contratti OpenAPI (Swagger) ↗</a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    } @else if (!errore()) {
+      <p class="text-muted">Caricamento...</p>
+    }
+  </aside>
+
+  <article class="manuale-pagina">
+    @if (errore(); as messaggio) {
+      <div class="alert alert-warning" role="alert">{{ messaggio }}</div>
+    }
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <div #contenuto class="manuale-contenuto" (click)="naviga($event)"></div>
+  </article>
+</div>

@@ -1,0 +1,137 @@
+.manuale {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.manuale-indice {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding-right: 8px;
+  border-right: 1px solid #d9dee3;
+}
+
+.manuale-titolo {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.manuale-sezione + .manuale-sezione {
+  margin-top: 1.25rem;
+}
+
+.manuale-sezione-titolo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5c6f82;
+  margin-bottom: 0.5rem;
+}
+
+.manuale-sezione ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.manuale-sezione a {
+  display: block;
+  padding: 4px 8px;
+  border-left: 3px solid transparent;
+  color: #17324d;
+  font-size: 0.9rem;
+  text-decoration: none;
+
+  &:hover {
+    background: #f2f7fc;
+  }
+
+  &.attiva {
+    border-left-color: #0066cc;
+    color: #0066cc;
+    font-weight: 600;
+  }
+}
+
+.manuale-pagina {
+  min-width: 0;
+  max-width: 860px;
+}
+
+// Il contenuto arriva come innerHTML: gli stili non incapsulati lo raggiungono.
+.manuale-contenuto ::ng-deep {
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+    margin-top: 2rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #e6e9f2;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    scroll-margin-top: 16px;
+  }
+
+  pre {
+    background: #f5f6f7;
+    border: 1px solid #e6e9f2;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 0.8rem;
+    overflow-x: auto;
+  }
+
+  code {
+    font-size: 0.85em;
+  }
+
+  blockquote {
+    border-left: 4px solid #f0ad4e;
+    background: #fff8ec;
+    padding: 8px 16px;
+    margin: 1rem 0;
+  }
+
+  .tabella-manuale {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  table {
+    font-size: 0.875rem;
+  }
+
+  .link-esterno-manuale {
+    border-bottom: 1px dotted #5c6f82;
+  }
+}
+
+@media (max-width: 768px) {
+  .manuale {
+    grid-template-columns: 1fr;
+  }
+
+  .manuale-indice {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid #d9dee3;
+    padding-bottom: 12px;
+  }
+}

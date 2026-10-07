@@ -1,0 +1,120 @@
+{
+  "BANDO_CONCORSO": {
+    "validita": "2026-10-07T08:00:00Z",
+    "nodi": [
+      {
+        "codice": "CD",
+        "descrizione": "Comandi e Distacchi",
+        "tipo_livello": "tipologia",
+        "figli": [
+          {
+            "codice": "RICERCATORE",
+            "descrizione": "Ricercatore",
+            "tipo_livello": "profilo",
+            "livelli_possibili": [
+              "I",
+              "II",
+              "III"
+            ],
+            "lingue": [
+              "IT",
+              "ENG"
+            ],
+            "campi": [
+              {
+                "codice": "codice_bando",
+                "etichetta": "Codice bando",
+                "tipo": "string",
+                "obbligatorio": true,
+                "ordine": 1,
+                "descrizione": "Identificativo funzionale del bando"
+              },
+              {
+                "codice": "profilo",
+                "etichetta": "Profilo",
+                "tipo": "string",
+                "obbligatorio": true,
+                "ordine": 2,
+                "descrizione": "Profilo del bando"
+              },
+              {
+                "codice": "livello",
+                "etichetta": "Livello",
+                "tipo": "string",
+                "obbligatorio": true,
+                "ordine": 3,
+                "descrizione": "Livello del bando"
+              },
+              {
+                "codice": "titolo",
+                "etichetta": "Titolo",
+                "tipo": "string",
+                "obbligatorio": true,
+                "ordine": 4,
+                "descrizione": "Titolo del bando"
+              },
+              {
+                "codice": "numero_posti",
+                "etichetta": "Numero posti",
+                "tipo": "number",
+                "obbligatorio": true,
+                "ordine": 5,
+                "descrizione": "Numero dei posti previsti"
+              },
+              {
+                "codice": "sede_lavoro",
+                "etichetta": "Sede lavoro",
+                "tipo": "string",
+                "obbligatorio": true,
+                "ordine": 6,
+                "descrizione": "Sede di lavoro"
+              },
+              {
+                "codice": "articolazioni",
+                "etichetta": "Articolazioni del bando",
+                "tipo": "array",
+                "obbligatorio": false,
+                "ordine": 7,
+                "descrizione": "Parti distinte della procedura: tematiche, sedi o linee, ciascuna con i propri dati",
+                "campi": [
+                  {
+                    "codice": "codice_bando",
+                    "etichetta": "Codice articolazione",
+                    "tipo": "string",
+                    "obbligatorio": true,
+                    "ordine": 1,
+                    "descrizione": "Codice della singola articolazione"
+                  },
+                  {
+                    "codice": "numero_posti",
+                    "etichetta": "Numero posti",
+                    "tipo": "number",
+                    "obbligatorio": true,
+                    "ordine": 2,
+                    "descrizione": "Posti dell'articolazione"
+                  },
+                  {
+                    "codice": "sede_lavoro",
+                    "etichetta": "Sede lavoro",
+                    "tipo": "string",
+                    "obbligatorio": true,
+                    "ordine": 3,
+                    "descrizione": "Sede dell'articolazione"
+                  },
+                  {
+                    "codice": "comune_sede_lavoro",
+                    "etichetta": "Comune sede lavoro",
+                    "tipo": "string",
+                    "obbligatorio": false,
+                    "ordine": 4,
+                    "descrizione": "Comune della sede dell'articolazione"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

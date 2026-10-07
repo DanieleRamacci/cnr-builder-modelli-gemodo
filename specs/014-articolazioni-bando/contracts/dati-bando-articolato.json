@@ -1,0 +1,35 @@
+{
+  "sistema_richiedente": "GEBAN",
+  "external_context_id": "GEBAN-2026-000124",
+  "modello_versione_id": 201,
+  "data_riferimento": "2026-10-07",
+  "dati": {
+    "codice_bando": "BANDO-CD-RIC-2026-001",
+    "profilo": "Ricercatore",
+    "livello": "III",
+    "titolo": "Selezione per tre posti di Ricercatore su due tematiche",
+    "numero_posti": 3,
+    "sede_lavoro": "Sedi diverse, vedi articolazioni",
+    "articolazioni": [
+      {
+        "codice": "TEMA_A",
+        "descrizione": "Tematica A - Scienze del clima, Roma",
+        "campi": {
+          "codice_bando": "BANDO-CD-RIC-2026-001-A",
+          "numero_posti": 1,
+          "sede_lavoro": "Istituto di Roma",
+          "comune_sede_lavoro": "Roma"
+        }
+      },
+      {
+        "codice": "TEMA_B",
+        "descrizione": "Tematica B - Biologia marina, Napoli",
+        "campi": {
+          "codice_bando": "BANDO-CD-RIC-2026-001-B",
+          "numero_posti": 2,
+          "sede_lavoro": "Istituto di Napoli"
+        }
+      }
+    ]
+  }
+}

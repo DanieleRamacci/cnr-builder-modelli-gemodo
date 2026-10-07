@@ -11,7 +11,9 @@
     "test:e2e:install": "playwright install --with-deps chromium",
     "lint": "eslint .",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
-    "format": "prettier --write \"src/**/*.{ts,html,scss}\""
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
+    "docs:sync": "node scripts/sync-documentazione.mjs",
+    "docs:check": "node scripts/sync-documentazione.mjs --check"
   },
   "private": true,
   "packageManager": "npm@11.4.2",
@@ -28,6 +30,7 @@
     "design-angular-kit": "^21.2.0",
     "keycloak-angular": "^21.0.0",
     "keycloak-js": "^26.2.4",
+    "marked": "^16.4.2",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-keymap": "^1.2.3",
     "prosemirror-model": "^1.25.12",

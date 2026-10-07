@@ -17,11 +17,16 @@ nav:
       - Roadmap: spec-kit/roadmap.md
       - API Readiness: spec-kit/api-readiness.md
       - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
+  - Guida Utenti:
+      - Introduzione: utenti/introduzione.md
+      - Creare E Pubblicare Un Modello: utenti/modelli.md
+      - Amministrare Integrazioni E Contesti: utenti/amministrazione.md
   - Project Map: project-map.md
   - API Per Un Sistema Esterno: api-per-geban.md
+  - Contratto Dati: contratto-dati.md
   - Matrice Flussi Integrazione: matrice-flussi-integrazione.md
-  - Flusso Integrazione GEBAN: flusso-integrazione-geban.md
-  - Discovery Per Nodi - Esempio: discovery-per-nodi-esempio.md
+  - Flusso Integrazione GEBAN (storico): flusso-integrazione-geban.md
+  - Discovery Per Nodi (proposta non implementata): discovery-per-nodi-esempio.md
   - API Documentation: api-documentation.md
   - Formato Documentale: formato-documentale.md
   - Decision Workflow: decision-workflow.md

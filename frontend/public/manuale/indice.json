@@ -1,0 +1,96 @@
+{
+  "sezioni": [
+    {
+      "codice": "utenti",
+      "titolo": "Per gli utenti",
+      "pagine": [
+        {
+          "slug": "utenti-introduzione",
+          "titolo": "Introduzione a GEMODO",
+          "sorgente": "utenti/introduzione.md"
+        },
+        {
+          "slug": "utenti-modelli",
+          "titolo": "Creare e pubblicare un modello",
+          "sorgente": "utenti/modelli.md"
+        },
+        {
+          "slug": "utenti-amministrazione",
+          "titolo": "Amministrare integrazioni e contesti",
+          "sorgente": "utenti/amministrazione.md"
+        }
+      ]
+    },
+    {
+      "codice": "sviluppatori",
+      "titolo": "Per gli sviluppatori",
+      "pagine": [
+        {
+          "slug": "api-per-geban",
+          "titolo": "API per un sistema esterno",
+          "sorgente": "api-per-geban.md"
+        },
+        {
+          "slug": "contratto-dati",
+          "titolo": "Contratto dati",
+          "sorgente": "contratto-dati.md"
+        },
+        {
+          "slug": "matrice-flussi-integrazione",
+          "titolo": "Matrice flussi integrazione",
+          "sorgente": "matrice-flussi-integrazione.md"
+        },
+        {
+          "slug": "formato-documentale",
+          "titolo": "Formato documentale",
+          "sorgente": "formato-documentale.md"
+        },
+        {
+          "slug": "presa-atto-geban-dimensioni-catalogo",
+          "titolo": "Dimensioni generiche nel catalogo",
+          "sorgente": "presa-atto-geban-dimensioni-catalogo.md"
+        },
+        {
+          "slug": "api-documentation",
+          "titolo": "Regole per documentare le API",
+          "sorgente": "api-documentation.md"
+        },
+        {
+          "slug": "project-map",
+          "titolo": "Mappa del progetto",
+          "sorgente": "project-map.md"
+        },
+        {
+          "slug": "frontend-server-test",
+          "titolo": "Collaudo sul server di test",
+          "sorgente": "frontend-server-test.md"
+        },
+        {
+          "slug": "pulizia-modelli",
+          "titolo": "Demo ed eliminazione modelli",
+          "sorgente": "pulizia-modelli.md"
+        },
+        {
+          "slug": "decision-workflow",
+          "titolo": "Aggiornare le decisioni aperte",
+          "sorgente": "decision-workflow.md"
+        },
+        {
+          "slug": "open-source-pa-readiness",
+          "titolo": "Riuso PA e open source",
+          "sorgente": "open-source-pa-readiness.md"
+        },
+        {
+          "slug": "discovery-per-nodi-esempio",
+          "titolo": "Discovery per nodi (proposta)",
+          "sorgente": "discovery-per-nodi-esempio.md"
+        },
+        {
+          "slug": "flusso-integrazione-geban",
+          "titolo": "Flusso integrazione GEBAN (storico)",
+          "sorgente": "flusso-integrazione-geban.md"
+        }
+      ]
+    }
+  ]
+}

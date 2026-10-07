@@ -10,6 +10,10 @@ info:
     **Questo NON e' un'API esposta da GEMODO.** E' la specifica di CIO' CHE IL
     TEAM GEBAN DEVE COSTRUIRE.
 
+    Guida generica al contratto dati (grammatica, conformita', validazione dei
+    dati, campi ripetibili proposti per la 0.8.0 dalla spec 014):
+    `docs/contratto-dati.md`, pubblicata nella documentazione di progetto.
+
 
     ## Cosa devi fare, in sintesi
 
