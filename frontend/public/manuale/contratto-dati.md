@@ -109,28 +109,46 @@ chiave: vedi la sezione seguente.
 
 ## Più tipi documento e più contesti
 
-La grammatica non è legata al bando. Un sistema può dichiarare più tipi
-documento, ognuno con un albero diverso; un altro sistema, in un altro
-contesto, ne dichiara altri con il proprio discovery. GEMODO li tratta tutti
-allo stesso modo.
+La grammatica non è legata al bando. Le regole sono tre.
+
+- **Un discovery per integrazione, non per tipo documento.** La risposta è
+  una mappa: ogni chiave è un tipo documento. Lo stesso discovery può
+  dichiarare quanti tipi vuole, ognuno con il proprio albero, le proprie
+  dimensioni e i propri campi. GEMODO li verifica tutti a ogni test di
+  connessione.
+- **Un tipo documento appartiene a una sola integrazione.** Due discovery non
+  possono dichiarare lo stesso codice (`TIPO_DOCUMENTO_ALTRA_INTEGRAZIONE`).
+- **Un contesto può avere più integrazioni.** Un altro ufficio o un altro
+  sistema si aggiunge con un proprio contesto e un proprio discovery, nello
+  stesso formato.
 
 ```text
-Contesto "geban"                         Contesto "ufficio-contratti" (esempio)
- └─ Integrazione GEBAN                    └─ Integrazione "Contratti"
-     URL: https://<geban>/discovery           URL: https://<contratti>/discovery
-     ├─ BANDO_CONCORSO   (2 livelli)          └─ CONTRATTO_COLLABORAZIONE (3 livelli)
-     └─ AVVISO_MOBILITA  (1 livello, esempio)
+Contesto "geban"
+ └─ Integrazione GEBAN ── un solo URL discovery
+     ├─ BANDO_CONCORSO            (2 livelli: tipologia, profilo; lingua e livello)
+     ├─ AVVISO_MOBILITA           (1 livello, nessuna dimensione)          esempio
+     └─ CONTRATTO_COLLABORAZIONE  (3 livelli; dimensione area_geografica)  esempio
+
+Contesto "altro-ufficio"                                                   esempio
+ └─ Integrazione "Altro sistema" ── il suo URL discovery, stesso formato
+     └─ <i suoi tipi documento>
 ```
 
 | Relazione | Regola |
 |---|---|
-| Contesto → integrazioni | Un contesto può avere più integrazioni |
-| Integrazione → tipi documento | Un discovery può dichiararne quanti vuole |
-| Tipo documento → integrazione | Un tipo appartiene a una sola integrazione |
-| Permessi | Valgono nel contesto che li concede: chi ha ruoli solo in `geban` non vede i modelli di `ufficio-contratti` |
+| Integrazione → tipi documento | Uno o più, tutti nella stessa risposta |
+| Tipo documento → integrazione | Esattamente una |
+| Contesto → integrazioni | Una o più |
+| Permessi | Valgono nel contesto che li concede: chi ha ruoli solo in `geban` non vede i modelli di `altro-ufficio` |
 
-**Un discovery con due tipi documento.** Il secondo tipo (illustrativo) ha un
-solo livello e nessuna lingua: la foglia è direttamente un nodo radice.
+**Un solo discovery con tre tipi documento.** Oggi il discovery GEBAN dichiara
+solo `BANDO_CONCORSO`. Gli altri due tipi sono esempi di cosa potrebbe
+aggiungere nella stessa risposta, senza alcuna modifica a GEMODO:
+
+- `AVVISO_MOBILITA` ha un solo livello e nessuna dimensione: la foglia è
+  direttamente un nodo radice;
+- `CONTRATTO_COLLABORAZIONE` ha tre livelli con nomi propri e una dimensione
+  nuova, `area_geografica`, di cui l'amministratore imposterà la policy.
 
 ```json
 {
@@ -170,17 +188,7 @@ solo livello e nessuna lingua: la foglia è direttamente un nodo radice.
         ]
       }
     ]
-  }
-}
-```
-
-**Il discovery di un altro sistema, in un altro contesto.** Tre livelli con nomi
-propri e una dimensione nuova, `area_geografica`. Nessuna modifica a GEMODO:
-l'amministratore crea l'integrazione nel contesto `ufficio-contratti` e imposta
-la policy della nuova dimensione.
-
-```json
-{
+  },
   "CONTRATTO_COLLABORAZIONE": {
     "validita": "2026-10-07T08:00:00Z",
     "nodi": [
@@ -214,8 +222,15 @@ la policy della nuova dimensione.
 }
 ```
 
-Un modello su questa foglia si cerca nel catalogo con
+Ogni tipo si cerca nel catalogo per conto proprio, per esempio
 `tipo_documento=CONTRATTO_COLLABORAZIONE&codice_tipologia=ASSEGNO&profilo=POST_DOC&dimensione[area_geografica]=NORD`.
+
+**Un altro contesto.** Se gli stessi contratti li gestisse un altro ufficio,
+con il proprio sistema e i propri utenti, `CONTRATTO_COLLABORAZIONE` starebbe
+nel discovery di quel sistema invece che in quello di GEBAN. L'amministratore
+creerebbe un'integrazione nel contesto `altro-ufficio` e ACE assegnerebbe quel
+contesto ai suoi utenti. Il JSON avrebbe la stessa forma: cambia solo chi lo
+espone e chi ha i permessi.
 
 ## Regole del nodo
 

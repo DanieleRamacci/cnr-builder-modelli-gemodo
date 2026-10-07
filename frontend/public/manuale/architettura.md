@@ -122,14 +122,16 @@ esempio nella documentazione delle API. I due nomi storici (`lingua`,
 `livello_professionale`) restano solo come alias di lettura e come policy di
 ripiego.
 
-Esempio: un altro ufficio con un proprio sistema per i contratti di
-collaborazione si integra così.
+Esempi:
 
-1. Espone un discovery con, per esempio, `CONTRATTO_COLLABORAZIONE` e un albero
-   a un livello.
-2. L'amministratore crea l'integrazione nel contesto di quell'ufficio e la
-   verifica.
-3. I gestori di quel contesto creano i modelli.
+- **Un tipo in più nello stesso sistema.** GEBAN aggiunge
+  `CONTRATTO_COLLABORAZIONE` al proprio discovery, accanto a `BANDO_CONCORSO`.
+  Un discovery dichiara quanti tipi documento vuole: alla verifica successiva
+  il nuovo tipo è disponibile ai gestori del contesto `geban`.
+- **Un altro ufficio con un proprio sistema.** Il sistema espone il suo
+  discovery nello stesso formato. L'amministratore crea l'integrazione nel
+  contesto di quell'ufficio e la verifica, e i gestori di quel contesto creano i
+  modelli.
 
 Nessun rilascio di GEMODO è necessario. Il formato della risposta è in
 [Contratto dati](contratto-dati.md#piu-tipi-documento-e-piu-contesti).
