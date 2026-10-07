@@ -6,7 +6,7 @@
 > **superate**: registrazione dell'integrazione, verifica dell'endpoint e
 > creazione del modello avvengono da interfaccia dal 2026-09-21.
 >
-> Per integrare un sistema esterno usare **[API per un sistema esterno](api-per-geban.md)**.
+> Per integrare un sistema esterno usare **[Integrare un sistema esterno](integrazione-sistema-esterno.md)**.
 > Per lo stato corrente delle spec, [Project Map](project-map.md).
 > Questo file resta perche' spiega *perche'* il flusso e' fatto cosi', non per
 > essere seguito passo passo.

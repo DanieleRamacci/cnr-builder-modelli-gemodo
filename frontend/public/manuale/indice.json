@@ -22,13 +22,18 @@
       ]
     },
     {
-      "codice": "sviluppatori",
-      "titolo": "Per gli sviluppatori",
+      "codice": "architettura",
+      "titolo": "Architettura e integrazione",
       "pagine": [
         {
-          "slug": "api-per-geban",
-          "titolo": "API per un sistema esterno",
-          "sorgente": "api-per-geban.md"
+          "slug": "architettura",
+          "titolo": "Architettura e modularita",
+          "sorgente": "architettura.md"
+        },
+        {
+          "slug": "integrazione-sistema-esterno",
+          "titolo": "Integrare un sistema esterno",
+          "sorgente": "integrazione-sistema-esterno.md"
         },
         {
           "slug": "contratto-dati",
@@ -44,21 +49,106 @@
           "slug": "formato-documentale",
           "titolo": "Formato documentale",
           "sorgente": "formato-documentale.md"
+        }
+      ]
+    },
+    {
+      "codice": "casi",
+      "titolo": "Casi di integrazione",
+      "pagine": [
+        {
+          "slug": "casi-geban",
+          "titolo": "GEBAN: bandi di concorso",
+          "sorgente": "casi/geban.md"
         },
         {
           "slug": "presa-atto-geban-dimensioni-catalogo",
-          "titolo": "Dimensioni generiche nel catalogo",
+          "titolo": "GEBAN: dimensioni nel catalogo",
           "sorgente": "presa-atto-geban-dimensioni-catalogo.md"
+        }
+      ]
+    },
+    {
+      "codice": "api",
+      "titolo": "API",
+      "pagine": [
+        {
+          "slug": "riferimento-api",
+          "titolo": "Riferimento API",
+          "sorgente": "riferimento-api.md"
+        }
+      ],
+      "collegamenti": [
+        {
+          "titolo": "Indice dei contratti",
+          "href": "/docs"
+        },
+        {
+          "titolo": "Swagger: Catalogo e generazione (sistemi esterni)",
+          "href": "/docs/geban-catalog"
+        },
+        {
+          "titolo": "Swagger: Generazione documenti",
+          "href": "/docs/generazione-documenti"
+        },
+        {
+          "titolo": "Swagger: Registro di una generazione",
+          "href": "/docs/storage-documenti"
+        },
+        {
+          "titolo": "Swagger: Discovery da esporre (sistema esterno)",
+          "href": "/docs/geban-discovery-endpoint"
+        },
+        {
+          "titolo": "Swagger: Builder: modelli e versioni",
+          "href": "/docs/builder-modelli"
+        },
+        {
+          "titolo": "Swagger: Builder: struttura dal discovery",
+          "href": "/docs/builder-discovery"
+        },
+        {
+          "titolo": "Swagger: Amministrazione integrazioni",
+          "href": "/docs/integrazioni"
+        },
+        {
+          "titolo": "Swagger: Struttura attesa e contratto",
+          "href": "/docs/configurazione-cataloghi"
+        },
+        {
+          "titolo": "Swagger: Registro attivita",
+          "href": "/docs/registro-attivita-admin"
+        }
+      ]
+    },
+    {
+      "codice": "progetto",
+      "titolo": "Progetto",
+      "pagine": [
+        {
+          "slug": "project-map",
+          "titolo": "Mappa del progetto",
+          "sorgente": "project-map.md"
+        },
+        {
+          "slug": "adr-0001-ownership-dati-esterni-e-onboarding-contesti",
+          "titolo": "ADR 0001: dati esterni e contesti",
+          "sorgente": "adr/0001-ownership-dati-esterni-e-onboarding-contesti.md"
+        },
+        {
+          "slug": "adr-0002-integrazioni-contesti-modelli-test",
+          "titolo": "ADR 0002: integrazioni e contesti",
+          "sorgente": "adr/0002-integrazioni-contesti-modelli-test.md"
+        },
+        {
+          "slug": "adr-0003-accesso-utenti-contesti-ace",
+          "titolo": "ADR 0003: accesso tramite ACE",
+          "sorgente": "adr/0003-accesso-utenti-contesti-ace.md"
         },
         {
           "slug": "api-documentation",
           "titolo": "Regole per documentare le API",
           "sorgente": "api-documentation.md"
-        },
-        {
-          "slug": "project-map",
-          "titolo": "Mappa del progetto",
-          "sorgente": "project-map.md"
         },
         {
           "slug": "frontend-server-test",
@@ -79,16 +169,22 @@
           "slug": "open-source-pa-readiness",
           "titolo": "Riuso PA e open source",
           "sorgente": "open-source-pa-readiness.md"
+        }
+      ]
+    },
+    {
+      "codice": "archivio",
+      "titolo": "Archivio",
+      "pagine": [
+        {
+          "slug": "flusso-integrazione-geban",
+          "titolo": "Flusso integrazione GEBAN (storico)",
+          "sorgente": "flusso-integrazione-geban.md"
         },
         {
           "slug": "discovery-per-nodi-esempio",
           "titolo": "Discovery per nodi (proposta)",
           "sorgente": "discovery-per-nodi-esempio.md"
-        },
-        {
-          "slug": "flusso-integrazione-geban",
-          "titolo": "Flusso integrazione GEBAN (storico)",
-          "sorgente": "flusso-integrazione-geban.md"
         }
       ]
     }

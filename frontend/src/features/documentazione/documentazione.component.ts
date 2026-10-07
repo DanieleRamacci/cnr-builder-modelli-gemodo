@@ -22,8 +22,8 @@ import {
 } from './manuale';
 
 /**
- * Voce "Documentazione" dell'header: la guida per gli utenti e la documentazione
- * per gli sviluppatori, lette da public/manuale/ (copie di docs/ riallineate da
+ * Voce "Documentazione" dell'header: guida utenti, architettura, casi di
+ * integrazione, API e progetto, lette da public/manuale/ (copie di docs/ riallineate da
  * scripts/sync-documentazione.mjs). File statici: niente token, niente backend.
  */
 @Component({

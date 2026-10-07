@@ -17,8 +17,8 @@ DELETE /api/v1/builder/modelli/{modelloId}, autorizzato per contesto.
 Il modello assume stato ELIMINATO, le versioni pubblicate sono archiviate
 e viene registrato MODELLO_ELIMINATO. Non e piu elencato nel builder/catalogo
 e non permette nuove versioni, transizioni o generazioni.
-Versioni, campi, audit e PDF gia generati restano conservati; il download dei
-documenti esistenti resta disponibile alle identita autorizzate.
+Versioni, campi, audit e registro delle generazioni restano conservati. I PDF
+non sono conservati da GEMODO (spec 013): restano a chi li ha generati.
 Gli identificativi non vengono riutilizzati dall'eliminazione logica.
 
 Per vedere il pulsante su Coolify aggiornare backend e frontend insieme;

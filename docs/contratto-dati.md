@@ -1,13 +1,14 @@
 # Contratto dati: discovery, campi e validazione
 
 Questa pagina è il **riferimento unico** per chi integra un sistema esterno con
-GEMODO (GEBAN è il primo) e per gli agenti che leggono questa documentazione.
+GEMODO e per gli agenti che leggono questa documentazione.
 Descrive la grammatica generica con cui un sistema esterno dichiara come è
 organizzato il proprio dominio e quali dati servono, come GEMODO la verifica e
 come valida i dati che riceve per generare un documento.
 
-Vale per qualunque tipo documento, non solo per il bando: il bando è il primo
-caso concreto.
+Vale per qualunque sistema, contesto e tipo documento. I valori concreti del
+primo caso, il bando di concorso di GEBAN, sono in [Caso GEBAN](casi/geban.md);
+qui gli esempi sono volutamente generici o di più domini.
 
 | Versione del contratto discovery | Stato |
 |---|---|
@@ -26,7 +27,8 @@ Fonti autorevoli, in ordine:
    discovery) e `backend/app/validation/service.py` (validazione dei dati).
 
 Le rotte, l'autenticazione e il flusso di chiamate sono in
-[API per un sistema esterno](api-per-geban.md).
+[Integrare un sistema esterno](integrazione-sistema-esterno.md); l'elenco
+completo delle API in [Riferimento API](riferimento-api.md).
 
 ## In una frase
 
@@ -62,7 +64,7 @@ tipo documento; ogni valore è un albero di nodi a profondità libera.
       {
         "codice": "<codice livello 1>",
         "descrizione": "<testo leggibile>",
-        "tipo_livello": "<nome libero del livello, solo informativo>",
+        "tipo_livello": "<nome libero del livello>",
         "figli": [
           {
             "codice": "<codice livello 2>",
@@ -92,8 +94,8 @@ tipo documento; ogni valore è un albero di nodi a profondità libera.
 ```
 
 - **Categorizzazione:** quanti livelli e quanti rami decide l'integratore. Un
-  tipo documento può avere un livello, due (come il bando: tipologia, poi
-  profilo) o più. GEMODO non assume un numero fisso.
+  tipo documento può avere un livello, due o più. GEMODO non assume un numero
+  fisso.
 - **Foglia:** è il nodo che porta i `campi`. Un modello si crea sempre su una
   foglia, identificata dal percorso completo dei codici dalla radice.
 - **Dimensioni:** sono attributi della foglia con una lista di stringhe, per
@@ -103,7 +105,117 @@ tipo documento; ogni valore è un albero di nodi a profondità libera.
   generare un documento.
 
 Più tipi documento possono stare nella stessa risposta, ciascuno con la propria
-chiave.
+chiave: vedi la sezione seguente.
+
+## Più tipi documento e più contesti
+
+La grammatica non è legata al bando. Un sistema può dichiarare più tipi
+documento, ognuno con un albero diverso; un altro sistema, in un altro
+contesto, ne dichiara altri con il proprio discovery. GEMODO li tratta tutti
+allo stesso modo.
+
+```text
+Contesto "geban"                         Contesto "ufficio-contratti" (esempio)
+ └─ Integrazione GEBAN                    └─ Integrazione "Contratti"
+     URL: https://<geban>/discovery           URL: https://<contratti>/discovery
+     ├─ BANDO_CONCORSO   (2 livelli)          └─ CONTRATTO_COLLABORAZIONE (3 livelli)
+     └─ AVVISO_MOBILITA  (1 livello, esempio)
+```
+
+| Relazione | Regola |
+|---|---|
+| Contesto → integrazioni | Un contesto può avere più integrazioni |
+| Integrazione → tipi documento | Un discovery può dichiararne quanti vuole |
+| Tipo documento → integrazione | Un tipo appartiene a una sola integrazione |
+| Permessi | Valgono nel contesto che li concede: chi ha ruoli solo in `geban` non vede i modelli di `ufficio-contratti` |
+
+**Un discovery con due tipi documento.** Il secondo tipo (illustrativo) ha un
+solo livello e nessuna lingua: la foglia è direttamente un nodo radice.
+
+```json
+{
+  "BANDO_CONCORSO": {
+    "validita": "2026-10-07T08:00:00Z",
+    "nodi": [
+      {
+        "codice": "TD",
+        "descrizione": "Tempo Determinato",
+        "tipo_livello": "tipologia",
+        "figli": [
+          {
+            "codice": "RICERCATORE",
+            "descrizione": "Ricercatore",
+            "tipo_livello": "profilo",
+            "livelli_possibili": ["I", "II", "III"],
+            "lingue_possibili": ["IT", "EN"],
+            "campi": [
+              { "codice": "codice_bando", "etichetta": "Codice bando", "tipo": "string", "obbligatorio": true, "ordine": 1 },
+              { "codice": "numero_posti", "etichetta": "Numero posti", "tipo": "number", "obbligatorio": true, "ordine": 2 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "AVVISO_MOBILITA": {
+    "validita": "2026-10-07T08:00:00Z",
+    "nodi": [
+      {
+        "codice": "INTERNA",
+        "descrizione": "Mobilità interna",
+        "campi": [
+          { "codice": "codice_avviso", "etichetta": "Codice avviso", "tipo": "string", "obbligatorio": true, "ordine": 1 },
+          { "codice": "data_scadenza", "etichetta": "Scadenza domande", "tipo": "date", "obbligatorio": true, "ordine": 2 },
+          { "codice": "telelavoro", "etichetta": "Telelavoro ammesso", "tipo": "boolean", "obbligatorio": false, "ordine": 3 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Il discovery di un altro sistema, in un altro contesto.** Tre livelli con nomi
+propri e una dimensione nuova, `area_geografica`. Nessuna modifica a GEMODO:
+l'amministratore crea l'integrazione nel contesto `ufficio-contratti` e imposta
+la policy della nuova dimensione.
+
+```json
+{
+  "CONTRATTO_COLLABORAZIONE": {
+    "validita": "2026-10-07T08:00:00Z",
+    "nodi": [
+      {
+        "codice": "RICERCA",
+        "descrizione": "Attività di ricerca",
+        "tipo_livello": "area",
+        "figli": [
+          {
+            "codice": "ASSEGNO",
+            "descrizione": "Assegno di ricerca",
+            "tipo_livello": "tipologia",
+            "figli": [
+              {
+                "codice": "POST_DOC",
+                "descrizione": "Post-dottorato",
+                "tipo_livello": "profilo",
+                "area_geografica": ["NORD", "CENTRO", "SUD"],
+                "campi": [
+                  { "codice": "nominativo", "etichetta": "Nominativo", "tipo": "string", "obbligatorio": true, "ordine": 1 },
+                  { "codice": "importo_annuo", "etichetta": "Importo annuo", "tipo": "number", "obbligatorio": true, "ordine": 2, "validazione": { "minimum": 0 } },
+                  { "codice": "data_inizio", "etichetta": "Data di inizio", "tipo": "date", "obbligatorio": true, "ordine": 3 }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Un modello su questa foglia si cerca nel catalogo con
+`tipo_documento=CONTRATTO_COLLABORAZIONE&codice_tipologia=ASSEGNO&profilo=POST_DOC&dimensione[area_geografica]=NORD`.
 
 ## Regole del nodo
 
@@ -117,11 +229,25 @@ chiave.
 | Valori duplicati in `livelli_possibili` o `lingue_possibili` | non conforme |
 | `livello_base` deve stare fra i `livelli_possibili` | non conforme |
 | `validita` è una data ISO 8601 con fuso orario | non conforme |
-| `tipo_livello` | facoltativo, solo informativo: GEMODO non lo usa per camminare l'albero |
+| `tipo_livello` | facoltativo, nome libero; non serve a camminare l'albero (vedi sotto) |
 
 Alias accettati per compatibilità: `lingue` per `lingue_possibili` (con `ENG`
 per `EN`) e `livelloBase` per `livello_base`. Se arrivano sia l'alias sia il
 nome canonico con valori diversi, la risposta è non conforme.
+
+**`tipo_livello` e la ricerca nel catalogo.** L'albero si cammina solo con
+`figli` e `campi`, qualunque nome abbiano i livelli. Due valori però hanno un
+effetto: quando si crea un modello, GEMODO ne ricava i due filtri con cui un
+sistema esterno lo cercherà nel catalogo.
+
+- `profilo`: il codice del nodo del percorso con `tipo_livello: "profilo"`;
+  se non c'è, il codice della foglia.
+- `codice_tipologia`: il codice del nodo con `tipo_livello: "tipologia"`; se
+  non c'è, resta vuoto.
+
+Il catalogo non cerca per percorso completo. Se lo stesso codice di foglia
+compare in più rami, per avere una ricerca univoca si marcano i livelli con
+`tipologia`/`profilo` oppure si usano codici di foglia unici nel tipo documento.
 
 **Chiavi sconosciute sul nodo:** non fanno fallire la risposta.
 
@@ -157,9 +283,9 @@ documento. È l'unica parte del contratto che non varia.
 
 Il passaggio da "scartata" a "non conforme" serve perché un dato che
 l'integratore pensa di inviare non sparisca senza che nessuno se ne accorga.
-Il 2026-10-07 l'albero GEBAN di test (65 foglie, 852 campi) usava sui campi
-solo `codice`, `etichetta`, `tipo`, `obbligatorio`, `ordine`, `descrizione`
-ed è conforme alla 0.8.0 senza modifiche.
+Un discovery che usa sui campi solo le chiavi della tabella resta conforme
+anche con la 0.8.0. Il discovery GEBAN di test lo è, verificato il 2026-10-07
+([Caso GEBAN](casi/geban.md)).
 
 ## Verifica di conformità del discovery
 
@@ -216,11 +342,11 @@ stesso corpo. Le chiavi di `dati` sono i `codice` dei campi della versione.
 
 ```json
 {
-  "sistema_richiedente": "GEBAN",
-  "external_context_id": "GEBAN-2026-000123",
-  "modello_versione_id": 201,
+  "sistema_richiedente": "CONTRATTI",
+  "external_context_id": "CTR-2026-000045",
+  "modello_versione_id": 318,
   "data_riferimento": "2026-10-07",
-  "dati": { "codice_bando": "BANDO-CD-RIC-2026-001", "numero_posti": 1 }
+  "dati": { "nominativo": "Mario Rossi", "importo_annuo": 24000, "data_inizio": "2026-11-01" }
 }
 ```
 
@@ -309,8 +435,8 @@ Ogni elemento ha sempre tre chiavi:
 ```
 
 I valori stanno dentro `campi`, non accanto a `codice` e `descrizione`, perché
-un sotto-campo può chiamarsi come le chiavi dell'elemento. L'albero GEBAN ha per
-esempio un campo con codice `descrizione`.
+un sotto-campo può chiamarsi come le chiavi dell'elemento: un campo con codice
+`descrizione` esiste, per esempio, nel caso GEBAN.
 
 ### Validazione degli elementi
 

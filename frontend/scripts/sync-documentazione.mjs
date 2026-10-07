@@ -17,6 +17,18 @@ const USCITA = resolve(qui, '../public/manuale');
 
 // Ordine e titoli del menu. `sorgente` e' relativo a docs/; lo slug e' il nome
 // del file pubblicato e l'ultimo pezzo dell'indirizzo /documentazione/<slug>.
+const CONTRATTI = [
+  ['geban-catalog', 'Catalogo e generazione (sistemi esterni)'],
+  ['generazione-documenti', 'Generazione documenti'],
+  ['storage-documenti', 'Registro di una generazione'],
+  ['geban-discovery-endpoint', 'Discovery da esporre (sistema esterno)'],
+  ['builder-modelli', 'Builder: modelli e versioni'],
+  ['builder-discovery', 'Builder: struttura dal discovery'],
+  ['integrazioni', 'Amministrazione integrazioni'],
+  ['configurazione-cataloghi', 'Struttura attesa e contratto'],
+  ['registro-attivita-admin', 'Registro attivita'],
+];
+
 const SEZIONI = [
   {
     codice: 'utenti',
@@ -28,22 +40,54 @@ const SEZIONI = [
     ],
   },
   {
-    codice: 'sviluppatori',
-    titolo: 'Per gli sviluppatori',
+    codice: 'architettura',
+    titolo: 'Architettura e integrazione',
     pagine: [
-      ['api-per-geban.md', 'API per un sistema esterno'],
+      ['architettura.md', 'Architettura e modularita'],
+      ['integrazione-sistema-esterno.md', 'Integrare un sistema esterno'],
       ['contratto-dati.md', 'Contratto dati'],
       ['matrice-flussi-integrazione.md', 'Matrice flussi integrazione'],
       ['formato-documentale.md', 'Formato documentale'],
-      ['presa-atto-geban-dimensioni-catalogo.md', 'Dimensioni generiche nel catalogo'],
-      ['api-documentation.md', 'Regole per documentare le API'],
+    ],
+  },
+  {
+    codice: 'casi',
+    titolo: 'Casi di integrazione',
+    pagine: [
+      ['casi/geban.md', 'GEBAN: bandi di concorso'],
+      ['presa-atto-geban-dimensioni-catalogo.md', 'GEBAN: dimensioni nel catalogo'],
+    ],
+  },
+  {
+    codice: 'api',
+    titolo: 'API',
+    pagine: [['riferimento-api.md', 'Riferimento API']],
+    collegamenti: [
+      { titolo: 'Indice dei contratti', href: '/docs' },
+      ...CONTRATTI.map(([codice, titolo]) => ({ titolo: `Swagger: ${titolo}`, href: `/docs/${codice}` })),
+    ],
+  },
+  {
+    codice: 'progetto',
+    titolo: 'Progetto',
+    pagine: [
       ['project-map.md', 'Mappa del progetto'],
+      ['adr/0001-ownership-dati-esterni-e-onboarding-contesti.md', 'ADR 0001: dati esterni e contesti'],
+      ['adr/0002-integrazioni-contesti-modelli-test.md', 'ADR 0002: integrazioni e contesti'],
+      ['adr/0003-accesso-utenti-contesti-ace.md', 'ADR 0003: accesso tramite ACE'],
+      ['api-documentation.md', 'Regole per documentare le API'],
       ['frontend-server-test.md', 'Collaudo sul server di test'],
       ['pulizia-modelli.md', 'Demo ed eliminazione modelli'],
       ['decision-workflow.md', 'Aggiornare le decisioni aperte'],
       ['open-source-pa-readiness.md', 'Riuso PA e open source'],
-      ['discovery-per-nodi-esempio.md', 'Discovery per nodi (proposta)'],
+    ],
+  },
+  {
+    codice: 'archivio',
+    titolo: 'Archivio',
+    pagine: [
       ['flusso-integrazione-geban.md', 'Flusso integrazione GEBAN (storico)'],
+      ['discovery-per-nodi-esempio.md', 'Discovery per nodi (proposta)'],
     ],
   },
 ];
@@ -60,6 +104,7 @@ function attesi() {
         file.set(`${slug(sorgente)}.md`, readFileSync(join(DOCS, sorgente), 'utf8'));
         return { slug: slug(sorgente), titolo, sorgente };
       }),
+      ...(sezione.collegamenti ? { collegamenti: sezione.collegamenti } : {}),
     })),
   };
   file.set('indice.json', JSON.stringify(indice, null, 2) + '\n');

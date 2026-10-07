@@ -8,10 +8,17 @@ export interface PaginaManuale {
   sorgente: string;
 }
 
+/** Un link fuori dal manuale, per esempio una pagina Swagger. */
+export interface CollegamentoManuale {
+  titolo: string;
+  href: string;
+}
+
 export interface SezioneManuale {
   codice: string;
   titolo: string;
   pagine: PaginaManuale[];
+  collegamenti?: CollegamentoManuale[];
 }
 
 export interface IndiceManuale {
@@ -100,7 +107,14 @@ export function rendiPagina(
       link.setAttribute('rel', 'noopener');
       return;
     }
-    if (href.startsWith('/')) return;
+    if (href.startsWith('/')) {
+      // Swagger, ReDoc e YAML vivono fuori dall'app: si aprono a parte.
+      if (!href.startsWith(`${ROTTA_MANUALE}/`)) {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener');
+      }
+      return;
+    }
     const [percorso, ancora] = href.split('#');
     const destinazione = percorso
       ? perSorgente.get(risolvi(pagina.sorgente, percorso))

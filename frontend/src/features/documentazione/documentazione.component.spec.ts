@@ -15,9 +15,10 @@ const indice: IndiceManuale = {
       ],
     },
     {
-      codice: 'sviluppatori',
-      titolo: 'Per gli sviluppatori',
+      codice: 'api',
+      titolo: 'API',
       pagine: [{ slug: 'contratto-dati', titolo: 'Contratto dati', sorgente: 'contratto-dati.md' }],
+      collegamenti: [{ titolo: 'Swagger: catalogo', href: '/docs/geban-catalog' }],
     },
   ],
 };
@@ -62,11 +63,12 @@ async function apri(url: string) {
 describe('Documentazione', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('splits the index into user and developer sections', async () => {
+  it('shows the index sections and their external Swagger links', async () => {
     const { root } = await apri('/documentazione');
     const titoli = [...root.querySelectorAll('.manuale-sezione-titolo')].map((h) => h.textContent);
-    expect(titoli).toEqual(['Per gli utenti', 'Per gli sviluppatori']);
-    expect(root.querySelector('.manuale-sezione a[href="/docs"]')).not.toBeNull();
+    expect(titoli).toEqual(['Per gli utenti', 'API']);
+    const swagger = root.querySelector('.manuale-sezione a[href="/docs/geban-catalog"]')!;
+    expect(swagger.getAttribute('target')).toBe('_blank');
   });
 
   it('opens the first user page by default and rewrites its links to the app', async () => {

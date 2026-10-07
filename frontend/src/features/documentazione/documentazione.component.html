@@ -16,9 +16,11 @@
                 >
               </li>
             }
-            @if (sezione.codice === 'sviluppatori') {
+            @for (link of sezione.collegamenti ?? []; track link.href) {
               <li>
-                <a href="/docs" target="_blank" rel="noopener">Contratti OpenAPI (Swagger) ↗</a>
+                <a class="collegamento" [href]="link.href" target="_blank" rel="noopener"
+                  >{{ link.titolo }} ↗</a
+                >
               </li>
             }
           </ul>

@@ -8,6 +8,25 @@ La regola di lavoro e': nessuna sezione della proposta deve restare senza owner.
 - Documento sorgente: `PROPOSTA-servizio-gestione-modelli-bando.md`
 - Costituzione: `.specify/memory/constitution.md`
 
+## Stato corrente (2026-10-07)
+
+Questo documento e' un registro cronologico: gli "Aggiornamenti" sotto
+descrivono lo stato a quella data. Dove contrastano, vale questo riquadro e,
+per la descrizione del sistema, [Architettura e modularita'](architettura.md).
+
+- **Generazione**: `genera` restituisce il PDF; GEMODO **non lo conserva**,
+  non c'e' download e la stessa chiave si rigenera senza `409` (spec 013). Resta
+  il registro delle generazioni, leggibile solo dagli amministratori.
+- **Discovery**: solo dal vivo, tramite `AdapterHTTP` sulle integrazioni
+  `CONNESSO`; nessun catalogo esterno locale ne' `AdapterLocale`.
+- **Sicurezza**: token ACE dell'utente (client ammessi per integrazione, es.
+  `geri-angular-public` per GEBAN); l'audience non e' verificata (decisione
+  2026-09-25); il token tecnico `geban-backend` e' superato (2026-10-05). Il
+  profilo di accesso sta nel database, per integrazione. Isolamento per
+  contesto acceso nel deploy.
+- **Spec aperte**: `014` campi ripetibili (proposta), `015` discovery di
+  collaudo (da implementare).
+
 ## Spec Inventory
 
 Decisione MVP corrente:
@@ -118,12 +137,12 @@ quality gate non dichiarato superato. Dettagli: `specs/010-configurazione-catalo
 | §6 Placeholder E Sezioni | 003, 004 | Coperta | Sezioni e risoluzione placeholder |
 | §7 Proprietario Dei Dati | Constitution, 001, 004, 006 | Coperta | Ownership dati e snapshot |
 | §8 Schema Dati Proposto | 002, 003, 004, 005, 006, 009 | Coperta | Entita' distribuite per responsabilita' |
-| §9 API Esposte Verso GEBAN | 001, 004, 005 | Coperta | Catalogo, validazione, generazione, download |
+| §9 API Esposte Verso GEBAN | 001, 004, 005, 013 | Coperta | Catalogo, validazione, generazione; download ritirato dalla 013 |
 | §10 API Interne Del Builder Modelli | 002, 003 | Coperta | API amministrative builder |
-| §11 Frontend Del Servizio | 007 | Coperta | Builder e consultazione generazioni |
+| §11 Frontend Del Servizio | 007, 012, 013 | Coperta | Builder ed editor, amministrazione, registro attivita', documentazione; nessuna consultazione dei PDF (non conservati) |
 | §12 Sicurezza, Autenticazione E Autorizzazione | 006 | Coperta | Spec dedicata |
-| §13 Storage PDF | 004, 005 | Coperta | Generazione + conservazione/riferimento |
-| §14 Idempotenza | 005 | Coperta | Chiave, retry, conflict |
+| §13 Storage PDF | 004, 005, 013 | Superata | GEMODO non conserva il PDF (013): restano riferimento e registro delle generazioni |
+| §14 Idempotenza | 005, 013 | Superata | La stessa chiave si rigenera; nessun conflitto `409` (013) |
 | §15 Predisposizione Per AI, Documentazione Assistita E MCP | 008, 006, 009 | Coperta | AI/MCP, sicurezza AI e documentazione pubblicabile |
 | §16 Piano Di Sviluppo | 009 + tutte | Coperta | Usato come input per plan/tasks successivi; `009` governa anche navigazione documentale, API readiness e riuso PA |
 | §17 Decisioni Da Confermare | 009 + spec collegate | Coperta | Decisioni distribuite come open decisions |
@@ -146,9 +165,10 @@ Le decisioni aperte tracciate in `specs/009-fondamenta-mock-test-qualita/spec.md
 - quando una decisione passa a `CONFERMATA`, le spec elencate in `impacted_specs`
   devono essere aggiornate di conseguenza (non basta chiuderla nella spec che la
   possiede).
-- `SEC-006-001` (token tecnico `geban-backend` verso `gemodo-backend`) e
-  `SEC-006-002` (nessuna separazione revisore/approvatore nella prima release) sono
-  gia' `CONFERMATA` (2026-07-29, spec `006`) e non bloccano piu' alcuna fase.
+- `SEC-006-001` (token tecnico `geban-backend` verso `gemodo-backend`) e' stata
+  confermata il 2026-07-29 e poi **superata** il 2026-10-05: GEBAN usa il token
+  ACE dell'utente. `SEC-006-002` (nessuna separazione revisore/approvatore nella
+  prima release) e' `CONFERMATA` (2026-07-29, spec `006`).
 
 ## Gate Trasversali Documentazione E Riuso
 

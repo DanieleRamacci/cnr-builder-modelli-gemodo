@@ -57,6 +57,14 @@ describe('manuale', () => {
     expect(div.querySelector('.link-esterno-manuale')!.textContent).toBe('la spec');
   });
 
+  it('opens Swagger and other server pages in a new tab, but not manual routes', () => {
+    const [swagger, manuale] = [
+      ...rendi('[s](/docs/geban-catalog) [m](/documentazione/x)').querySelectorAll('a'),
+    ];
+    expect(swagger.getAttribute('target')).toBe('_blank');
+    expect(manuale.getAttribute('target')).toBeNull();
+  });
+
   it('opens absolute links in a new tab', () => {
     const a = rendi('[sito](https://example.org)').querySelector('a')!;
     expect(a.getAttribute('target')).toBe('_blank');

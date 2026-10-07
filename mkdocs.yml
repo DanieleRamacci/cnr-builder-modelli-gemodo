@@ -17,21 +17,35 @@ nav:
       - Roadmap: spec-kit/roadmap.md
       - API Readiness: spec-kit/api-readiness.md
       - Decisioni E Vincoli: spec-kit/decisions-and-vincoli.md
-  - Guida Utenti:
+  - Per Gli Utenti:
       - Introduzione: utenti/introduzione.md
       - Creare E Pubblicare Un Modello: utenti/modelli.md
       - Amministrare Integrazioni E Contesti: utenti/amministrazione.md
-  - Project Map: project-map.md
-  - API Per Un Sistema Esterno: api-per-geban.md
-  - Contratto Dati: contratto-dati.md
-  - Matrice Flussi Integrazione: matrice-flussi-integrazione.md
-  - Flusso Integrazione GEBAN (storico): flusso-integrazione-geban.md
-  - Discovery Per Nodi (proposta non implementata): discovery-per-nodi-esempio.md
-  - API Documentation: api-documentation.md
-  - Formato Documentale: formato-documentale.md
-  - Decision Workflow: decision-workflow.md
-  - Riuso PA: open-source-pa-readiness.md
-  - Costituzione: spec-kit/governance/constitution.md
+  - Architettura E Integrazione:
+      - Architettura E Modularita: architettura.md
+      - Integrare Un Sistema Esterno: integrazione-sistema-esterno.md
+      - Contratto Dati: contratto-dati.md
+      - Matrice Flussi Integrazione: matrice-flussi-integrazione.md
+      - Formato Documentale: formato-documentale.md
+  - Casi Di Integrazione:
+      - GEBAN - Bandi Di Concorso: casi/geban.md
+      - GEBAN - Dimensioni Nel Catalogo: presa-atto-geban-dimensioni-catalogo.md
+  - API:
+      - Riferimento API: riferimento-api.md
+  - Progetto:
+      - Project Map: project-map.md
+      - ADR 0001 Dati Esterni E Contesti: adr/0001-ownership-dati-esterni-e-onboarding-contesti.md
+      - ADR 0002 Integrazioni E Contesti: adr/0002-integrazioni-contesti-modelli-test.md
+      - ADR 0003 Accesso Tramite ACE: adr/0003-accesso-utenti-contesti-ace.md
+      - API Documentation: api-documentation.md
+      - Collaudo Server Di Test: frontend-server-test.md
+      - Demo Ed Eliminazione Modelli: pulizia-modelli.md
+      - Decision Workflow: decision-workflow.md
+      - Riuso PA: open-source-pa-readiness.md
+      - Costituzione: spec-kit/governance/constitution.md
+  - Archivio:
+      - Flusso Integrazione GEBAN (storico): flusso-integrazione-geban.md
+      - Discovery Per Nodi (proposta non implementata): discovery-per-nodi-esempio.md
 markdown_extensions:
   - admonition
   - tables

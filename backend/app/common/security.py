@@ -287,7 +287,7 @@ DESCRIZIONI_PERMESSI = {
     "GEMODO_ADMIN": "Configura integrazioni, tipi documento, policy delle dimensioni e cornice di pagina",
     "GEMODO_MODELLI_GESTORE": "Crea e compone i modelli, ne chiede l'anteprima, li porta in revisione e li pubblica",
     "DOCUMENTI_GENERATORE": "Genera documenti dai modelli pubblicati",
-    "DOCUMENTI_VIEWER": "Consulta il catalogo dei modelli e i documenti generati",
+    "DOCUMENTI_VIEWER": "Consulta il catalogo dei modelli pubblicati e i dati che ciascuno richiede",
     "GEMODO_CONSULTAZIONE": "Consulta i modelli in sola lettura",
 }
 
