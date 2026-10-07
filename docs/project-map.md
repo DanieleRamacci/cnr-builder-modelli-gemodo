@@ -206,21 +206,21 @@ Esito del controllo chiesto da 002 T038, su variante, versione e sicurezza.
   valori di dimensione: pubblicarne una nuova archivia la precedente. Il
   catalogo espone solo versioni `PUBBLICATO`; `campi-richiesti` su una versione
   non pubblicata risponde 409.
-- **Aggiornamento 2026-10-05 (001 T115):** l'isolamento per contesto e' acceso
-  in `docker-compose.coolify.yml` e il profilo di accesso sta nel database
-  (scheda "Profilo di accesso" dell'integrazione). Il paragrafo seguente
-  descrive lo stato precedente.
-- **Sicurezza: coerente nel builder, condizionata nel consumo.** Il builder
+- **Aggiornamento 2026-10-06 (001 T115 / 013):** l'isolamento per contesto e'
+  acceso in `docker-compose.coolify.yml`
+  (`GEMODO_ENFORCE_CONTESTO_CONSUMATORE=true` di default) e il profilo di
+  accesso sta nel database, nella scheda "Profilo di accesso"
+  dell'integrazione. Il codice mantiene il default `false` per rollout e test
+  locali, ma il deploy Coolify usa il comportamento isolato.
+- **Sicurezza: coerente nel builder e nel consumo con flag acceso.** Il builder
   verifica sempre il contesto in scrittura (`verify_scrittura_su_contesto`), e
-  da 007 T115 l'interfaccia mostra solo cio' che il profilo calcolato dal
-  backend concede. Catalogo, validazione, generazione e download verificano il
-  contesto con `verifica_permesso_contesto`, che **controlla davvero solo se
-  `GEMODO_ENFORCE_CONTESTO_CONSUMATORE` e' acceso**: di default e' spento, e
-  `docker-compose.coolify.yml` non lo imposta. In quell'ambiente un token con
-  `DOCUMENTI_VIEWER`/`DOCUMENTI_GENERATORE` in un contesto legge e genera anche
-  sui modelli di altri contesti. E' un rilascio graduale voluto (001 FR-034..038),
-  non un difetto, ma **va acceso prima della produzione**: decisione del
-  product owner, da registrare nel registro decisioni quando presa.
+  l'interfaccia mostra solo cio' che il profilo calcolato dal backend concede.
+  Catalogo, validazione e generazione verificano il contesto con
+  `verifica_permesso_contesto`: con il flag acceso, una versione fuori contesto
+  via ID diretto e' indistinguibile da una inesistente (404), mentre una ricerca
+  esplicita su tipo documento non autorizzato risponde 403. Il registro
+  generazioni e' solo admin e il download non esiste piu'. Vedi anche
+  [matrice flussi integrazione](matrice-flussi-integrazione.md).
 
 ## Ambito Individuato, Non Ancora Specificato
 

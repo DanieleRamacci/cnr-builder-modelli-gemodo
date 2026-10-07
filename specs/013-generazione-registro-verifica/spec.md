@@ -52,6 +52,19 @@ Questa spec sostituisce FR-005, FR-007, FR-012 e la parte di conservazione e
 download della `005`, e l'idempotenza di FR-018 della `004`. La generazione lato
 server con dati controllati sul contratto del modello (`004`) non cambia.
 
+### Decisione 2026-10-06: verifica PDF/dati rinviata
+
+La verifica amministrativa di un PDF o di un insieme di dati resta una esigenza
+di prodotto, ma non viene implementata in questo incremento. Questa spec chiude
+prima il blocco necessario a GEBAN: generazione ripetibile con la stessa chiave,
+registro di ogni chiamata, niente archivio file, riferimento documentale e
+registro attivita'. Le User Story 2 e 3, con relative API, pagina admin e test,
+sono rinviate a una spec successiva.
+
+Il riferimento nei metadati del PDF rimane in scope: non espone una verifica,
+ma prepara il collegamento tecnico necessario quando la spec futura verra'
+sviluppata.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Rigenerare lo stesso bando finche' non e' definitivo (Priority: P1)
@@ -79,6 +92,9 @@ diversi restituiscono due PDF, ciascuno coi suoi dati, e due righe di registro.
 
 ### User Story 2 - Dimostrare che un PDF e' quello generato da GEMODO (Priority: P1)
 
+**Stato 2026-10-06**: rinviata a spec futura. Non implementare API o UI di
+verifica PDF in questo incremento.
+
 Come amministratore, davanti a un PDF contestato, voglio sapere se e' identico a
 quello che GEMODO ha consegnato, quando, a chi, da quale modello.
 
@@ -100,6 +116,9 @@ cambio un byte e GEMODO dice che non corrisponde.
 ---
 
 ### User Story 3 - Verificare che dei dati siano quelli di una generazione (Priority: P2)
+
+**Stato 2026-10-06**: rinviata a spec futura. Non implementare API o UI di
+verifica dati in questo incremento.
 
 Come amministratore, data una generazione e un insieme di dati (per esempio
 quelli che GEBAN dice di aver inviato), voglio sapere se corrispondono.
@@ -189,12 +208,12 @@ dall'API.
 
 **Verifica**
 
-- **FR-008**: Un amministratore MUST poter verificare un PDF: GEMODO ne calcola
+- **FR-008** *(rinviato a spec futura)*: Un amministratore MUST poter verificare un PDF: GEMODO ne calcola
   l'impronta e risponde con la generazione corrispondente o con "non
   corrisponde".
-- **FR-009**: Un amministratore MUST poter verificare se un insieme di dati
+- **FR-009** *(rinviato a spec futura)*: Un amministratore MUST poter verificare se un insieme di dati
   corrisponde a una generazione, indicata dal riferimento.
-- **FR-010**: La verifica MUST mostrare il modello e la versione usati dalla
+- **FR-010** *(rinviato a spec futura)*: La verifica MUST mostrare il modello e la versione usati dalla
   generazione.
 
 **Registro attivita'**
@@ -235,8 +254,8 @@ dall'API.
 
 - **SC-001**: GEBAN rigenera lo stesso bando con la stessa chiave e dati diversi
   10 volte di seguito: 10 PDF, 10 righe di registro, nessun errore.
-- **SC-002**: Il 100% dei PDF consegnati e' riconosciuto dalla verifica; un PDF
-  con un solo byte cambiato non lo e' mai.
+- **SC-002** *(rinviato a spec futura)*: Il 100% dei PDF consegnati e'
+  riconosciuto dalla verifica; un PDF con un solo byte cambiato non lo e' mai.
 - **SC-003**: Con il registro attivita' non scrivibile, generazioni, modifiche
   ai modelli e configurazione continuano a funzionare.
 - **SC-004**: Nessuna copia dei PDF sul disco del backend dopo una generazione.

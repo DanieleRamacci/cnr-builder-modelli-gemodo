@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from functools import partial
 
@@ -49,10 +50,12 @@ class GenerazioneDocumentiService:
         validazione = self.validazione.validate_payload(request, principal)  # 404/409 se versione assente/non pubblicata/fuori contesto
         version = catalog_repository.get_model_version_by_public_id(self.db, request.modello_versione_id)
         nome_file = f"{version.modello.codice}-v{version.versione}-{request.external_context_id}.pdf"
+        riferimento = uuid.uuid4().hex
         registra = partial(
             self.storage.registra, sistema_richiedente=request.sistema_richiedente,
             external_context_id=request.external_context_id, modello_versione_id=version.id,
             hash_richiesta=hash_dati(request.dati), nome_file=nome_file, principal=principal,
+            riferimento=riferimento,
         )
         if not validazione.valido:
             campi = sorted({errore.campo or errore.codice for errore in validazione.errori})
@@ -82,6 +85,7 @@ class GenerazioneDocumentiService:
                     inizi_sezione=builder_repository.inizi_sezione(version),
                     cornice=builder_repository.cornice_del_tipo(version),
                     logo=builder_repository.logo_del_tipo(version),
+                    riferimento_documentale=riferimento,
                 )
             else:
                 righe = [
@@ -90,7 +94,7 @@ class GenerazioneDocumentiService:
                 ]
                 contenuto = render_pdf(
                     titolo=titolo, righe=righe, cornice=builder_repository.cornice_del_tipo(version),
-                    logo=builder_repository.logo_del_tipo(version),
+                    logo=builder_repository.logo_del_tipo(version), riferimento_documentale=riferimento,
                 )
         except PlaceholderSenzaValore as mancanti:
             # Un segnaposto senza valore non e' un errore di produzione del

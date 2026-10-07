@@ -259,6 +259,14 @@ def _nuovo_pdf(cornice: CornicePagina | None = None, logo: bytes | None = None) 
     return pdf
 
 
+def _metadati(pdf: FPDF, titolo: str, riferimento_documentale: str | None = None) -> None:
+    pdf.set_title(titolo)
+    pdf.set_creator("GEMODO")
+    if riferimento_documentale:
+        pdf.set_subject(f"Riferimento documentale: {riferimento_documentale}")
+        pdf.set_keywords(f"GEMODO riferimento_documentale={riferimento_documentale}")
+
+
 def testo_piano(frammenti: list[FrammentoTesto]) -> str:
     """Il testo dei frammenti senza enfasi: per le rese che non la distinguono."""
     return "".join(frammento.testo for frammento in frammenti)
@@ -531,6 +539,7 @@ def render_documento(
     cornice: CornicePagina | None = None,
     logo: bytes | None = None,
     inizi_pagina: list[InizioPagina] | None = None,
+    riferimento_documentale: str | None = None,
 ) -> bytes:
     """Il documento composto: i blocchi in ordine, con tipo e posizionamento (003 T018).
 
@@ -543,6 +552,7 @@ def render_documento(
     prima (012 T080): lo stesso documento, misurato mentre lo si scrive.
     """
     pdf = _nuovo_pdf(cornice, logo)
+    _metadati(pdf, titolo, riferimento_documentale)
     if isinstance(pdf, _PdfConCornice):
         pdf.inizi_pagina = inizi_pagina
     _intestazione(pdf, titolo, anteprima=anteprima)
@@ -558,9 +568,11 @@ def render_pdf(
     righe: list[tuple[str, str]],
     cornice: CornicePagina | None = None,
     logo: bytes | None = None,
+    riferimento_documentale: str | None = None,
 ) -> bytes:
     """L'elenco etichetta/valore: cio' che e' un modello senza sezioni."""
     pdf = _nuovo_pdf(cornice, logo)
+    _metadati(pdf, titolo, riferimento_documentale)
     _intestazione(pdf, titolo)
     for etichetta, valore in righe:
         pdf.set_font(_FONT, "B", 11)

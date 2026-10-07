@@ -68,6 +68,12 @@ Con un manager autorizzato, aprire Crea modello, scegliere il contesto e
 una delle integrazioni connesse visibili, poi tipo documento e percorso
 fino alla foglia. Compilare codice, nome e variante e creare la bozza.
 L'esito BOZZA viene mostrato solo dopo la creazione della versione nel backend.
+
+Per provare casi multi-contesto e multi-integrazione, usare la
+[matrice flussi integrazione](matrice-flussi-integrazione.md): include i casi
+di integrazione non connessa, integrazione di altro contesto, stesso tipo
+documento esposto da due integrazioni, piu' categorie/tipologie nello stesso
+contesto e rigenerazione GEBAN con la stessa chiave.
 # Reset completo del database di test
 
 Il backend include `gemodo-reset-database`, eseguibile da qualunque directory

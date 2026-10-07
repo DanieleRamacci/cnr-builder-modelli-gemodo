@@ -10,12 +10,14 @@ from __future__ import annotations
 import hashlib
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 
 import pytest
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
@@ -116,6 +118,9 @@ def test_generazione_consegna_il_pdf_e_lo_registra_senza_conservarlo(db_engine, 
     assert "Bando reale" in estrai_testo(esito.content)
     assert "Prima nota" in estrai_testo(esito.content)
     riferimento = esito.headers["x-riferimento-documentale"]
+    metadati = PdfReader(BytesIO(esito.content)).metadata
+    assert metadati.subject == f"Riferimento documentale: {riferimento}"
+    assert f"riferimento_documentale={riferimento}" in (metadati.get("/Keywords") or "")
 
     [riga] = _righe(db_engine, payload["external_context_id"])
     assert riga["riferimento"] == riferimento

@@ -329,24 +329,35 @@ fanno parte dei prerequisiti bloccanti per rispettare il gate contract-first.
       `NON_VERIFICABILE`, mai allineate per presunzione. Contratto
       amministrativo aggiornato **prima** di esporre esiti runtime, come il
       task richiede: lo schema c'e', l'endpoint che lo restituisce e' T058.
-- [ ] T056 **[RINVIATO dopo la `003`, decisione dell'utente 2026-09-24.**
+- [ ] T056 **[RINVIATO. Aggiornamento 2026-10-06: da riprendere in una spec
+      futura sul monitoraggio operativo delle integrazioni, non in questo
+      incremento.]**
       La catena T056-T058 e T096-T101 avvisa che un modello non rispecchia
       piu' il ramo da cui e' nato. E' utile, ma finche' la `003` non e' chiusa
       i modelli non producono documenti ufficiali - il renderer marca ogni PDF
       come non ufficiale - quindi l'avviso arriverebbe su qualcosa che nessuno
       sta ancora usando. La persistenza (T055, migration `0022`) e' gia' fatta
-      e attende. Riprendere dopo `003` T020.**
+      e attende. Il nuovo requisito emerso il 2026-10-06 e' piu' ampio:
+      polling/scheduler costante degli endpoint, storico, email agli
+      amministratori se il servizio e' giu', irraggiungibile o non conforme, e
+      controlli di cambiamento dati/drift definiti in modo esplicito. Riprendere
+      con una spec dedicata invece di chiudere solo questi task storici.**
       [FR-014] Implementare firma SHA-256 e confronto con il contratto
       della versione modello; testare ordinamenti, timestamp variabili,
       ramo scomparso, nuovi obbligatori, opzionali non usati e variazioni di
       tipo/vincoli. Dipende da T053-T055 e dal contratto allineato.
-- [ ] T057 [FR-015] Implementare runner configurabile con una risposta per
-      integrazione/ciclo, indice temporaneo in memoria, no sovrapposizioni,
-      timeout/retry limitati ed esito NON_VERIFICABILE per errori esterni.
-      Testare che non scarichi il catalogo per ogni modello. Dipende da T012/T056.
-- [ ] T058 [FR-015] Esporre data/esito/motivi della verifica nella dashboard,
-      auditare transizioni e notificare cambiamenti di esito senza duplicati.
-      Dipende da T055-T057 e T045; mantenere separata la pubblicazione.
+- [ ] T057 **RINVIATO a spec futura** [FR-015] Implementare runner
+      configurabile con una risposta per integrazione/ciclo, indice temporaneo
+      in memoria, no sovrapposizioni, timeout/retry limitati ed esito
+      NON_VERIFICABILE per errori esterni. La spec futura deve aggiungere anche
+      polling/scheduler, configurazione della frequenza, deduplica degli avvisi
+      e invio email quando il servizio e' giu' o non conforme. Testare che non
+      scarichi il catalogo per ogni modello. Dipende da T012/T056.
+- [ ] T058 **RINVIATO a spec futura** [FR-015] Esporre data/esito/motivi della
+      verifica nella dashboard, auditare transizioni e notificare cambiamenti
+      di esito senza duplicati. La notifica email agli amministratori e' parte
+      del requisito futuro. Dipende da T055-T057 e T045; mantenere separata la
+      pubblicazione.
 - [x] T059 [P] Riallineare il riferimento documentale alla porta condivisa in
       `specs/002-builder-modelli/data-model.md` alla porta canonica della 010;
       rilievo MEDIUM della review indipendente 2026-09-17, non nuovo task
@@ -881,39 +892,44 @@ tutti e tre i controlli. Non introdurre un secondo scheduler.
 
 **Dipendenza**: T096 dipende da T057. T097-T099 dipendono da T096.
 
-- [ ] T096 [FR-026] Estendere il runner di T057 con un ciclo per integrazione
-      registrata: recupera il discovery una sola volta, ne deriva stato di
-      raggiungibilita', conformita', versione di contratto e insieme delle
-      dimensioni dichiarate per tipo documento. Nessuna scrittura della
-      `revisione`, nessun `revisione_attesa`: non e' una riconfigurazione.
-      Esito `NON_VERIFICABILE` per indisponibilita' esterna, distinto da
-      `NON_CONFORME`. In `backend/app/configurazione/`.
-- [ ] T097 [FR-026] Persistere l'esito della riverifica automatica separandolo
-      dall'ultima verifica manuale, cosi' che la dashboard di User Story 4
-      possa mostrare "connesso, ultimo controllo automatico fallito" senza
-      perdere la data dell'ultimo esito valido. Migration piu' proiezione in
-      `IntegrazioneAdmin`. Auditare ogni transizione di stato.
-- [ ] T098 [FR-027] Calcolare, per ogni tipo documento live di ogni
-      integrazione connessa, le dimensioni dichiarate prive di policy
-      registrata, ed esporle come elenco di segnalazioni con integrazione,
-      codice tipo documento e nome dimensione. Riusare
+- [ ] T096 **RINVIATO a spec futura** [FR-026] Estendere il runner di T057 con
+      un ciclo per integrazione registrata: recupera il discovery una sola
+      volta, ne deriva stato di raggiungibilita', conformita', versione di
+      contratto e insieme delle dimensioni dichiarate per tipo documento.
+      La spec futura deve definire polling/scheduler costante e invio email
+      quando l'endpoint non risponde, risponde fuori contratto o torna da KO a
+      OK. Nessuna scrittura della `revisione`, nessun `revisione_attesa`: non
+      e' una riconfigurazione. Esito `NON_VERIFICABILE` per indisponibilita'
+      esterna, distinto da `NON_CONFORME`. In `backend/app/configurazione/`.
+- [ ] T097 **RINVIATO a spec futura** [FR-026] Persistere l'esito della
+      riverifica automatica separandolo dall'ultima verifica manuale, cosi' che
+      la dashboard di User Story 4 possa mostrare "connesso, ultimo controllo
+      automatico fallito" senza perdere la data dell'ultimo esito valido.
+      Migration piu' proiezione in `IntegrazioneAdmin`. Auditare ogni
+      transizione di stato e definire deduplica/ack delle email.
+- [ ] T098 **RINVIATO a spec futura** [FR-027] Calcolare, per ogni tipo
+      documento live di ogni integrazione connessa, le dimensioni dichiarate
+      prive di policy registrata, ed esporle come elenco di segnalazioni con
+      integrazione, codice tipo documento e nome dimensione. Riusare
       `IntegrazioniService._dimensioni_catalogo`, non reimplementarla: e' la
       stessa regola che governa la pagina policy.
-- [ ] T099 [FR-028] Confrontare la versione di contratto osservata con
-      `versione_contratto_verificata` e segnalare la divergenza come esito
-      proprio, distinto da non conforme. Non aggiornare il valore registrato
-      in automatico.
-- [ ] T100 [P] Superficie admin delle segnalazioni: sostituire le schede
-      statiche della home con lo stato reale delle integrazioni e l'elenco
-      prodotto da T098, con link diretto alla schermata 4a della dimensione
-      interessata. Rimuovere contestualmente i contenuti hardcoded residui in
-      `frontend/src/app/home.component.ts` (schede integrazioni, scheda SIGLA,
-      data fissa). Nessuna segnalazione MUST provenire da esempi o fixture.
-- [ ] T101 Test di integrazione dei tre controlli con endpoint simulato:
-      integrazione che passa la verifica e poi diventa irraggiungibile,
-      diventa non conforme, cambia versione di contratto, e aggiunge una
-      dimensione nuova su una foglia. Verificare che un ciclo esegua una sola
-      richiesta per integrazione.
+- [ ] T099 **RINVIATO a spec futura** [FR-028] Confrontare la versione di
+      contratto osservata con `versione_contratto_verificata` e segnalare la
+      divergenza come esito proprio, distinto da non conforme. Non aggiornare
+      il valore registrato in automatico.
+- [ ] T100 **RINVIATO a spec futura** [P] Superficie admin delle segnalazioni:
+      sostituire le schede statiche della home con lo stato reale delle
+      integrazioni e l'elenco prodotto da T098, con link diretto alla schermata
+      4a della dimensione interessata. Rimuovere contestualmente i contenuti
+      hardcoded residui in `frontend/src/app/home.component.ts` (schede
+      integrazioni, scheda SIGLA, data fissa). Nessuna segnalazione MUST
+      provenire da esempi o fixture.
+- [ ] T101 **RINVIATO a spec futura** Test di integrazione dei controlli con
+      endpoint simulato: integrazione che passa la verifica e poi diventa
+      irraggiungibile, diventa non conforme, cambia versione di contratto, e
+      aggiunge una dimensione nuova su una foglia. Verificare che un ciclo
+      esegua una sola richiesta per integrazione e che l'email parta solo nei
+      casi previsti dalla spec futura.
 
 ## Phase 16: Pulizia dell'ambiente (2026-09-22)
 

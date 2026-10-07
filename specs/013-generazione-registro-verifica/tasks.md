@@ -18,18 +18,28 @@ dello stesso soggetto. Verifica: 565 test backend, 198 frontend, e2e su stack
 reale (l'admin trova le tre generazioni del bando col nome dell'utente).
 Manca il contratto OpenAPI delle API admin (parte di T002).
 
-**Prossimo**: la "firma" del PDF: riferimento nei metadati e verifica di PDF e
-dati (T005, T007, T008, T014).
+**Decisione 2026-10-06**: si chiude prima la parte che sblocca GEBAN
+(rigenerazione senza conflitto, registro, riferimento e contratti aggiornati).
+La verifica amministrativa di PDF e dati non si implementa in questo incremento:
+resta una spec successiva, insieme alla sua pagina e ai relativi e2e. Il
+riferimento nei metadati del PDF rimane in scope perche' prepara quella verifica
+senza esporre nuove API.
 
 ## Phase 1: Decisione e contratti
 
 - [x] T001 Nota nelle Clarifications di `005` (FR-005/007/012 e conservazione
       superati da 013) e di `004` (FR-018); decisione nel
       `docs/decision-register.yaml`.
-- [ ] T002 Contratto 004: niente 409, riferimento nuovo a ogni chiamata,
+- [x] T002 Contratto 004: niente 409, riferimento nuovo a ogni chiamata,
       riferimento nei metadati. Contratto 005: via il download, lettura per
-      riferimento solo admin. Contratto admin nuovo: verifica PDF, verifica
-      dati, registro attivita'. Test di contratto.
+      riferimento solo admin. Contratto admin nuovo solo per il registro
+      attivita' gia' implementato. **Rinviato a spec futura**: contratto admin
+      per verifica PDF e verifica dati. Test di contratto.
+      *Completato 2026-10-06*: pubblicati contratti 004/005 gia' aggiornati
+      alla 013 e nuovo
+      `contracts/registro-attivita-admin.openapi.yaml`; registrato in
+      `PUBLISHED_CONTRACTS` come `/docs/registro-attivita-admin`. Verifica:
+      `tests/generazione/test_contracts.py` e `tests/contract/test_docs_index.py`.
 
 ## Phase 2: US1 - Rigenerare con la stessa chiave (P1)
 
@@ -42,17 +52,21 @@ dati (T005, T007, T008, T014).
       riga registrata (FR-006). Test: stessa chiave e dati diversi due volte,
       stessi dati due volte, dati non validi, registro non scrivibile -> errore
       e nessun PDF.
-- [ ] T005 Riferimento nei metadati del PDF. Test: si estrae dal PDF ricevuto.
+- [x] T005 Riferimento nei metadati del PDF. Test: si estrae dal PDF ricevuto.
+      *Fatto 2026-10-06*: il riferimento viene generato prima della resa,
+      scritto in subject/keywords del PDF e usato per la riga del registro e
+      per `X-Riferimento-Documentale`. Verifica:
+      `tests/generazione/test_generazione_e_storage.py::test_generazione_consegna_il_pdf_e_lo_registra_senza_conservarlo`.
 - [x] T006 Via `archivio.py` dal flusso, `gemodo_storage_dir`, i codici
       d'errore non piu' usati; test esistenti dell'idempotenza capovolti.
 
-## Phase 3: US2/US3 - Verifica (P1/P2)
+## Phase 3: US2/US3 - Verifica (P1/P2) - RINVIATA
 
-- [ ] T007 API admin "verifica PDF": impronta del file caricato, generazione
-      corrispondente o "non corrisponde". Test: PDF ricevuto si', un byte
-      cambiato no, PDF estraneo no, non admin 403.
-- [ ] T008 API admin "verifica dati": riferimento + dati, corrispondono o no;
-      ordine dei campi indifferente. Test.
+- [ ] T007 **RINVIATO a spec futura**: API admin "verifica PDF": impronta del
+      file caricato, generazione corrispondente o "non corrisponde". Test: PDF
+      ricevuto si', un byte cambiato no, PDF estraneo no, non admin 403.
+- [ ] T008 **RINVIATO a spec futura**: API admin "verifica dati": riferimento +
+      dati, corrispondono o no; ordine dei campi indifferente. Test.
 - [x] T009 `GET /documenti/{riferimento}` solo admin, download tolto. Test.
 
 ## Phase 4: US4 - Registro attivita' (P2)
@@ -69,14 +83,18 @@ dati (T005, T007, T008, T014).
 ## Phase 5: Frontend admin
 
 - [x] T013 Pagina "Registro attivita'": filtri, elenco, dettaglio, esportazione.
-- [ ] T014 Pagina "Verifica documento": carica PDF; verifica dati.
+- [ ] T014 **RINVIATO a spec futura**: pagina "Verifica documento": carica PDF;
+      verifica dati.
 - [ ] T015 e2e su stack reale: generazione ripetuta con la stessa chiave,
-      verifica del PDF ricevuto e di uno alterato, verifica dati, registro
-      attivita' (admin si', altri no).
+      registro attivita' (admin si', altri no), riferimento nuovo a ogni
+      chiamata e download assente. **Fuori da questo incremento**: verifica del
+      PDF ricevuto/alterato e verifica dati, coperte dalla spec futura.
 
 ## Phase 6: Documentazione e consegna
 
 - [ ] T016 `docs/api-per-geban.md` sezioni 5 e 6, catalogo errori,
-      `docs/quality-coverage-matrix.yaml`; testo dell'avviso per GEBAN.
+      `docs/quality-coverage-matrix.yaml`; testo dell'avviso per GEBAN. La
+      documentazione deve dire esplicitamente che la verifica PDF/dati e' una
+      funzione amministrativa futura, non disponibile in questo rilascio.
 - [ ] T017 Suite completa backend e frontend, build di produzione; avviso
       sulla migrazione prima del deploy.

@@ -16,6 +16,26 @@ DOCUMENTO`).
 
 ## Clarifications
 
+### Session 2026-10-06: monitoraggio continuo e notifiche fuori da questa spec
+
+La verifica dell'endpoint di integrazione non deve restare solo un bottone
+manuale. Serve una spec successiva dedicata al monitoraggio operativo delle
+integrazioni: polling o scheduler costante degli endpoint registrati, stato
+persistito separato dall'ultima verifica manuale, storico degli esiti e invio
+di una email agli amministratori quando il servizio risulta giu',
+irraggiungibile o non conforme al contratto.
+
+La stessa spec dovra' anche riprendere i controlli di cambiamento dati/drift:
+versione del contratto osservata, nuove dimensioni prive di policy, e modelli
+pubblicati che non rispecchiano piu' il ramo discovery da cui sono nati. Questi
+controlli non vanno improvvisati dentro l'incremento corrente: devono essere
+definiti con requisiti, destinatari delle notifiche, frequenza, deduplica,
+silenzio/ack degli avvisi e criteri di escalation.
+
+Il principio resta quello gia' fissato: la verifica dell'endpoint controlla la
+forma generica e versionata del discovery, non che i contenuti corrispondano a
+un albero interno cablato.
+
 ### Session 2026-09-22 (ter): sorveglianza dell'integrazione dopo la verifica
 
 Emersa verificando end-to-end il flusso "Tipi documento e policy" contro

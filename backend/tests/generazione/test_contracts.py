@@ -11,9 +11,10 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 GENERAZIONE = REPO_ROOT / "specs/004-generazione-documenti-pdf/contracts/generazione-documenti-api.openapi.yaml"
 STORAGE = REPO_ROOT / "specs/005-storage-idempotenza-consultazione/contracts/storage-documenti-api.openapi.yaml"
 CATALOGO = REPO_ROOT / "specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml"
+REGISTRO_ATTIVITA = REPO_ROOT / "specs/013-generazione-registro-verifica/contracts/registro-attivita-admin.openapi.yaml"
 
 
-@pytest.mark.parametrize("path", [GENERAZIONE, STORAGE, CATALOGO])
+@pytest.mark.parametrize("path", [GENERAZIONE, STORAGE, CATALOGO, REGISTRO_ATTIVITA])
 def test_contracts_are_valid_openapi(path):
     doc = yaml.safe_load(path.read_text())
     validate(doc, base_uri=path.as_uri())
@@ -45,7 +46,7 @@ def test_old_simulated_generation_endpoint_is_withdrawn():
     assert operazione["x-implementation-status"] == "withdrawn"
 
 
-@pytest.mark.parametrize("spec_id", ["generazione-documenti", "storage-documenti"])
+@pytest.mark.parametrize("spec_id", ["generazione-documenti", "storage-documenti", "registro-attivita-admin"])
 def test_versioned_documentation_available(spec_id):
     with TestClient(app) as client:
         source = client.get(f"/openapi/{spec_id}.yaml")

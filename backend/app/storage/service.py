@@ -54,7 +54,7 @@ class StorageDocumentiService:
     def registra(
         self, *, stato: str, sistema_richiedente: str, external_context_id: str,
         modello_versione_id: uuid.UUID, hash_richiesta: str, nome_file: str, principal: PrincipalGEMODO,
-        contenuto: bytes | None = None, errore_messaggio: str | None = None,
+        contenuto: bytes | None = None, errore_messaggio: str | None = None, riferimento: str | None = None,
     ) -> DocumentoGenerato:
         """Una riga per chiamata. Se non si scrive, il PDF non si consegna (013 FR-006).
 
@@ -62,7 +62,7 @@ class StorageDocumentiService:
         un errore, che GEBAN ripete, di un documento senza traccia.
         """
         documento = DocumentoGenerato(
-            riferimento=uuid.uuid4().hex, sistema_richiedente=sistema_richiedente,
+            riferimento=riferimento or uuid.uuid4().hex, sistema_richiedente=sistema_richiedente,
             external_context_id=external_context_id, modello_versione_id=modello_versione_id,
             tipo_output="TEST", stato=stato, hash_dati=hash_richiesta, nome_file=nome_file,
             hash_file=hashlib.sha256(contenuto).hexdigest() if contenuto is not None else None,

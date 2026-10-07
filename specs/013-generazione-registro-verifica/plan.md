@@ -6,9 +6,10 @@
 
 `genera` smette di cercare una generazione precedente e di salvare il file:
 produce il PDF, scrive una riga nel registro delle generazioni (evoluzione di
-`documento_generato`) e lo consegna. Due funzioni nuove per gli amministratori:
-la verifica di un PDF o di un insieme di dati contro il registro, e il registro
-attivita' che mostra insieme gli eventi gia' registrati e quelli nuovi.
+`documento_generato`) e lo consegna. In questo incremento si completa il
+registro attivita' amministrativo. La verifica amministrativa di PDF e dati
+contro il registro resta esplicitamente rinviata a una spec successiva
+(decisione 2026-10-06).
 
 ## Robustezza dei registri: due regole diverse, di proposito
 
@@ -42,8 +43,9 @@ senza scadenza (FR-016).
   parole chiave del PDF).
 - `app/storage/api.py`: via `download`; `GET /documenti/{riferimento}` solo
   `GEMODO_ADMIN`.
-- Nuove API admin: verifica PDF (upload), verifica dati (riferimento + dati),
-  registro attivita' (filtri, paginazione, CSV).
+- Nuove API admin in questo incremento: registro attivita' (filtri,
+  paginazione, CSV). Rinviate a spec futura: verifica PDF (upload) e verifica
+  dati (riferimento + dati).
 - Registro attivita': tabella nuova per gli eventi nuovi; la consultazione
   unisce questa, le tre tabelle di audit esistenti e il registro delle
   generazioni.
@@ -55,7 +57,8 @@ senza scadenza (FR-016).
 **Frontend**
 
 - Area amministrazione: pagina "Registro attivita'" (filtri, elenco, dettaglio,
-  esportazione) e pagina "Verifica documento" (carica PDF; verifica dati).
+  esportazione). Rinviata a spec futura: pagina "Verifica documento" (carica
+  PDF; verifica dati).
 
 **Contratti e documenti**
 
@@ -63,7 +66,8 @@ senza scadenza (FR-016).
   ogni chiamata.
 - 005 `storage-documenti-api.openapi.yaml`: via il download; lettura per
   riferimento solo admin.
-- Nuovo contratto admin (verifica, registro attivita').
+- Nuovo contratto admin per registro attivita'. Rinviato a spec futura:
+  contratto admin di verifica PDF/dati.
 - `docs/api-per-geban.md` sezioni 5 e 6; `docs/decision-register.yaml` (nuova
   decisione che supera FR-005/007/012 della 005 e ADR 0002 per la
   conservazione); nota nelle Clarifications della 005 e della 004;
@@ -83,6 +87,7 @@ senza scadenza (FR-016).
 ## Verifica
 
 Test su Postgres reale per registro e migrazione; test dell'API; e2e su stack
-reale: generazione ripetuta con la stessa chiave, verifica del PDF ricevuto e
-di uno alterato, verifica dati, registro attivita' (admin si', altri 403),
-registro attivita' non scrivibile senza effetti sulle azioni.
+reale: generazione ripetuta con la stessa chiave, riferimento nuovo, download
+assente, registro attivita' (admin si', altri 403), registro attivita' non
+scrivibile senza effetti sulle azioni. Rinviati a spec futura: verifica del PDF
+ricevuto e di uno alterato, e verifica dati.

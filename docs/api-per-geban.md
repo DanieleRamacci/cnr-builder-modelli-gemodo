@@ -194,6 +194,8 @@ documento. Contratto: **`/docs/generazione-documenti`**.
   `Content-Disposition` e l'header `X-Riferimento-Documentale`.
 - Se non lo sono ricevete un JSON con gli errori, **sempre con HTTP 200**:
   distinguete i due casi dal `Content-Type`, non dal codice HTTP.
+- Il riferimento e' scritto anche nei metadati del PDF; non compare nel testo
+  visibile del documento.
 
 **Potete chiamare `genera` quante volte serve con la stessa chiave**
 (`sistema_richiedente` + `external_context_id`), anche con dati diversi: ogni
@@ -204,13 +206,18 @@ bando, e rigeneratelo a ogni correzione fino al definitivo.
 GEMODO **non conserva il PDF**: lo ricevete nella risposta e conservarlo e'
 compito vostro. Di ogni chiamata GEMODO registra chi l'ha fatta, quando, per
 quale chiave e da quale versione del modello, con le impronte dei dati ricevuti
-e del PDF consegnato: servono a verificare, se un documento viene contestato,
-che e' proprio quello prodotto da GEMODO. Il riferimento in
+e del PDF consegnato: serviranno alla futura verifica amministrativa, se un
+documento viene contestato. La funzione di verifica PDF/dati non e' disponibile
+in questo rilascio. Il riferimento in
 `X-Riferimento-Documentale` identifica la singola generazione ed e' diverso a
 ogni chiamata.
 
 Se GEMODO non riesce a registrare la generazione non consegna il PDF e risponde
 `503` (`REGISTRO_GENERAZIONI_NON_DISPONIBILE`): ripetete la chiamata.
+
+Per i casi di integrazione multi-contesto, piu' integrazioni, piu'
+categorie/tipologie e generazione ripetuta, vedere anche la
+[matrice flussi integrazione](matrice-flussi-integrazione.md).
 
 ## Errori che incontrerete
 
