@@ -38,9 +38,10 @@ dagli stessi file YAML versionati nelle spec: non possono divergere dal contratt
 |---|---|
 | **Admin** | Ruolo diretto `GEMODO_ADMIN` |
 | **Gestore** | `GEMODO_MODELLI_GESTORE` nel contesto della risorsa, verificato sulla risorsa stessa |
-| **Viewer** | `DOCUMENTI_VIEWER` o `DOCUMENTI_GENERATORE` nel contesto della risorsa |
+| **Viewer** | `DOCUMENTI_VIEWER` nel contesto della risorsa (vedi [Lacune note](#lacune-note)) |
 | **Generatore** | `DOCUMENTI_GENERATORE` nel contesto della risorsa |
-| **Autenticato** | Qualsiasi token valido da un client ammesso; la risposta è filtrata sui contesti del token |
+| **Autenticato** | Qualsiasi token valido da un client ammesso |
+| **Gestore o Admin** | `GEMODO_MODELLI_GESTORE` nel contesto del tipo documento, oppure `GEMODO_ADMIN` |
 | **Pubblica** | Nessun token |
 
 ## Sistemi esterni: catalogo e generazione
@@ -59,8 +60,8 @@ Guida d'uso: [Integrare un sistema esterno](integrazione-sistema-esterno.md).
 | Metodo | Rotta | Permesso | Contratto |
 |---|---|---|---|
 | GET | `/api/v1/builder/profilo` | Autenticato | `builder-modelli` |
-| GET | `/api/v1/builder/contesti` | Autenticato | `builder-modelli` |
-| GET | `/api/v1/builder/integrazioni` | Autenticato | `integrazioni` |
+| GET | `/api/v1/builder/contesti` | Gestore (elenca i contesti in cui lo si è) | `builder-modelli` |
+| GET | `/api/v1/builder/integrazioni` | Gestore (elenca le integrazioni dei suoi contesti) | `integrazioni` |
 | GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento` | Gestore | `integrazioni` |
 | GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/struttura` | Gestore | `integrazioni` |
 | GET | `/api/v1/builder/tipi-documento/{codiceTipoDocumento}/struttura-disponibile` | Gestore | `builder-discovery`, `builder-modelli` |
@@ -101,11 +102,11 @@ Le sezioni del documento seguono il formato
 
 | Metodo | Rotta | Permesso | Contratto |
 |---|---|---|---|
-| GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice` | Gestore | `builder-modelli` |
-| PUT | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice` | Gestore | `builder-modelli` |
-| GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore | `builder-modelli` |
-| PUT | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore | `builder-modelli` |
-| DELETE | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore | `builder-modelli` |
+| GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice` | Gestore o Admin | `builder-modelli` |
+| PUT | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice` | Gestore o Admin | `builder-modelli` |
+| GET | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore o Admin | `builder-modelli` |
+| PUT | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore o Admin | `builder-modelli` |
+| DELETE | `/api/v1/builder/integrazioni/{integrazioneId}/tipi-documento/{codice}/cornice/logo` | Gestore o Admin | `builder-modelli` |
 
 ## Amministrazione: integrazioni
 
@@ -157,6 +158,8 @@ conserva.
 | GET | `/docs/{contratto}` | Pubblica | Swagger UI di un contratto |
 | GET | `/redoc/{contratto}` | Pubblica | ReDoc di un contratto |
 | GET | `/openapi/{contratto}.yaml` | Pubblica | Sorgente YAML del contratto |
+| GET | `/docs/oauth2-redirect.html` | Pubblica | Ritorno del login Keycloak in Swagger UI |
+| GET | `/docs/{contratto}/oauth2-redirect` | Pubblica | Ritorno del login Keycloak in Swagger UI, per contratto |
 
 ## Codici di errore
 
@@ -177,7 +180,8 @@ dei dati sono `{ "campo", "codice", "messaggio" }` dentro la risposta di
 |---|---|---|
 | `MODELLO_VERSIONE_NON_TROVATO` | 404 | Versione inesistente o di un altro contesto |
 | `MODELLO_VERSIONE_NON_PUBBLICATO` | 409 | Versione non pubblicata |
-| `DIMENSIONE_NON_DICHIARATA` | 400 | Si indica una dimensione che la foglia o il tipo documento non dichiara |
+| `CONTESTO_NON_VALIDO` | 400 | `tipo_documento` non configurato o non attivo (ricerca nel catalogo) |
+| `RICHIESTA_NON_VALIDA` | 400 | Valori in conflitto per la stessa dimensione nella ricerca |
 | `CAMPO_OBBLIGATORIO` | (in `errori`) | Campo obbligatorio assente o `null` |
 | `CAMPO_NON_AMMESSO` | (in `errori`) | Campo non previsto dalla versione |
 | `TIPO_NON_VALIDO` | (in `errori`) | Valore del tipo sbagliato |
@@ -190,6 +194,7 @@ dei dati sono `{ "campo", "codice", "messaggio" }` dentro la risposta di
 |---|---|---|
 | `CONTESTO_NON_VALIDO` | 400/404/409 | Percorso non foglia, codici incoerenti, ramo non più disponibile, valore di dimensione non ammesso |
 | `DIMENSIONE_RICHIEDE_VALORE` | 400 | La policy della dimensione richiede un valore esplicito |
+| `DIMENSIONE_NON_DICHIARATA` | 400 | Si indica una dimensione che la foglia non dichiara |
 | `CAMPO_NON_AMMESSO` | 400/404 | Campo non presente nella foglia scelta, o duplicato nella versione |
 | `MODELLO_NON_TROVATO` | 404 | Modello inesistente o di un altro contesto |
 | `MODELLO_VARIANTE_DUPLICATA`, `EDIZIONE_DERIVATA_DUPLICATA` | 409 | Esiste già un modello per quella combinazione |
@@ -215,6 +220,12 @@ dei dati sono `{ "campo", "codice", "messaggio" }` dentro la risposta di
 Il catalogo storico, con i codici ritirati, è in `infra/openapi/errors.md`.
 
 ## Lacune note
+
+- **Permessi del catalogo.** La rotta accetta in ingresso `DOCUMENTI_VIEWER` o
+  `DOCUMENTI_GENERATORE`, ma con l'isolamento per contesto attivo (deploy) il
+  controllo sul contesto chiede `DOCUMENTI_VIEWER`. Un profilo di accesso che
+  concede solo `DOCUMENTI_GENERATORE` può validare e generare ma non cercare nel
+  catalogo. Il profilo GEBAN concede entrambi, quindi oggi non ha effetti.
 
 - Le rotte delle **sezioni** (`GET`/`PUT …/versioni/{versioneId}/sezioni`)
   non hanno un contratto OpenAPI: il formato è descritto solo in

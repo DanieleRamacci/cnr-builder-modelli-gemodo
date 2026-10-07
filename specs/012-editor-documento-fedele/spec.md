@@ -378,3 +378,5 @@ nel PDF e leggibile comunque se il lettore non li supporta.
 - **La marcatura `DOCUMENTO DI TEST - NON UFFICIALE` resta.** ADR 0002 dice che
   un percorso di generazione ufficiale non esiste ancora, e `003` T020 vieta di
   toglierla prima. Rendere il documento fedele non lo rende ufficiale.
+  *Superato il 2026-10-07: l'utente ha deciso di toglierla, insieme al titolo
+  del modello (`DEC-003-MARCATURA-TEST-RIMOSSA`). L'anteprima resta marcata.*

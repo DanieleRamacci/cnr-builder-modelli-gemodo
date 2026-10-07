@@ -91,8 +91,13 @@ def test_il_pdf_contiene_il_testo_composto_con_i_valori_sostituiti(builder_clien
     assert "I posti messi a concorso sono 7." in pdf
     # Nessun segnaposto sopravvive alla generazione.
     assert "{{" not in pdf
-    # ADR 0002 / T020: comporre il corpo non rende ufficiale il documento.
-    assert "NON UFFICIALE" in pdf
+    # 003 T020, decisione dell'utente 2026-10-07: niente marcatura di test e
+    # niente titolo del modello stampato; il documento comincia dal primo
+    # blocco del gestore. Il titolo resta solo nei metadati.
+    assert "NON UFFICIALE" not in pdf
+    assert "DOCUMENTO DI TEST" not in pdf
+    assert modello["nome"] not in pdf
+    assert pdf.lstrip().startswith("Bando di concorso BND-2026-0042")
 
 
 @pytest.mark.integration

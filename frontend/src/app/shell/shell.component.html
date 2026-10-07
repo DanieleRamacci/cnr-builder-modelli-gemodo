@@ -36,7 +36,11 @@
   </header>
 }
 
-<main class="app-main" [class.app-main-editor]="isEditorFullscreen()">
+<main
+  class="app-main"
+  [class.app-main-editor]="isEditorFullscreen()"
+  [class.app-main-ampio]="isPaginaAmpia()"
+>
   <router-outlet />
 </main>
 

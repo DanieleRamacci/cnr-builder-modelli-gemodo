@@ -172,6 +172,8 @@ errore di rendering non producono PDF ufficiale e restituiscono motivazione funz
 - **FR-019**: Il PDF di test MUST rendere titolo, etichette e valori validati
   nell'ordine configurato tramite le sezioni minime versionate della 003;
   contenuto e metadati MUST identificarlo come test non ufficiale.
+  *Superato il 2026-10-07 (`DEC-003-MARCATURA-TEST-RIMOSSA`): il PDF non porta
+  piu' marcatura di test ne' titolo del modello; il titolo resta nei metadati.*
 - **FR-020**: Il test MUST richiedere una versione pubblicata e i permessi di
   generazione applicabili; payload invalido MUST NOT produrre PDF.
 - **FR-021**: Ogni richiesta MUST indicare una sola versione modello e MUST

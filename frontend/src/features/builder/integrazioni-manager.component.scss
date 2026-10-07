@@ -221,9 +221,66 @@
   }
 }
 
+// Ogni riga sta su due linee al massimo: nome, poi variante e dimensioni. Il nome
+// generato e' lungo e ripete categoria e data: si tronca, intero nel suggerimento.
+.tabella-modelli {
+  font-size: 14px;
+
+  td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+.cella-modello {
+  max-width: 0;
+  width: 46%;
+}
+
+.riga-nome {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
 .nome {
+  overflow: hidden;
   font-weight: 700;
   color: var(--td-ink-900);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riga-dettagli {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.dimensione {
+  padding: 0 6px;
+  border: 1px solid var(--td-border-200);
+  border-radius: 3px;
+  color: var(--td-ink-500);
+  white-space: nowrap;
+}
+
+.cella-categoria {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: var(--td-ink-500);
+
+  .percorso {
+    overflow-wrap: anywhere;
+  }
+
+  .tipo-documento {
+    display: block;
+    font-size: 11px;
+  }
 }
 
 // Le varianti seguono il modello di base della loro categorizzazione (002
@@ -243,7 +300,6 @@
 }
 
 .badge-variante {
-  margin-right: 6px;
   padding: 1px 8px;
   border-radius: 10px;
   background: #e6f0fa;

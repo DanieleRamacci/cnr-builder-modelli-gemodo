@@ -33,7 +33,6 @@ from app.documentale.schemas import (
     TipoMarcatore,
 )
 
-_MARCA_TEST = "DOCUMENTO DI TEST - NON UFFICIALE"
 _MARCA_ANTEPRIMA = "ANTEPRIMA DELLA BOZZA - VALORI FAC-SIMILE"
 
 # Titillium Web (OFL), il font delle linee guida di design della PA. Non e'
@@ -89,16 +88,18 @@ _DIMENSIONE_ELENCO = 11
 _RAGGIO_PUNTO = 0.75
 
 
-def _intestazione(pdf: FPDF, titolo: str, *, anteprima: bool = False) -> None:
+def _marca_anteprima(pdf: FPDF) -> None:
+    """Solo l'anteprima della bozza dice di esserlo: ha valori fac-simile.
+
+    Il documento generato non porta piu' ne' il titolo del modello ne' la
+    scritta "DOCUMENTO DI TEST - NON UFFICIALE" (decisione dell'utente
+    2026-10-07, 003 T020): comincia dal primo blocco scritto dal gestore. Il
+    titolo resta nei metadati del PDF (`_metadati`), dove non si vede.
+    """
     pdf.set_font(_FONT, "B", 10)
     pdf.set_text_color(180, 0, 0)
-    pdf.cell(0, 8, _MARCA_TEST, new_x="LMARGIN", new_y="NEXT")
-    if anteprima:
-        pdf.cell(0, 6, _MARCA_ANTEPRIMA, new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, _MARCA_ANTEPRIMA, new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(2)
-    pdf.set_font(_FONT, "B", 14)
-    pdf.multi_cell(0, 8, titolo)
     pdf.ln(4)
 
 
@@ -555,7 +556,8 @@ def render_documento(
     _metadati(pdf, titolo, riferimento_documentale)
     if isinstance(pdf, _PdfConCornice):
         pdf.inizi_pagina = inizi_pagina
-    _intestazione(pdf, titolo, anteprima=anteprima)
+    if anteprima:
+        _marca_anteprima(pdf)
     marcatori = marcatori_elenchi(blocchi, inizi_sezione=inizi_sezione)
     for blocco in sorted(blocchi, key=lambda b: b.ordine):
         _rendi_blocco(pdf, blocco, marcatori.get(blocco.ordine))
@@ -573,7 +575,6 @@ def render_pdf(
     """L'elenco etichetta/valore: cio' che e' un modello senza sezioni."""
     pdf = _nuovo_pdf(cornice, logo)
     _metadati(pdf, titolo, riferimento_documentale)
-    _intestazione(pdf, titolo)
     for etichetta, valore in righe:
         pdf.set_font(_FONT, "B", 11)
         pdf.write(7, f"{etichetta}: ")

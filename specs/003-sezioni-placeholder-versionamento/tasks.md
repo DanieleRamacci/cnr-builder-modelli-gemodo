@@ -266,8 +266,11 @@ chiusa, GEMODO produce una scheda dati, non un bando.
       interviene prima `validate_payload`, che e' il controllo giusto per quel
       caso; questo errore copre i campi **opzionali** che il testo cita e che
       quella validazione non puo' vedere.
-- [ ] T020 Rimuovere la marcatura `DOCUMENTO DI TEST - NON UFFICIALE` **solo**
+- [x] T020 Rimuovere la marcatura `DOCUMENTO DI TEST - NON UFFICIALE` **solo**
       quando esiste un percorso ufficiale: oggi ADR 0002 dice che non esiste.
+      **Fatto il 2026-10-07 per decisione dell'utente**
+      (`DEC-003-MARCATURA-TEST-RIMOSSA`): tolti marcatura e titolo del modello
+      dal PDF generato; l'anteprima resta marcata come tale.
       Coordinare con `004`, che possiede la generazione ufficiale. Non
       rimuoverla come effetto collaterale di questa fase
 - [x] T021 [P] (`backend/tests/e2e/test_documento_composto.py`) Tre test sul

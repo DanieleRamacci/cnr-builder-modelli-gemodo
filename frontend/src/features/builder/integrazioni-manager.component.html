@@ -250,11 +250,11 @@
       </div>
     } @else {
       <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-sm table-hover align-middle tabella-modelli">
           <thead>
             <tr>
               <th scope="col">Modello</th>
-              <th scope="col">Tipo</th>
+              <th scope="col">Categoria</th>
               <th scope="col">Ver.</th>
               <th scope="col">Stato</th>
               <th scope="col">Creazione</th>
@@ -264,28 +264,50 @@
           <tbody>
             @for (gruppo of gruppiModelli(); track gruppo[0].id) {
               @for (model of gruppo; track model.id) {
-                <tr [class.riga-variante]="model.variante !== 'STANDARD'">
-                  <td>
-                    @if (model.variante !== 'STANDARD') {
-                      <span class="segno-variante" aria-hidden="true">└</span>
-                    }
-                    <a class="nome" [routerLink]="['/modelli', model.id, 'builder']">{{
-                      model.nome
-                    }}</a>
-                    <div class="small codice">{{ model.codice }}</div>
-                    @if (model.variante !== 'STANDARD') {
-                      <div class="small variante-nota">
-                        <span class="badge-variante">variante</span>
-                        {{ model.nota || 'descrizione non indicata' }}
+                <tr
+                  [class.riga-variante]="model.variante !== 'STANDARD'"
+                  [attr.data-codice]="model.codice"
+                >
+                  <td class="cella-modello">
+                    <div class="riga-nome">
+                      @if (model.variante !== 'STANDARD') {
+                        <span class="segno-variante" aria-hidden="true">└</span>
+                      }
+                      <!-- Il codice tecnico (con l'identificativo) non occupa una riga:
+                           resta nel suggerimento, per chi lo deve citare. -->
+                      <a
+                        class="nome"
+                        [routerLink]="['/modelli', model.id, 'builder']"
+                        [title]="model.nome + ' (' + model.codice + ')'"
+                        >{{ model.nome }}</a
+                      >
+                    </div>
+                    @if (model.variante !== 'STANDARD' || etichetteDimensioni(model).length) {
+                      <div class="riga-dettagli">
+                        @if (model.variante !== 'STANDARD') {
+                          <span class="badge-variante">variante</span>
+                          <span class="variante-nota">{{
+                            model.nota || 'descrizione non indicata'
+                          }}</span>
+                        }
+                        @for (etichetta of etichetteDimensioni(model); track etichetta) {
+                          <span class="dimensione">{{ etichetta }}</span>
+                        }
                       </div>
                     }
-                    @if (etichetteDimensioni(model).length) {
-                      <div class="small">{{ etichetteDimensioni(model).join(' · ') }}</div>
-                    }
                   </td>
-                  <td>
-                    {{ model.codice_tipo_documento }}
-                    <div class="small">{{ model.percorso_categorizzazione.join(' / ') }}</div>
+                  <td
+                    class="cella-categoria"
+                    [title]="
+                      model.codice_tipo_documento +
+                      ' / ' +
+                      model.percorso_categorizzazione.join(' / ')
+                    "
+                  >
+                    <span class="percorso">{{ model.percorso_categorizzazione.join(' › ') }}</span>
+                    @if (piuTipiDocumento()) {
+                      <span class="tipo-documento">{{ model.codice_tipo_documento }}</span>
+                    }
                   </td>
                   <td>v{{ versioneCorrente(model)?.numero_versione ?? '-' }}</td>
                   <td>
@@ -293,7 +315,9 @@
                       stato(model)
                     }}</span>
                   </td>
-                  <td class="text-nowrap">{{ model.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-nowrap" [title]="model.created_at | date: 'dd/MM/yyyy HH:mm'">
+                    {{ model.created_at | date: 'dd/MM/yyyy' }}
+                  </td>
                   <td class="text-end azioni-cella">
                     <ng-container
                       *ngTemplateOutlet="azioniModello; context: { $implicit: model }"

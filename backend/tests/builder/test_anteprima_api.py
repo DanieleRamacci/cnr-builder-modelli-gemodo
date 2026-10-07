@@ -71,9 +71,10 @@ def test_l_anteprima_e_il_pdf_della_bozza_con_valori_fac_simile(builder_client):
     assert risposta.headers["x-gemodo-anteprima"] == "true"
     assert risposta.headers["content-disposition"].startswith('inline; filename="anteprima-')
     testo = estrai_testo(risposta.content)
-    # FR-009: marcata come anteprima, oltre che come documento di test.
+    # FR-009: marcata come anteprima. La marcatura "documento di test" non c'e'
+    # piu' (003 T020, decisione 2026-10-07): l'anteprima la distingue gia' questa.
     assert "ANTEPRIMA DELLA BOZZA" in testo
-    assert "NON UFFICIALE" in testo
+    assert "NON UFFICIALE" not in testo
     # T035: ogni segnaposto diventa «etichetta», riconoscibile a colpo d'occhio.
     assert "Bando di concorso «codice_bando»" in testo
     assert "presso «sede_prescelta_it»" in testo
@@ -110,8 +111,8 @@ def test_fr008_anteprima_e_documento_finale_escono_dallo_stesso_renderer(builder
     assert generato.status_code == 200, generato.text
 
     def corpo(pdf: bytes) -> list[tuple[str, str]]:
-        # Tutto cio' che segue il titolo: la marcatura di anteprima e' l'unica
-        # differenza ammessa, e sta sopra.
+        # Tutto cio' che segue la marcatura di anteprima, l'unica differenza
+        # ammessa, che sta sopra al primo blocco.
         pezzi = [(font, testo) for font, testo in estrai_font_e_testo(pdf) if testo.strip()]
         inizio = next(i for i, (_, testo) in enumerate(pezzi) if testo.startswith("Bando di concorso BND"))
         return pezzi[inizio:]

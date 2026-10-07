@@ -84,6 +84,16 @@ describe('header applicativo (design handoff)', () => {
     expect(header.querySelector('a[href="/profilo"]')).not.toBeNull();
   });
 
+  it('gives the models list a wider page with smaller side margins', () => {
+    const root = setup(['GEMODO_MODELLI_GESTORE'], '/contesti/geban/modelli');
+    expect(root.querySelector('.app-main-ampio')).not.toBeNull();
+  });
+
+  it('keeps the usual width on the other pages', () => {
+    const root = setup(['GEMODO_MODELLI_GESTORE'], '/contesti/geban/impostazioni');
+    expect(root.querySelector('.app-main-ampio')).toBeNull();
+  });
+
   it('hides the global chrome on the fullscreen builder editor route', () => {
     const root = setup(['GEMODO_MODELLI_GESTORE'], '/modelli/model/builder');
     expect(root.querySelector('.app-header')).toBeNull();

@@ -1068,6 +1068,26 @@ decisions:
     fase_bloccante: TASKS
     data_ultima_revisione: 2026-09-22
 
+  - id: DEC-003-MARCATURA-TEST-RIMOSSA
+    titolo: Il PDF generato non porta piu' la marcatura di test ne' il titolo del modello
+    owner_spec: specs/003-sezioni-placeholder-versionamento
+    spec_interessate:
+      - specs/004-generazione-documenti-pdf
+      - specs/012-editor-documento-fedele
+    stato: CONFERMATA
+    assunzione_provvisoria: null
+    impatto: >
+      Deciso dall'utente il 2026-10-07 (003 T020). Il documento generato
+      comincia dal primo blocco scritto dal gestore: niente scritta
+      "DOCUMENTO DI TEST - NON UFFICIALE" e niente titolo del modello (nome del
+      tipo documento piu' nome generato del modello, con data). Il titolo resta
+      nei metadati del PDF, insieme al riferimento documentale. L'anteprima
+      del builder conserva la marcatura "ANTEPRIMA DELLA BOZZA - VALORI
+      FAC-SIMILE". Supera la parte di 004 FR-019 e di ADR 0002 che chiedeva di
+      riconoscere il PDF come test.
+    fase_bloccante: NESSUNA
+    data_ultima_revisione: 2026-10-07
+
   - id: DEC-002-LEDGER-RISCRITTO-DAL-CODICE
     titolo: I task di 002 vanno riscritti dal codice reale, non eseguiti
     owner_spec: specs/002-builder-modelli

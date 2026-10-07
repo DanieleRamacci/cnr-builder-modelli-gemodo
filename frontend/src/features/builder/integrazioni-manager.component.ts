@@ -113,6 +113,14 @@ export class IntegrazioniManagerComponent {
    * trovarsi sulla pagina successiva rispetto alla sua base. Non si rimedia
    * caricando tutto, che e' proprio cio' che FR-028 vieta.
    */
+  /**
+   * Il tipo documento si ripete identico su ogni riga quando la pagina ne ha uno
+   * solo, e allora non lo si scrive: resta nel suggerimento della categoria.
+   */
+  protected readonly piuTipiDocumento = computed(
+    () => new Set(this.visibili().map((model) => model.codice_tipo_documento)).size > 1,
+  );
+
   protected readonly gruppiModelli = computed(() => {
     const gruppi = new Map<string, Model[]>();
     for (const model of this.visibili()) {

@@ -57,6 +57,8 @@ L'editor visuale e' rinviato. Frontend: Angular con Design Angular Kit.
 Il modello di test segue il normale workflow: per le API di generazione deve
 essere pubblicato; crearlo non equivale a pubblicarlo. Il PDF e' non ufficiale,
 riconoscibile come TEST, e non costituisce un bando impaginato pronto all'uso.
+*Aggiornamento 2026-10-07: la marcatura TEST e il titolo del modello sono stati
+tolti dal PDF per decisione dell'utente (`DEC-003-MARCATURA-TEST-RIMOSSA`).*
 Il chiamante deve possedere i permessi di generazione previsti dalla 006:
 un ruolo di gestione non attribuisce implicitamente generazione ufficiale.
 

@@ -46,6 +46,11 @@ export class ShellComponent {
     return /^\/configurazione(?!\/attivita)/.test(this.router.url);
   }
 
+  /** L'elenco dei modelli e' una tabella larga: usa piu' schermo e meno margine. */
+  protected isPaginaAmpia(): boolean {
+    return /^\/contesti\/[^/]+\/modelli(?:[?#].*)?$/.test(this.router.url);
+  }
+
   protected isEditorFullscreen(): boolean {
     return /^\/modelli\/[^/]+\/builder(?:[?#].*)?$/.test(this.router.url);
   }

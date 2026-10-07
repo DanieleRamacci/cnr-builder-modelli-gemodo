@@ -44,7 +44,9 @@ a chi li ha chiesti e ne tiene una traccia verificabile.
 
 Il backend accede al discovery attraverso una **porta** (`PortaDiscovery`) con un
 adattatore HTTP: il resto del codice non sa da dove arriva l'albero. L'albero
-letto è tenuto in memoria per poco tempo e non diventa mai una tabella locale.
+letto resta in memoria al massimo 60 secondi per le letture, e viene riletto
+sempre quando si crea un modello o una versione; non diventa mai una tabella
+locale.
 
 ## 3. Modello concettuale
 
@@ -68,7 +70,7 @@ Contesto (es. "geban")
 | **Categorizzazione** | Albero di nodi `codice`/`descrizione` a profondità libera. I nomi dei livelli (tipologia, profilo, area…) sono informativi. |
 | **Foglia** | Nodo terminale. Dichiara le **dimensioni** (liste di valori, es. lingua, livello) e i **campi** (il contratto dati). |
 | **Dimensione** | Attributo che distingue più modelli sulla stessa foglia. La policy, per tipo documento, decide se un valore è obbligatorio o se un modello può valere per tutti (ripiego "generico"). |
-| **Modello** | Documento di una foglia, identificato da percorso, valori delle dimensioni ed eventuale **variante**. Una **edizione derivata** è lo stesso modello in un'altra lingua, collegata all'originale. |
+| **Modello** | Documento di una foglia, identificato da percorso, valori delle dimensioni ed eventuale **variante**. Una **edizione derivata** è lo stesso modello per un altro valore di una dimensione che richiede un valore esplicito, tipicamente la lingua; resta collegata all'originale. |
 | **Versione** | Contenuto di un modello: copia dei campi scelti, sezioni e blocchi nel formato chiuso [GEMODO_DOCUMENT_V1](formato-documentale.md), stato del ciclo di vita. |
 | **Generazione** | Una chiamata che produce un PDF da una versione pubblicata e dai dati ricevuti. |
 

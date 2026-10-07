@@ -76,7 +76,12 @@ Il token deve:
 | Permesso | Rotte |
 |---|---|
 | `DOCUMENTI_VIEWER` | Ricerca nel catalogo e campi richiesti (passi 4 e 5) |
-| `DOCUMENTI_GENERATORE` | Valida e genera (passo 6); vale anche per i passi 4 e 5 |
+| `DOCUMENTI_GENERATORE` | Valida e genera (passo 6) |
+
+Per l'intero flusso servono **entrambi** nel contesto dell'integrazione: con
+l'isolamento per contesto attivo, come nel deploy, il catalogo controlla
+`DOCUMENTI_VIEWER` e non accetta `DOCUMENTI_GENERATORE` al suo posto. Il profilo
+di accesso deve quindi concederli insieme.
 
 Un permesso vale solo nel contesto che lo concede. Una risorsa di un altro
 contesto risponde `404`, come se non esistesse.
@@ -102,7 +107,9 @@ edizioni in altra lingua annidate in `edizioni_derivate`.
 
 Se per una dimensione la policy ammette un modello generico e quello specifico
 manca, il catalogo restituisce il generico e lo dichiara in
-`dimensioni_con_fallback`.
+`dimensioni_con_fallback`. Una ricerca che non trova modelli, anche perché
+indica una dimensione o un codice che non esistono, risponde `200` con
+`modelli: []`, non con un errore.
 
 **Come costruire l'albero per una ricerca univoca.** Il catalogo cerca per
 `profilo` e `codice_tipologia`, non per percorso completo. Se lo stesso codice
@@ -163,7 +170,9 @@ chiamata.
 | `ACCESSO_NON_AUTENTICATO` | Token assente, scaduto o non valido |
 | `MODELLO_VERSIONE_NON_TROVATO` | Versione inesistente, oppure di un altro contesto |
 | `MODELLO_VERSIONE_NON_PUBBLICATO` | La versione esiste ma non è pubblicata |
-| `DIMENSIONE_NON_DICHIARATA` | La richiesta indica una dimensione che la foglia non dichiara |
+| `CONTESTO_NON_VALIDO` | (400) `tipo_documento` non configurato o non attivo |
+| `ACCESSO_NON_AUTORIZZATO` | (403) Ricerca su un tipo documento di un contesto in cui non si hanno permessi |
+| `RICHIESTA_NON_VALIDA` | (400) Valori in conflitto per la stessa dimensione, per esempio `lingua` e `dimensione[lingua]` diversi |
 | `REGISTRO_GENERAZIONI_NON_DISPONIBILE` | La generazione non si è potuta registrare: il PDF non è stato consegnato |
 | `INTEGRAZIONE_NON_CONNESSA` | L'integrazione non ha superato la verifica dell'endpoint |
 | `DISCOVERY_NON_DISPONIBILE` | Il discovery non ha risposto |

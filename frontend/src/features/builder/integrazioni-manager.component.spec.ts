@@ -147,6 +147,38 @@ describe('context models and lifecycle', () => {
     expect(fixture.nativeElement.textContent).toContain('livello professionale: VI');
     http.verify();
   });
+  it('keeps each row compact: no technical code, no repeated document type', () => {
+    const { fixture, http } = setup();
+    http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+    fixture.detectChanges();
+    const riga = (fixture.nativeElement as HTMLElement).querySelector('tbody tr')!;
+    // Il codice tecnico non e' testo della riga: resta nel suggerimento del nome.
+    expect(riga.textContent).not.toContain('MODEL ');
+    expect(riga.querySelector('.codice')).toBeNull();
+    expect(riga.querySelector('a.nome')!.getAttribute('title')).toContain('(MODEL)');
+    // Un solo tipo documento in pagina: non si ripete su ogni riga.
+    expect(riga.querySelector('.tipo-documento')).toBeNull();
+    expect(riga.querySelector('.cella-categoria')!.textContent!.trim()).toBe('TD › CTER');
+    expect(riga.querySelector('.cella-categoria')!.getAttribute('title')).toBe('BANDO / TD / CTER');
+    http.verify();
+  });
+
+  it('shows the document type on each row when the page mixes types', () => {
+    const { fixture, http } = setup();
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush([
+        model,
+        { ...model, id: 'altro-tipo', codice: 'ALTRO', codice_tipo_documento: 'AVVISO' },
+      ]);
+    fixture.detectChanges();
+    const tipi = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('tbody .tipo-documento'),
+    ).map((e) => e.textContent!.trim());
+    expect(tipi.sort()).toEqual(['AVVISO', 'BANDO']);
+    http.verify();
+  });
+
   it('lists variants under the base model of their categorization', () => {
     const { fixture, http } = setup();
     const variante = {
@@ -173,7 +205,7 @@ describe('context models and lifecycle', () => {
     fixture.detectChanges();
 
     const righe = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
-    const codici = righe.map((riga) => riga.querySelector('.codice')!.textContent!.trim());
+    const codici = righe.map((riga) => riga.getAttribute('data-codice'));
     // La variante segue la sua base, non il modello di un'altra categorizzazione.
     expect(codici).toEqual(['MODEL', 'MODEL-VAR', 'ALTRA-CAT']);
     expect(righe[1].classList).toContain('riga-variante');

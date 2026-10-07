@@ -316,11 +316,13 @@ L'esito è:
 Il test controlla la **forma**, non i valori. Una risposta con tipologie,
 profili o campi diversi dagli esempi è conforme, se rispetta la grammatica.
 
-Limiti dell'adapter, configurabili: 10 secondi complessivi, 2 MiB di JSON,
-64 pagine, 64 livelli. Superarli rende la risposta non conforme. Durante l'uso
-gli stessi controlli producono `DISCOVERY_NON_CONFORME` (HTTP 502) o
-`DISCOVERY_NON_DISPONIBILE` (HTTP 503); sono esiti di GEMODO, non errori che
-l'integratore deve emettere.
+Limiti della lettura: il tempo massimo è il timeout dell'integrazione (da 1 a
+10 secondi, 5 se non indicato), al massimo 2 MiB di JSON, 64 pagine, 64
+livelli. Superare i limiti di dimensione rende la risposta non conforme; il
+timeout la rende non raggiungibile. Durante l'uso gli stessi controlli
+producono `DISCOVERY_NON_CONFORME` (HTTP 502), `DISCOVERY_NON_DISPONIBILE`
+(HTTP 503) o `DISCOVERY_TIMEOUT` (HTTP 504); sono esiti di GEMODO, non errori
+che l'integratore deve emettere.
 
 ## Cosa può cambiare l'integratore senza toccare GEMODO
 

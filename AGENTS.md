@@ -4,6 +4,21 @@ shell commands, and other important information, read the current plan
 at specs/012-editor-documento-fedele/plan.md
 <!-- SPECKIT END -->
 
+## Documentazione di riferimento
+
+Le pagine in `docs/` descrivono il sistema per integratori, utenti e agenti. Prima di lavorare su un'area, leggere la pagina corrispondente:
+
+- `docs/architettura.md`: componenti, concetti, cosa e' conservato e cosa e' letto dal vivo, modularita', sicurezza, limiti noti.
+- `docs/contratto-dati.md`: discovery (un discovery per integrazione, con piu' tipi documento), campi, conformita', validazione dei dati, campi ripetibili 0.8.0 proposti (spec 014).
+- `docs/integrazione-sistema-esterno.md`: flusso generico per un sistema esterno.
+- `docs/riferimento-api.md`: tutte le rotte con permessi e contratti OpenAPI, codici di errore, lacune note.
+- `docs/casi/geban.md`: valori concreti di GEBAN (prima integrazione).
+
+Regole:
+
+- **Il codice prevale sulla documentazione.** Prima di affermare un comportamento, verificarlo nel codice; la versione attiva del contratto discovery e' `VERSIONE_CONTRATTO_DISCOVERY` in `backend/app/discovery/schemas.py`.
+- **Se codice e documentazione divergono, la pagina si corregge nello stesso lavoro.** `backend/tests/contract/test_documentazione_allineata.py` confronta con il codice rotte, contratti, codici di errore, esempi di discovery, versione attiva, stati e profilo GEBAN; `cd frontend && npm run docs:check` verifica che la copia mostrata nell'app sia allineata e che i link interni funzionino (dopo una modifica a `docs/`: `npm run docs:sync`).
+
 <!-- adev-standard:begin -->
 ## AI Development Standard
 
