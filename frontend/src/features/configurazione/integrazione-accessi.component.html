@@ -1,10 +1,13 @@
-<nav class="mm-breadcrumb" aria-label="Percorso">
-  <a routerLink="/configurazione">Impostazioni</a>
-  <span class="mx-1">/</span>
-  <a routerLink="/configurazione">Integrazioni</a>
-  <span class="mx-1">/</span>
-  <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
-</nav>
+<div class="mm-testata mb-3">
+  <h1>{{ integrazione()?.nome ?? 'Integrazione' }}</h1>
+  <nav class="mm-breadcrumb" aria-label="Percorso">
+    <a routerLink="/configurazione">Impostazioni</a>
+    <span class="mx-1">/</span>
+    <a routerLink="/configurazione">Integrazioni</a>
+    <span class="mx-1">/</span>
+    <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
+  </nav>
+</div>
 
 @if (caricamento()) {
   <p role="status">Caricamento...</p>
@@ -14,7 +17,6 @@
 } @else if (salvati(); as profilo) {
   <header class="mm-page-header">
     <div>
-      <h1>{{ integrazione()?.nome ?? 'Integrazione' }}</h1>
       <p>
         Quali ruoli ACE del contesto <code>{{ profilo.codice_contesto }}</code> concedono quali
         permessi in GEMODO.

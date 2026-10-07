@@ -1,10 +1,13 @@
-<nav class="mm-breadcrumb" aria-label="Percorso">
-  <a routerLink="/configurazione">Impostazioni</a>
-  <span class="mx-1">/</span>
-  <a routerLink="/configurazione">Integrazioni</a>
-  <span class="mx-1">/</span>
-  <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
-</nav>
+<div class="mm-testata mb-3">
+  <h1>{{ integrazione()?.nome ?? 'Integrazione' }}</h1>
+  <nav class="mm-breadcrumb" aria-label="Percorso">
+    <a routerLink="/configurazione">Impostazioni</a>
+    <span class="mx-1">/</span>
+    <a routerLink="/configurazione">Integrazioni</a>
+    <span class="mx-1">/</span>
+    <strong>{{ integrazione()?.codice ?? 'Integrazione' }}</strong>
+  </nav>
+</div>
 
 @if (sessioneScaduta()) {
   <div class="alert alert-warning" role="alert">
@@ -27,7 +30,6 @@
 @if (integrazione(); as corrente) {
   <header class="mm-page-header">
     <div>
-      <h1>{{ corrente.nome }}</h1>
       <p>
         Endpoint, verifica schema e collegamenti per struttura JSON e policy dei campi del contesto
         <code>{{ corrente.codice_contesto }}</code

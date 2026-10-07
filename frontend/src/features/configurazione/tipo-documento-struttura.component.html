@@ -1,16 +1,17 @@
-<nav class="mm-breadcrumb" aria-label="Percorso">
-  <a routerLink="/configurazione">Impostazioni</a>
-  <span class="mx-1">/</span>
-  <a routerLink="/configurazione">Integrazioni</a>
-  <span class="mx-1">/</span>
-  <a routerLink="/configurazione/tipi-documento">Policy dati</a>
-  <span class="mx-1">/</span>
-  <strong>{{ modalitaModifica ? 'Modifica struttura' : 'Nuova struttura' }}</strong>
-</nav>
-
 <header class="mm-page-header mb-3">
   <div>
-    <h1>{{ modalitaModifica ? 'Modifica policy dati' : 'Policy dati da struttura GEBAN' }}</h1>
+    <div class="mm-testata">
+      <h1>{{ modalitaModifica ? 'Modifica policy dati' : 'Policy dati da struttura GEBAN' }}</h1>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        <a routerLink="/configurazione">Impostazioni</a>
+        <span class="mx-1">/</span>
+        <a routerLink="/configurazione">Integrazioni</a>
+        <span class="mx-1">/</span>
+        <a routerLink="/configurazione/tipi-documento">Policy dati</a>
+        <span class="mx-1">/</span>
+        <strong>{{ modalitaModifica ? 'Modifica struttura' : 'Nuova struttura' }}</strong>
+      </nav>
+    </div>
     <p>
       Incolla o genera la forma JSON dell'API, poi indica nella sezione campi quali valori sono
       obbligatori nel contratto dati.

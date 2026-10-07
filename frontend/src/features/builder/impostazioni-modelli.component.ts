@@ -35,12 +35,14 @@ type TipoDelContesto = { integrazione: IntegrazioneVisibile; codice: string };
     }
   `,
   template: `
-    <nav class="mb-2" aria-label="Percorso">
-      <a routerLink="/contesti">Contesti</a> /
-      <a [routerLink]="['/contesti', contesto, 'modelli']">{{ contesto }}</a> /
-      <strong>Impostazioni modelli</strong>
-    </nav>
-    <h1>Impostazioni modelli</h1>
+    <header class="mm-testata mb-2">
+      <h1>Impostazioni modelli</h1>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        <a routerLink="/contesti">Contesti</a> /
+        <a [routerLink]="['/contesti', contesto, 'modelli']">{{ contesto }}</a> /
+        <strong>Impostazioni modelli</strong>
+      </nav>
+    </header>
     <p class="nota">
       Ciò che vale per tutti i modelli di un tipo documento nel contesto <code>{{ contesto }}</code
       >.

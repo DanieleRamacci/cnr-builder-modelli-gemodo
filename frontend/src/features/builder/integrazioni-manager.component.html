@@ -1,15 +1,8 @@
-<nav class="mb-2" aria-label="Percorso">
-  <a routerLink="/contesti">Contesti</a> / <strong>{{ selected() }}</strong>
-</nav>
-<header class="testata-1b">
+<header class="mm-testata">
   <h1>Modelli</h1>
-  <span class="badge-contesto">{{ selected() }}</span>
-  <a
-    class="btn btn-sm btn-outline-primary ms-auto"
-    data-impostazioni-modelli
-    [routerLink]="['/contesti', selected(), 'impostazioni']"
-    >Impostazioni modelli</a
-  >
+  <nav class="mm-breadcrumb" aria-label="Percorso">
+    <a routerLink="/contesti">Contesti</a> / <strong>{{ selected() }}</strong>
+  </nav>
 </header>
 @if (error()) {
   <div class="alert alert-danger" role="alert">{{ error() }}</div>
@@ -198,6 +191,12 @@
       </button>
     </div>
     <div class="ms-auto d-flex flex-wrap gap-2">
+      <a
+        class="btn btn-outline-primary"
+        data-impostazioni-modelli
+        [routerLink]="['/contesti', selected(), 'impostazioni']"
+        >Impostazioni modelli</a
+      >
       @for (source of sources(); track source.id) {
         <a
           class="btn btn-primary"

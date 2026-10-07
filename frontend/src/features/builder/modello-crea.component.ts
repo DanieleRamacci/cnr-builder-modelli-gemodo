@@ -47,13 +47,16 @@ type ModelloOccupante = {
   imports: [FormsModule, RouterLink],
   styleUrl: './modello-crea.component.scss',
   template: `
-    <nav class="breadcrumb-2a" aria-label="Percorso">
-      <a [routerLink]="backLink()">Contesti</a>
-      <span aria-hidden="true">/</span>
-      <span>{{ contesto || 'Contesto' }}</span>
-      <span aria-hidden="true">/</span>
-      <strong>Nuovo modello</strong>
-    </nav>
+    <header class="mm-testata testata-2a">
+      <h1>Categorizzazione del modello</h1>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        <a [routerLink]="backLink()">Contesti</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ contesto || 'Contesto' }}</span>
+        <span aria-hidden="true">/</span>
+        <strong>Nuovo modello</strong>
+      </nav>
+    </header>
     <ol class="stepper-2a" aria-label="Fasi di creazione">
       <li class="step attivo" aria-current="step"><span class="dot">1</span>Categorizzazione</li>
       <li class="connettore" aria-hidden="true"></li>
@@ -63,7 +66,6 @@ type ModelloOccupante = {
     </ol>
     <div class="corpo-2a">
       <section>
-        <h1>Categorizzazione del modello</h1>
         <p class="lead-2a">
           Scegli il tipo documento e i livelli restituiti dal servizio di categorizzazione
           dell'integrazione. Da una foglia in poi puoi generare il modello.

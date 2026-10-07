@@ -30,17 +30,19 @@ const RIGHE_MASSIME = 3;
   imports: [RouterLink, CorniceAnteprimaComponent],
   styleUrl: './cornice-tipo.component.scss',
   template: `
-    <nav class="mb-2" aria-label="Percorso">
-      @if (contesto) {
-        <a routerLink="/contesti">Contesti</a> /
-        <a [routerLink]="['/contesti', contesto, 'modelli']">{{ contesto }}</a> /
-        <a [routerLink]="['/contesti', contesto, 'impostazioni']">Impostazioni modelli</a> /
-      } @else {
-        <a routerLink="/configurazione/tipi-documento">Tipi documento</a> /
-      }
-      <strong>{{ codice }}</strong>
-    </nav>
-    <h1>Intestazione e piè di pagina</h1>
+    <header class="mm-testata mb-2">
+      <h1>Intestazione e piè di pagina</h1>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        @if (contesto) {
+          <a routerLink="/contesti">Contesti</a> /
+          <a [routerLink]="['/contesti', contesto, 'modelli']">{{ contesto }}</a> /
+          <a [routerLink]="['/contesti', contesto, 'impostazioni']">Impostazioni modelli</a> /
+        } @else {
+          <a routerLink="/configurazione/tipi-documento">Tipi documento</a> /
+        }
+        <strong>{{ codice }}</strong>
+      </nav>
+    </header>
     <p class="nota">
       Valgono per <strong>tutti i modelli</strong> di tipo <code>{{ codice }}</code
       >, nell'anteprima e nei documenti generati.

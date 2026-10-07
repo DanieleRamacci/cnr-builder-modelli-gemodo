@@ -20,7 +20,6 @@ type Filtro = 'tutti' | 'con' | 'senza';
   imports: [RouterLink],
   styleUrl: './contesti-lista.component.scss',
   template: `
-    <nav class="breadcrumb-1a" aria-label="Percorso"><strong>Contesti</strong></nav>
     <header class="testata">
       <div>
         <h1>Contesti</h1>

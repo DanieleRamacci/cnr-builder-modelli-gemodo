@@ -338,6 +338,24 @@
   font-size: 13px;
 }
 
+/* Titolo della pagina e percorso sulla stessa riga: il titolo per primo, il
+   percorso piccolo subito dopo. Va a capo solo se lo spazio non basta. */
+.mm-testata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+  min-width: 0;
+}
+
+.mm-testata > h1 {
+  margin: 0;
+}
+
+.mm-testata > .mm-breadcrumb {
+  margin: 0;
+}
+
 .mm-breadcrumb a {
   text-decoration: none;
 }

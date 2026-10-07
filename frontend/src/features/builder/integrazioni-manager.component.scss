@@ -9,29 +9,6 @@
   --td-surface-50: #f7f9fb;
 }
 
-.testata-1b {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  h1 {
-    margin: 0;
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--td-ink-900);
-  }
-}
-
-.badge-contesto {
-  padding: 3px 9px;
-  border-radius: 3px;
-  background: var(--td-primary-050);
-  color: var(--td-primary);
-  font-family: 'Roboto Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-}
-
 .metriche {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

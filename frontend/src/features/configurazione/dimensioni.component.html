@@ -1,16 +1,15 @@
-<nav class="mm-breadcrumb" aria-label="Percorso">
-  <a routerLink="/configurazione">Impostazioni</a><span>/</span>
-  <a routerLink="/configurazione">Integrazioni</a><span>/</span>
-  <strong>{{ integrazione()?.nome ?? 'Integrazione' }}</strong
-  ><span>/</span>
-  Dimensioni
-</nav>
-
 <header class="dimensions-header">
   <div>
     <div class="title-line">
       <h1>Dimensioni e policy di derivazione</h1>
       <code>{{ codice }}</code>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        <a routerLink="/configurazione">Impostazioni</a><span>/</span>
+        <a routerLink="/configurazione">Integrazioni</a><span>/</span>
+        <strong>{{ integrazione()?.nome ?? 'Integrazione' }}</strong
+        ><span>/</span>
+        Dimensioni
+      </nav>
     </div>
     <p>
       La policy vale per <strong>nome dimensione</strong> su tutto il tipo documento, non soltanto

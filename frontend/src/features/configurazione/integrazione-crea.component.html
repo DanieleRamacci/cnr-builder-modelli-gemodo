@@ -1,25 +1,26 @@
-<nav class="mm-breadcrumb" aria-label="Percorso">
-  Impostazioni <span class="mx-1">/</span>
-  <a routerLink="/configurazione">Integrazioni</a>
-  <span class="mx-1">/</span>
-  <strong>Nuovo contesto</strong>
-</nav>
-
-<div class="mm-tabs" aria-label="Passi">
-  <span class="active">1 Dati del contesto</span>
-  <span class="active">2 Struttura di esempio</span>
-  <span>3 Verifica dell'endpoint</span>
-</div>
-
-<header class="mm-page-header mt-3">
+<header class="mm-page-header">
   <div>
-    <h1>Nuovo contesto</h1>
+    <div class="mm-testata">
+      <h1>Nuovo contesto</h1>
+      <nav class="mm-breadcrumb" aria-label="Percorso">
+        Impostazioni <span class="mx-1">/</span>
+        <a routerLink="/configurazione">Integrazioni</a>
+        <span class="mx-1">/</span>
+        <strong>Nuovo contesto</strong>
+      </nav>
+    </div>
     <p>
       Registra l'integrazione che fornisce i dati dei documenti, poi consegna agli sviluppatori la
       struttura minima che il loro servizio deve esporre.
     </p>
   </div>
 </header>
+
+<div class="mm-tabs mt-3" aria-label="Passi">
+  <span class="active">1 Dati del contesto</span>
+  <span class="active">2 Struttura di esempio</span>
+  <span>3 Verifica dell'endpoint</span>
+</div>
 
 <div class="mm-two-columns">
   <form class="mm-card" [formGroup]="form" (submit)="$event.preventDefault(); invia()">
