@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.builder.integrazioni_service import IntegrazioniManagerService, get_integrazioni_manager_service
 from app.builder.schemas import (
+    StoricoModelloResponse,
     CorniceModello,
     CorniceTipoDocumento,
     ContestoProfilo,
@@ -90,9 +91,9 @@ def lista_modelli(
         lingua=lingua, livello_professionale=livello_professionale,
         variante=variante, stato_versione=stato_versione, ricerca=ricerca,
     )
-    return [_modello_gestione_response(model) for model in service.lista(
-        principal, codice_contesto, offset=offset, limit=limit, filtri=filtri
-    )]
+    modelli = service.lista(principal, codice_contesto, offset=offset, limit=limit, filtri=filtri)
+    creatori = service.creatori(modelli)
+    return [_modello_gestione_response(model, creatori.get(model.id)) for model in modelli]
 
 
 # Dichiarata prima di /modelli/{modelloId}: altrimenti "filtri" verrebbe
@@ -104,6 +105,20 @@ def voci_filtro_modelli(
     service: BuilderService = Depends(get_builder_service),
 ) -> VociFiltriModelli:
     return VociFiltriModelli(**service.voci_filtro(principal, codice_contesto))
+
+
+@router.get("/modelli/{modelloId}/storico", response_model=StoricoModelloResponse)
+def storico_modello(
+    modelloId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+):
+    """Chi ha fatto cosa sul modello e da dove (interfaccia o API), solo amministratori."""
+    modello, eventi = service.storico(principal, modelloId)
+    return StoricoModelloResponse(
+        modello_id=modello.id, codice=modello.codice, nome=modello.nome,
+        codice_contesto=modello.tipo_documento.codice_contesto, stato=modello.stato, eventi=eventi,
+    )
 
 
 @router.get("/modelli/{modelloId}", response_model=ModelloDettaglioResponse)
@@ -160,12 +175,13 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
     )
 
 
-def _modello_gestione_response(modello: ModelloDocumento) -> ModelloGestioneResponse:
+def _modello_gestione_response(modello: ModelloDocumento, creato_da: str | None = None) -> ModelloGestioneResponse:
     return ModelloGestioneResponse(
         **_modello_response(modello).model_dump(),
         codice_contesto=modello.tipo_documento.codice_contesto,
         integrazione_id=modello.tipo_documento.integrazione_id,
         created_at=modello.created_at,
+        creato_da=creato_da,
         versioni=[_versione_response(v) for v in sorted(
             modello.versioni, key=lambda v: v.versione, reverse=True
         )],

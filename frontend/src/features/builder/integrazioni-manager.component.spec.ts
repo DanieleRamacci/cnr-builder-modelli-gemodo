@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideDesignAngularKit } from 'design-angular-kit';
+import { ProfiloService } from '../../app/auth/profilo.service';
+import { profiloFinto } from '../../app/auth/profilo.testing';
 import { IntegrazioniManagerComponent } from './integrazioni-manager.component';
 
 const version = {
@@ -30,6 +32,7 @@ const model = {
   codice_contesto: 'geban',
   integrazione_id: 'source',
   created_at: '2026-09-18T12:00:00Z',
+  creato_da: 'mario.rossi',
   versioni: [version],
 };
 
@@ -39,6 +42,36 @@ describe('context models and lifecycle', () => {
     fixture.nativeElement.querySelector<HTMLButtonElement>('button.kebab')!.click();
     fixture.detectChanges();
   }
+
+  it('shows who created each model', () => {
+    const { fixture, http } = setup(['geban']);
+    http
+      .expectOne((r) => r.url === '/api/v1/builder/modelli')
+      .flush([model, { ...model, id: 'senza-autore', codice: 'SEED', creato_da: null }]);
+    fixture.detectChanges();
+    const autori = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('td[data-creato-da]'),
+    ).map((cella) => cella.textContent!.trim());
+    // Un modello nato senza evento di creazione (seed storico) non ha autore.
+    expect(autori.sort()).toEqual(['-', 'mario.rossi']);
+    http.verify();
+  });
+
+  it('offers the model history in the row menu to administrators only', () => {
+    for (const [permessi, atteso] of [
+      [['GEMODO_MODELLI_GESTORE', 'GEMODO_ADMIN'], true],
+      [['GEMODO_MODELLI_GESTORE'], false],
+    ] as const) {
+      TestBed.resetTestingModule();
+      const { fixture, http } = setup(['geban'], null, null, [...permessi]);
+      http.expectOne((r) => r.url === '/api/v1/builder/modelli').flush([model]);
+      fixture.detectChanges();
+      apriKebab(fixture);
+      const link = fixture.nativeElement.querySelector('.menu-azioni a[data-storico]');
+      expect(!!link).toBe(atteso);
+      if (link) expect(link.getAttribute('href')).toBe('/modelli/model/storico');
+    }
+  });
 
   it('deletes only after confirmation and reloads the list', () => {
     const { fixture, http } = setup(['geban']);
@@ -75,9 +108,11 @@ describe('context models and lifecycle', () => {
     contexts = ['geban', 'altro'],
     ctxId: string | null = null,
     view: string | null = null,
+    permessi: string[] = ['GEMODO_MODELLI_GESTORE'],
   ) {
     TestBed.configureTestingModule({
       providers: [
+        { provide: ProfiloService, useValue: profiloFinto(permessi) },
         provideDesignAngularKit(),
         provideHttpClient(),
         provideHttpClientTesting(),

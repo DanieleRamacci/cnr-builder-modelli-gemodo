@@ -16,6 +16,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, type SafeResourceUrl, type SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ProfiloService } from '../../app/auth/profilo.service';
 import { ApiClient } from '../../shared/api-client';
 import { AnteprimaPdfComponent } from './anteprima-pdf.component';
 import type { VoceSegnaposto } from './menu-segnaposto.component';
@@ -208,6 +209,9 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               >
                 Crea variante
               </button>
+            }
+            @if (admin()) {
+              <a role="menuitem" data-storico [routerLink]="['/modelli', id, 'storico']">Storico</a>
             }
             <button
               type="button"
@@ -1145,7 +1149,10 @@ export class ModelloAnteprimaComponent {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
-  private readonly id = inject(ActivatedRoute).snapshot.paramMap.get('modelId')!;
+  protected readonly id = inject(ActivatedRoute).snapshot.paramMap.get('modelId')!;
+  private readonly profili = inject(ProfiloService);
+  /** Lo storico del modello e' per l'amministratore: agli altri la voce non compare. */
+  protected readonly admin = computed(() => this.profili.ha('GEMODO_ADMIN'));
   protected readonly modello = signal<Dettaglio | null>(null);
   protected readonly caricamento = signal(false);
   protected readonly salvando = signal(false);

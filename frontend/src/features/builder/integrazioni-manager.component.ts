@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ItIconComponent } from 'design-angular-kit';
 import { forkJoin, Subscription } from 'rxjs';
+import { ProfiloService } from '../../app/auth/profilo.service';
 import { ApiClient } from '../../shared/api-client';
 import type { ApiError } from '../../shared/api-error';
 import type { components as Registry } from '../../shared/api-types/integrazioni';
@@ -55,6 +56,9 @@ export class IntegrazioniManagerComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly profili = inject(ProfiloService);
+  /** Lo storico del modello e' per l'amministratore: agli altri la voce non compare. */
+  protected readonly admin = computed(() => this.profili.ha('GEMODO_ADMIN'));
   private listing?: Subscription;
   protected readonly pageSize = 50;
   protected readonly testo = signal('');

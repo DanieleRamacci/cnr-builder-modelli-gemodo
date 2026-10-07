@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEMODO - Builder Modelli
-  version: 0.13.0
+  version: 0.14.0
   description: >
     Creazione e ciclo di vita di modello/versione (007 tasks.md T006). Sostituisce
     integralmente la 0.2.0: quella descriveva tipi documento/categorie come CRUD
@@ -264,6 +264,27 @@ paths:
           schema: {type: string, format: uuid}
       responses:
         '204': {description: 'Modello eliminato, versioni pubblicate archiviate'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /modelli/{modelloId}/storico:
+    parameters:
+      - {$ref: '#/components/parameters/ModelloId'}
+    get:
+      operationId: getStoricoModello
+      summary: Chi ha fatto cosa sul modello, da dove e su quale versione
+      description: >
+        Eventi di audit del modello (creazione, versioni, modifiche del
+        documento sezione per sezione, passaggi di stato, eliminazione) e
+        generazioni dalle sue versioni, dal piu' recente. Leggibile anche per un
+        modello eliminato. Solo amministratori.
+      x-required-role: GEMODO_ADMIN
+      responses:
+        '200':
+          description: Storico del modello
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StoricoModello'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -759,7 +780,53 @@ components:
         codice_contesto: {type: string}
         integrazione_id: {type: string, format: uuid, nullable: true}
         created_at: {type: string, format: date-time}
+        creato_da:
+          type: string
+          nullable: true
+          description: >
+            Username di chi ha creato il modello (o la variante, o l'edizione
+            derivata), dall'audit. Null per i modelli nati senza evento di
+            creazione. Aggiunto nella 0.14.0.
         versioni: {type: array, items: {$ref: '#/components/schemas/Versione'}}
+    StoricoModello:
+      type: object
+      additionalProperties: false
+      required: [modello_id, codice, nome, codice_contesto, stato, eventi]
+      properties:
+        modello_id: {type: string, format: uuid}
+        codice: {type: string}
+        nome: {type: string}
+        codice_contesto: {type: string}
+        stato: {type: string}
+        eventi: {type: array, items: {$ref: '#/components/schemas/EventoStorico'}}
+    EventoStorico:
+      type: object
+      additionalProperties: false
+      required: [quando, utente, canale, azione, descrizione]
+      properties:
+        quando: {type: string, format: date-time}
+        utente: {type: string, description: 'Username dal token, o il suo id tecnico se manca'}
+        canale:
+          type: string
+          enum: [INTERFACCIA, API]
+          description: INTERFACCIA se il client e' quello di login di GEMODO, altrimenti API.
+        client_id: {type: string, nullable: true}
+        azione:
+          type: string
+          description: >
+            Codice dell'evento: MODELLO_CREATO, MODELLO_VARIANTE_CREATA,
+            MODELLO_DERIVATO_CREATO, MODELLO_ELIMINATO, VERSIONE_CREATA,
+            SEZIONI_AGGIORNATE, VERSIONE_<STATO>, VERSIONE_ARCHIVIATA,
+            DOCUMENTO_GENERATO, GENERAZIONE_FALLITA, GENERAZIONE_DATI_NON_VALIDI.
+        descrizione: {type: string, description: L'azione in italiano leggibile}
+        versione: {type: integer, nullable: true}
+        dettaglio:
+          type: object
+          additionalProperties: true
+          description: >
+            Il dato registrato con l'evento. Per SEZIONI_AGGIORNATE: codici,
+            aggiunte, modificate, rimosse, riordinate. Per una generazione:
+            riferimento, sistema_richiedente, external_context_id.
     PolicyDimensioneRequest:
       type: object
       additionalProperties: false

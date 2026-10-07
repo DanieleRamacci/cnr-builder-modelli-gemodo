@@ -5,7 +5,7 @@ con il permesso richiesto e il contratto OpenAPI che le descrive. Ogni contratto
 si apre in Swagger UI, dove si provano le chiamate con il login Keycloak, o in
 ReDoc per la sola lettura.
 
-Inventario ricavato dal codice il 2026-10-07: **56 rotte API** più le pagine di
+Inventario ricavato dal codice il 2026-10-07: **57 rotte API** più le pagine di
 documentazione. Base di tutte le rotte: `/api/v1`.
 
 ## Contratti OpenAPI
@@ -79,6 +79,7 @@ Guida d'uso: [Integrare un sistema esterno](integrazione-sistema-esterno.md).
 | POST | `/api/v1/builder/modelli/{modelloId}/varianti` | Gestore | `builder-modelli` |
 | POST | `/api/v1/builder/modelli/{modelloId}/edizioni-derivate` | Gestore | `builder-modelli` |
 | GET | `/api/v1/builder/modelli/{modelloId}/cornice` | Gestore | `builder-modelli` |
+| GET | `/api/v1/builder/modelli/{modelloId}/storico` | Admin | `builder-modelli` |
 
 ## Builder: versioni
 

@@ -22,6 +22,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.builder import repository as builder_repository
+from app.builder import storico
 from app.builder.audit import registra_evento
 from app.builder.schemas import (
     CampoVersioneRequest,
@@ -34,7 +35,9 @@ from app.catalog import repository as catalog_repository
 from app.catalog.models import ModelloCampoRichiesto, ModelloDocumento, ModelloDocumentoVersione, TipoDocumento
 from app.configurazione import repository as configurazione_repository
 from app.common.errors import AuthorizationError, BuilderDomainError, DomainError, ErrorCode
-from app.common.security import PrincipalGEMODO, verify_scrittura_su_contesto, contesti_con_permesso, ROLE_GEMODO_MODELLI_GESTORE
+from app.common.security import PrincipalGEMODO, ensure_roles, verify_scrittura_su_contesto, contesti_con_permesso, ROLE_GEMODO_MODELLI_GESTORE
+from app.configurazione.security import ROLE_GEMODO_ADMIN
+from app.core.settings import get_settings
 from app.db.session import get_db
 from app.discovery.configuration import discovery_per_tipo
 from app.discovery.port import PortaDiscovery
@@ -167,6 +170,26 @@ def _identita_modello(
     return codice, f"{descriptions[:255 - len(name_suffix)]}{name_suffix}"
 
 
+def _differenze_sezioni(
+    prima: dict[str, tuple[int, list]], dopo: dict[str, tuple[int, list]],
+) -> dict[str, object]:
+    """Cosa ha cambiato un salvataggio del documento, sezione per sezione.
+
+    Lo storico del modello deve poter dire "modificata la sezione Art. 3", non
+    soltanto "documento salvato". `codici` resta per chi legge gli eventi di
+    prima; le altre chiavi dicono cosa e' cambiato rispetto al salvataggio
+    precedente. Un contenuto identico salvato di nuovo non e' una modifica.
+    """
+    comuni = prima.keys() & dopo.keys()
+    return {
+        "codici": list(dopo),
+        "aggiunte": [codice for codice in dopo if codice not in prima],
+        "modificate": [codice for codice in dopo if codice in comuni and prima[codice][1] != dopo[codice][1]],
+        "rimosse": [codice for codice in prima if codice not in dopo],
+        "riordinate": [c for c in comuni if prima[c][0] != dopo[c][0]] != [],
+    }
+
+
 class BuilderService:
     def __init__(self, db: Session, discovery: PortaDiscovery | None = None) -> None:
         self.db = db
@@ -190,6 +213,18 @@ class BuilderService:
             self.db, codice_contesto, offset=offset, limit=limit,
             **(filtri.model_dump(exclude_none=True) if filtri is not None else {}),
         )
+
+    def creatori(self, modelli: list[ModelloDocumento]) -> dict[uuid.UUID, str]:
+        return storico.creatori(self.db, [modello.id for modello in modelli])
+
+    def storico(self, principal: PrincipalGEMODO, modello_id: uuid.UUID):
+        """Lo storico di un modello, anche eliminato: e' una lettura per l'amministratore."""
+        ensure_roles(principal, (ROLE_GEMODO_ADMIN,))
+        modello = builder_repository.get_modello(self.db, modello_id)
+        if modello is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        interattivi = frozenset(get_settings().gemodo_allowed_interactive_clients)
+        return modello, storico.storico_modello(self.db, modello.id, interattivi)
 
     def voci_filtro(self, principal: PrincipalGEMODO, codice_contesto: str) -> dict[str, list[str]]:
         verify_scrittura_su_contesto(principal, codice_contesto)
@@ -1053,6 +1088,7 @@ class BuilderService:
                 f"La versione e' in stato {versione.stato}: le sezioni si modificano solo in BOZZA",
                 status_code=409,
             )
+        prima = {sezione.codice: (sezione.ordine, sezione.contenuto) for sezione in versione.sezioni}
         builder_repository.sostituisci_sezioni(
             self.db,
             versione=versione,
@@ -1071,7 +1107,10 @@ class BuilderService:
             principal=principal,
             modello_documento_id=modello_id,
             modello_versione_id=versione.id,
-            payload_minimo={"codici": [s.codice for s in sezioni]},
+            payload_minimo=_differenze_sezioni(
+                prima,
+                {s.codice: (s.ordine, [b.model_dump(mode="json") for b in s.contenuto]) for s in sezioni},
+            ),
         )
         self.db.commit()
         self.db.refresh(versione)

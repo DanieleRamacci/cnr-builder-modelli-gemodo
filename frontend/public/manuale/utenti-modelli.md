@@ -13,7 +13,9 @@ La pagina **Modelli** elenca i modelli del contesto. Si possono filtrare per
 stato, lingua, tipologia, profilo e livello, e azzerare i filtri in un clic.
 
 Da qui si crea un nuovo modello, si apre l'editor di un modello esistente, si
-fanno avanzare le versioni (vedi il punto 5) e si elimina un modello. Per creare
+fanno avanzare le versioni (vedi il punto 5) e si elimina un modello. La
+colonna **Creato da** dice chi ha creato ciascun modello; gli amministratori
+trovano nel menu della riga anche lo **storico** delle azioni. Per creare
 nuovi modelli serve almeno un'integrazione **connessa**: altrimenti la pagina lo
 segnala.
 

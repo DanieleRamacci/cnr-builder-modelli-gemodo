@@ -58,6 +58,14 @@ export const routes: Routes = [
   },
   { path: 'builder', pathMatch: 'full', redirectTo: 'contesti' },
   {
+    path: 'modelli/:modelId/storico',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('../features/builder/storico-modello.component').then(
+        (m) => m.StoricoModelloComponent,
+      ),
+  },
+  {
     path: 'modelli/:modelId/builder',
     loadComponent: () =>
       import('../features/builder/modello-anteprima.component').then(

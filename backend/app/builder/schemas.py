@@ -27,6 +27,8 @@ StatoVersioneFiltro = Literal[
 ]
 
 
+from app.builder.storico import EventoStorico
+
 class FiltriModelli(BaseModel):
     """Filtri dell'elenco modelli, applicati lato server (007 FR-028).
 
@@ -387,7 +389,21 @@ class ModelloGestioneResponse(ModelloResponse):
     codice_contesto: str
     integrazione_id: uuid.UUID | None
     created_at: datetime
+    # Username di chi ha creato il modello, dall'audit; None per i modelli nati
+    # senza evento di creazione (seed storici).
+    creato_da: str | None = None
     versioni: list[VersioneResponse]
+
+
+class StoricoModelloResponse(BaseModel):
+    """Chi ha fatto cosa su un modello, dal piu' recente (solo amministratori)."""
+
+    modello_id: uuid.UUID
+    codice: str
+    nome: str
+    codice_contesto: str
+    stato: str
+    eventi: list[EventoStorico]
 
 
 class PermessoProfilo(BaseModel):

@@ -39,6 +39,9 @@
           {{ next.action.label }}
         </button>
       }
+      @if (admin()) {
+        <a role="menuitem" data-storico [routerLink]="['/modelli', model.id, 'storico']">Storico</a>
+      }
       <button
         type="button"
         role="menuitem"
@@ -256,6 +259,7 @@
               <th scope="col">Categoria</th>
               <th scope="col">Ver.</th>
               <th scope="col">Stato</th>
+              <th scope="col">Creato da</th>
               <th scope="col">Creazione</th>
               <th scope="col" class="text-end">Azioni</th>
             </tr>
@@ -314,6 +318,7 @@
                       stato(model)
                     }}</span>
                   </td>
+                  <td class="creato-da" data-creato-da>{{ model.creato_da ?? '-' }}</td>
                   <td class="text-nowrap" [title]="model.created_at | date: 'dd/MM/yyyy HH:mm'">
                     {{ model.created_at | date: 'dd/MM/yyyy' }}
                   </td>

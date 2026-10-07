@@ -139,6 +139,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/{modelloId}/storico": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Chi ha fatto cosa sul modello, da dove e su quale versione
+         * @description Eventi di audit del modello (creazione, versioni, modifiche del documento sezione per sezione, passaggi di stato, eliminazione) e generazioni dalle sue versioni, dal piu' recente. Leggibile anche per un modello eliminato. Solo amministratori.
+         */
+        get: operations["getStoricoModello"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}/varianti": {
         parameters: {
             query?: never;
@@ -489,7 +511,39 @@ export interface components {
             integrazione_id: string | null;
             /** Format: date-time */
             created_at: string;
+            /** @description Username di chi ha creato il modello (o la variante, o l'edizione derivata), dall'audit. Null per i modelli nati senza evento di creazione. Aggiunto nella 0.14.0. */
+            creato_da?: string | null;
             versioni: components["schemas"]["Versione"][];
+        };
+        StoricoModello: {
+            /** Format: uuid */
+            modello_id: string;
+            codice: string;
+            nome: string;
+            codice_contesto: string;
+            stato: string;
+            eventi: components["schemas"]["EventoStorico"][];
+        };
+        EventoStorico: {
+            /** Format: date-time */
+            quando: string;
+            /** @description Username dal token, o il suo id tecnico se manca */
+            utente: string;
+            /**
+             * @description INTERFACCIA se il client e' quello di login di GEMODO, altrimenti API.
+             * @enum {string}
+             */
+            canale: "INTERFACCIA" | "API";
+            client_id?: string | null;
+            /** @description Codice dell'evento: MODELLO_CREATO, MODELLO_VARIANTE_CREATA, MODELLO_DERIVATO_CREATO, MODELLO_ELIMINATO, VERSIONE_CREATA, SEZIONI_AGGIORNATE, VERSIONE_<STATO>, VERSIONE_ARCHIVIATA, DOCUMENTO_GENERATO, GENERAZIONE_FALLITA, GENERAZIONE_DATI_NON_VALIDI. */
+            azione: string;
+            /** @description L'azione in italiano leggibile */
+            descrizione: string;
+            versione?: number | null;
+            /** @description Il dato registrato con l'evento. Per SEZIONI_AGGIORNATE: codici, aggiunte, modificate, rimosse, riordinate. Per una generazione: riferimento, sistema_richiedente, external_context_id. */
+            dettaglio?: {
+                [key: string]: unknown;
+            };
         };
         PolicyDimensioneRequest: {
             nome_dimensione: string;
@@ -1198,6 +1252,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getStoricoModello: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Storico del modello */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoricoModello"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     creaVariante: {
         parameters: {
             query?: never;
@@ -1550,14 +1629,20 @@ export interface operations {
                      *           "sezione": "VISTI",
                      *           "blocco": "VISTI-b14",
                      *           "voce": null,
-                     *           "riga": 2
+                     *           "riga": 2,
+                     *           "spazio_libero_mm": 3.1,
+                     *           "margine_basso_mm": 22,
+                     *           "margine_alto_mm": 41
                      *         },
                      *         {
                      *           "pagina": 3,
                      *           "sezione": "Art. 2 - Requisiti",
                      *           "blocco": "art2-elenco",
                      *           "voce": 3,
-                     *           "riga": 0
+                     *           "riga": 0,
+                     *           "spazio_libero_mm": 12.4,
+                     *           "margine_basso_mm": 22,
+                     *           "margine_alto_mm": 41
                      *         }
                      *       ]
                      *     }

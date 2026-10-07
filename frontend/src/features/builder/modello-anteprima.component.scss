@@ -152,8 +152,10 @@
     box-shadow: 0 8px 24px rgb(23 50 77 / 18%);
 
     button,
+    a,
     .derivazione-ko {
       padding: 8px 10px;
+      text-decoration: none;
       border: 0;
       border-radius: 4px;
       background: transparent;
@@ -161,6 +163,10 @@
       font-size: 14.5px;
       text-align: left;
       white-space: nowrap;
+    }
+
+    a:hover {
+      background: var(--td-primary-050);
     }
 
     button:not(:disabled) {

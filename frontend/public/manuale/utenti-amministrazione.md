@@ -87,6 +87,27 @@ Da **Impostazioni modelli**, per ogni tipo documento:
 
 La cornice vale subito per **tutti** i modelli di quel tipo documento.
 
+## Storico di un modello
+
+Nella pagina **Modelli**, il menu azioni di ogni riga (⋮) ha la voce
+**Storico**; la stessa voce è in **Altre azioni** dentro l'editor del modello.
+Lo storico è visibile solo agli amministratori e mostra, dal più recente:
+
+- **chi**: lo username di chi ha fatto l'azione;
+- **cosa**: creazione del modello, di una variante o di un'edizione derivata,
+  nuova versione, modifiche del documento con le sezioni aggiunte, modificate o
+  rimosse, passaggi di stato, eliminazione, documenti generati;
+- **su quale versione** e **da dove**: *Interfaccia* se l'azione è stata fatta
+  da GEMODO, *API* se è arrivata da un altro sistema (per esempio una
+  generazione chiesta da GEBAN).
+
+In cima, **Chi ci ha lavorato** riassume le persone con il numero di azioni e
+l'ultima; un clic su una persona filtra l'elenco. Si può filtrare anche per tipo
+di azione e per canale.
+
+Nell'elenco dei modelli la colonna **Creato da** mostra lo username di chi ha
+creato ciascun modello.
+
 ## Registro attività
 
 Elenca le operazioni (chi, quando, su cosa), con filtri. Si possono caricare le
