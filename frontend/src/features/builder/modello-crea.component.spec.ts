@@ -96,6 +96,10 @@ describe('manager creation flow', () => {
     expect(fixture.nativeElement.textContent).toContain('Generated name');
     expect(fixture.nativeElement.textContent).toContain('generated-code');
     expect(fixture.nativeElement.textContent).toContain('creato - BOZZA');
+    // Il modello appena creato si apre da qui, nell'editor.
+    const apri = fixture.nativeElement.querySelector('a[data-apri-modello]') as HTMLAnchorElement;
+    expect(apri.getAttribute('href')).toBe('/modelli/model/builder');
+    expect(apri.textContent!.trim()).toBe('Apri il modello');
     http.verify();
   });
 });

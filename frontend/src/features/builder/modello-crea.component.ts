@@ -222,7 +222,17 @@ type ModelloOccupante = {
           <div class="alert alert-success" role="status">
             Modello {{ createdModel?.nome }} ({{ createdModel?.codice }}) creato - {{ success() }}
           </div>
-          <a [routerLink]="backLink()">Torna ai modelli</a>
+          <!-- Il passo successivo e' scrivere il documento: il modello appena
+               creato si apre da qui, senza cercarlo nell'elenco. -->
+          <div class="azioni-2a">
+            <a
+              class="btn btn-primary"
+              data-apri-modello
+              [routerLink]="['/modelli', modelId, 'builder']"
+              >Apri il modello</a
+            >
+            <a class="btn btn-outline-primary" [routerLink]="backLink()">Torna ai modelli</a>
+          </div>
         }
       </section>
       <aside class="riepilogo">
