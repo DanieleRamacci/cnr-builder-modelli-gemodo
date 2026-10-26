@@ -160,6 +160,44 @@ type ModelloOccupante = {
                     }
                   </select>
                 }
+                @if (campiRipetibili().length) {
+                  <fieldset class="tipo-bando" data-tipo-bando>
+                    <legend class="form-label">Tipo di bando</legend>
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        id="tipo-bando-singolo"
+                        name="tipo-bando"
+                        [value]="false"
+                        [ngModel]="multiplo()"
+                        (ngModelChange)="scegliMultiplo($event)"
+                        [disabled]="saving() || !!modelId"
+                      />
+                      <label class="form-check-label" for="tipo-bando-singolo">Bando singolo</label>
+                    </div>
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        id="tipo-bando-multiplo"
+                        name="tipo-bando"
+                        [value]="true"
+                        [ngModel]="multiplo()"
+                        (ngModelChange)="scegliMultiplo($event)"
+                        [disabled]="saving() || !!modelId"
+                      />
+                      <label class="form-check-label" for="tipo-bando-multiplo"
+                        >Bando multiplo</label
+                      >
+                    </div>
+                    <p class="nota">
+                      Il bando multiplo ha più {{ etichetteRipetibili() }}, ognuna con i propri
+                      dati, impaginate in una tabella con una riga per ciascuna. Il bando singolo
+                      non le prevede. Sono due modelli distinti e la scelta non si cambia dopo.
+                    </p>
+                  </fieldset>
+                }
                 @if (modelloOccupante(); as occupante) {
                   <div class="variante-richiesta" role="alert" data-variante-richiesta>
                     <strong>Questa categorizzazione ha gia' un modello</strong>
@@ -261,11 +299,18 @@ type ModelloOccupante = {
         <h2>Campi del contratto</h2>
         @if (leaf(); as selected) {
           <ul class="campi">
-            @for (field of selected.campi; track field.codice + field.lingua) {
+            @for (field of campiDelModello(); track field.codice + field.lingua) {
               <li>
                 {{ field.etichetta }} - {{ field.tipo }}
-                @if (field.obbligatorio) {
+                @if (field.obbligatorio || field.campi?.length) {
                   <span class="pill-obbligatorio">obbligatorio</span>
+                }
+                @if (field.campi?.length) {
+                  <ul class="sotto-campi">
+                    @for (sotto of field.campi; track sotto.codice) {
+                      <li>{{ sotto.etichetta }} - {{ sotto.tipo }}</li>
+                    }
+                  </ul>
                 }
               </li>
             }
@@ -326,6 +371,32 @@ export class ModelloCreaComponent {
     }
     return [...valori].map(([nome, opzioni]) => ({ nome, valori: opzioni }));
   });
+  /**
+   * 014: i campi della foglia che si ripetono per ogni articolazione. Se ce ne
+   * sono il gestore sceglie fra bando singolo e multiplo (FR-009a).
+   */
+  protected readonly campiRipetibili = computed(() =>
+    (this.leaf()?.campi ?? []).filter((campo) => campo.tipo === 'array' && !!campo.campi?.length),
+  );
+  protected readonly multiplo = signal(false);
+  /** I campi che il modello chiedera': il singolo non include quelli ripetibili (FR-009b). */
+  protected readonly campiDelModello = computed(() => {
+    const ripetibili = new Set(this.campiRipetibili().map((campo) => campo.codice));
+    return (this.leaf()?.campi ?? []).filter(
+      (campo) => this.multiplo() || !ripetibili.has(campo.codice),
+    );
+  });
+  protected etichetteRipetibili(): string {
+    return this.campiRipetibili()
+      .map((campo) => campo.etichetta.toLowerCase())
+      .join(', ');
+  }
+  protected scegliMultiplo(valore: boolean): void {
+    this.multiplo.set(valore);
+    // Il multiplo occupa un posto suo: un occupante trovato per il singolo
+    // non riguarda il multiplo, e viceversa.
+    this.modelloOccupante.set(null);
+  }
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly success = signal<string | null>(null);
@@ -448,6 +519,7 @@ export class ModelloCreaComponent {
   protected choose(node: Nodo): void {
     this.path.update((path) => [...path, node.codice]);
     this.leaf.set(node.campi ? node : null);
+    this.multiplo.set(false);
     if (node.campi) this.inizializzaDimensioni();
     this.modelId = null;
   }
@@ -548,6 +620,7 @@ export class ModelloCreaComponent {
         integrazione_id: this.id,
         percorso_categorizzazione: this.path(),
         dimensioni: this.dimensioni(),
+        multiplo: this.multiplo(),
         ...(nota ? { nota } : {}),
       })
       .subscribe({
@@ -562,7 +635,10 @@ export class ModelloCreaComponent {
   private createVersion(id: string): void {
     this.api
       .post<{ stato: string }>(`/api/v1/builder/modelli/${id}/versioni`, {
-        campi: this.leaf()!.campi!.map((field) => ({ codice: field.codice, lingua: field.lingua })),
+        campi: this.campiDelModello().map((field) => ({
+          codice: field.codice,
+          lingua: field.lingua,
+        })),
       })
       .subscribe({
         next: (version) => {

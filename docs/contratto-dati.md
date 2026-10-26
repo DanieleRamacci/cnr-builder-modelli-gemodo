@@ -12,8 +12,8 @@ qui gli esempi sono volutamente generici o di più domini.
 
 | Versione del contratto discovery | Stato |
 |---|---|
-| **0.7.0** | **Attiva.** È quella che GEMODO applica oggi. |
-| **0.8.0** | **Proposta, spec `014`.** Aggiunge il campo ripetibile (casi multipli, per esempio le articolazioni di un bando) e rende non conformi le chiavi sconosciute dentro un campo. Non è ancora implementata: le sezioni che la descrivono sono marcate *0.8.0*. |
+| **0.8.0** | **Attiva.** È quella che GEMODO applica oggi. Aggiunge il campo ripetibile (casi multipli, per esempio le articolazioni di un bando) e rende non conformi le chiavi sconosciute dentro un campo (spec `014`). Le sezioni che la descrivono sono marcate *0.8.0*. |
+| 0.7.0 | Precedente. Ogni albero valido con la 0.7.0 resta valido, salvo i campi con chiavi sconosciute, che prima venivano scartate in silenzio. |
 
 Fonti autorevoli, in ordine:
 
@@ -289,7 +289,7 @@ documento. È l'unica parte del contratto che non varia.
 
 ### Chiavi non previste dentro un campo
 
-| | 0.7.0 (oggi) | 0.8.0 (spec `014`) |
+| | 0.7.0 (prima) | 0.8.0 (attiva, spec `014`) |
 |---|---|---|
 | `campi` su un campo `array` | **scartata in silenzio** | letta: sotto-campi del campo ripetibile |
 | `campi` su un campo non `array` | scartata in silenzio | **non conforme** |
@@ -299,8 +299,8 @@ documento. È l'unica parte del contratto che non varia.
 Il passaggio da "scartata" a "non conforme" serve perché un dato che
 l'integratore pensa di inviare non sparisca senza che nessuno se ne accorga.
 Un discovery che usa sui campi solo le chiavi della tabella resta conforme
-anche con la 0.8.0. Il discovery GEBAN di test lo è, verificato il 2026-10-07
-([Caso GEBAN](casi/geban.md)).
+anche con la 0.8.0. Il discovery GEBAN di test lo è, verificato il 2026-10-07 e
+di nuovo il 2026-10-26 su tutte le 65 foglie ([Caso GEBAN](casi/geban.md)).
 
 ## Verifica di conformità del discovery
 
@@ -378,12 +378,18 @@ Regole applicate contro la copia dei campi salvata nella versione:
 Ogni errore indica il `campo` interessato. I vincoli in `validazione` (per
 esempio `minLength`) sono pubblicati nello schema JSON di
 `GET /api/v1/catalogo/modelli/{id}/campi-richiesti`, utile per validare prima
-di inviare. La validazione di GEMODO oggi controlla presenza, tipo e campi non
-ammessi.
+di inviare. La validazione di GEMODO controlla presenza, tipo e campi non
+ammessi; per i campi ripetibili controlla anche ogni elemento (vedi
+[Validazione degli elementi](#validazione-degli-elementi)).
 
 ## Campi ripetibili (0.8.0)
 
-*Proposta della spec `014`, non ancora implementata.*
+*Attiva dalla 0.8.0 (spec `014`).*
+
+In breve: **campo ripetibile** è la regola generale del contratto;
+`articolazioni` è il codice che usano i bandi; un **elemento** (per un bando,
+un sottobando o tematica) è una voce della lista nei `dati`; il titolo del
+gruppo nel builder è l'`etichetta` del campo dichiarata nel discovery.
 
 Serve quando uno stesso documento contiene più gruppi di dati con la stessa
 forma. Per esempio un bando con più **articolazioni** (tematiche, sedi, linee),
@@ -459,8 +465,11 @@ un sotto-campo può chiamarsi come le chiavi dell'elemento: un campo con codice
 
 | Controllo | Errore e percorso |
 |---|---|
-| Campo ripetibile obbligatorio assente o lista vuota | `CAMPO_OBBLIGATORIO` su `articolazioni` |
+| Campo ripetibile assente o lista vuota (nel modello multiplo è sempre obbligatorio) | `CAMPO_OBBLIGATORIO` su `articolazioni` |
+| Campo ripetibile inviato a un modello singolo | `CAMPO_NON_AMMESSO` su `articolazioni` |
+| Elemento che non è un oggetto | `TIPO_NON_VALIDO` su `articolazioni[1]` (indice da 0) |
 | Elemento senza `codice` | `CAMPO_OBBLIGATORIO` su `articolazioni[1].codice` (indice da 0) |
+| Chiave dell'elemento diversa da `codice`, `descrizione`, `campi` | `CAMPO_NON_AMMESSO` su `articolazioni[TEMA_A].<chiave>` |
 | Due elementi con lo stesso `codice` | `CODICE_ELEMENTO_DUPLICATO` su `articolazioni` |
 | Elemento senza `descrizione` | `CAMPO_OBBLIGATORIO` su `articolazioni[TEMA_A].descrizione` |
 | Sotto-campo obbligatorio mancante | `CAMPO_OBBLIGATORIO` su `articolazioni[TEMA_A].campi.numero_posti` |
@@ -469,17 +478,57 @@ un sotto-campo può chiamarsi come le chiavi dell'elemento: un campo con codice
 
 Un sotto-campo può avere lo stesso codice di un campo principale (sopra,
 `codice_bando` e `numero_posti`): il percorso li distingue. Lo schema JSON di
-`campi-richiesti` descrive gli elementi in `items`.
+`campi-richiesti` descrive gli elementi in `items`, e la lista dei campi
+riporta i sotto-campi in `campi`.
+
+### Modello singolo e modello multiplo
+
+Una foglia con un campo ripetibile vale per due modelli distinti, che si
+scelgono alla creazione e non si cambiano dopo:
+
+| | Modello singolo | Modello multiplo |
+|---|---|---|
+| Campi ripetibili nella versione | no | sì, sempre obbligatori |
+| `articolazioni` nei `dati` | rifiutato (`CAMPO_NON_AMMESSO`) | richiesto, almeno un elemento |
+| Catalogo | `multiplo: false`, trovato senza filtro | `multiplo: true`, trovato con `multiplo=true` |
+
+I due modelli della stessa categorizzazione coesistono pubblicati. Chi genera
+sceglie nel catalogo:
+
+```text
+GET /api/v1/catalogo/modelli?tipo_documento=BANDO_CONCORSO&codice_tipologia=TD&profilo=COLLABORATORE_TECNICO_ER&livello_professionale=V&lingua=IT&multiplo=true
+```
+
+Senza `multiplo` la ricerca restituisce solo i modelli singoli, come prima
+della 0.8.0. Il gestore può creare il multiplo partendo dal testo del singolo
+(`POST /api/v1/builder/modelli/{modelloId}/multiplo`).
 
 ### Nel builder e nel documento
 
-Il builder mostra i campi principali e, separato, un gruppo collassabile per
-ogni campo ripetibile, intitolato con la sua `etichetta`. Un solo documento per
-richiesta, qualunque sia il numero di elementi.
+Il builder mostra i campi principali e, separato, un gruppo "Bando multiplo"
+per ogni campo ripetibile, intitolato con la sua `etichetta`. Un solo documento
+per richiesta, qualunque sia il numero di elementi.
 
-Come il modello impagina gli elementi è una **decisione aperta** della spec
-`014`. La proposta è un blocco ripetuto per ogni elemento, con segnaposti
-relativi all'elemento.
+Gli elementi si impaginano con una **tabella**: il gestore scrive una riga e la
+marca "ripeti per ogni elemento"; nel PDF la riga esce una volta per elemento,
+nell'ordine dei dati. Le altre righe della tabella sono fisse (per esempio un
+totale). Nella riga ripetuta i segnaposti si riferiscono all'elemento:
+
+| Segnaposto | Valore |
+|---|---|
+| `{{articolazioni.codice}}` | `codice` dell'elemento |
+| `{{articolazioni.descrizione}}` | `descrizione` dell'elemento |
+| `{{articolazioni.campi.numero_posti}}` | il sotto-campo; se è facoltativo e manca, la cella resta vuota |
+
+Regole controllate prima della pubblicazione:
+
+- i segnaposti di un elemento stanno solo nella riga ripetuta sul loro campo, e
+  in quella riga non vanno segnaposti del padre;
+- `{{articolazioni}}` da solo non è un segnaposto: una lista non si stampa
+  com'è;
+- un modello multiplo deve avere una riga ripetuta per ogni campo ripetibile;
+- nella stessa tabella una sola riga ripetuta per campo; in tabelle diverse si
+  può, e il builder lo segnala come avviso.
 
 ## Esempi completi
 
@@ -521,9 +570,10 @@ come prima, e un modello già pubblicato non cambia.
   `id`, `label`, `required`, `type`.
 - Un modello pubblicato valida con la propria copia dei campi, non con il
   discovery corrente.
-- Distinguere sempre 0.7.0 (attiva) da 0.8.0 (proposta): prima di affermare che
-  i campi ripetibili funzionano, verificare `VERSIONE_CONTRATTO_DISCOVERY` in
-  `backend/app/discovery/schemas.py`.
+- La versione attiva è `VERSIONE_CONTRATTO_DISCOVERY` in
+  `backend/app/discovery/schemas.py` (0.8.0): campi ripetibili e grammatica
+  chiusa sono attivi. Un bando con elementi si genera solo con un modello
+  multiplo, che si cerca nel catalogo con `multiplo=true`.
 - La variante a collegamenti successivi (`url_figli`) descritta in
   [Discovery per nodi](discovery-per-nodi-esempio.md) è una proposta non
   implementata. Il formato in uso è l'albero completo.

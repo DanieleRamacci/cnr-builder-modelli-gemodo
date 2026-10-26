@@ -11,15 +11,25 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
 
 # specs/010-configurazione-cataloghi-integrazioni/contracts/geban-discovery-endpoint.openapi.yaml (info.version)
-VERSIONE_CONTRATTO_DISCOVERY = "0.7.0"
+VERSIONE_CONTRATTO_DISCOVERY = "0.8.0"
+
+TipoScalare = Literal["string", "number", "date", "boolean"]
 
 
-class CampoDiscovery(BaseModel):
-    model_config = ConfigDict(frozen=True)
+class _CampoBase(BaseModel):
+    """Cio' che un campo e un sotto-campo hanno in comune.
+
+    0.8.0: la grammatica e' **chiusa**. Fino alla 0.7.0 una chiave sconosciuta
+    dentro un campo spariva in silenzio (Pydantic, `extra="ignore"`), quindi un
+    refuso come `obligatorio` non dava alcun segnale. Ora rende il discovery non
+    conforme, con il nome della chiave e il percorso (014 FR-004). Le chiavi che
+    iniziano con `_` restano annotazioni, e si tolgono prima di validare.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     codice: StrictStr = Field(min_length=1)
     etichetta: StrictStr
-    tipo: Literal["string", "number", "date", "boolean", "array", "object"]
     # 0.7.0: la lingua e' una proprieta' della **foglia** (`lingue_possibili`),
     # non del singolo campo: una foglia dichiara un contratto campi solo, valido
     # per tutte le lingue che dichiara. `lingua` sul campo resta ammessa per gli
@@ -32,6 +42,42 @@ class CampoDiscovery(BaseModel):
     ordine: int = Field(strict=True, ge=1)
     descrizione: StrictStr | None = None
     validazione: dict[str, Any] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def togli_annotazioni(cls, value: Any) -> Any:
+        if isinstance(value, dict) and any(isinstance(k, str) and k.startswith("_") for k in value):
+            return {k: v for k, v in value.items() if not (isinstance(k, str) and k.startswith("_"))}
+        return value
+
+
+class SottoCampoDiscovery(_CampoBase):
+    """Un sotto-campo di un campo ripetibile (014): tipo scalare, un livello solo."""
+
+    tipo: TipoScalare
+
+
+class CampoDiscovery(_CampoBase):
+    tipo: Literal["string", "number", "date", "boolean", "array", "object"]
+    # 014: con `tipo: "array"` il campo e' **ripetibile** e `campi` dice com'e'
+    # fatto ogni elemento (per un bando, ogni articolazione). Senza `campi` un
+    # `array` resta una lista semplice di valori, come prima (FR-005).
+    campi: tuple[SottoCampoDiscovery, ...] | None = None
+
+    @model_validator(mode="after")
+    def verifica_campi(self) -> CampoDiscovery:
+        if self.campi is None:
+            return self
+        if self.tipo != "array":
+            raise ValueError(f"campo '{self.codice}': 'campi' e' ammesso solo su un campo di tipo array")
+        if not self.campi:
+            raise ValueError(f"campo '{self.codice}': 'campi' di un campo ripetibile non puo' essere vuoto")
+        _codici_univoci(self.campi, f"campi del campo ripetibile '{self.codice}'")
+        return self
+
+    @property
+    def ripetibile(self) -> bool:
+        return self.campi is not None
 
 
 def _codici_univoci(elementi: tuple, nome: str) -> None:

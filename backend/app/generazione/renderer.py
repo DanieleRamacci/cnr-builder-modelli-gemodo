@@ -21,16 +21,20 @@ from io import BytesIO
 from pathlib import Path
 
 from fpdf import FPDF
+from fpdf.fonts import FontFace
 from PIL import Image
 
 from app.documentale.schemas import (
     AllineamentoTesto,
     BloccoDocumento,
     CornicePagina,
+    CellaTabella,
     ElementoElenco,
     FrammentoTesto,
+    RigaTabella,
     TipoBloccoDocumento,
     TipoMarcatore,
+    segnaposti_nei_frammenti,
 )
 
 _MARCA_ANTEPRIMA = "ANTEPRIMA DELLA BOZZA - VALORI FAC-SIMILE"
@@ -410,6 +414,52 @@ def _rendi_voce(pdf: FPDF, elemento: ElementoElenco, marcatore: str, allineament
                       rientro=_RIENTRO_TESTO + spostamento, spazio_dopo=1)
 
 
+def _stile_cella(frammenti: list[FrammentoTesto]) -> FontFace | None:
+    """L'enfasi di una cella: quella che hanno **tutti** i suoi frammenti (014 R7).
+
+    `FPDF.table()` non mescola varianti di font dentro una cella se non
+    interpretando una sintassi nel testo (`markdown=True`), che il formato
+    esclude. Una cella e' quindi in grassetto, o corsivo, o sottolineata, per
+    intero; un'enfasi su una parte sola della cella non si rende.
+    """
+    scritti = [f for f in frammenti if f.testo]
+    if not scritti:
+        return None
+    enfasi = "".join(
+        lettera for lettera, attributo in (("B", "grassetto"), ("I", "corsivo"), ("U", "sottolineato"))
+        if all(getattr(f, attributo) for f in scritti)
+    )
+    return FontFace(emphasis=enfasi) if enfasi else None
+
+
+def _rendi_tabella(pdf: FPDF, blocco: BloccoDocumento) -> None:
+    """Una tabella a griglia: intestazione da `colonne`, una riga per riga (014 R6, R7).
+
+    Quando la tabella non sta in una pagina l'intestazione si ripete in cima
+    alla successiva, come in Word con "ripeti righe di intestazione".
+    """
+    dimensione = 10
+    pdf.set_font(_FONT, "", dimensione)
+    if isinstance(pdf, _PdfConCornice):
+        pdf.misura_righe(dimensione)
+    with pdf.table(
+        first_row_as_headings=True,
+        repeat_headings=1,
+        text_align="LEFT",
+        line_height=_interlinea(dimensione),
+        padding=1.2,
+        headings_style=FontFace(emphasis="B"),
+    ) as tabella:
+        intestazione = tabella.row()
+        for colonna in blocco.colonne:
+            intestazione.cell(colonna)
+        for riga in blocco.righe:
+            scritta = tabella.row()
+            for cella in riga.celle:
+                scritta.cell(testo_piano(cella.frammenti), style=_stile_cella(cella.frammenti))
+    pdf.ln(2)
+
+
 def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | None = None) -> None:
     if isinstance(pdf, _PdfConCornice):
         pdf.segna(blocco.ordine)
@@ -429,6 +479,10 @@ def _rendi_blocco(pdf: FPDF, blocco: BloccoDocumento, marcatori: list[str] | Non
         _scrivi_frammenti(pdf, frammenti, allineamento=allineamento,
                           dimensione=_STILI_TITOLO.get(blocco.stile or "", predefinita),
                           grassetto_base=True)
+        return
+
+    if blocco.tipo is TipoBloccoDocumento.TABELLA and blocco.righe:
+        _rendi_tabella(pdf, blocco)
         return
 
     if blocco.tipo is TipoBloccoDocumento.TABELLA:
@@ -496,6 +550,46 @@ def _sostituisci_nei_frammenti(
     return resi
 
 
+def _testo_valore(valore: object) -> str:
+    return "" if valore is None else str(valore)
+
+
+def _espandi_righe(
+    righe: list[RigaTabella], dati: dict[str, object], valori: dict[str, str],
+) -> list[RigaTabella]:
+    """Le righe della tabella con i valori: una riga ripetuta diventa una per elemento (014 FR-016a).
+
+    Gli elementi escono nell'ordine in cui arrivano nei dati. Un sotto-campo
+    facoltativo assente lascia la cella vuota (FR-016d): la validazione ha gia'
+    fermato i dati a cui manca un valore obbligatorio.
+    """
+    rese: list[RigaTabella] = []
+    for riga in righe:
+        if riga.ripeti_per is None:
+            rese.append(riga.model_copy(update={"celle": [
+                cella.model_copy(update={"frammenti": _sostituisci_nei_frammenti(cella.frammenti, valori)})
+                for cella in riga.celle
+            ]}))
+            continue
+        campo = riga.ripeti_per
+        elementi = dati.get(campo) or []
+        nomi = {nome for cella in riga.celle for nome in segnaposti_nei_frammenti(cella.frammenti)}
+        for elemento in elementi if isinstance(elementi, list) else []:
+            elemento = elemento if isinstance(elemento, dict) else {}
+            sotto = elemento.get("campi") if isinstance(elemento.get("campi"), dict) else {}
+            conosciuti = {
+                f"{campo}.codice": elemento.get("codice"),
+                f"{campo}.descrizione": elemento.get("descrizione"),
+                **{f"{campo}.campi.{codice}": valore for codice, valore in sotto.items()},
+            }
+            valori_elemento = {nome: _testo_valore(conosciuti.get(nome)) for nome in nomi}
+            rese.append(RigaTabella(celle=[
+                CellaTabella(frammenti=_sostituisci_nei_frammenti(cella.frammenti, valori_elemento))
+                for cella in riga.celle
+            ]))
+    return rese
+
+
 def sostituisci_placeholder(
     blocchi: list[BloccoDocumento], dati: dict[str, object],
 ) -> list[BloccoDocumento]:
@@ -507,12 +601,19 @@ def sostituisci_placeholder(
     blocco adopera, ed e' quello che la validazione in pubblicazione ha gia'
     confrontato con i campi del modello: qui si controlla che, per quel
     documento, ci sia anche il **valore**.
+
+    014: i segnaposti di un elemento (`{{articolazioni.campi.numero_posti}}`)
+    non hanno un valore unico: li riempie l'espansione delle righe ripetute,
+    una riga per elemento.
     """
     mancanti: set[str] = set()
     resi: list[BloccoDocumento] = []
     for blocco in blocchi:
+        ripetuti = {riga.ripeti_per for riga in blocco.righe if riga.ripeti_per}
         valori: dict[str, str] = {}
         for nome in blocco.placeholder_usati:
+            if any(nome.startswith(f"{campo}.") for campo in ripetuti):
+                continue
             if nome not in dati or dati[nome] is None:
                 mancanti.add(nome)
                 continue
@@ -525,6 +626,7 @@ def sostituisci_placeholder(
                 })
                 for elemento in blocco.elementi
             ],
+            "righe": _espandi_righe(blocco.righe, dati, valori),
         }))
     if mancanti:
         raise PlaceholderSenzaValore(list(mancanti))

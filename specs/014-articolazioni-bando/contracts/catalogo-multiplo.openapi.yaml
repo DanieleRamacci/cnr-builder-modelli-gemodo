@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: GEMODO - Catalogo, modello multiplo (delta 014)
+  version: 0.1.0-delta
+  description: |
+    Delta da fondere in specs/001-catalogo-contratto-geban/contracts/geban-catalog-api.openapi.yaml
+    prima dell'implementazione (Principio II). Riporta solo cio' che cambia.
+    Senza il parametro `multiplo` la ricerca restituisce gli stessi modelli di
+    prima della 014 (SC-007).
+paths:
+  /api/v1/catalogo/modelli:
+    get:
+      parameters:
+        - name: multiplo
+          in: query
+          required: false
+          description: |
+            `true`: solo modelli multipli (bandi con articolazioni).
+            `false` o assente: solo modelli singoli.
+          schema: {type: boolean, default: false}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ModelloSearchResponse"}
+              examples:
+                multiplo:
+                  value:
+                    tipo_documento: BANDO_CONCORSO
+                    profilo: COLLABORATORE_TECNICO_ER
+                    codice_tipologia: TD
+                    modalita: OPERATIVA
+                    fallback_applicato: false
+                    dimensioni_con_fallback: []
+                    livello_richiesto: V
+                    livello_risolto: V
+                    modelli:
+                      - modello_id: 42
+                        modello_versione_id: 201
+                        codice: BANDO_CONCORSO-TD-COLLABORATORE_TECNICO_ER-IT-V-MULTIPLO
+                        descrizione: Collaboratore Tecnico E.R. IT V (bando multiplo)
+                        variante: STANDARD
+                        multiplo: true
+                        lingua: IT
+                        livello_professionale: V
+                        dimensioni: {lingua: IT, livello_professionale: V}
+                        versione: 1
+                        stato: PUBBLICATO
+                        edizioni_derivate: []
+  /api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                multiplo:
+                  summary: Campo ripetibile con sotto-campi e schema degli elementi
+                  value:
+                    modello_versione_id: 201
+                    tipo_documento: BANDO_CONCORSO
+                    profilo: COLLABORATORE_TECNICO_ER
+                    campi:
+                      - {codice: codice_bando, etichetta: Codice bando, tipo: string, lingua: IT, obbligatorio: true, ordine: 1}
+                      - codice: articolazioni
+                        etichetta: Tematiche del bando
+                        tipo: array
+                        lingua: IT
+                        obbligatorio: true
+                        ordine: 14
+                        campi:
+                          - {codice: codice_bando, etichetta: Codice sottobando, tipo: string, lingua: IT, obbligatorio: true, ordine: 1}
+                          - {codice: numero_posti, etichetta: Numero posti sottobando, tipo: number, lingua: IT, obbligatorio: true, ordine: 2}
+                    schema:
+                      type: object
+                      additionalProperties: false
+                      required: [codice_bando, articolazioni]
+                      properties:
+                        codice_bando: {type: string}
+                        articolazioni:
+                          type: array
+                          minItems: 1
+                          items:
+                            type: object
+                            additionalProperties: false
+                            required: [codice, descrizione, campi]
+                            properties:
+                              codice: {type: string, minLength: 1}
+                              descrizione: {type: string, minLength: 1}
+                              campi:
+                                type: object
+                                additionalProperties: false
+                                required: [codice_bando, numero_posti]
+                                properties:
+                                  codice_bando: {type: string}
+                                  numero_posti: {type: number}
+components:
+  schemas:
+    ModelloCatalogo:
+      properties:
+        multiplo:
+          type: boolean
+          description: Il modello impagina le articolazioni del bando (spec 014).
+    CampoRichiesto:
+      properties:
+        campi:
+          type: array
+          description: Sotto-campi di un campo ripetibile; assente per gli altri campi.
+          items: {$ref: "#/components/schemas/CampoRichiesto"}

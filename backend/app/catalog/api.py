@@ -47,6 +47,7 @@ def search_modelli(
     pubblicato_da: date | None = None,
     pubblicato_a: date | None = None,
     categoria: str | None = Query(default=None, include_in_schema=False),
+    multiplo: bool = False,
     principal: PrincipalGEMODO = Depends(require_documenti_viewer),
     service: CatalogService = Depends(get_catalog_service),
 ) -> ModelloSearchResponse:
@@ -63,6 +64,7 @@ def search_modelli(
         data_riferimento=data_riferimento,
         pubblicato_da=pubblicato_da,
         pubblicato_a=pubblicato_a,
+        multiplo=multiplo,
     )
 
 

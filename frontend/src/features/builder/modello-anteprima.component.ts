@@ -45,12 +45,19 @@ import {
   STILI,
   allineamentoEffettivo,
   collegamentoIn,
+  comandoAggiungiColonna,
+  comandoAggiungiRiga,
   comandoAllineamento,
   comandoCollegamento,
   comandoElenco,
+  comandoEliminaTabella,
   comandoEnfasi,
+  comandoInserisciTabella,
   comandoInterruzione,
   comandoLivello,
+  comandoRipetiRiga,
+  comandoTogliColonna,
+  comandoTogliRiga,
   comandoStile,
   comandoUnisciRighe,
   numeraElenchi,
@@ -66,6 +73,12 @@ type Impaginazione = components['schemas']['Impaginazione'];
 type InizioPagina = Impaginazione['inizi_pagina'][number];
 type Versione = Dettaglio['versioni'][number];
 type CampoVersione = Versione['campi'][number];
+/** 014: un campo ripetibile e i segnaposti di un suo elemento. */
+type GruppoRipetibile = {
+  codice: string;
+  etichetta: string;
+  voci: { token: string; etichetta: string; tipo: string; obbligatorio: boolean }[];
+};
 type Nodo = {
   codice: string;
   figli?: Nodo[];
@@ -170,6 +183,9 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
           m.nome
         }}</span>
         <span class="meta">v{{ corrente()?.numero_versione }} · {{ corrente()?.stato }}</span>
+        @if (m.multiplo) {
+          <span class="badge-multiplo" data-badge-multiplo>Bando multiplo</span>
+        }
       }
       <span
         class="save-state"
@@ -198,6 +214,17 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
               <span class="derivazione-ko" data-derivazione-ko [title]="motivo">
                 Derivazione non disponibile
               </span>
+            }
+            @if (multiploDisponibile()) {
+              <button
+                type="button"
+                role="menuitem"
+                data-crea-multiplo
+                [disabled]="salvando()"
+                (click)="altreAzioni.open = false; creaMultiplo()"
+              >
+                Crea bando multiplo
+              </button>
             }
             @if (modello()) {
               <button
@@ -461,6 +488,86 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
         >
           ⤓
         </button>
+        <button
+          type="button"
+          class="tool"
+          data-insert-block="TABELLA"
+          title="Tabella: intestazione e righe; nel bando multiplo una riga si ripete per ogni sottobando"
+          aria-label="Inserisci tabella"
+          [disabled]="!sezioni()?.modificabile || !editorAttivo() || !!tabellaAttiva()"
+          (mousedown)="$event.preventDefault()"
+          (click)="inserisciTabella()"
+        >
+          ⊞
+        </button>
+        @if (tabellaAttiva(); as tabella) {
+          <span class="strumenti-tabella" data-strumenti-tabella>
+            <button
+              type="button"
+              class="tool"
+              title="Aggiungi riga sotto"
+              (mousedown)="$event.preventDefault()"
+              (click)="modificaTabella('riga+')"
+            >
+              + riga
+            </button>
+            <button
+              type="button"
+              class="tool"
+              title="Togli questa riga"
+              [disabled]="tabella.intestazione"
+              (mousedown)="$event.preventDefault()"
+              (click)="modificaTabella('riga-')"
+            >
+              − riga
+            </button>
+            <button
+              type="button"
+              class="tool"
+              title="Aggiungi colonna a destra"
+              (mousedown)="$event.preventDefault()"
+              (click)="modificaTabella('colonna+')"
+            >
+              + col
+            </button>
+            <button
+              type="button"
+              class="tool"
+              title="Togli questa colonna"
+              (mousedown)="$event.preventDefault()"
+              (click)="modificaTabella('colonna-')"
+            >
+              − col
+            </button>
+            @if (multiplo() && !tabella.intestazione) {
+              <label class="visually-hidden" for="ripeti-riga">Ripeti la riga</label>
+              <select
+                id="ripeti-riga"
+                class="form-select form-select-sm ripeti-riga"
+                data-ripeti-riga
+                [value]="tabella.ripetiPer ?? ''"
+                (mousedown)="$event.stopPropagation()"
+                (change)="ripetiRiga($any($event.target).value)"
+              >
+                <option value="">Riga fissa</option>
+                @for (gruppo of gruppiRipetibili(); track gruppo.codice) {
+                  <option [value]="gruppo.codice">
+                    Ripeti per ogni elemento di {{ gruppo.etichetta }}
+                  </option>
+                }
+              </select>
+            }
+            <button
+              type="button"
+              class="tool"
+              title="Elimina la tabella"
+              (mousedown)="$event.preventDefault()"
+              (click)="modificaTabella('elimina')"
+            >
+              ✕ tabella
+            </button>
+          </span>
+        }
         @if (sezioni()?.modificabile) {
           <!-- Nella barra che resta in alto: si salva da qualunque punto del
                documento, senza perdere il cursore. -->
@@ -632,6 +739,13 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                 <ul class="readiness-elenco">
                   @for (blocco of blocchiDocumento(); track blocco) {
                     <li data-readiness-block>{{ blocco }}</li>
+                  }
+                </ul>
+              }
+              @if (analisiRighe().avvisi.length) {
+                <ul class="readiness-avvisi">
+                  @for (avviso of analisiRighe().avvisi; track avviso) {
+                    <li data-readiness-avviso>{{ avviso }}</li>
                   }
                 </ul>
               }
@@ -911,6 +1025,37 @@ const AZIONI_VERSIONE: Record<string, AzioneVersione> = {
                   </span>
                 </button>
               }
+              @for (gruppo of gruppiSegnaposto(); track gruppo.codice) {
+                <details class="gruppo-multiplo" data-gruppo-multiplo open>
+                  <summary>
+                    <span class="badge-multiplo">Bando multiplo</span> {{ gruppo.etichetta }}
+                  </summary>
+                  <p class="panel-hint">
+                    I dati di ogni sottobando: vanno in una riga di tabella ripetuta, che nel PDF
+                    esce una volta per ciascuno.
+                  </p>
+                  @for (voce of gruppo.voci; track voce.token) {
+                    <button
+                      type="button"
+                      class="campo"
+                      [attr.data-placeholder]="voce.token"
+                      [disabled]="!sezioni()?.modificabile || !sezioneAttiva() || salvandoSezioni()"
+                      (click)="inserisciSegnaposto(voce.token)"
+                    >
+                      <span class="campo-copy">
+                        <span class="riga">
+                          <span class="token">{{ voce.token }}</span>
+                          <span class="tipo">{{ voce.tipo }}</span>
+                        </span>
+                        <span class="etichetta">{{ voce.etichetta }}</span>
+                        @if (voce.obbligatorio) {
+                          <span class="riga"><span class="pill">obbligatorio</span></span>
+                        }
+                      </span>
+                    </button>
+                  }
+                </details>
+              }
             } @else if (pannelloAttivo() === 'pagina') {
               <h2>Intestazione e piè di pagina</h2>
               @if (cornice(); as c) {
@@ -1179,7 +1324,9 @@ export class ModelloAnteprimaComponent {
   );
   protected readonly campiSegnaposto = computed(() => {
     const query = this.ricercaSegnaposto().trim().toLocaleLowerCase();
-    const campi = this.corrente()?.campi ?? [];
+    // 014: un campo ripetibile non e' un segnaposto; i suoi elementi stanno nel
+    // gruppo "Bando multiplo" (FR-009).
+    const campi = (this.corrente()?.campi ?? []).filter((campo) => !campo.sotto_campi);
     if (!query) return campi;
     return campi.filter((campo) =>
       [campo.codice, campo.etichetta, campo.tipo, campo.lingua ?? '']
@@ -1188,6 +1335,53 @@ export class ModelloAnteprimaComponent {
         .includes(query),
     );
   });
+  /** I campi ripetibili della versione, con i segnaposti di un elemento (014 FR-008). */
+  protected readonly gruppiRipetibili = computed<GruppoRipetibile[]>(() =>
+    (this.corrente()?.campi ?? [])
+      .filter((campo) => !!campo.sotto_campi)
+      .map((campo) => ({
+        codice: campo.codice,
+        etichetta: campo.etichetta,
+        voci: [
+          {
+            token: `${campo.codice}.codice`,
+            etichetta: 'Codice',
+            tipo: 'string',
+            obbligatorio: true,
+          },
+          {
+            token: `${campo.codice}.descrizione`,
+            etichetta: 'Descrizione',
+            tipo: 'string',
+            obbligatorio: true,
+          },
+          ...(campo.sotto_campi ?? []).map((sotto) => ({
+            token: `${campo.codice}.campi.${String(sotto['codice'])}`,
+            etichetta: String(sotto['etichetta']),
+            tipo: String(sotto['tipo']),
+            obbligatorio: !!sotto['obbligatorio'],
+          })),
+        ],
+      })),
+  );
+  protected readonly gruppiSegnaposto = computed(() => {
+    const query = this.ricercaSegnaposto().trim().toLocaleLowerCase();
+    return this.gruppiRipetibili()
+      .map((gruppo) => ({
+        ...gruppo,
+        voci: query
+          ? gruppo.voci.filter((voce) =>
+              [voce.token, voce.etichetta, voce.tipo].join(' ').toLocaleLowerCase().includes(query),
+            )
+          : gruppo.voci,
+      }))
+      .filter((gruppo) => gruppo.voci.length);
+  });
+  protected readonly multiplo = computed(() => !!this.modello()?.multiplo);
+  /** Il cursore in una tabella dell'editor attivo (014). */
+  protected readonly tabellaAttiva = computed(() => this.statoEditor()?.tabella ?? null);
+  /** La foglia del modello singolo dichiara campi ripetibili: si puo' creare il multiplo. */
+  protected readonly multiploDisponibile = signal(false);
   protected readonly azioneVersione = computed(() => {
     const stato = this.corrente()?.stato;
     return stato ? (AZIONI_VERSIONE[stato] ?? null) : null;
@@ -1202,9 +1396,16 @@ export class ModelloAnteprimaComponent {
       ? { codice: 'modificato', etichetta: 'Modifiche non salvate' }
       : { codice: 'salvato', etichetta: 'Tutte le modifiche salvate' };
   });
-  /** I codici che il backend accetta come segnaposto: sono i campi della versione. */
+  /**
+   * I segnaposti che il backend accetta: i campi della versione e, per un
+   * campo ripetibile, i dati di un suo elemento invece del campo (014 FR-015).
+   */
   protected readonly placeholderAmmessi = computed(
-    () => new Set((this.corrente()?.campi ?? []).map((campo) => campo.codice)),
+    () =>
+      new Set([
+        ...(this.corrente()?.campi ?? []).filter((c) => !c.sotto_campi).map((c) => c.codice),
+        ...this.gruppiRipetibili().flatMap((gruppo) => gruppo.voci.map((voce) => voce.token)),
+      ]),
   );
   /**
    * Gli stessi blocchi che `pubblica` applicherebbe lato backend
@@ -1228,7 +1429,93 @@ export class ModelloAnteprimaComponent {
         }
       }
     }
+    blocchi.push(...this.analisiRighe().blocchi);
     return blocchi;
+  });
+  /**
+   * Dove stanno i segnaposti dei sottobandi (014 FR-016b, FR-016h, FR-009d):
+   * le stesse regole di `violazioni_righe_ripetute` nel backend, piu' gli
+   * avvisi che non bloccano.
+   */
+  protected readonly analisiRighe = computed(() => {
+    const blocchi: string[] = [];
+    const avvisi: string[] = [];
+    const gruppi = new Map(
+      this.gruppiRipetibili().map((g) => [g.codice, new Set(g.voci.map((v) => v.token))]),
+    );
+    const diElemento = new Map<string, string>();
+    for (const [campo, voci] of gruppi) for (const voce of voci) diElemento.set(voce, campo);
+    const tabellePerCampo = new Map<string, string[]>();
+    const fuoriRiga = (dove: string, frammenti: { testo: string }[]) => {
+      for (const nome of placeholderNeiFrammenti(frammenti)) {
+        const campo = diElemento.get(nome);
+        if (campo) {
+          blocchi.push(
+            `${dove}: {{${nome}}} e' di un elemento di "${campo}" e va in una riga di tabella ripetuta.`,
+          );
+        }
+      }
+    };
+    for (const sezione of this.sezioniLocali()) {
+      for (const blocco of sezione.contenuto) {
+        const dove = `Sezione "${sezione.codice}"`;
+        fuoriRiga(dove, blocco.frammenti);
+        for (const elemento of blocco.elementi ?? []) fuoriRiga(dove, elemento.frammenti);
+        const ripetuteQui = new Map<string, number>();
+        (blocco.righe ?? []).forEach((riga, indice) => {
+          const doveRiga = `${dove}, tabella, riga ${indice + 1}`;
+          if (!riga.ripeti_per) {
+            for (const cella of riga.celle) fuoriRiga(doveRiga, cella.frammenti);
+            return;
+          }
+          const ammessi = gruppi.get(riga.ripeti_per);
+          if (!this.multiplo() || !ammessi) {
+            blocchi.push(
+              `${doveRiga}: si ripete per "${riga.ripeti_per}", che questo modello non ha.`,
+            );
+            return;
+          }
+          ripetuteQui.set(riga.ripeti_per, (ripetuteQui.get(riga.ripeti_per) ?? 0) + 1);
+          const visti = new Set<string>();
+          for (const cella of riga.celle) {
+            for (const nome of placeholderNeiFrammenti(cella.frammenti)) {
+              if (!ammessi.has(nome)) {
+                blocchi.push(
+                  `${doveRiga}: {{${nome}}} non e' di un elemento di "${riga.ripeti_per}"; mettilo in una riga fissa.`,
+                );
+              }
+              if (visti.has(nome)) avvisi.push(`${doveRiga}: {{${nome}}} compare due volte.`);
+              visti.add(nome);
+            }
+          }
+        });
+        for (const [campo, quante] of ripetuteQui) {
+          if (quante > 1) {
+            blocchi.push(
+              `${dove}: ${quante} righe ripetute per "${campo}" nella stessa tabella, ne basta una.`,
+            );
+          }
+          tabellePerCampo.set(campo, [...(tabellePerCampo.get(campo) ?? []), sezione.codice]);
+        }
+      }
+    }
+    for (const [campo, sezioni] of tabellePerCampo) {
+      if (sezioni.length > 1) {
+        avvisi.push(
+          `Le righe di "${campo}" compaiono in ${sezioni.length} tabelle (sezioni ${sezioni.join(', ')}): verifica che sia voluto.`,
+        );
+      }
+    }
+    if (this.multiplo()) {
+      for (const gruppo of this.gruppiRipetibili()) {
+        if (!tabellePerCampo.has(gruppo.codice)) {
+          blocchi.push(
+            `Il bando multiplo non ha una tabella con la riga ripetuta per "${gruppo.etichetta}": senza, le ${gruppo.etichetta.toLowerCase()} non comparirebbero nel documento.`,
+          );
+        }
+      }
+    }
+    return { blocchi, avvisi };
   });
   /**
    * I marcatori del documento composto. Il servizio lo restituisce come
@@ -1292,11 +1579,20 @@ export class ModelloAnteprimaComponent {
     errore: string | null;
   } | null>(null);
   /** I segnaposto che il comando `/` propone: i campi della versione, una volta sola. */
-  protected readonly vociCampi = computed<VoceSegnaposto[]>(() =>
-    (this.corrente()?.campi ?? [])
+  protected readonly vociCampi = computed<VoceSegnaposto[]>(() => [
+    ...(this.corrente()?.campi ?? [])
+      .filter((campo) => !campo.sotto_campi)
       .filter((campo, i, campi) => campi.findIndex((altro) => altro.codice === campo.codice) === i)
       .map(({ codice, etichetta, tipo }) => ({ codice, etichetta, tipo })),
-  );
+    // 014: i dati di un sottobando, da usare in una riga di tabella ripetuta.
+    ...this.gruppiRipetibili().flatMap((gruppo) =>
+      gruppo.voci.map((voce) => ({
+        codice: voce.token,
+        etichetta: `${gruppo.etichetta} › ${voce.etichetta}`,
+        tipo: voce.tipo,
+      })),
+    ),
+  ]);
   /** Perche' il nome scritto nelle Proprieta' non e' stato accettato. */
   protected readonly erroreNome = signal<string | null>(null);
   /**
@@ -1480,7 +1776,11 @@ export class ModelloAnteprimaComponent {
   protected testoSezione(sezione: SezioneDocumento): string {
     return sezione.contenuto
       .map((blocco) =>
-        [blocco.frammenti, ...(blocco.elementi ?? []).map((elemento) => elemento.frammenti)]
+        [
+          blocco.frammenti,
+          ...(blocco.elementi ?? []).map((elemento) => elemento.frammenti),
+          ...(blocco.righe ?? []).flatMap((riga) => riga.celle.map((cella) => cella.frammenti)),
+        ]
           .map(testoDiFrammenti)
           .join('\n'),
       )
@@ -1754,6 +2054,50 @@ export class ModelloAnteprimaComponent {
     this.editorAttivo()?.inserisciTesto(`{{${campo.codice}}}`);
   }
 
+  /** Il dato di un sottobando, dove sta il cursore: va in una riga ripetuta (014). */
+  protected inserisciSegnaposto(token: string): void {
+    this.editorAttivo()?.inserisciTesto(`{{${token}}}`);
+  }
+
+  protected inserisciTabella(): void {
+    this.editorAttivo()?.esegui(comandoInserisciTabella(3));
+  }
+
+  protected modificaTabella(azione: 'riga+' | 'riga-' | 'colonna+' | 'colonna-' | 'elimina'): void {
+    const comandi = {
+      'riga+': comandoAggiungiRiga,
+      'riga-': comandoTogliRiga,
+      'colonna+': comandoAggiungiColonna,
+      'colonna-': comandoTogliColonna,
+      elimina: comandoEliminaTabella,
+    };
+    this.editorAttivo()?.esegui(comandi[azione]);
+  }
+
+  protected ripetiRiga(campo: string): void {
+    this.editorAttivo()?.esegui(comandoRipetiRiga(campo || null));
+  }
+
+  /** Il bando multiplo della stessa categorizzazione, dal testo di questo (014 FR-009e). */
+  protected creaMultiplo(): void {
+    if (this.salvando()) return;
+    this.salvando.set(true);
+    this.errore.set(null);
+    this.api
+      .post<{ id: string }>(`/api/v1/builder/modelli/${this.id}/multiplo`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (modello) => {
+          this.salvando.set(false);
+          void this.router.navigate(['/modelli', modello.id, 'builder']);
+        },
+        error: (e: ApiError) => {
+          this.salvando.set(false);
+          this.errore.set(e.messaggio);
+        },
+      });
+  }
+
   protected iniziaTrascinamento(event: DragEvent, campo: CampoVersione): void {
     event.dataTransfer?.setData('application/x-gemodo-placeholder', campo.codice);
     event.dataTransfer?.setData('text/plain', `{{${campo.codice}}}`);
@@ -2003,6 +2347,13 @@ export class ModelloAnteprimaComponent {
             nodi = foglia.figli ?? [];
           }
           if (!foglia) return;
+          this.multiploDisponibile.set(
+            !dettaglio.multiplo &&
+              Array.isArray(foglia['campi']) &&
+              (foglia['campi'] as { tipo?: string; campi?: unknown[] }[]).some(
+                (campo) => campo.tipo === 'array' && !!campo.campi?.length,
+              ),
+          );
           const valori = new Map<string, string[]>();
           if (foglia.lingue_possibili?.length) valori.set('lingua', foglia.lingue_possibili);
           if (foglia.livelli_possibili?.length) {

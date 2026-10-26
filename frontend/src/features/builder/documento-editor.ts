@@ -58,6 +58,13 @@ export type BloccoDocumento = {
   regole_layout?: Record<string, string>;
   asset_ref?: string | null;
   colonne?: string[];
+  righe?: RigaTabella[];
+};
+
+/** Una riga di tabella (014): `ripeti_per` la ripete per ogni elemento di quel campo. */
+export type RigaTabella = {
+  celle: { frammenti: FrammentoTesto[] }[];
+  ripeti_per?: string | null;
 };
 
 export type TipoBloccoInseribile = 'PARAGRAFO' | 'TITOLO' | 'ELENCO' | 'FIRMA';
@@ -373,6 +380,68 @@ export const schema = new Schema({
         ];
       },
     },
+    // 014: la tabella. L'intestazione e' testo semplice (`colonne` del
+    // formato); le celle delle righe sono testo con enfasi e segnaposti. Una
+    // riga con `ripeti_per` si ripete nel PDF per ogni elemento di quel campo.
+    tabella: {
+      group: 'blocco',
+      content: 'riga_intestazione riga+',
+      attrs: { id: { default: null } },
+      isolating: true,
+      parseDOM: [
+        {
+          tag: 'table[data-block-type="TABELLA"]',
+          getAttrs: (dom) => ({
+            id: (dom as HTMLElement).getAttribute('data-block-id'),
+          }),
+        },
+      ],
+      toDOM: (nodo) => [
+        'table',
+        {
+          class: 'editor-tabella',
+          'data-block-type': 'TABELLA',
+          ...(nodo.attrs['id'] ? { 'data-block-id': nodo.attrs['id'] as string } : {}),
+        },
+        ['tbody', 0],
+      ],
+    },
+    riga_intestazione: {
+      content: 'cella_intestazione+',
+      parseDOM: [{ tag: 'tr.riga-intestazione' }],
+      toDOM: () => ['tr', { class: 'riga-intestazione' }, 0],
+    },
+    cella_intestazione: {
+      content: 'text*',
+      marks: '',
+      isolating: true,
+      parseDOM: [{ tag: 'th' }],
+      toDOM: () => ['th', 0],
+    },
+    riga: {
+      content: 'cella+',
+      attrs: { ripeti_per: { default: null } },
+      parseDOM: [
+        {
+          tag: 'tr',
+          getAttrs: (dom) => ({
+            ripeti_per: (dom as HTMLElement).getAttribute('data-ripeti-per'),
+          }),
+        },
+      ],
+      toDOM: (nodo) => {
+        const ripeti = nodo.attrs['ripeti_per'] as string | null;
+        return ripeti
+          ? ['tr', { class: 'riga-ripetuta', 'data-ripeti-per': ripeti }, 0]
+          : ['tr', {}, 0];
+      },
+    },
+    cella: {
+      content: 'inline*',
+      isolating: true,
+      parseDOM: [{ tag: 'td' }],
+      toDOM: () => ['td', 0],
+    },
     text: { group: 'inline' },
     a_capo: {
       inline: true,
@@ -493,12 +562,59 @@ export function documentoDaBlocchi(blocchi: BloccoDocumento[]): NodoPm {
       case 'INTERRUZIONE_PAGINA':
         nodi.push(N['interruzione'].create({ id: blocco.id }));
         break;
+      case 'TABELLA':
+        // Una tabella di prima della 014, senza righe, resta com'era.
+        if (blocco.righe?.length && blocco.colonne?.length) {
+          nodi.push(tabellaDaBlocco(blocco));
+          break;
+        }
+        nodi.push(N['riservato'].create({ blocco: structuredClone(blocco) }));
+        break;
       default:
         nodi.push(N['riservato'].create({ blocco: structuredClone(blocco) }));
     }
   }
   if (!nodi.length) nodi.push(N['paragrafo'].create());
   return N['doc'].create(null, nodi);
+}
+
+function tabellaDaBlocco(blocco: BloccoDocumento): NodoPm {
+  const colonne = blocco.colonne ?? [];
+  const intestazione = N['riga_intestazione'].create(
+    null,
+    colonne.map((testo) => N['cella_intestazione'].create(null, testo ? schema.text(testo) : null)),
+  );
+  const righe = (blocco.righe ?? []).map((riga) =>
+    N['riga'].create(
+      { ripeti_per: riga.ripeti_per ?? null },
+      colonne.map((_, i) =>
+        N['cella'].create(null, inlineDaFrammenti(riga.celle[i]?.frammenti ?? [])),
+      ),
+    ),
+  );
+  return N['tabella'].create({ id: blocco.id }, [intestazione, ...righe]);
+}
+
+function bloccoDaTabella(nodo: NodoPm, id: string): BloccoDocumento {
+  const colonne: string[] = [];
+  nodo.firstChild!.forEach((cella) => colonne.push(cella.textContent));
+  const righe: RigaTabella[] = [];
+  nodo.forEach((riga, _pos, indice) => {
+    if (indice === 0) return;
+    const celle: RigaTabella['celle'] = [];
+    riga.forEach((cella) => celle.push({ frammenti: frammentiDaInline(cella) }));
+    righe.push({ celle, ripeti_per: (riga.attrs['ripeti_per'] as string | null) ?? null });
+  });
+  return {
+    ...baseBlocco(id, 'TABELLA', {
+      allineamento: null,
+      posizionamento: 'BODY',
+      stile: null,
+      extra: null,
+    }),
+    colonne,
+    righe,
+  };
 }
 
 const TIPO_DI_NODO: Record<string, string> = {
@@ -554,6 +670,12 @@ export function blocchiDaDocumento(documento: NodoPm, prefisso = 'b'): BloccoDoc
       blocchi.push(structuredClone(nodo.attrs['blocco'] as BloccoDocumento));
       return;
     }
+    if (nodo.type === N['tabella']) {
+      blocchi.push(
+        bloccoDaTabella(nodo, (nodo.attrs['id'] as string | null) ?? generatore.nuovo()),
+      );
+      return;
+    }
     blocchi.push({
       ...baseBlocco(attrs.id ?? generatore.nuovo(), TIPO_DI_NODO[nodo.type.name], attrs),
       frammenti: frammentiDaInline(nodo),
@@ -565,6 +687,7 @@ export function blocchiDaDocumento(documento: NodoPm, prefisso = 'b'): BloccoDoc
     placeholder_usati: placeholderNeiFrammenti([
       ...blocco.frammenti,
       ...(blocco.elementi ?? []).flatMap((elemento) => elemento.frammenti),
+      ...(blocco.righe ?? []).flatMap((riga) => riga.celle.flatMap((cella) => cella.frammenti)),
     ]),
   }));
 }
@@ -606,6 +729,11 @@ export function impronta(blocchi: BloccoDocumento[]): string {
           elemento.livello,
           elemento.marcatore,
           normalizzaFrammenti(elemento.frammenti),
+        ]),
+        blocco.tipo === 'TABELLA' ? (blocco.colonne ?? []) : [],
+        (blocco.righe ?? []).map((riga) => [
+          riga.ripeti_per ?? null,
+          riga.celle.map((cella) => normalizzaFrammenti(cella.frammenti)),
         ]),
       ]),
   );
@@ -787,6 +915,13 @@ export type StatoSelezione = {
   stile: string;
   allineamento: Allineamento | null;
   marchi: Record<AttributoEnfasi, boolean>;
+  /** 014: il cursore in una tabella, con la riga e se si ripete. */
+  tabella: {
+    riga: number;
+    colonna: number;
+    ripetiPer: string | null;
+    intestazione: boolean;
+  } | null;
 };
 
 export function statoSelezione(stato: EditorState): StatoSelezione {
@@ -804,6 +939,17 @@ export function statoSelezione(stato: EditorState): StatoSelezione {
       corsivo: marchi(M['corsivo']),
       sottolineato: marchi(M['sottolineato']),
     },
+    tabella: (() => {
+      const posizione = posizioneInTabella(stato);
+      return posizione
+        ? {
+            riga: posizione.riga,
+            colonna: posizione.colonna,
+            ripetiPer: posizione.ripetiPer,
+            intestazione: posizione.intestazione,
+          }
+        : null;
+    })(),
   };
 }
 
@@ -979,6 +1125,235 @@ export const comandoInterruzione: Command = (stato, dispatch) => {
   }
   return true;
 };
+
+// --- Tabella (014) ------------------------------------------------------------
+
+/** Dove sta il cursore dentro una tabella: tabella, riga e colonna, con le posizioni. */
+export type PosizioneTabella = {
+  tabella: NodoPm;
+  posTabella: number;
+  riga: number;
+  colonna: number;
+  ripetiPer: string | null;
+  intestazione: boolean;
+};
+
+export function posizioneInTabella(stato: EditorState): PosizioneTabella | null {
+  const { $from } = stato.selection;
+  for (let profondita = $from.depth; profondita > 0; profondita -= 1) {
+    if ($from.node(profondita).type !== N['tabella']) continue;
+    if ($from.depth < profondita + 2) return null;
+    const riga = $from.index(profondita);
+    const nodoRiga = $from.node(profondita + 1);
+    return {
+      tabella: $from.node(profondita),
+      posTabella: $from.before(profondita),
+      riga,
+      colonna: $from.index(profondita + 1),
+      ripetiPer: riga === 0 ? null : ((nodoRiga.attrs['ripeti_per'] as string | null) ?? null),
+      intestazione: riga === 0,
+    };
+  }
+  return null;
+}
+
+function nuovaRiga(colonne: number, ripetiPer: string | null = null): NodoPm {
+  return N['riga'].create(
+    { ripeti_per: ripetiPer },
+    Array.from({ length: colonne }, () => N['cella'].create()),
+  );
+}
+
+/** Ricostruisce la tabella col cursore e lo rimette nella cella indicata. */
+function sostituisciTabella(
+  stato: EditorState,
+  dispatch: ((tr: ReturnType<EditorState['tr']['scrollIntoView']>) => void) | undefined,
+  posizione: PosizioneTabella,
+  righe: NodoPm[],
+  cursore: { riga: number; colonna: number },
+): boolean {
+  if (dispatch) {
+    const nuova = N['tabella'].create(posizione.tabella.attrs, righe);
+    const tr = stato.tr.replaceWith(
+      posizione.posTabella,
+      posizione.posTabella + posizione.tabella.nodeSize,
+      nuova,
+    );
+    tr.setSelection(
+      TextSelection.create(tr.doc, posizioneCella(nuova, posizione.posTabella, cursore)),
+    );
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+function posizioneCella(
+  tabella: NodoPm,
+  posTabella: number,
+  cella: { riga: number; colonna: number },
+): number {
+  let pos = posTabella + 1;
+  const riga = Math.min(cella.riga, tabella.childCount - 1);
+  for (let i = 0; i < riga; i += 1) pos += tabella.child(i).nodeSize;
+  const nodoRiga = tabella.child(riga);
+  pos += 1;
+  const colonna = Math.min(cella.colonna, nodoRiga.childCount - 1);
+  for (let i = 0; i < colonna; i += 1) pos += nodoRiga.child(i).nodeSize;
+  return pos + 1;
+}
+
+/** Una tabella dopo il blocco col cursore: intestazione e una riga vuota. */
+export function comandoInserisciTabella(colonne = 3): Command {
+  return (stato, dispatch) => {
+    if (posizioneInTabella(stato)) return false;
+    const { nodo, pos } = blocchiSelezionati(stato).at(-1)!;
+    if (dispatch) {
+      const tabella = N['tabella'].create(null, [
+        N['riga_intestazione'].create(
+          null,
+          Array.from({ length: colonne }, (_, i) =>
+            N['cella_intestazione'].create(null, schema.text(`Colonna ${i + 1}`)),
+          ),
+        ),
+        nuovaRiga(colonne),
+      ]);
+      const vuoto = testuale(nodo) && nodo.content.size === 0;
+      const dove = vuoto ? pos : pos + nodo.nodeSize;
+      const tr = vuoto
+        ? stato.tr.replaceWith(pos, pos + nodo.nodeSize, [tabella, N['paragrafo'].create()])
+        : stato.tr.insert(dove, [tabella, N['paragrafo'].create()]);
+      tr.setSelection(
+        TextSelection.create(tr.doc, posizioneCella(tabella, dove, { riga: 0, colonna: 0 })),
+      );
+      dispatch(tr.scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/** Una riga sotto quella col cursore (sotto l'intestazione, se il cursore e' li'). */
+export const comandoAggiungiRiga: Command = (stato, dispatch) => {
+  const posizione = posizioneInTabella(stato);
+  if (!posizione) return false;
+  const righe: NodoPm[] = [];
+  posizione.tabella.forEach((riga) => righe.push(riga));
+  righe.splice(posizione.riga + 1, 0, nuovaRiga(posizione.tabella.firstChild!.childCount));
+  return sostituisciTabella(stato, dispatch, posizione, righe, {
+    riga: posizione.riga + 1,
+    colonna: 0,
+  });
+};
+
+/** Toglie la riga col cursore; l'intestazione e l'ultima riga restano. */
+export const comandoTogliRiga: Command = (stato, dispatch) => {
+  const posizione = posizioneInTabella(stato);
+  if (!posizione || posizione.intestazione || posizione.tabella.childCount <= 2) return false;
+  const righe: NodoPm[] = [];
+  posizione.tabella.forEach((riga, _pos, i) => {
+    if (i !== posizione.riga) righe.push(riga);
+  });
+  return sostituisciTabella(stato, dispatch, posizione, righe, {
+    riga: Math.min(posizione.riga, righe.length - 1),
+    colonna: posizione.colonna,
+  });
+};
+
+/** Una colonna a destra di quella col cursore, in tutte le righe. */
+export const comandoAggiungiColonna: Command = (stato, dispatch) => {
+  const posizione = posizioneInTabella(stato);
+  if (!posizione) return false;
+  const righe: NodoPm[] = [];
+  posizione.tabella.forEach((riga, _pos, i) => {
+    const celle: NodoPm[] = [];
+    riga.forEach((cella) => celle.push(cella));
+    celle.splice(
+      posizione.colonna + 1,
+      0,
+      i === 0 ? N['cella_intestazione'].create(null, schema.text('Colonna')) : N['cella'].create(),
+    );
+    righe.push(riga.type.create(riga.attrs, celle));
+  });
+  return sostituisciTabella(stato, dispatch, posizione, righe, {
+    riga: posizione.riga,
+    colonna: posizione.colonna + 1,
+  });
+};
+
+/** Toglie la colonna col cursore da tutte le righe; l'ultima resta. */
+export const comandoTogliColonna: Command = (stato, dispatch) => {
+  const posizione = posizioneInTabella(stato);
+  if (!posizione || posizione.tabella.firstChild!.childCount <= 1) return false;
+  const righe: NodoPm[] = [];
+  posizione.tabella.forEach((riga) => {
+    const celle: NodoPm[] = [];
+    riga.forEach((cella, _pos, i) => {
+      if (i !== posizione.colonna) celle.push(cella);
+    });
+    righe.push(riga.type.create(riga.attrs, celle));
+  });
+  return sostituisciTabella(stato, dispatch, posizione, righe, {
+    riga: posizione.riga,
+    colonna: Math.max(0, posizione.colonna - 1),
+  });
+};
+
+/**
+ * La riga col cursore si ripete per ogni elemento di `campo` (FR-016), o torna
+ * fissa con `null`. Non sull'intestazione, che esce una volta sola.
+ */
+export function comandoRipetiRiga(campo: string | null): Command {
+  return (stato, dispatch) => {
+    const posizione = posizioneInTabella(stato);
+    if (!posizione || posizione.intestazione) return false;
+    if (dispatch) {
+      let pos = posizione.posTabella + 1;
+      for (let i = 0; i < posizione.riga; i += 1) pos += posizione.tabella.child(i).nodeSize;
+      dispatch(stato.tr.setNodeMarkup(pos, undefined, { ripeti_per: campo }));
+    }
+    return true;
+  };
+}
+
+/** Toglie la tabella col cursore, lasciando un capoverso al suo posto. */
+export const comandoEliminaTabella: Command = (stato, dispatch) => {
+  const posizione = posizioneInTabella(stato);
+  if (!posizione) return false;
+  if (dispatch) {
+    const tr = stato.tr.replaceWith(
+      posizione.posTabella,
+      posizione.posTabella + posizione.tabella.nodeSize,
+      N['paragrafo'].create(),
+    );
+    tr.setSelection(TextSelection.create(tr.doc, posizione.posTabella + 1));
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+};
+
+/** Invio in una cella va a capo nella cella: dividerla romperebbe le colonne. */
+const invioInCella: Command = (stato, dispatch) => {
+  const genitore = stato.selection.$from.parent.type;
+  if (genitore === N['cella_intestazione']) return true;
+  if (genitore !== N['cella']) return false;
+  return aCapo(stato, dispatch);
+};
+
+/** Tab e Maiusc+Tab passano di cella in cella, come in Word. */
+function spostaCella(verso: 1 | -1): Command {
+  return (stato, dispatch) => {
+    const posizione = posizioneInTabella(stato);
+    if (!posizione) return false;
+    const colonne = posizione.tabella.firstChild!.childCount;
+    const indice = posizione.riga * colonne + posizione.colonna + verso;
+    if (indice < 0 || indice >= posizione.tabella.childCount * colonne) return true;
+    if (dispatch) {
+      const cella = { riga: Math.floor(indice / colonne), colonna: indice % colonne };
+      const pos = posizioneCella(posizione.tabella, posizione.posTabella, cella);
+      dispatch(stato.tr.setSelection(TextSelection.create(stato.doc, pos)));
+    }
+    return true;
+  };
+}
 
 /**
  * Ricompone in capoversi le righe selezionate di un testo spezzato dalla
@@ -1181,15 +1556,17 @@ export function tastiera(cronologia: Cronologia): Plugin[] {
       'Ctrl-b': comandoEnfasi('grassetto'),
       'Ctrl-i': comandoEnfasi('corsivo'),
       'Ctrl-u': comandoEnfasi('sottolineato'),
-      Enter: chainCommands(invioSuVoceVuota, dividiVoce, dividiCapoverso),
+      Enter: chainCommands(invioInCella, invioSuVoceVuota, dividiVoce, dividiCapoverso),
       'Shift-Enter': aCapo,
       Backspace: backspaceInizioVoce,
       // Tab non deve mai portare il fuoco fuori dal testo.
       Tab: (stato, dispatch) => {
+        if (spostaCella(1)(stato, dispatch)) return true;
         comandoLivello(1)(stato, dispatch);
         return true;
       },
       'Shift-Tab': (stato, dispatch) => {
+        if (spostaCella(-1)(stato, dispatch)) return true;
         comandoLivello(0)(stato, dispatch);
         return true;
       },

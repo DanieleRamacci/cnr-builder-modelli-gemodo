@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 from app.quality.errors import ContrattoNonValidoError
 from app.quality.manifest_loader import load_yaml
-from app.documentale.schemas import CornicePagina, FrammentoTesto
+from app.documentale.schemas import CornicePagina, FrammentoTesto, segnaposti_nei_frammenti
 from app.quality.schemas import BloccoDocumento, ModelloDocumentaleControllato, PosizionamentoBlocco, TipoBloccoDocumento
 
 # Compatible positions per block type (data-model.md: "il posizionamento deve essere
@@ -108,6 +108,101 @@ def _collegamento_ammesso(collegamento: str) -> bool:
     return parti.scheme.lower() == "mailto" or bool(parti.netloc)
 
 
+def _validate_righe(dove: str, blocco: BloccoDocumento, violazioni: list[str]) -> None:
+    """Le righe di una tabella: solo su TABELLA, una cella per colonna (014 R6)."""
+    if not blocco.righe:
+        return
+    if blocco.tipo is not TipoBloccoDocumento.TABELLA:
+        violazioni.append(f"{dove}: righe ammesse solo su un blocco TABELLA")
+        return
+    for indice, riga in enumerate(blocco.righe):
+        if len(riga.celle) != len(blocco.colonne):
+            violazioni.append(
+                f"{dove}, riga {indice + 1}: {len(riga.celle)} celle per {len(blocco.colonne)} colonne"
+            )
+        for colonna, cella in enumerate(riga.celle):
+            _validate_frammenti(f"{dove}, riga {indice + 1}, colonna {colonna + 1}", cella.frammenti, violazioni)
+
+
+def segnaposti_elemento(campo: str, sotto_campi: set[str]) -> set[str]:
+    """I segnaposti ammessi in una riga ripetuta su `campo` (014 FR-016)."""
+    return {f"{campo}.codice", f"{campo}.descrizione", *(f"{campo}.campi.{s}" for s in sotto_campi)}
+
+
+def violazioni_righe_ripetute(
+    blocchi: list[BloccoDocumento],
+    *,
+    ripetibili: dict[str, set[str]],
+    multiplo: bool,
+    pubblicazione: bool = False,
+) -> list[str]:
+    """Dove possono stare i segnaposti dei campi ripetibili (014 FR-016b, FR-016h, FR-009d).
+
+    `ripetibili` mappa il codice di ogni campo ripetibile della versione ai
+    codici dei suoi sotto-campi. Il segnaposto di un elemento ha senso solo
+    dentro una riga che si ripete su quel campo: fuori, non si saprebbe di
+    quale elemento parla. Un segnaposto del padre dentro la riga ripetuta si
+    ripeterebbe uguale su ogni riga, ed e' quasi sempre un errore di
+    inserimento: va in una riga fissa.
+
+    `pubblicazione` aggiunge cio' che vale solo per un modello finito: un
+    modello multiplo deve impaginare ogni suo campo ripetibile, ma durante la
+    stesura la tabella puo' non esserci ancora.
+    """
+    violazioni: list[str] = []
+    di_elemento = {nome: campo for campo, sotto in ripetibili.items() for nome in segnaposti_elemento(campo, sotto)}
+    impaginati: set[str] = set()
+
+    def fuori_riga(dove: str, frammenti: list[FrammentoTesto]) -> None:
+        for nome in segnaposti_nei_frammenti(frammenti):
+            if nome in di_elemento:
+                violazioni.append(
+                    f"{dove}: il segnaposto '{{{{{nome}}}}}' e' di un elemento di '{di_elemento[nome]}' "
+                    "e sta solo in una riga di tabella ripetuta su quel campo"
+                )
+
+    for blocco in blocchi:
+        dove = f"blocco {blocco.id}"
+        fuori_riga(dove, blocco.frammenti)
+        for indice, elemento in enumerate(blocco.elementi):
+            fuori_riga(f"{dove}, elemento {indice}", elemento.frammenti)
+        ripetute_qui: dict[str, int] = {}
+        for numero, riga in enumerate(blocco.righe, start=1):
+            dove_riga = f"{dove}, riga {numero}"
+            if riga.ripeti_per is None:
+                for cella in riga.celle:
+                    fuori_riga(dove_riga, cella.frammenti)
+                continue
+            if not multiplo:
+                violazioni.append(f"{dove_riga}: un modello singolo non ha righe ripetute")
+                continue
+            if riga.ripeti_per not in ripetibili:
+                violazioni.append(f"{dove_riga}: '{riga.ripeti_per}' non e' un campo ripetibile del modello")
+                continue
+            ripetute_qui[riga.ripeti_per] = ripetute_qui.get(riga.ripeti_per, 0) + 1
+            impaginati.add(riga.ripeti_per)
+            ammessi = segnaposti_elemento(riga.ripeti_per, ripetibili[riga.ripeti_per])
+            for cella in riga.celle:
+                for nome in segnaposti_nei_frammenti(cella.frammenti):
+                    if nome not in ammessi:
+                        violazioni.append(
+                            f"{dove_riga}: il segnaposto '{{{{{nome}}}}}' non e' di un elemento di "
+                            f"'{riga.ripeti_per}'; in una riga ripetuta vanno solo i suoi"
+                        )
+        for campo, quante in ripetute_qui.items():
+            if quante > 1:
+                violazioni.append(
+                    f"{dove}: {quante} righe ripetute su '{campo}' nella stessa tabella, ne e' ammessa una"
+                )
+    if multiplo and pubblicazione:
+        for campo in sorted(set(ripetibili) - impaginati):
+            violazioni.append(
+                f"il modello multiplo non ha una riga di tabella ripetuta per '{campo}': "
+                "senza, le articolazioni non comparirebbero nel documento"
+            )
+    return violazioni
+
+
 def violazioni_struttura_blocchi(blocchi: list[BloccoDocumento]) -> list[str]:
     """Cio' che rende un blocco non ammesso nel formato, indipendentemente dai dati (012 T007).
 
@@ -123,6 +218,7 @@ def violazioni_struttura_blocchi(blocchi: list[BloccoDocumento]) -> list[str]:
     for blocco in blocchi:
         dove = f"blocco {blocco.id}"
         _validate_frammenti(dove, blocco.frammenti, violazioni)
+        _validate_righe(dove, blocco, violazioni)
         if blocco.tipo in _SENZA_FRAMMENTI and blocco.frammenti:
             violazioni.append(f"{dove}: un blocco {blocco.tipo.value} non porta frammenti propri")
         if blocco.tipo is not TipoBloccoDocumento.ELENCO:

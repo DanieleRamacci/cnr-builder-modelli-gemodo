@@ -1,7 +1,7 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/012-editor-documento-fedele/plan.md
+at specs/014-articolazioni-bando/plan.md
 <!-- SPECKIT END -->
 
 ## Documentazione di riferimento

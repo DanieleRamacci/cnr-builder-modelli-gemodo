@@ -3,10 +3,11 @@ import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } fr
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { ApiError } from '../../shared/api-error';
 
-import {
-  TipiDocumentoService,
-  type StrutturaTipoDocumento,
-} from './tipi-documento.service';
+import { TipiDocumentoService, type StrutturaTipoDocumento } from './tipi-documento.service';
+
+type SottoCampo = NonNullable<
+  NonNullable<StrutturaTipoDocumento['campi']>[number]['campi']
+>[number];
 
 const TIPI_CAMPO = ['string', 'number', 'boolean', 'date', 'object', 'array'] as const;
 const LINGUE = ['IT', 'EN'] as const;
@@ -45,7 +46,10 @@ export class TipoDocumentoStrutturaComponent {
   protected readonly salvatoOra = signal(false);
 
   protected readonly identita = this.fb.nonNullable.group({
-    codice: [{ value: this.codiceEsistente ?? '', disabled: this.modalitaModifica }, [Validators.required, Validators.maxLength(128)]],
+    codice: [
+      { value: this.codiceEsistente ?? '', disabled: this.modalitaModifica },
+      [Validators.required, Validators.maxLength(128)],
+    ],
     nome: ['', [Validators.required, Validators.maxLength(200)]],
     codiceContesto: ['', [Validators.required, Validators.maxLength(64)]],
   });
@@ -89,7 +93,11 @@ export class TipoDocumentoStrutturaComponent {
     }
   }
 
-  private nuovaTipologia(valore?: { codice: string; descrizione: string; riferimento_esterno?: string | null }) {
+  private nuovaTipologia(valore?: {
+    codice: string;
+    descrizione: string;
+    riferimento_esterno?: string | null;
+  }) {
     return this.fb.nonNullable.group({
       codice: [valore?.codice ?? '', Validators.required],
       descrizione: [valore?.descrizione ?? '', Validators.required],
@@ -97,7 +105,11 @@ export class TipoDocumentoStrutturaComponent {
     });
   }
 
-  private nuovoAttributo(valore?: { nome: string; valori_ammessi: string[]; valore_default?: string | null }) {
+  private nuovoAttributo(valore?: {
+    nome: string;
+    valori_ammessi: string[];
+    valore_default?: string | null;
+  }) {
     return this.fb.nonNullable.group({
       nome: [valore?.nome ?? '', Validators.required],
       valoriAmmessi: [(valore?.valori_ammessi ?? []).join(', '), Validators.required],
@@ -110,7 +122,9 @@ export class TipoDocumentoStrutturaComponent {
     descrizione: string;
     attributi?: { nome: string; valori_ammessi: string[]; valore_default?: string | null }[];
   }) {
-    const attributi = this.fb.array<FormGroup>((valore?.attributi ?? []).map((a) => this.nuovoAttributo(a)));
+    const attributi = this.fb.array<FormGroup>(
+      (valore?.attributi ?? []).map((a) => this.nuovoAttributo(a)),
+    );
     return this.fb.group({
       codice: this.fb.nonNullable.control(valore?.codice ?? '', Validators.required),
       descrizione: this.fb.nonNullable.control(valore?.descrizione ?? '', Validators.required),
@@ -133,6 +147,7 @@ export class TipoDocumentoStrutturaComponent {
     obbligatorio: boolean;
     ordine: number;
     dipende_da_attributo_profilo?: string | null;
+    campi?: SottoCampo[] | null;
   }) {
     return this.fb.nonNullable.group({
       codice: [valore?.codice ?? '', Validators.required],
@@ -142,6 +157,10 @@ export class TipoDocumentoStrutturaComponent {
       obbligatorio: [valore?.obbligatorio ?? true],
       ordine: [valore?.ordine ?? this.campi.length + 1, [Validators.required, Validators.min(1)]],
       dipendeDaAttributoProfilo: [valore?.dipende_da_attributo_profilo ?? ''],
+      // 014: i sotto-campi di un campo ripetibile non hanno ancora un editor
+      // qui; si conservano cosi' come arrivano (dal JSON della struttura) e
+      // si rimandano al salvataggio, invece di perderli in silenzio.
+      sottoCampi: this.fb.nonNullable.control<SottoCampo[] | null>(valore?.campi ?? null),
     });
   }
 
@@ -217,7 +236,9 @@ export class TipoDocumentoStrutturaComponent {
     this.profili.clear();
     (struttura.profili ?? []).forEach((p) => this.profili.push(this.nuovoProfilo(p)));
     this.combinazioni.clear();
-    (struttura.combinazioni ?? []).forEach((c) => this.combinazioni.push(this.nuovaCombinazione(c)));
+    (struttura.combinazioni ?? []).forEach((c) =>
+      this.combinazioni.push(this.nuovaCombinazione(c)),
+    );
     this.linguePossibili.setValue({
       IT: (struttura.lingue_possibili ?? []).includes('IT'),
       EN: (struttura.lingue_possibili ?? []).includes('EN'),
@@ -262,6 +283,9 @@ export class TipoDocumentoStrutturaComponent {
         obbligatorio: c.value.obbligatorio,
         ordine: c.value.ordine,
         dipende_da_attributo_profilo: c.value.dipendeDaAttributoProfilo || null,
+        ...(c.value.tipo === 'array' && c.value.sottoCampi?.length
+          ? { campi: c.value.sottoCampi }
+          : {}),
       })),
     };
   }
@@ -291,14 +315,12 @@ export class TipoDocumentoStrutturaComponent {
     }
 
     const { codice, nome, codiceContesto } = this.identita.getRawValue();
-    this.service
-      .crea({ codice, nome, codice_contesto: codiceContesto, struttura })
-      .subscribe({
-        next: () => this.router.navigate(['/configurazione/tipi-documento', codice]),
-        error: (error: ApiError) => {
-          this.salvataggio.set(false);
-          this.errore.set(error.messaggio);
-        },
-      });
+    this.service.crea({ codice, nome, codice_contesto: codiceContesto, struttura }).subscribe({
+      next: () => this.router.navigate(['/configurazione/tipi-documento', codice]),
+      error: (error: ApiError) => {
+        this.salvataggio.set(false);
+        this.errore.set(error.messaggio);
+      },
+    });
   }
 }

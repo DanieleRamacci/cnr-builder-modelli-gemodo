@@ -4,17 +4,24 @@ import { EditorState, TextSelection, type Command } from 'prosemirror-state';
 import {
   STILI,
   blocchiDaDocumento,
+  comandoAggiungiColonna,
+  comandoAggiungiRiga,
   comandoElenco,
   comandoEnfasi,
+  comandoInserisciTabella,
   comandoInterruzione,
   comandoLivello,
+  comandoRipetiRiga,
   comandoStile,
   comandoTesto,
+  comandoTogliColonna,
+  comandoTogliRiga,
   comandoUnisciRighe,
   creaStato,
   documentoDaBlocchi,
   impronta,
   porzioneDaIncollare,
+  posizioneInTabella,
   type BloccoDocumento,
 } from './documento-editor';
 import type { FrammentoTesto } from './frammenti';
@@ -328,5 +335,102 @@ describe('unisci righe (riscontro del 2026-10-02)', () => {
     const blocchi = blocchiDaDocumento(esegui(selezione, comandoUnisciRighe).doc);
     expect(blocchi.map((b) => b.tipo)).toEqual(['ELENCO', 'ELENCO']);
     expect(blocchi[0].elementi![0].frammenti).toEqual([{ testo: 'ai sensi del D.P.R. 487/1994;' }]);
+  });
+});
+
+describe('tabella con riga ripetuta (014)', () => {
+  function tabella(): BloccoDocumento {
+    return blocco('posti', [], {
+      tipo: 'TABELLA',
+      colonne: ['Codice', 'Posti'],
+      righe: [
+        {
+          ripeti_per: 'articolazioni',
+          celle: [
+            { frammenti: [{ testo: '{{articolazioni.campi.codice_bando}}' }] },
+            { frammenti: [{ testo: '{{articolazioni.campi.numero_posti}}', grassetto: true }] },
+          ],
+        },
+        {
+          ripeti_per: null,
+          celle: [
+            { frammenti: [{ testo: 'Totale' }] },
+            { frammenti: [{ testo: '{{numero_posti}}' }] },
+          ],
+        },
+      ],
+    });
+  }
+
+  function nellaCella(s: EditorState, testo: string): EditorState {
+    const { da } = posizioneDi(s, testo);
+    return s.apply(s.tr.setSelection(TextSelection.create(s.doc, da)));
+  }
+
+  it('torna uguale dopo andata e ritorno, con i segnaposti delle celle', () => {
+    const [risultato] = blocchiDaDocumento(documentoDaBlocchi([tabella()]), 'art');
+    expect(risultato.colonne).toEqual(['Codice', 'Posti']);
+    expect(risultato.righe).toEqual(tabella().righe);
+    expect(risultato.placeholder_usati).toEqual([
+      'articolazioni.campi.codice_bando',
+      'articolazioni.campi.numero_posti',
+      'numero_posti',
+    ]);
+    expect(impronta([risultato])).toBe(
+      impronta([{ ...tabella(), placeholder_usati: risultato.placeholder_usati }]),
+    );
+  });
+
+  it('una tabella di prima della 014, senza righe, resta intatta', () => {
+    const vecchia = blocco('t', [{ testo: 'testo libero' }], { tipo: 'TABELLA', colonne: ['A'] });
+    const [risultato] = blocchiDaDocumento(documentoDaBlocchi([vecchia]), 'art');
+    expect(risultato).toEqual(vecchia);
+  });
+
+  it('si inserisce, si allarga e si stringe tenendo una cella per colonna', () => {
+    let s = esegui(stato([blocco('a', [{ testo: 'Premessa' }])]), comandoInserisciTabella(2));
+    s = esegui(s, comandoAggiungiRiga);
+    s = esegui(s, comandoAggiungiColonna);
+    let [, tab] = blocchiDaDocumento(s.doc, 'art');
+    expect(tab.tipo).toBe('TABELLA');
+    expect(tab.colonne).toHaveLength(3);
+    expect(tab.righe).toHaveLength(2);
+    expect(tab.righe!.every((riga) => riga.celle.length === 3)).toBe(true);
+    s = esegui(s, comandoTogliColonna);
+    s = esegui(s, comandoTogliRiga);
+    [, tab] = blocchiDaDocumento(s.doc, 'art');
+    expect(tab.colonne).toHaveLength(2);
+    expect(tab.righe).toHaveLength(1);
+  });
+
+  it('la riga col cursore si ripete per un campo e torna fissa', () => {
+    let s = nellaCella(stato([tabella()]), 'Totale');
+    expect(posizioneInTabella(s)).toMatchObject({ riga: 2, colonna: 0, ripetiPer: null });
+    s = esegui(s, comandoRipetiRiga('articolazioni'));
+    expect(blocchiDaDocumento(s.doc, 'art')[0].righe![1].ripeti_per).toBe('articolazioni');
+    s = esegui(s, comandoRipetiRiga(null));
+    expect(blocchiDaDocumento(s.doc, 'art')[0].righe![1].ripeti_per).toBeNull();
+    // L'intestazione non si ripete.
+    const intestazione = nellaCella(stato([tabella()]), 'Codice');
+    expect(comandoRipetiRiga('articolazioni')(intestazione)).toBe(false);
+  });
+
+  it('Invio in una cella va a capo senza dividere la cella', () => {
+    const s = nellaCella(stato([tabella()]), 'Totale');
+    const dopo = esegui(s, (st, d) => {
+      const evento = new KeyboardEvent('keydown', { key: 'Enter' });
+      return creaStato([tabella()], () => 'art', NESSUNA_CRONOLOGIA).plugins.some((plugin) =>
+        plugin.props.handleKeyDown?.call(plugin, { state: st, dispatch: d } as never, evento),
+      );
+    });
+    const [tab] = blocchiDaDocumento(dopo.doc, 'art');
+    expect(tab.righe![1].celle).toHaveLength(2);
+    expect(tab.righe![1].celle[0].frammenti.map((f) => f.testo).join('')).toBe('\nTotale');
+  });
+
+  it('i comandi di stile ed elenco non toccano la tabella', () => {
+    const s = nellaCella(stato([tabella()]), 'Totale');
+    expect(comandoStile(STILI[1])(s)).toBe(false);
+    expect(comandoElenco('NUMERICO')(s)).toBe(false);
   });
 });

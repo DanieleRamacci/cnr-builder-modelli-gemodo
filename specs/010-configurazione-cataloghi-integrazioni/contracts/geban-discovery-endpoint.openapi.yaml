@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contratto Endpoint Di Discovery GEBAN -> GEMODO
-  version: 0.7.0
+  version: 0.8.0
   description: >
     Questo file descrive la modalita ad albero completo. La proposta alternativa
     a piu' endpoint e' in `geban-discovery-per-nodi.openapi.yaml`, con la guida
@@ -11,8 +11,15 @@ info:
     TEAM GEBAN DEVE COSTRUIRE.
 
     Guida generica al contratto dati (grammatica, conformita', validazione dei
-    dati, campi ripetibili proposti per la 0.8.0 dalla spec 014):
-    `docs/contratto-dati.md`, pubblicata nella documentazione di progetto.
+    dati, campi ripetibili): `docs/contratto-dati.md`, pubblicata nella
+    documentazione di progetto.
+
+    **0.8.0** (spec 014): un campo `tipo: array` puo' dichiarare `campi`, i
+    sotto-campi che ha ogni elemento (es. le articolazioni di un bando con
+    piu' tematiche). La grammatica del campo e' chiusa: una chiave non
+    prevista rende la risposta non conforme, salvo le chiavi che iniziano
+    con `_`, ignorate come annotazioni. Ogni albero valido con la 0.7.0 che
+    non porta chiavi sconosciute nei campi resta valido.
 
 
     ## Cosa devi fare, in sintesi
@@ -50,8 +57,8 @@ info:
     restare identica ovunque, a qualunque livello e per qualunque tipo
     documento, e' la struttura di un singolo campo**
     (`components.schemas.CampoContrattoDati`): codice, etichetta, tipo,
-    obbligatorio, ordine, e i facoltativi lingua, descrizione, validazione -
-    sempre questi attributi, sempre con questo significato, indipendentemente
+    obbligatorio, ordine, e i facoltativi lingua, descrizione, validazione,
+    piu' `campi` solo sui campi ripetibili (0.8.0) - sempre questi attributi, sempre con questo significato, indipendentemente
     da dove nell'albero compare il campo. La lingua sta sulla foglia
     (`lingue`) e non dentro ogni campo: sul campo e' ammessa, dalla 0.7.0,
     solo per restringerlo a una lingua sola.
@@ -267,6 +274,32 @@ components:
                       validazione:
                         fonte_opzioni: profilo.livelli_possibili
                         default: profilo.livello_base
+                    - codice: articolazioni
+                      etichetta: Tematiche del bando
+                      tipo: array
+                      obbligatorio: false
+                      ordine: 8
+                      descrizione: >-
+                        Facoltativo (0.8.0). Sottobandi del bando: qui si
+                        dichiarano i dati di OGNI sottobando, una volta sola.
+                        I sottobandi reali (codice, descrizione, valori)
+                        arrivano nei dati della generazione.
+                      campi:
+                        - codice: codice_bando
+                          etichetta: Codice sottobando
+                          tipo: string
+                          obbligatorio: true
+                          ordine: 1
+                        - codice: numero_posti
+                          etichetta: Numero posti sottobando
+                          tipo: number
+                          obbligatorio: true
+                          ordine: 2
+                        - codice: sede_lavoro
+                          etichetta: Sede lavoro sottobando
+                          tipo: string
+                          obbligatorio: true
+                          ordine: 3
         ALTRO_TIPO_DOCUMENTO_ESEMPIO:
           _nota: >-
             Placeholder - se volete integrare anche un altro tipo documento
@@ -477,3 +510,36 @@ components:
             `{"fonte_opzioni": "profilo.<nome_attributo>", "default":
             "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il
             profilo scelto in fase di creazione modello.
+        campi:
+          type: array
+          minItems: 1
+          description: >
+            **0.8.0, facoltativo.** Ammesso solo con `tipo: array`: rende il
+            campo **ripetibile** ed elenca i sotto-campi che ha ogni elemento.
+            Un solo livello: i sotto-campi non possono essere `array` ne'
+            `object`; i loro codici sono unici. Un campo `array` senza
+            `campi` resta una lista semplice di valori, come prima. Nei dati
+            ogni elemento e' `{codice, descrizione, campi}`.
+          items:
+            $ref: "#/components/schemas/SottoCampoContrattoDati"
+    SottoCampoContrattoDati:
+      type: object
+      description: >
+        Sotto-campo di un campo ripetibile (0.8.0). Stessa forma di
+        CampoContrattoDati, senza `campi` e con tipo scalare. Stesse regole
+        sulle chiavi: sconosciute non conformi, `_` ammesse come annotazioni.
+      required: [codice, etichetta, tipo, obbligatorio, ordine]
+      properties:
+        codice: {type: string, example: numero_posti}
+        etichetta: {type: string, example: Numero posti sottobando}
+        tipo:
+          type: string
+          enum: [string, number, date, boolean]
+        lingua:
+          type: string
+          enum: [IT, EN]
+          nullable: true
+        obbligatorio: {type: boolean}
+        ordine: {type: integer, minimum: 1}
+        descrizione: {type: string, nullable: true}
+        validazione: {type: object, nullable: true}

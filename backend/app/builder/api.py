@@ -147,6 +147,7 @@ def dettaglio_modello(
                         "obbligatorio": campo.obbligatorio,
                         "ordine": campo.ordine,
                         "descrizione": campo.descrizione,
+                        "sotto_campi": campo.sotto_campi,
                     }
                     for campo in sorted(v.campi, key=lambda c: (c.ordine, c.codice))
                 ],
@@ -172,6 +173,7 @@ def _modello_response(modello: ModelloDocumento) -> ModelloResponse:
         livello_professionale=modello.dimensioni.get(NOME_LIVELLO),
         derivato_da_modello_id=str(modello.derivato_da_modello_id) if modello.derivato_da_modello_id else None,
         nota=modello.nota,
+        multiplo=modello.multiplo,
     )
 
 
@@ -348,6 +350,16 @@ def crea_variante(
     di una dimensione e non la variante.
     """
     return _modello_gestione_response(service.crea_variante(principal, modelloId, request))
+
+
+@router.post("/modelli/{modelloId}/multiplo", response_model=ModelloGestioneResponse, status_code=201)
+def crea_multiplo(
+    modelloId: uuid.UUID,
+    principal: PrincipalGEMODO = Depends(require_principal),
+    service: BuilderService = Depends(get_builder_service),
+) -> ModelloGestioneResponse:
+    """Il modello multiplo della stessa categorizzazione, dal testo del singolo (014 FR-009e)."""
+    return _modello_gestione_response(service.crea_multiplo(principal, modelloId))
 
 
 @router.post("/modelli/{modelloId}/versioni", response_model=VersioneResponse, status_code=201)

@@ -14,6 +14,7 @@ interno (FR-045). Il payload di errore segue la forma gia' definita dal contratt
 | Codice | HTTP status | Api scope | Messaggio pubblico | Condizione | Azione suggerita | Audit | Spec owner |
 |---|---|---|---|---|---|---|---|
 | `CAMPO_OBBLIGATORIO` | 400 | GEBAN | Campo obbligatorio mancante nel payload | Un campo richiesto dal contratto dati del modello non e' presente o e' vuoto | Verificare i campi richiesti restituiti da `GET /catalogo/modelli/{id}/campi-richiesti` | No | `001-catalogo-contratto-geban` |
+| `CODICE_ELEMENTO_DUPLICATO` | 400 | GEBAN | Codice di elemento ripetuto | Due elementi di un campo ripetibile (es. `articolazioni`) hanno lo stesso `codice`; l'errore e' sul campo ripetibile | Dare a ogni elemento un `codice` unico nella lista | No | `014-articolazioni-bando` |
 | `TIPOLOGIA_SOL_NON_VALIDA` | Legacy | GEBAN | Codice storico, non emesso dalla ricerca v0.4 | Validazione contro allowlist locale ritirata da 010 FR-016 | Nessuna corrispondenza nella ricerca corrente produce HTTP 200 con modelli vuoti | No | `001-catalogo-contratto-geban` |
 | `DISCOVERY_NON_CONFIGURATA` | 503 | BUILDER | Endpoint discovery non configurato | Mappa operativa assente/non valida per il tipo documento | Configurare URL approvata, nessun fallback locale | No | `010-configurazione-cataloghi-integrazioni` |
 | `DISCOVERY_NON_DISPONIBILE` | 503 | BUILDER | Servizio discovery non disponibile | Timeout/errore HTTP/rete esterna | Verificare disponibilita' del servizio | No | `010-configurazione-cataloghi-integrazioni` |

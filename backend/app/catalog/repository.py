@@ -72,6 +72,8 @@ def list_published_model_versions(
     data_riferimento: date | None = None,
     pubblicato_da: date | None = None,
     pubblicato_a: date | None = None,
+    # 014: None non filtra (letture interne); il catalogo passa sempre un valore.
+    multiplo: bool | None = None,
 ) -> list[ModelloDocumentoVersione]:
     stmt = (
         select(ModelloDocumentoVersione)
@@ -117,6 +119,8 @@ def list_published_model_versions(
         stmt = stmt.where(ModelloDocumento.dimensioni[nome].astext == valore)
     for nome in (dimensioni_generiche or ()):
         stmt = stmt.where(~ModelloDocumento.dimensioni.has_key(nome))  # noqa: W601 - operatore JSONB
+    if multiplo is not None:
+        stmt = stmt.where(ModelloDocumento.multiplo == multiplo)
     return list(db.scalars(stmt))
 
 

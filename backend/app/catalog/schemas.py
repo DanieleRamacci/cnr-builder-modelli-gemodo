@@ -39,6 +39,8 @@ class ModelloCatalogoSchema(BaseModel):
     codice: str
     descrizione: str
     variante: str = "STANDARD"
+    # 014: modello per bandi con articolazioni.
+    multiplo: bool = False
     # 011 DEC-011-CONTRATTO-GEBAN-ADDITIVO. `lingua` diventa nullable: e' una
     # modifica schema-breaking ma behavior-safe, perche' `search_modelli` impone
     # `tipo_documento`, quindi GEBAN non riceve mai una risposta mista, e tutti
@@ -113,6 +115,9 @@ class CampoRichiestoSchema(BaseModel):
     ordine: int
     descrizione: str | None = None
     validazione: dict[str, Any] | None = None
+    # 014: solo per un campo ripetibile, i sotto-campi di ogni elemento.
+    # Assente altrove: la risposta di un bando singolo resta quella di prima.
+    campi: list[CampoRichiestoSchema] | None = Field(default=None, exclude_if=lambda campi: campi is None)
 
 
 class CampiRichiestiResponse(BaseModel):

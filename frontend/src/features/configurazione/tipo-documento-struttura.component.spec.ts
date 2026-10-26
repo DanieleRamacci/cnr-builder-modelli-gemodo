@@ -12,7 +12,11 @@ function route(codice: string | null) {
 }
 
 describe('TipoDocumentoStrutturaComponent', () => {
-  let service: { crea: ReturnType<typeof vi.fn>; aggiornaStruttura: ReturnType<typeof vi.fn>; leggiStruttura: ReturnType<typeof vi.fn> };
+  let service: {
+    crea: ReturnType<typeof vi.fn>;
+    aggiornaStruttura: ReturnType<typeof vi.fn>;
+    leggiStruttura: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     service = { crea: vi.fn(), aggiornaStruttura: vi.fn(), leggiStruttura: vi.fn() };
@@ -30,7 +34,13 @@ describe('TipoDocumentoStrutturaComponent', () => {
       ],
     });
     service.crea.mockReturnValue(
-      of({ id: '00000000-0000-4000-8000-000000000001', codice: 'NUOVO', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'INCOMPLETO' }),
+      of({
+        id: '00000000-0000-4000-8000-000000000001',
+        codice: 'NUOVO',
+        nome: 'x',
+        codice_contesto: 'demo',
+        stato_integrazione: 'INCOMPLETO',
+      }),
     );
     const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
     const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
@@ -40,7 +50,9 @@ describe('TipoDocumentoStrutturaComponent', () => {
     component['identita'].setValue({ codice: 'NUOVO', nome: 'Nuovo tipo', codiceContesto: 'demo' });
     component['tipologie'].at(0).patchValue({ codice: 'TD', descrizione: 'Tempo determinato' });
     component['profili'].at(0).patchValue({ codice: 'RIC', descrizione: 'Ricercatore' });
-    component['campi'].at(0).patchValue({ codice: 'titolo', etichetta: 'Titolo', obbligatorio: true });
+    component['campi']
+      .at(0)
+      .patchValue({ codice: 'titolo', etichetta: 'Titolo', obbligatorio: true });
     fixture.detectChanges();
 
     (component as unknown as { salva: () => void }).salva();
@@ -71,12 +83,25 @@ describe('TipoDocumentoStrutturaComponent', () => {
         combinazioni: [{ codice_tipologia: 'TD', codice_profilo: 'RIC' }],
         lingue_possibili: ['IT', 'EN'],
         campi: [
-          { codice: 'titolo', etichetta: 'Titolo', tipo: 'string', lingua: 'IT', obbligatorio: true, ordine: 1 },
+          {
+            codice: 'titolo',
+            etichetta: 'Titolo',
+            tipo: 'string',
+            lingua: 'IT',
+            obbligatorio: true,
+            ordine: 1,
+          },
         ],
       }),
     );
     service.aggiornaStruttura.mockReturnValue(
-      of({ id: '00000000-0000-4000-8000-000000000002', codice: 'ESISTENTE', nome: 'x', codice_contesto: 'demo', stato_integrazione: 'DEFINITO' }),
+      of({
+        id: '00000000-0000-4000-8000-000000000002',
+        codice: 'ESISTENTE',
+        nome: 'x',
+        codice_contesto: 'demo',
+        stato_integrazione: 'DEFINITO',
+      }),
     );
     const fixture: ComponentFixture<TipoDocumentoStrutturaComponent> = TestBed.createComponent(
       TipoDocumentoStrutturaComponent,
@@ -96,6 +121,87 @@ describe('TipoDocumentoStrutturaComponent', () => {
         campi: [expect.objectContaining({ codice: 'titolo', obbligatorio: false })],
       }),
     );
+  });
+
+  it('keeps the sub-fields of a repeatable field when saving from the form (014)', () => {
+    TestBed.configureTestingModule({
+      imports: [TipoDocumentoStrutturaComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: route('ESISTENTE') },
+        { provide: TipiDocumentoService, useValue: service },
+      ],
+    });
+    const sottoCampi = [
+      {
+        codice: 'codice_bando',
+        etichetta: 'Codice',
+        tipo: 'string' as const,
+        obbligatorio: true,
+        ordine: 1,
+      },
+      {
+        codice: 'numero_posti',
+        etichetta: 'Posti',
+        tipo: 'number' as const,
+        obbligatorio: true,
+        ordine: 2,
+      },
+    ];
+    service.leggiStruttura.mockReturnValue(
+      of({
+        tipologie: [{ codice: 'TD', descrizione: 'Tempo determinato' }],
+        profili: [{ codice: 'RIC', descrizione: 'Ricercatore', attributi: [] }],
+        combinazioni: [{ codice_tipologia: 'TD', codice_profilo: 'RIC' }],
+        lingue_possibili: ['IT'],
+        campi: [
+          {
+            codice: 'titolo',
+            etichetta: 'Titolo',
+            tipo: 'string',
+            lingua: 'IT',
+            obbligatorio: true,
+            ordine: 1,
+          },
+          {
+            codice: 'articolazioni',
+            etichetta: 'Tematiche',
+            tipo: 'array',
+            lingua: 'IT',
+            obbligatorio: false,
+            ordine: 2,
+            campi: sottoCampi,
+          },
+        ],
+      }),
+    );
+    service.aggiornaStruttura.mockReturnValue(
+      of({
+        id: '00000000-0000-4000-8000-000000000002',
+        codice: 'ESISTENTE',
+        nome: 'x',
+        codice_contesto: 'demo',
+        stato_integrazione: 'DEFINITO',
+      }),
+    );
+    const fixture = TestBed.createComponent(TipoDocumentoStrutturaComponent);
+    fixture.detectChanges();
+
+    const testo =
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="sotto-campi"]')
+        ?.textContent ?? '';
+    expect(testo).toContain('codice_bando');
+    expect(testo).toContain('numero_posti');
+
+    (fixture.componentInstance as unknown as { salva: () => void }).salva();
+
+    const inviata = service.aggiornaStruttura.mock.calls[0][1];
+    expect(inviata.campi[1]).toEqual(
+      expect.objectContaining({ codice: 'articolazioni', campi: sottoCampi }),
+    );
+    expect(inviata.campi[0]).not.toHaveProperty('campi');
   });
 
   it('fills the form from a pasted JSON instead of requiring row-by-row entry', () => {
@@ -122,7 +228,14 @@ describe('TipoDocumentoStrutturaComponent', () => {
         combinazioni: [{ codice_tipologia: 'CP', codice_profilo: 'CTER' }],
         lingue_possibili: ['IT', 'EN'],
         campi: [
-          { codice: 'titolo', etichetta: 'Titolo', tipo: 'string', lingua: 'IT', obbligatorio: true, ordine: 1 },
+          {
+            codice: 'titolo',
+            etichetta: 'Titolo',
+            tipo: 'string',
+            lingua: 'IT',
+            obbligatorio: true,
+            ordine: 1,
+          },
         ],
       }),
     );

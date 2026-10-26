@@ -395,6 +395,21 @@ export interface components {
             /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
             campi?: components["schemas"]["CampoContrattoDati"][];
         };
+        /** @description Sotto-campo di un campo ripetibile (0.8.0). Stessa forma di CampoContrattoDati, senza `campi` e con tipo scalare. Stesse regole sulle chiavi: sconosciute non conformi, `_` ammesse come annotazioni. */
+        SottoCampoContrattoDati: {
+            /** @example numero_posti */
+            codice: string;
+            /** @example Numero posti sottobando */
+            etichetta: string;
+            /** @enum {string} */
+            tipo: "string" | "number" | "date" | "boolean";
+            /** @enum {string|null} */
+            lingua?: "IT" | "EN" | null;
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+            validazione?: Record<string, never> | null;
+        };
         /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
         CampoContrattoDati: {
             /** @example numero_posti */
@@ -416,6 +431,8 @@ export interface components {
             descrizione?: string | null;
             /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
             validazione?: Record<string, never> | null;
+            /** @description **0.8.0, facoltativo.** Ammesso solo con `tipo: array`: rende il campo **ripetibile** ed elenca i sotto-campi che ha ogni elemento. Un solo livello: i sotto-campi non possono essere `array` ne' `object`; i loro codici sono unici. Un campo `array` senza `campi` resta una lista semplice di valori, come prima. Nei dati ogni elemento e' `{codice, descrizione, campi}`. */
+            campi?: components["schemas"]["SottoCampoContrattoDati"][];
         };
         StrutturaTipoDocumento: {
             /**

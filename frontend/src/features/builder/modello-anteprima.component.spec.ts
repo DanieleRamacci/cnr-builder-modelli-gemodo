@@ -437,6 +437,202 @@ describe('2b ridotta: anteprima modello', () => {
     verifica(http);
   });
 
+  // --- Bando multiplo (014) -------------------------------------------------
+
+  const articolazioni = {
+    codice: 'articolazioni',
+    etichetta: 'Tematiche',
+    tipo: 'array',
+    lingua: 'IT',
+    obbligatorio: true,
+    ordine: 3,
+    descrizione: null,
+    sotto_campi: [
+      {
+        codice: 'codice_bando',
+        etichetta: 'Codice sottobando',
+        tipo: 'string',
+        obbligatorio: true,
+        ordine: 1,
+      },
+      { codice: 'numero_posti', etichetta: 'Posti', tipo: 'number', obbligatorio: true, ordine: 2 },
+    ],
+  };
+  const dettaglioMultiplo = {
+    ...dettaglio,
+    multiplo: true,
+    versioni: [
+      { ...dettaglio.versioni[0], campi: [...dettaglio.versioni[0].campi, articolazioni] },
+    ],
+  };
+
+  function tabella(id: string, ripetute: number): object {
+    const ripetuta = {
+      ripeti_per: 'articolazioni',
+      celle: [
+        { frammenti: [{ testo: '{{articolazioni.campi.codice_bando}}' }] },
+        { frammenti: [{ testo: '{{articolazioni.campi.numero_posti}}' }] },
+      ],
+    };
+    return {
+      id,
+      tipo: 'TABELLA',
+      frammenti: [],
+      posizionamento: 'BODY',
+      ordine: 1,
+      colonne: ['Codice', 'Posti'],
+      righe: [
+        ...Array.from({ length: ripetute }, () => ripetuta),
+        {
+          ripeti_per: null,
+          celle: [
+            { frammenti: [{ testo: 'Totale' }] },
+            { frammenti: [{ testo: '{{numero_posti}}' }] },
+          ],
+        },
+      ],
+      placeholder_usati: [
+        'articolazioni.campi.codice_bando',
+        'articolazioni.campi.numero_posti',
+        'numero_posti',
+      ],
+    };
+  }
+
+  function sezioniCon(...blocchi: object[][]) {
+    return {
+      ...sezioniResponse,
+      sezioni: blocchi.map((contenuto, i) => ({ codice: `s${i + 1}`, ordine: i, contenuto })),
+      documento: { blocchi: blocchi.flat(), placeholder_usati: [] },
+    };
+  }
+
+  it('shows the sub-fields of a multiple model in their own group, not in the main list', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglioMultiplo);
+    flushSections(http, sezioniCon([tabella('t1', 1)]) as typeof sezioniResponse);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-badge-multiplo]')?.textContent).toContain('Bando multiplo');
+    const principali = Array.from(root.querySelectorAll('.campo')).filter(
+      (campo) => !campo.closest('[data-gruppo-multiplo]'),
+    );
+    expect(principali.map((c) => c.getAttribute('data-placeholder'))).toEqual([
+      'titolo_it',
+      'numero_posti',
+    ]);
+    const gruppo = root.querySelector('[data-gruppo-multiplo]') as HTMLElement;
+    expect(gruppo.textContent).toContain('Tematiche');
+    expect(
+      Array.from(gruppo.querySelectorAll('.campo')).map((c) => c.getAttribute('data-placeholder')),
+    ).toEqual([
+      'articolazioni.codice',
+      'articolazioni.descrizione',
+      'articolazioni.campi.codice_bando',
+      'articolazioni.campi.numero_posti',
+    ]);
+    expect(root.querySelectorAll('[data-readiness-block]').length).toBe(0);
+    verifica(http);
+  });
+
+  it('blocks publication of a multiple model without its repeated row, and warns on two tables', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglioMultiplo);
+    flushSections(
+      http,
+      sezioniCon([{ ...sezioniResponse.sezioni[0].contenuto[0] }]) as typeof sezioniResponse,
+    );
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+    expect(root.querySelector('[data-readiness]')?.textContent).toContain(
+      'non ha una tabella con la riga ripetuta per "Tematiche"',
+    );
+
+    TestBed.resetTestingModule();
+    const due = setup();
+    due.http.expectOne('/api/v1/builder/modelli/model').flush(dettaglioMultiplo);
+    flushSections(
+      due.http,
+      sezioniCon([tabella('t1', 1)], [tabella('t2', 1)]) as typeof sezioniResponse,
+    );
+    flushDerivationConfig(due.http);
+    due.fixture.detectChanges();
+    expect(due.root.querySelectorAll('[data-readiness-block]').length).toBe(0);
+    expect(due.root.querySelector('[data-readiness-avviso]')?.textContent).toContain(
+      'compaiono in 2 tabelle',
+    );
+    verifica(due.http);
+  });
+
+  it('blocks two repeated rows in the same table and an element placeholder outside the table', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglioMultiplo);
+    const fuori = {
+      ...sezioniResponse.sezioni[0].contenuto[0],
+      frammenti: [{ testo: 'Posti {{articolazioni.campi.numero_posti}}' }],
+      placeholder_usati: ['articolazioni.campi.numero_posti'],
+    };
+    flushSections(http, sezioniCon([tabella('t1', 2), fuori]) as typeof sezioniResponse);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+    const blocchi = Array.from(root.querySelectorAll('[data-readiness-block]')).map(
+      (b) => b.textContent,
+    );
+    expect(blocchi.some((b) => b?.includes('2 righe ripetute per "articolazioni"'))).toBe(true);
+    expect(blocchi.some((b) => b?.includes('va in una riga di tabella ripetuta'))).toBe(true);
+    verifica(http);
+  });
+
+  it('offers "Crea bando multiplo" on a single model whose leaf has repeatable fields', () => {
+    const { fixture, http, root } = setup();
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    http.expectOne('/api/v1/builder/modelli/model').flush({ ...dettaglio, multiplo: false });
+    flushSections(http);
+    flushDerivationConfig(http, {
+      ...struttura,
+      nodi: [
+        {
+          codice: 'TI',
+          figli: [
+            {
+              codice: 'CTER',
+              lingue_possibili: ['IT', 'EN'],
+              campi: [
+                {
+                  codice: 'articolazioni',
+                  tipo: 'array',
+                  campi: [{ codice: 'x', tipo: 'string' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as typeof struttura);
+    fixture.detectChanges();
+
+    (root.querySelector('[data-crea-multiplo]') as HTMLButtonElement).click();
+
+    const richiesta = http.expectOne('/api/v1/builder/modelli/model/multiplo');
+    expect(richiesta.request.method).toBe('POST');
+    richiesta.flush({ id: 'multiplo' });
+    expect(navigate).toHaveBeenCalledWith(['/modelli', 'multiplo', 'builder']);
+    verifica(http);
+  });
+
+  it('does not offer "Crea bando multiplo" when the leaf has no repeatable field', () => {
+    const { fixture, http, root } = setup();
+    http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);
+    flushSections(http);
+    flushDerivationConfig(http);
+    fixture.detectChanges();
+    expect(root.querySelector('[data-crea-multiplo]')).toBeNull();
+    expect(root.querySelector('[data-gruppo-multiplo]')).toBeNull();
+    verifica(http);
+  });
+
   it('keeps the IT/EN flow automatic while sending the generic contract', () => {
     const { fixture, http, root } = setup();
     http.expectOne('/api/v1/builder/modelli/model').flush(dettaglio);

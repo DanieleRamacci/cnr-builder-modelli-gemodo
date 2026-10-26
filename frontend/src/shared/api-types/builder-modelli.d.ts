@@ -183,6 +183,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/modelli/{modelloId}/multiplo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crea il modello multiplo partendo da un modello singolo (spec 014, FR-009e)
+         * @description Stessa combinazione del modello di partenza (tipo documento, percorso, dimensioni). Nasce con una versione 1 in BOZZA: i campi del singolo piu' i campi ripetibili della foglia dal vivo, e le sezioni copiate dall'ultima versione del singolo. E' un modello a se', non una variante ne' un'edizione derivata. 400 CONTESTO_NON_VALIDO se il modello di partenza e' gia' multiplo o la foglia non dichiara campi ripetibili; 409 MODELLO_VARIANTE_DUPLICATA se il multiplo esiste gia'.
+         */
+        post: operations["creaMultiplo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modelli/{modelloId}/edizioni-derivate": {
         parameters: {
             query?: never;
@@ -218,7 +240,7 @@ export interface paths {
         put?: never;
         /**
          * Crea la versione 1 in BOZZA, campi scelti dalla foglia discovery del modello
-         * @description I campi devono appartenere al ramo/foglia gia' selezionato dal modello in discovery corrente (rifetch aggiornato); nessun campo non ammesso o duplicato.
+         * @description I campi devono appartenere al ramo/foglia gia' selezionato dal modello in discovery corrente (rifetch aggiornato); nessun campo non ammesso o duplicato. Campi ripetibili (spec 014): per un modello singolo un campo ripetibile della foglia e' CAMPO_NON_AMMESSO; per un modello multiplo la richiesta deve includere tutti i campi ripetibili della foglia, altrimenti CAMPO_NON_AMMESSO.
          */
         post: operations["creaVersione"];
         delete?: never;
@@ -496,6 +518,8 @@ export interface components {
             codice_tipologia: string | null;
             percorso_categorizzazione: string[];
             variante: string;
+            /** @description Modello per bandi con articolazioni (spec 014). Fissato alla creazione; varianti ed edizioni derivate lo ereditano. */
+            multiplo?: boolean;
             dimensioni: {
                 [key: string]: string;
             };
@@ -583,6 +607,19 @@ export interface components {
             obbligatorio: boolean;
             ordine: number;
             descrizione?: string | null;
+            /** @description Solo per un campo ripetibile (spec 014): i sotto-campi di ogni elemento, copiati dalla foglia alla creazione della versione. */
+            sotto_campi?: {
+                codice: string;
+                etichetta: string;
+                /** @enum {string} */
+                tipo: "string" | "number" | "date" | "boolean";
+                obbligatorio: boolean;
+                ordine: number;
+                descrizione?: string | null;
+                validazione?: {
+                    [key: string]: unknown;
+                } | null;
+            }[] | null;
         };
         VersioneDettaglio: components["schemas"]["Versione"] & {
             campi: components["schemas"]["CampoContratto"][];
@@ -598,6 +635,8 @@ export interface components {
             codice_tipologia: string | null;
             percorso_categorizzazione: string[];
             variante: string;
+            /** @description Modello per bandi con articolazioni (spec 014). Fissato alla creazione; varianti ed edizioni derivate lo ereditano. */
+            multiplo?: boolean;
             dimensioni: {
                 [key: string]: string;
             };
@@ -638,6 +677,11 @@ export interface components {
             livello_professionale?: string | null;
             /** @description In cosa questo modello differisce dagli altri sulla stessa categorizzazione (FR-019). Obbligatoria quando la categorizzazione e' gia' occupata: senza, la creazione risponde 409 MODELLO_VARIANTE_RICHIESTA indicando quale modello la occupa. Il codice di variante lo genera il sistema, non il chiamante. */
             nota?: string | null;
+            /**
+             * @description Crea un modello multiplo (spec 014). Ammesso solo se la foglia dichiara almeno un campo ripetibile, altrimenti 400 CONTESTO_NON_VALIDO. Singolo e multiplo della stessa categorizzazione coesistono senza nota di variante.
+             * @default false
+             */
+            multiplo: boolean;
         };
         CreaVarianteRequest: {
             nota: string;
@@ -657,6 +701,8 @@ export interface components {
             codice_tipologia: string | null;
             percorso_categorizzazione: string[];
             variante: string;
+            /** @description Modello per bandi con articolazioni (spec 014). Fissato alla creazione; varianti ed edizioni derivate lo ereditano. */
+            multiplo?: boolean;
             /** @enum {string} */
             lingua: "IT" | "EN";
             livello_professionale: string | null;
@@ -822,6 +868,21 @@ export interface components {
             /** @description Campi del contratto dati, presenti solo se questo e' un nodo foglia (nessun `figli`). Se, come nel caso reale di BANDO_CONCORSO, gli stessi campi si ripetono identici su piu' foglie, e' una scelta legittima ripeterli qui uguali - questo contratto non impone un meccanismo di riuso, descrive solo la forma della risposta. */
             campi?: components["schemas"]["CampoContrattoDati"][];
         };
+        /** @description Sotto-campo di un campo ripetibile (0.8.0). Stessa forma di CampoContrattoDati, senza `campi` e con tipo scalare. Stesse regole sulle chiavi: sconosciute non conformi, `_` ammesse come annotazioni. */
+        SottoCampoContrattoDati: {
+            /** @example numero_posti */
+            codice: string;
+            /** @example Numero posti sottobando */
+            etichetta: string;
+            /** @enum {string} */
+            tipo: "string" | "number" | "date" | "boolean";
+            /** @enum {string|null} */
+            lingua?: "IT" | "EN" | null;
+            obbligatorio: boolean;
+            ordine: number;
+            descrizione?: string | null;
+            validazione?: Record<string, never> | null;
+        };
         /** @description Struttura FISSA per ogni campo, identica a qualunque livello dell'albero e per qualunque tipo documento - e' l'unica parte di questo contratto che non cambia mai. */
         CampoContrattoDati: {
             /** @example numero_posti */
@@ -843,6 +904,8 @@ export interface components {
             descrizione?: string | null;
             /** @description Vincoli semplici (es. `minLength`, `minimum`) oppure, per un campo dipendente da un attributo profilo, un riferimento simbolico invece di un elenco statico: `{"fonte_opzioni": "profilo.<nome_attributo>", "default": "profilo.<nome_attributo>_base"}`, risolto da GEMODO contro il profilo scelto in fase di creazione modello. */
             validazione?: Record<string, never> | null;
+            /** @description **0.8.0, facoltativo.** Ammesso solo con `tipo: array`: rende il campo **ripetibile** ed elenca i sotto-campi che ha ogni elemento. Un solo livello: i sotto-campi non possono essere `array` ne' `object`; i loro codici sono unici. Un campo `array` senza `campi` resta una lista semplice di valori, come prima. Nei dati ogni elemento e' `{codice, descrizione, campi}`. */
+            campi?: components["schemas"]["SottoCampoContrattoDati"][];
         };
         StrutturaTipoDocumento: {
             /**
@@ -1298,6 +1361,33 @@ export interface operations {
         };
         responses: {
             /** @description Variante creata, con la sua versione 1 in BOZZA */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelloGestione"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    creaMultiplo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelloId: components["parameters"]["ModelloId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modello multiplo creato, con la sua versione 1 in BOZZA */
             201: {
                 headers: {
                     [name: string]: unknown;

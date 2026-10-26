@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.common.security import PrincipalGEMODO, require_principal
 from app.db.session import get_db
 from app.main import app
+from app.discovery.schemas import VERSIONE_CONTRATTO_DISCOVERY
 from tests.discovery.conftest import discovery_server  # noqa: F401 (fixture reuse)
 from tests.discovery.test_pagination import fragment
 from tests.support.postgres import postgres_database_url
@@ -185,7 +186,7 @@ def test_verify_end_to_end_connects_against_a_real_server(admin_client, monkeypa
     assert body["ultima_verifica"]["esito"] == "CONFORME"
     assert body["ultima_verifica"]["errori"] == []
     assert body["ultima_verifica"]["revisione"] == 2
-    assert body["ultima_verifica"]["versione_contratto"] == "0.7.0"
+    assert body["ultima_verifica"]["versione_contratto"] == VERSIONE_CONTRATTO_DISCOVERY
     assert requests == ["/discovery"]
     with engine.connect() as db:
         assert db.execute(sa.text(

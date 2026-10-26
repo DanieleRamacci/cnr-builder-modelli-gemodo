@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import LargeBinary, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import LargeBinary, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, false, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -72,9 +72,11 @@ class ModelloDocumento(Base):
         # (002 FR-019). Senza questo indice due creazioni simultanee sulla
         # stessa categorizzazione otterrebbero entrambe `STANDARD`, e alla
         # pubblicazione la seconda archivierebbe la prima in silenzio.
+        # `multiplo` fa parte dello slot dalla 014: il modello singolo e quello
+        # multiplo della stessa categorizzazione coesistono (FR-009f).
         Index(
             "uq_modello_slot_variante",
-            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "variante",
+            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "multiplo", "variante",
             unique=True,
             postgresql_where=text("stato <> 'ELIMINATO'"),
         ),
@@ -82,7 +84,7 @@ class ModelloDocumento(Base):
         # uguali sullo stesso slot non sarebbero distinguibili in interfaccia.
         Index(
             "uq_modello_slot_nota",
-            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "nota",
+            "tipo_documento_id", "percorso_categorizzazione", "dimensioni", "multiplo", "nota",
             unique=True,
             postgresql_where=text("stato <> 'ELIMINATO' AND nota IS NOT NULL"),
         ),
@@ -111,6 +113,11 @@ class ModelloDocumento(Base):
     # dimensioni le dichiara l'integrazione (FR-012), e i due assi non si
     # fondono.
     dimensioni: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
+    # 014: il modello impagina le articolazioni del bando. Fissato alla
+    # creazione e ereditato da varianti ed edizioni derivate; non e' una
+    # variante (la decide il gestore con una nota) ne' una dimensione (la
+    # dichiara l'integrazione).
+    multiplo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
     derivato_da_modello_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("modello_documento.id", ondelete="SET NULL"), nullable=True
     )
@@ -293,6 +300,11 @@ class ModelloCampoRichiesto(Base):
     valore_default: Mapped[str | None] = mapped_column(Text, nullable=True)
     opzioni: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     validazione: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    # 014: solo per un campo ripetibile, i sotto-campi di ogni elemento come
+    # erano sulla foglia alla creazione della versione.
+    # `none_as_null`: senza, SQLAlchemy scrive il JSON `null` invece di NULL, e
+    # il vincolo "lista o niente" della migrazione 0031 lo rifiuta.
+    sotto_campi: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     versione_modello: Mapped[ModelloDocumentoVersione] = relationship(back_populates="campi")

@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: GEMODO - Builder, modello multiplo (delta 014)
+  version: 0.1.0-delta
+  description: |
+    Delta da fondere in specs/002-builder-modelli/contracts/builder-modelli-api.openapi.yaml
+    prima dell'implementazione (Principio II). Riporta solo cio' che cambia.
+paths:
+  /api/v1/builder/modelli:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                multiplo:
+                  type: boolean
+                  default: false
+                  description: |
+                    `true` crea un modello multiplo. Ammesso solo se la foglia
+                    dichiara almeno un campo ripetibile, altrimenti
+                    `CONTESTO_NON_VALIDO` (400).
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                properties:
+                  multiplo: {type: boolean}
+  /api/v1/builder/modelli/{modelloId}/multiplo:
+    post:
+      summary: Crea il modello multiplo partendo da un modello singolo (FR-009e)
+      description: |
+        Stessa combinazione del modello di partenza (tipo documento, percorso,
+        dimensioni). Crea una versione BOZZA con i campi della foglia dal vivo
+        (campi ripetibili inclusi) e le sezioni copiate dall'ultima versione
+        del modello di partenza. Il risultato e' un modello a se', non una
+        variante ne' un'edizione derivata.
+      parameters:
+        - {name: modelloId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "201":
+          description: Modello multiplo creato
+        "400":
+          description: |
+            `CONTESTO_NON_VALIDO`: il modello di partenza e' gia' multiplo, o la
+            foglia non dichiara campi ripetibili.
+        "404":
+          description: "`MODELLO_NON_TROVATO`"
+        "409":
+          description: |
+            `MODELLO_VARIANTE_DUPLICATA`: esiste gia' un modello multiplo per
+            questa combinazione; il corpo indica quale.
+  /api/v1/builder/modelli/{modelloId}/versioni:
+    post:
+      description: |
+        Regola 014 (FR-009b): per un modello singolo un campo ripetibile della
+        foglia nella richiesta e' `CAMPO_NON_AMMESSO`; per un modello multiplo
+        la richiesta deve includere tutti i campi ripetibili della foglia.
+  /api/v1/builder/modelli/{modelloId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  multiplo: {type: boolean}
+                  versioni:
+                    items:
+                      properties:
+                        campi:
+                          items:
+                            properties:
+                              sotto_campi:
+                                type: array
+                                description: Solo per i campi ripetibili.

@@ -100,10 +100,11 @@ GET /api/v1/catalogo/modelli?tipo_documento=<TIPO>&profilo=<CODICE>&dimensione[<
 | `dimensione[<nome>]` | Valore di una dimensione, per esempio `dimensione[area_geografica]=NORD`. |
 | `lingua`, `livello_professionale` | Forme brevi per le dimensioni `lingua` e `livello_professionale`. |
 | `data_riferimento` | Data alla quale il modello deve essere valido. |
+| `multiplo` | `true` per i documenti con elementi ripetuti (per esempio un bando con più articolazioni): restituisce solo i modelli multipli. Assente o `false`: solo i modelli singoli. Vedi [Campi ripetibili](contratto-dati.md#modello-singolo-e-modello-multiplo). |
 
 La risposta elenca i modelli pubblicati, ciascuno con `modello_versione_id`
-(**è l'identificativo da usare dopo**, non `modello_id`), le dimensioni e le
-edizioni in altra lingua annidate in `edizioni_derivate`.
+(**è l'identificativo da usare dopo**, non `modello_id`), le dimensioni, se è
+`multiplo`, e le edizioni in altra lingua annidate in `edizioni_derivate`.
 
 Se per una dimensione la policy ammette un modello generico e quello specifico
 manca, il catalogo restituisce il generico e lo dichiara in
@@ -124,7 +125,9 @@ GET /api/v1/catalogo/modelli/{modelloVersioneId}/campi-richiesti
 ```
 
 Restituisce i campi della versione e uno `schema` JSON pronto per validare i
-dati prima di inviarli. Risponde `409` se la versione non è pubblicata.
+dati prima di inviarli. Un campo ripetibile riporta i sotto-campi in `campi` e
+la forma degli elementi in `schema` (`items`). Risponde `409` se la versione
+non è pubblicata.
 
 ## 6. Validare e generare
 

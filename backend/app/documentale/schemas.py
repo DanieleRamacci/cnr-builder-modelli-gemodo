@@ -20,6 +20,7 @@ alla scrittura delle sezioni e alla pubblicazione (003 US2).
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -105,6 +106,26 @@ class ElementoElenco(DocumentaleBaseModel):
     frammenti: list[FrammentoTesto] = Field(default_factory=list)
 
 
+class CellaTabella(DocumentaleBaseModel):
+    """Una cella di tabella: testo a frammenti, con le stesse regole del paragrafo (014)."""
+
+    frammenti: list[FrammentoTesto] = Field(default_factory=list)
+
+
+class RigaTabella(DocumentaleBaseModel):
+    """Una riga di tabella, tante celle quante colonne (014 R6).
+
+    `ripeti_per` e' il codice di un campo ripetibile della versione: in
+    generazione la riga si ripete una volta per ogni elemento di quel campo, e
+    i segnaposti `{{<campo>.codice}}`, `{{<campo>.descrizione}}`,
+    `{{<campo>.campi.<sotto-campo>}}` prendono i valori di quell'elemento
+    (FR-016). `None` e' una riga fissa, che esce una volta.
+    """
+
+    celle: list[CellaTabella] = Field(default_factory=list)
+    ripeti_per: str | None = None
+
+
 class MascheraIntestazione(str, Enum):
     """Le impaginazioni dell'intestazione che si possono scegliere (012 T065)."""
 
@@ -162,6 +183,11 @@ class BloccoDocumento(DocumentaleBaseModel):
     regole_layout: dict[str, str] = Field(default_factory=dict)
     asset_ref: str | None = None
     colonne: list[str] = Field(default_factory=list)
+    # 014: le righe di una TABELLA. Vuota e' la forma di prima, intestazione e
+    # testo nei `frammenti`, che si rende come allora. Vuota non si serializza:
+    # i blocchi salvati prima della 014 restano identici a quelli riletti, e
+    # lo storico non vede sezioni "cambiate" che nessuno ha toccato.
+    righe: list[RigaTabella] = Field(default_factory=list, exclude_if=lambda righe: not righe)
 
 
 class TipoAsset(str, Enum):
@@ -203,3 +229,17 @@ class ModelloDocumentaleControllato(DocumentaleBaseModel):
     contiene_html_libero: bool = False
     contiene_css_libero: bool = False
     contiene_script: bool = False
+
+
+# Lo stesso riconoscimento dei segnaposto dell'editor (`frontend/.../frammenti.ts`).
+_SEGNAPOSTO = re.compile(r"{{\s*([A-Za-z0-9_.-]+)\s*}}")
+
+
+def segnaposti_nei_frammenti(frammenti: list[FrammentoTesto]) -> list[str]:
+    """I segnaposti scritti nel testo, nell'ordine in cui compaiono, senza ripetizioni."""
+    trovati: list[str] = []
+    for frammento in frammenti:
+        for nome in _SEGNAPOSTO.findall(frammento.testo):
+            if nome not in trovati:
+                trovati.append(nome)
+    return trovati

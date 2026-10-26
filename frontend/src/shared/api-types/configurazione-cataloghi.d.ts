@@ -234,6 +234,21 @@ export interface components {
             } | null;
             /** @description Nome di attributo presente in ogni profilo; in questo incremento supportato su campi string */
             dipende_da_attributo_profilo?: string | null;
+            /** @description Spec 014 (contratto discovery 0.8.0): solo con `tipo: array`, rende il campo ripetibile ed elenca i sotto-campi di ogni elemento. Un livello solo; stesse regole del discovery. */
+            campi?: {
+                codice: string;
+                etichetta: string;
+                /** @enum {string} */
+                tipo: "string" | "number" | "date" | "boolean";
+                /** @enum {string|null} */
+                lingua?: "IT" | "EN" | null;
+                obbligatorio: boolean;
+                ordine: number;
+                descrizione?: string | null;
+                validazione?: {
+                    [key: string]: unknown;
+                } | null;
+            }[] | null;
         };
         /**
          * @example {

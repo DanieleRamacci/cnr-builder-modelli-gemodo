@@ -320,6 +320,7 @@ def crea_modello(
     dimensioni: dict[str, str],
     nota: str | None = None,
     derivato_da_modello_id: uuid.UUID | None = None,
+    multiplo: bool = False,
 ) -> ModelloDocumento:
     modello = ModelloDocumento(
         id=modello_id,
@@ -334,6 +335,7 @@ def crea_modello(
         nota=nota,
         dimensioni=dict(dimensioni),
         derivato_da_modello_id=derivato_da_modello_id,
+        multiplo=multiplo,
         stato="ATTIVA",
     )
     db.add(modello)
@@ -347,6 +349,7 @@ def modelli_sullo_slot(
     tipo_documento_id: uuid.UUID,
     percorso_categorizzazione: list[str],
     dimensioni: dict[str, str],
+    multiplo: bool = False,
 ) -> list[ModelloDocumento]:
     """I modelli non eliminati che occupano la stessa categorizzazione (002 FR-019).
 
@@ -361,6 +364,8 @@ def modelli_sullo_slot(
             ModelloDocumento.tipo_documento_id == tipo_documento_id,
             ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
             ModelloDocumento.dimensioni == dimensioni,
+            # 014: singolo e multiplo non si contendono lo slot (FR-009f).
+            ModelloDocumento.multiplo == multiplo,
             ModelloDocumento.stato != "ELIMINATO",
         )
         .order_by(ModelloDocumento.created_at, ModelloDocumento.id)
@@ -603,6 +608,7 @@ def clona_campi(versione: ModelloDocumentoVersione) -> list[ModelloCampoRichiest
         valore_default=campo.valore_default,
         opzioni=deepcopy(campo.opzioni),
         validazione=deepcopy(campo.validazione),
+        sotto_campi=deepcopy(campo.sotto_campi),
     ) for campo in versione.campi]
 
 
@@ -623,6 +629,7 @@ def get_versione_pubblicata_corrente(
     variante: str,
     dimensioni: dict[str, str],
     escludi_versione_id: uuid.UUID,
+    multiplo: bool = False,
 ) -> ModelloDocumentoVersione | None:
     """La versione pubblicata che occupa gia' lo stesso slot (011 FR-004).
 
@@ -643,6 +650,8 @@ def get_versione_pubblicata_corrente(
             ModelloDocumento.percorso_categorizzazione == percorso_categorizzazione,
             ModelloDocumento.variante == variante,
             ModelloDocumento.dimensioni == dimensioni,
+            # 014: pubblicare il multiplo non archivia il singolo, e viceversa.
+            ModelloDocumento.multiplo == multiplo,
             ModelloDocumentoVersione.stato == "PUBBLICATO",
             ModelloDocumentoVersione.id != escludi_versione_id,
         )

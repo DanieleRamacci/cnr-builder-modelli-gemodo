@@ -22,7 +22,7 @@ Dati verificati sul discovery di test il 2026-10-07.
 | Campi per foglia | 13 o 14; 852 in totale |
 | Dimensioni | `lingue` (IT, ENG) e `livelli_possibili` su ogni foglia |
 | Client ammesso | `geri-angular-public` (client ACE di GEBAN) |
-| Contratto discovery applicato | 0.7.0 |
+| Contratto discovery applicato | 0.8.0 |
 
 ## L'albero
 
@@ -124,6 +124,6 @@ GEBAN: [Dimensioni generiche nel catalogo](../presa-atto-geban-dimensioni-catalo
 
 | Tema | Stato |
 |---|---|
-| Bandi con più articolazioni (tematiche, sedi) nello stesso documento | Spec `014`, proposta: [campi ripetibili](../contratto-dati.md#campi-ripetibili-080). L'albero GEBAN attuale è già conforme al contratto 0.8.0. |
+| Bandi con più articolazioni (tematiche, sedi) nello stesso documento | Spec `014`, disponibile: [campi ripetibili](../contratto-dati.md#campi-ripetibili-080). L'albero GEBAN attuale è già conforme al contratto 0.8.0; per i bandi multipli GEBAN aggiunge il campo `articolazioni` alle foglie, cerca il modello con `multiplo=true` e invia gli elementi nei `dati`. |
 | Discovery di collaudo per provare tipi documento e contesti diversi senza toccare GEBAN | Spec `015`, da implementare |
 | Autenticazione dell'endpoint discovery | Da concordare con GEBAN |

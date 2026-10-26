@@ -64,6 +64,7 @@ def test_contract_only_documents_routes_that_really_exist(contract):
         "/modelli/{modelloId}/versioni",
         "/modelli/{modelloId}",
         "/modelli/{modelloId}/varianti",
+        "/modelli/{modelloId}/multiplo",
         "/modelli/{modelloId}/edizioni-derivate",
         "/modelli/{modelloId}/versioni/{versioneId}/invia-revisione",
         "/modelli/{modelloId}/versioni/{versioneId}/approva",

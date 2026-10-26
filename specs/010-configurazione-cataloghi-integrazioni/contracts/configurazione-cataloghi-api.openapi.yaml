@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: API Amministrativa Configurazione Cataloghi E Integrazioni
-  version: 0.6.0
+  version: 0.7.0
   description: >
     Contratto interno GEMODO per configurare tipi documento, generare la
     documentazione di discovery da consegnare agli integratori. Questo contratto
@@ -591,6 +591,27 @@ components:
           type: string
           nullable: true
           description: Nome di attributo presente in ogni profilo; in questo incremento supportato su campi string
+        campi:
+          type: array
+          minItems: 1
+          nullable: true
+          description: >
+            Spec 014 (contratto discovery 0.8.0): solo con `tipo: array`, rende
+            il campo ripetibile ed elenca i sotto-campi di ogni elemento. Un
+            livello solo; stesse regole del discovery.
+          items:
+            type: object
+            additionalProperties: false
+            required: [codice, etichetta, tipo, obbligatorio, ordine]
+            properties:
+              codice: {type: string}
+              etichetta: {type: string}
+              tipo: {type: string, enum: [string, number, date, boolean]}
+              lingua: {type: string, enum: [IT, EN], nullable: true}
+              obbligatorio: {type: boolean}
+              ordine: {type: integer, minimum: 1}
+              descrizione: {type: string, nullable: true}
+              validazione: {type: object, nullable: true, additionalProperties: true}
     SchemaDiscoveryGenerato:
       type: object
       required: [codice_tipo_documento, versione, generato_il, schema]

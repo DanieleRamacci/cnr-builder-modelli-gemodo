@@ -44,6 +44,7 @@ class CatalogService:
         data_riferimento: date | None = None,
         pubblicato_da: date | None = None,
         pubblicato_a: date | None = None,
+        multiplo: bool = False,
     ) -> ModelloSearchResponse:
         tipi = repository.list_tipi_documento_attivi_by_codice(self.db, tipo_documento)
         if not tipi:
@@ -92,6 +93,9 @@ class CatalogService:
             data_riferimento=data_riferimento,
             pubblicato_da=pubblicato_da,
             pubblicato_a=pubblicato_a,
+            # 014 FR-009h: senza filtro solo i singoli, cosi' una ricerca di
+            # oggi non trova all'improvviso due modelli per lo stesso bando.
+            multiplo=multiplo,
         )
         versions = repository.list_published_model_versions(self.db, **query)
         dimensioni_con_fallback = self._fallback_per_policy(query, versions, tipi_autorizzati)
@@ -245,6 +249,7 @@ def _modello_catalogo_schema(version: ModelloDocumentoVersione) -> ModelloCatalo
         # categorizzazione, che altrimenti arriverebbero con descrizioni uguali.
         descrizione=f"{modello.nome} - {modello.nota}" if modello.nota else modello.nome,
         variante=modello.variante,
+        multiplo=modello.multiplo,
         lingua=LinguaModello(modello.dimensioni["lingua"]) if modello.dimensioni.get("lingua") else None,
         livello_professionale=modello.dimensioni.get(NOME_LIVELLO),
         dimensioni=dict(modello.dimensioni),
@@ -279,6 +284,19 @@ def _campo_richiesto_schema(field) -> CampoRichiestoSchema:
         ordine=field.ordine,
         descrizione=field.descrizione,
         validazione=field.validazione,
+        campi=[
+            CampoRichiestoSchema(
+                codice=sotto["codice"],
+                etichetta=sotto["etichetta"],
+                tipo=TipoCampo(sotto["tipo"]),
+                lingua=LinguaCampo(sotto.get("lingua") or field.lingua or LinguaCampo.IT),
+                obbligatorio=sotto["obbligatorio"],
+                ordine=sotto["ordine"],
+                descrizione=sotto.get("descrizione"),
+                validazione=sotto.get("validazione"),
+            )
+            for sotto in field.sotto_campi
+        ] if field.sotto_campi else None,
     )
 
 
@@ -309,4 +327,24 @@ def _json_schema_for_field(field: CampoRichiestoSchema) -> dict[str, object]:
     schema["x-gemodo-obbligatorio"] = field.obbligatorio
     if field.validazione:
         schema.update(field.validazione)
+    if field.campi:
+        # 014 FR-013: la forma di ogni elemento, cosi' l'integratore puo'
+        # validare prima di inviare.
+        if field.obbligatorio:
+            schema["minItems"] = 1
+        schema["items"] = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["codice", "descrizione", "campi"],
+            "properties": {
+                "codice": {"type": "string", "minLength": 1},
+                "descrizione": {"type": "string", "minLength": 1},
+                "campi": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": [sotto.codice for sotto in field.campi if sotto.obbligatorio],
+                    "properties": {sotto.codice: _json_schema_for_field(sotto) for sotto in field.campi},
+                },
+            },
+        }
     return schema

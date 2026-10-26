@@ -154,6 +154,35 @@ app-editor-sezione {
     border-radius: 3px;
   }
 
+  // 014: la tabella, a griglia come nel PDF (corpo 10, intestazione in grassetto).
+  .editor-tabella {
+    width: 100%;
+    margin: calc(var(--mm) * 2) 0;
+    border-collapse: collapse;
+    font-size: calc(var(--mm) * 3.53);
+
+    th,
+    td {
+      padding: calc(var(--mm) * 1.2);
+      border: 1px solid #5a6772;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      font-weight: 700;
+    }
+
+    // La riga che si ripete per ogni sottobando: si riconosce a colpo d'occhio.
+    tr.riga-ripetuta td {
+      background: #eef5fc;
+    }
+
+    tr.riga-ripetuta td:first-child {
+      box-shadow: inset 3px 0 0 #0066cc;
+    }
+  }
+
   .ProseMirror-selectednode {
     outline: 2px solid #8cbcf0;
     color: #0059b3;

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.builder.repository import NOME_LIVELLO
@@ -90,6 +90,9 @@ class CreaModelloRequest(BaseModel):
     # esprimerlo (FR-006); un valore vuoto e' rifiutato perche' renderebbe
     # ambigua quella distinzione.
     dimensioni: dict[str, str] = Field(default_factory=dict)
+    # 014 FR-009a: modello per bandi con articolazioni. Ammesso solo se la
+    # foglia dichiara campi ripetibili; non si cambia dopo la creazione.
+    multiplo: bool = False
     # Campi di transizione, equivalenti alle chiavi corrispondenti della mappa.
     # Restano finche' il frontend non ha adottato `dimensioni`.
     lingua: Literal["IT", "EN"] | None = None
@@ -144,6 +147,7 @@ class ModelloResponse(BaseModel):
     livello_professionale: str | None = None
     derivato_da_modello_id: str | None = None
     nota: str | None = None
+    multiplo: bool = False
 
 
 class CreaVarianteRequest(BaseModel):
@@ -371,6 +375,8 @@ class CampoVersioneResponse(BaseModel):
     obbligatorio: bool
     ordine: int
     descrizione: str | None = None
+    # 014: solo per un campo ripetibile, i sotto-campi di ogni elemento.
+    sotto_campi: list[dict[str, Any]] | None = None
 
 
 class VersioneDettaglioResponse(VersioneResponse):

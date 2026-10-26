@@ -163,6 +163,22 @@ h1 {
     font-size: 13px;
     color: var(--td-ink-500);
   }
+
+  // 014: la scelta fra bando singolo e multiplo.
+  .tipo-bando {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--td-primary-border);
+    border-radius: 4px;
+
+    legend {
+      float: none;
+      width: auto;
+      margin: 0 0 6px;
+      font-size: 14.5px;
+      font-weight: 700;
+    }
+  }
 }
 
 .azioni-2a {
@@ -216,6 +232,14 @@ h1 {
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  .sotto-campi {
+    margin: 4px 0 6px 14px;
+    padding-left: 10px;
+    border-left: 2px solid var(--td-primary-border);
+    list-style: none;
+    font-size: 13px;
   }
 
   .scelte li {

@@ -116,7 +116,7 @@ un cambiamento lato sistema esterno, non uno sviluppo in GEMODO.
 | Nuovi campi o cambi di obbligatorietà | Il sistema esterno cambia i campi; valgono per le nuove versioni | Sistema esterno + gestore |
 | Un nuovo testo o impaginazione | Nuova versione del modello | Gestore |
 | Intestazione e piè di pagina | Cornice per tipo documento | Gestore o amministratore |
-| Gruppi di dati ripetuti nello stesso documento | Campo ripetibile, contratto 0.8.0, [spec 014](contratto-dati.md#campi-ripetibili-080) | *Proposto, non ancora disponibile* |
+| Gruppi di dati ripetuti nello stesso documento | Campo ripetibile nel discovery (contratto 0.8.0), modello multiplo con una riga di tabella ripetuta, [spec 014](contratto-dati.md#campi-ripetibili-080) | Sistema esterno + gestore |
 
 La logica di GEMODO non dipende da nomi di tipi documento, di livelli, di
 dimensioni o di campi: li riceve. Nel codice compaiono solo come valori di

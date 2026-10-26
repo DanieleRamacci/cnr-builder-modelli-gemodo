@@ -104,6 +104,101 @@ describe('manager creation flow', () => {
   });
 });
 
+describe('bando singolo e multiplo (014)', () => {
+  const articolazioni = {
+    codice: 'articolazioni',
+    etichetta: 'Tematiche',
+    tipo: 'array',
+    ordine: 2,
+    obbligatorio: false,
+    campi: [
+      {
+        codice: 'codice_bando',
+        etichetta: 'Codice',
+        tipo: 'string',
+        ordine: 1,
+        obbligatorio: true,
+      },
+    ],
+  };
+  const titolo = {
+    codice: 'titolo',
+    lingua: 'IT',
+    etichetta: 'Titolo',
+    tipo: 'string',
+    ordine: 1,
+    obbligatorio: true,
+  };
+
+  function prepara(campi: unknown[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'source' } } } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ModelloCreaComponent);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/builder/integrazioni/source/tipi-documento').flush(['BANDO']);
+    const component = fixture.componentInstance as unknown as {
+      loadTree: (code: string) => void;
+      choose: (node: unknown) => void;
+      create: () => void;
+      scegliDimensione: (nome: string, valore: string) => void;
+      scegliMultiplo: (valore: boolean) => void;
+    };
+    const leaf = { codice: 'CTER', descrizione: 'CTER', lingue_possibili: ['IT'], campi };
+    const root = { codice: 'TD', descrizione: 'TD', figli: [leaf] };
+    component.loadTree('BANDO');
+    http
+      .expectOne('/api/v1/builder/integrazioni/source/tipi-documento/BANDO/struttura')
+      .flush({ nodi: [root] });
+    flushPolicy(http);
+    component.choose(root);
+    component.choose(leaf);
+    component.scegliDimensione('lingua', 'IT');
+    fixture.detectChanges();
+    return { fixture, http, component };
+  }
+
+  it('offers the choice only when the leaf declares a repeatable field', () => {
+    const senza = prepara([titolo]);
+    expect(senza.fixture.nativeElement.querySelector('[data-tipo-bando]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const con = prepara([titolo, articolazioni]);
+    const scelta = con.fixture.nativeElement.querySelector('[data-tipo-bando]') as HTMLElement;
+    expect(scelta.textContent).toContain('Bando multiplo');
+    expect(scelta.textContent).toContain('tematiche');
+  });
+
+  it('a single model leaves the repeatable field out of the version', () => {
+    const { http, component } = prepara([titolo, articolazioni]);
+    component.create();
+    const model = http.expectOne('/api/v1/builder/modelli');
+    expect(model.request.body.multiplo).toBe(false);
+    model.flush({ id: 'model', codice: 'c', nome: 'n' });
+    const version = http.expectOne('/api/v1/builder/modelli/model/versioni');
+    expect(version.request.body.campi.map((c: { codice: string }) => c.codice)).toEqual(['titolo']);
+  });
+
+  it('a multiple model includes the repeatable field', () => {
+    const { http, component } = prepara([titolo, articolazioni]);
+    component.scegliMultiplo(true);
+    component.create();
+    const model = http.expectOne('/api/v1/builder/modelli');
+    expect(model.request.body.multiplo).toBe(true);
+    model.flush({ id: 'model', codice: 'c', nome: 'n' });
+    const version = http.expectOne('/api/v1/builder/modelli/model/versioni');
+    expect(version.request.body.campi.map((c: { codice: string }) => c.codice)).toEqual([
+      'titolo',
+      'articolazioni',
+    ]);
+  });
+});
+
 describe('2a categorization cascade', () => {
   const campo = {
     codice: 'titolo',

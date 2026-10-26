@@ -33,7 +33,14 @@ def _dettagli_validazione(exc: ValidationError, codice: str) -> tuple[str, list[
     """Riassume gli errori pydantic: stesso difetto ripetuto su piu' percorsi resta una riga."""
     gruppi: dict[tuple[str, str], list[str]] = {}
     for errore in exc.errors():
-        campo = str(errore["loc"][-1]) if errore["loc"] else codice
+        loc = errore["loc"]
+        # Un errore sull'intero elemento di una lista (un campo che viola una
+        # regola fra le sue chiavi, 014) ha come ultima parte l'indice: da solo
+        # "0" non dice niente, "campi[0]" si'.
+        if len(loc) >= 2 and isinstance(loc[-1], int):
+            campo = f"{loc[-2]}[{loc[-1]}]"
+        else:
+            campo = str(loc[-1]) if loc else codice
         percorso = ".".join(str(parte) for parte in (codice, *errore["loc"]))
         gruppi.setdefault((campo, errore["msg"]), []).append(percorso)
     dettagli = []

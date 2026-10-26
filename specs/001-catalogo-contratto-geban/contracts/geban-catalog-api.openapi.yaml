@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GEBAN GEMODO Catalogo Modelli API
-  version: 0.9.1
+  version: 0.10.0
   description: >
     API per catalogo modelli, contratto dati e validazione payload verso GEBAN.
     Versione 0.2.0: aggiunge validazione tipologia GEBAN/SOL (codice_tipologia),
@@ -14,6 +14,10 @@ info:
     Versione 0.6.0 (004 FR-019/020): ritiro di POST /documenti/genera
     (simulato) - la generazione reale e' descritta nel contratto di 004,
     stesso percorso HTTP.
+    Versione 0.10.0 (014): modello multiplo. Parametro `multiplo` della
+    ricerca, campo `multiplo` del modello, `campi` dei campi ripetibili in
+    campi-richiesti. Senza `multiplo` la ricerca restituisce gli stessi
+    modelli di prima.
 servers:
   - url: /api/v1
 security:
@@ -102,6 +106,16 @@ paths:
           schema:
             type: string
             format: date
+        - name: multiplo
+          in: query
+          required: false
+          description: >
+            `true`: solo modelli multipli, cioe' per bandi con articolazioni
+            (spec 014). `false` o assente: solo modelli singoli, come prima
+            della 014.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Modelli pubblicati filtrati
@@ -123,6 +137,7 @@ paths:
                     codice: bando-ti-collaboratore-tecnico-er-tutti-it
                     descrizione: Collaboratore Tecnico E.R. - Tutti i livelli - Italiano
                     variante: STANDARD
+                    multiplo: false
                     lingua: IT
                     livello_professionale: null
                     versione: 1
@@ -136,6 +151,7 @@ paths:
                         codice: bando-ti-collaboratore-tecnico-er-tutti-en
                         descrizione: Collaboratore Tecnico E.R. - Tutti i livelli - Inglese
                         variante: STANDARD
+                        multiplo: false
                         lingua: EN
                         livello_professionale: null
                         versione: 1
@@ -335,7 +351,7 @@ components:
             $ref: "#/components/schemas/ModelloCatalogo"
     ModelloCatalogo:
       type: object
-      required: [modello_id, modello_versione_id, codice, descrizione, variante, dimensioni, lingua, livello_professionale, versione, stato, edizioni_derivate]
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, multiplo, dimensioni, lingua, livello_professionale, versione, stato, edizioni_derivate]
       properties:
         modello_id:
           type: integer
@@ -349,6 +365,11 @@ components:
           type: string
         variante:
           type: string
+        multiplo:
+          type: boolean
+          description: >
+            Il modello e' per bandi con articolazioni e le impagina in una
+            tabella con una riga per articolazione (spec 014).
         lingua:
           type: string
           enum: [IT, EN]
@@ -387,13 +408,14 @@ components:
             $ref: "#/components/schemas/EdizioneDerivataCatalogo"
     EdizioneDerivataCatalogo:
       type: object
-      required: [modello_id, modello_versione_id, codice, descrizione, variante, dimensioni, lingua, livello_professionale, versione, stato]
+      required: [modello_id, modello_versione_id, codice, descrizione, variante, multiplo, dimensioni, lingua, livello_professionale, versione, stato]
       properties:
         modello_id: {type: integer, format: int64}
         modello_versione_id: {type: integer, format: int64}
         codice: {type: string}
         descrizione: {type: string}
         variante: {type: string}
+        multiplo: {type: boolean, description: "Uguale a quello del modello di origine."}
         lingua: {type: string, enum: [IT, EN], nullable: true, example: EN}
         dimensioni:
           type: object
@@ -449,6 +471,15 @@ components:
           type: object
           additionalProperties: true
           nullable: true
+        campi:
+          type: array
+          description: >
+            Solo per un campo ripetibile (`tipo: array`, spec 014): i
+            sotto-campi che ha ogni elemento. Nei dati ogni elemento e'
+            `{codice, descrizione, campi}`, con `campi` che mappa il codice
+            del sotto-campo al valore. Assente per gli altri campi.
+          items:
+            $ref: "#/components/schemas/CampoRichiesto"
     ValidazioneRequest:
       type: object
       required: [sistema_richiedente, external_context_id, modello_versione_id, dati]

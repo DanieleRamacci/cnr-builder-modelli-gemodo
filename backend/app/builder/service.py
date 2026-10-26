@@ -46,7 +46,12 @@ from app.discovery.schemas import CatalogoDiscovery
 # controllato e' di proprieta' della `009` e resta dove vive; `003` lo usa
 # invece di riscriverlo. E' una dipendenza su una **regola**, non sui dati che
 # il dominio persiste - quelli stanno in `app/documentale/schemas.py`.
-from app.quality.document_model import validate_document_model, violazioni_struttura_blocchi
+from app.quality.document_model import (
+    segnaposti_elemento,
+    validate_document_model,
+    violazioni_righe_ripetute,
+    violazioni_struttura_blocchi,
+)
 from app.quality.errors import ContrattoNonValidoError
 # Solo il renderer, mai lo storage: l'anteprima non e' una generazione (012 FR-010).
 from app.generazione.renderer import InizioPagina, render_documento, sostituisci_placeholder
@@ -70,6 +75,44 @@ NOME_LIVELLO = "livello_professionale"
 # governate: ogni altra chiave con una lista diventa una dimensione senza che
 # nessuno debba aggiungerla qui.
 _CHIAVI_DIMENSIONE_STORICHE = {"lingue_possibili": "lingua", "livelli_possibili": NOME_LIVELLO}
+
+
+def _ripetibili_della_versione(versione) -> dict[str, set[str]]:
+    """Campo ripetibile -> codici dei suoi sotto-campi, dalla copia della versione (014)."""
+    return {
+        campo.codice: {sotto["codice"] for sotto in campo.sotto_campi}
+        for campo in versione.campi if campo.sotto_campi
+    }
+
+
+def _campi_ripetibili(foglia) -> list:
+    """I campi della foglia che si ripetono per elemento (014: le articolazioni)."""
+    return [campo for campo in foglia.campi or () if campo.ripetibile]
+
+
+def _campo_modello(sorgente, *, multiplo: bool) -> ModelloCampoRichiesto:
+    """La copia di un campo della foglia nella versione.
+
+    Per un campo ripetibile la copia porta anche i sotto-campi (014 FR-007), e
+    nel modello multiplo e' sempre obbligatorio (FR-016c): la foglia lo dichiara
+    facoltativo perche' vale anche per i bandi singoli, la versione multipla
+    invece esiste proprio per stampare le articolazioni.
+    """
+    return ModelloCampoRichiesto(
+        id=uuid.uuid4(),
+        codice=sorgente.codice,
+        etichetta=sorgente.etichetta,
+        tipo_dato=sorgente.tipo,
+        descrizione=sorgente.descrizione,
+        obbligatorio=True if (multiplo and sorgente.ripetibile) else sorgente.obbligatorio,
+        lingua=sorgente.lingua,
+        ordine=sorgente.ordine,
+        validazione=sorgente.validazione,
+        sotto_campi=(
+            [sotto.model_dump(mode="json", exclude_none=True) for sotto in sorgente.campi]
+            if sorgente.ripetibile else None
+        ),
+    )
 
 
 def _dimensioni_dichiarate(nodo) -> dict[str, tuple[str, ...]]:
@@ -137,6 +180,7 @@ def _identita_modello(
     dimensioni: dict[str, str],
     modello_id: uuid.UUID,
     variante: str = "STANDARD",
+    multiplo: bool = False,
 ) -> tuple[str, str]:
     """Codice e nome generati, distinti per ogni combinazione di dimensioni (011 FR-003).
 
@@ -156,14 +200,20 @@ def _identita_modello(
     # aggiungere "-standard" a ogni modello renderebbe illeggibili i codici di
     # tutti per distinguere i pochi che hanno varianti.
     parti_variante = [] if variante == "STANDARD" else [variante]
+    # 014: il singolo e il multiplo della stessa categorizzazione devono avere
+    # codici e nomi diversi, a colpo d'occhio e per l'indice unico sul codice.
+    parti_multiplo = ["MULTIPLO"] if multiplo else []
     suffix = modello_id.hex
-    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), *valori, *parti_variante]))
+    prefix = _slug("-".join([tipo, *(n.codice for n in nodi), *valori, *parti_multiplo, *parti_variante]))
     codice = f"{prefix[:128 - len(suffix) - 1]}-{suffix}"
     # Una dimensione non valorizzata semplicemente non compare nel nome:
     # l'assenza e' l'informazione (FR-006), e non serve renderla con "tutti".
     etichetta_dimensioni = " - ".join(valori)
     parti_suffix = [
-        p for p in (etichetta_dimensioni, *parti_variante, f"{datetime.now(timezone.utc):%Y-%m-%d}") if p
+        p for p in (
+            etichetta_dimensioni, *(["bando multiplo"] if multiplo else []), *parti_variante,
+            f"{datetime.now(timezone.utc):%Y-%m-%d}",
+        ) if p
     ]
     name_suffix = " - " + " - ".join(parti_suffix)
     descriptions = " - ".join(n.descrizione for n in nodi)
@@ -444,6 +494,14 @@ class BuilderService:
             categoria, tipologia = riferimenti(percorso)
 
         foglia = indice[percorso]
+        # 014 FR-009a: il modello multiplo ha senso solo dove la foglia dichiara
+        # qualcosa da ripetere.
+        if request.multiplo and not _campi_ripetibili(foglia):
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "La categorizzazione scelta non dichiara campi ripetibili: il modello multiplo non e' disponibile",
+                status_code=400,
+            )
         # DEC-002-POLICY: cosa rende due modelli distinti non e' piu' scritto qui,
         # ma dichiarato per nome di dimensione sul tipo documento.
         policy = {p.nome_dimensione: p.consente_valore_generico
@@ -461,6 +519,7 @@ class BuilderService:
             percorso=list(percorso),
             dimensioni=dimensioni,
             nota=request.nota,
+            multiplo=request.multiplo,
         )
         modello_id = uuid.uuid4()
         codice, nome = _identita_modello(
@@ -469,6 +528,7 @@ class BuilderService:
             dimensioni=dimensioni,
             modello_id=modello_id,
             variante=variante,
+            multiplo=request.multiplo,
         )
 
         modello = builder_repository.crea_modello(
@@ -483,6 +543,7 @@ class BuilderService:
             variante=variante,
             nota=request.nota,
             dimensioni=dimensioni,
+            multiplo=request.multiplo,
         )
         registra_evento(
             self.db,
@@ -497,6 +558,7 @@ class BuilderService:
                 "codice": modello.codice,
                 "codice_tipo_documento": request.codice_tipo_documento,
                 "dimensioni": dimensioni,
+                "multiplo": request.multiplo,
             },
         )
         self.db.commit()
@@ -509,6 +571,7 @@ class BuilderService:
         percorso: list[str],
         dimensioni: dict[str, str],
         nota: str | None,
+        multiplo: bool = False,
     ) -> str:
         """Quale variante spetta a un modello nuovo su questa categorizzazione.
 
@@ -524,6 +587,7 @@ class BuilderService:
             tipo_documento_id=tipo_documento_id,
             percorso_categorizzazione=percorso,
             dimensioni=dimensioni,
+            multiplo=multiplo,
         )
         if not esistenti:
             return "STANDARD"
@@ -599,6 +663,7 @@ class BuilderService:
             percorso=list(percorso),
             dimensioni=dimensioni,
             nota=request.nota,
+            multiplo=origine.multiplo,
         )
         nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
         nuovo_id = uuid.uuid4()
@@ -608,6 +673,7 @@ class BuilderService:
             dimensioni=dimensioni,
             modello_id=nuovo_id,
             variante=variante,
+            multiplo=origine.multiplo,
         )
         try:
             modello = builder_repository.crea_modello(
@@ -622,6 +688,7 @@ class BuilderService:
                 variante=variante,
                 nota=request.nota,
                 dimensioni=dimensioni,
+                multiplo=origine.multiplo,
             )
         except IntegrityError as errore:
             # Il controllo applicativo non chiude la corsa fra due richieste
@@ -741,6 +808,7 @@ class BuilderService:
             nodi=nodi,
             dimensioni=dimensioni_derivate,
             modello_id=derivato_id,
+            multiplo=origine.multiplo,
         )
         derivato = builder_repository.crea_modello(
             self.db,
@@ -754,6 +822,7 @@ class BuilderService:
             variante=origine.variante,
             dimensioni=dimensioni_derivate,
             derivato_da_modello_id=origine.id,
+            multiplo=origine.multiplo,
         )
         versione = builder_repository.crea_versione(
             self.db,
@@ -793,6 +862,122 @@ class BuilderService:
             raise
         self.db.refresh(derivato)
         return derivato
+
+    def crea_multiplo(self, principal: PrincipalGEMODO, modello_id: uuid.UUID) -> ModelloDocumento:
+        """Il modello multiplo della stessa categorizzazione di un singolo (014 FR-009e).
+
+        E' un modello a se', non una variante ne' un'edizione derivata: ha lo
+        stesso tipo, percorso e dimensioni del singolo, ma un contratto dati
+        diverso, perche' include i campi ripetibili. Parte dal testo del
+        singolo, cosi' il gestore aggiunge solo la tabella delle articolazioni.
+        """
+        origine = builder_repository.get_modello(self.db, modello_id)
+        if origine is None:
+            raise BuilderDomainError(ErrorCode.MODELLO_NON_TROVATO, "Modello non trovato", status_code=404)
+        verify_scrittura_su_contesto(principal, origine.tipo_documento.codice_contesto)
+        self.db.execute(select(TipoDocumento.id).where(
+            TipoDocumento.id == origine.tipo_documento_id,
+        ).with_for_update())
+        self.db.refresh(origine)
+        if origine.multiplo:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO, "Il modello di partenza e' gia' multiplo", status_code=400,
+            )
+        indice = self._catalogo(
+            origine.tipo_documento.codice, aggiornato=True, tipo=origine.tipo_documento,
+        ).indice_percorsi()
+        percorso = tuple(origine.percorso_categorizzazione)
+        foglia = indice.get(percorso)
+        if foglia is None or foglia.campi is None:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO, "Il ramo del modello non e' piu' disponibile", status_code=404,
+            )
+        ripetibili = _campi_ripetibili(foglia)
+        if not ripetibili:
+            raise BuilderDomainError(
+                ErrorCode.CONTESTO_NON_VALIDO,
+                "La categorizzazione del modello non dichiara campi ripetibili: il modello multiplo non e' disponibile",
+                status_code=400,
+            )
+        dimensioni = dict(origine.dimensioni)
+        occupanti = builder_repository.modelli_sullo_slot(
+            self.db,
+            tipo_documento_id=origine.tipo_documento_id,
+            percorso_categorizzazione=list(percorso),
+            dimensioni=dimensioni,
+            multiplo=True,
+        )
+        if occupanti:
+            occupante = occupanti[0]
+            raise BuilderDomainError(
+                "MODELLO_VARIANTE_DUPLICATA",
+                "Esiste gia' un modello multiplo per questa categorizzazione",
+                status_code=409,
+                dettagli=[{"modello_id": str(occupante.id), "codice": occupante.codice, "nome": occupante.nome}],
+            )
+        sorgente = builder_repository.get_ultima_versione_con_campi(self.db, origine.id)
+        if sorgente is None:
+            raise BuilderDomainError(
+                ErrorCode.MODELLO_VERSIONE_NON_TROVATO,
+                "Il modello di partenza non ha versioni da cui partire",
+                status_code=409,
+            )
+        nodi = [indice[percorso[:i]] for i in range(1, len(percorso) + 1)]
+        nuovo_id = uuid.uuid4()
+        codice, nome = _identita_modello(
+            tipo=origine.tipo_documento.codice, nodi=nodi, dimensioni=dimensioni,
+            modello_id=nuovo_id, multiplo=True,
+        )
+        try:
+            modello = builder_repository.crea_modello(
+                self.db,
+                modello_id=nuovo_id,
+                codice=codice,
+                nome=nome,
+                tipo_documento_id=origine.tipo_documento_id,
+                codice_categoria=origine.codice_categoria,
+                codice_tipologia=origine.codice_tipologia,
+                percorso_categorizzazione=list(percorso),
+                variante="STANDARD",
+                dimensioni=dimensioni,
+                multiplo=True,
+            )
+        except IntegrityError as errore:
+            self.db.rollback()
+            raise BuilderDomainError(
+                "MODELLO_VARIANTE_DUPLICATA",
+                "Un modello multiplo per questa categorizzazione e' stato creato nel frattempo",
+                status_code=409,
+            ) from errore
+        # I campi del singolo restano quelli scelti allora; i campi ripetibili
+        # si prendono dalla foglia di adesso, che e' l'unica a dichiararli.
+        campi = [c for c in builder_repository.clona_campi(sorgente)
+                 if c.codice not in {r.codice for r in ripetibili}]
+        campi.extend(_campo_modello(campo, multiplo=True) for campo in ripetibili)
+        versione = builder_repository.crea_versione(
+            self.db,
+            modello_documento_id=modello.id,
+            campi=campi,
+            sezioni=builder_repository.clona_sezioni(sorgente),
+            formato_documentale=sorgente.formato_documentale,
+            struttura_documentale=sorgente.struttura_documentale,
+        )
+        registra_evento(
+            self.db,
+            tipo_evento="MODELLO_CREATO",
+            principal=principal,
+            modello_documento_id=modello.id,
+            modello_versione_id=versione.id,
+            payload_minimo={
+                "codice": modello.codice,
+                "codice_tipo_documento": origine.tipo_documento.codice,
+                "dimensioni": dimensioni,
+                "multiplo": True,
+                "origine_modello_id": str(origine.id),
+            },
+        )
+        self.db.commit()
+        return modello
 
     def crea_versione(
         self, principal: PrincipalGEMODO, modello_id: uuid.UUID, campi_richiesti: list[CampoVersioneRequest]
@@ -838,20 +1023,26 @@ class BuilderService:
                     f"Campo '{richiesto.codice}' ({richiesto.lingua}) non presente nel ramo discovery selezionato",
                     status_code=404,
                 )
-            campi_modello.append(
-                ModelloCampoRichiesto(
-                    id=uuid.uuid4(),
-                    codice=sorgente.codice,
-                    etichetta=sorgente.etichetta,
-                    tipo_dato=sorgente.tipo,
-                    descrizione=sorgente.descrizione,
-                    obbligatorio=sorgente.obbligatorio,
-                    lingua=sorgente.lingua,
-                    ordine=sorgente.ordine,
-                    validazione=sorgente.validazione,
+            if sorgente.ripetibile and not modello.multiplo:
+                # 014 FR-009b: il modello singolo non chiede articolazioni, cosi'
+                # chi gliele manda riceve CAMPO_NON_AMMESSO invece di vederle
+                # sparire dal documento.
+                raise BuilderDomainError(
+                    ErrorCode.CAMPO_NON_AMMESSO,
+                    f"Il campo ripetibile '{sorgente.codice}' appartiene al modello multiplo, non al singolo",
+                    status_code=400,
                 )
-            )
+            campi_modello.append(_campo_modello(sorgente, multiplo=modello.multiplo))
 
+        if modello.multiplo:
+            inclusi = {campo.codice for campo in campi_modello}
+            mancanti = [c.codice for c in _campi_ripetibili(foglia) if c.codice not in inclusi]
+            if mancanti:
+                raise BuilderDomainError(
+                    ErrorCode.CAMPO_NON_AMMESSO,
+                    "Il modello multiplo deve includere i campi ripetibili della foglia: " + ", ".join(mancanti),
+                    status_code=400,
+                )
         versione = builder_repository.crea_versione(
             self.db, modello_documento_id=modello.id, campi=campi_modello
         )
@@ -873,10 +1064,17 @@ class BuilderService:
         Sono i codici dei campi richiesti: un documento puo' citare solo cio'
         che il modello chiede davvero a chi genera. Non le etichette, che
         cambiano senza cambiare il contratto.
-        """
-        return {campo.codice for campo in versione.campi}
 
-    def _valida_documento(self, versione: ModelloDocumentoVersione) -> None:
+        014: un campo ripetibile non e' un segnaposto (una lista non si stampa
+        com'e', FR-015); lo sono i dati di un suo elemento, che la regola delle
+        righe ripetute colloca al posto giusto.
+        """
+        ammessi: set[str] = set()
+        for campo, sotto in _ripetibili_della_versione(versione).items():
+            ammessi |= segnaposti_elemento(campo, sotto)
+        return ammessi | {campo.codice for campo in versione.campi if campo.sotto_campi is None}
+
+    def _valida_documento(self, versione: ModelloDocumentoVersione, *, pubblicazione: bool = False) -> None:
         """Verifica il documento composto contro il contratto dati (003 T010/T011).
 
         Il validatore e' quello della `009` (`quality/document_model.py`):
@@ -902,18 +1100,27 @@ class BuilderService:
                 status_code=422,
                 dettagli=[{"violazione": violazione} for violazione in struttura],
             )
+        violazioni: list[str] = []
         try:
             validate_document_model(
                 documento,
                 placeholder_contratto_dati=self._placeholder_ammessi(versione),
             )
         except ContrattoNonValidoError as errore:
+            violazioni.extend(errore.violazioni)
+        violazioni.extend(violazioni_righe_ripetute(
+            documento.blocchi,
+            ripetibili=_ripetibili_della_versione(versione),
+            multiplo=versione.modello.multiplo,
+            pubblicazione=pubblicazione,
+        ))
+        if violazioni:
             raise BuilderDomainError(
                 ErrorCode.PLACEHOLDER_NON_VALIDO,
                 "Il documento non e' coerente con il contratto dati del modello",
                 status_code=400,
-                dettagli=[{"violazione": violazione} for violazione in errore.violazioni],
-            ) from errore
+                dettagli=[{"violazione": violazione} for violazione in violazioni],
+            )
 
     def _versione_del_modello(
         self, principal: PrincipalGEMODO, modello_id: uuid.UUID, versione_id: uuid.UUID,
@@ -1031,10 +1238,25 @@ class BuilderService:
         # testo (research.md R4). Un segnaposto che non e' fra i campi della
         # versione mostra il proprio nome: la pubblicazione lo rifiutera', ma
         # l'anteprima serve proprio a vederlo prima.
-        dati = {
+        dati: dict[str, object] = {
             nome: valori.get(nome) or f"\u00ab{etichette.get(nome, nome)}\u00bb"
             for nome in documento.placeholder_usati
         }
+        # 014 FR-016f: una riga ripetuta si vede ripetersi solo con piu' di un
+        # elemento. Due bastano, e i numeri dicono quale e' quale.
+        for campo in catalog_repository.list_required_fields(self.db, versione.id):
+            if campo.sotto_campi:
+                dati[campo.codice] = [
+                    {
+                        "codice": f"\u00abCodice ({numero})\u00bb",
+                        "descrizione": f"\u00ab{campo.etichetta} ({numero})\u00bb",
+                        "campi": {
+                            sotto["codice"]: f"\u00ab{sotto['etichetta']} ({numero})\u00bb"
+                            for sotto in campo.sotto_campi
+                        },
+                    }
+                    for numero in (1, 2)
+                ]
         modello = versione.modello
         return render_documento(
             titolo=f"{modello.tipo_documento.nome} - {modello.nome}",
@@ -1148,7 +1370,7 @@ class BuilderService:
             # genera output veri, quindi un placeholder che non corrisponde a
             # nessun campo del contratto diventerebbe un buco nel PDF che
             # nessuno puo' piu' chiudere senza una versione nuova.
-            self._valida_documento(versione)
+            self._valida_documento(versione, pubblicazione=True)
             precedente = builder_repository.get_versione_pubblicata_corrente(
                 self.db,
                 tipo_documento_id=modello.tipo_documento_id,
@@ -1156,6 +1378,7 @@ class BuilderService:
                 variante=modello.variante,
                 dimensioni=modello.dimensioni,
                 escludi_versione_id=versione.id,
+                multiplo=modello.multiplo,
             )
             if precedente is not None:
                 builder_repository.transizione_stato(self.db, precedente, nuovo_stato="ARCHIVIATO")

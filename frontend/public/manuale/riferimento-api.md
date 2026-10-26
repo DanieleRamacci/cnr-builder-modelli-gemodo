@@ -77,6 +77,7 @@ Guida d'uso: [Integrare un sistema esterno](integrazione-sistema-esterno.md).
 | GET | `/api/v1/builder/modelli/{modelloId}` | Gestore | `builder-modelli` |
 | DELETE | `/api/v1/builder/modelli/{modelloId}` | Gestore | `builder-modelli` |
 | POST | `/api/v1/builder/modelli/{modelloId}/varianti` | Gestore | `builder-modelli` |
+| POST | `/api/v1/builder/modelli/{modelloId}/multiplo` | Gestore | `builder-modelli` |
 | POST | `/api/v1/builder/modelli/{modelloId}/edizioni-derivate` | Gestore | `builder-modelli` |
 | GET | `/api/v1/builder/modelli/{modelloId}/cornice` | Gestore | `builder-modelli` |
 | GET | `/api/v1/builder/modelli/{modelloId}/storico` | Admin | `builder-modelli` |
@@ -186,6 +187,7 @@ dei dati sono `{ "campo", "codice", "messaggio" }` dentro la risposta di
 | `CAMPO_OBBLIGATORIO` | (in `errori`) | Campo obbligatorio assente o `null` |
 | `CAMPO_NON_AMMESSO` | (in `errori`) | Campo non previsto dalla versione |
 | `TIPO_NON_VALIDO` | (in `errori`) | Valore del tipo sbagliato |
+| `CODICE_ELEMENTO_DUPLICATO` | (in `errori`) | Due elementi di un campo ripetibile con lo stesso `codice` |
 | `REGISTRO_GENERAZIONI_NON_DISPONIBILE` | 503 | Generazione non registrata: PDF non consegnato, ripetere |
 | `DOCUMENTO_NON_TROVATO` | 404 | Riferimento documentale sconosciuto |
 

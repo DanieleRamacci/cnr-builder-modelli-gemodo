@@ -396,6 +396,16 @@
               ✕
             </button>
           </div>
+          @if (campo.value.tipo === 'array' && campo.value.sottoCampi?.length) {
+            <p class="td-hint mb-0" data-testid="sotto-campi">
+              Campo ripetibile, ogni elemento ha:
+              @for (sotto of campo.value.sottoCampi; track sotto.codice; let ultimo = $last) {
+                <span class="td-mono">{{ sotto.codice }}</span
+                >{{ ultimo ? '.' : ',' }}
+              }
+              I sotto-campi si modificano dal JSON della struttura.
+            </p>
+          }
         </div>
       }
       <button type="button" class="btn btn-sm btn-outline-primary td-add" (click)="aggiungiCampo()">

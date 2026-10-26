@@ -18,6 +18,29 @@
           "ordine": 1,
           "obbligatorio": true
         }]
+      }, {
+        "codice": "COLLABORATORE_TECNICO_ER",
+        "descrizione": "DEMO - Collaboratore Tecnico E.R.",
+        "livelli_possibili": ["IV", "V", "VI"],
+        "livello_base": "VI",
+        "lingue_possibili": ["IT", "EN"],
+        "campi": [
+          {"codice": "codice_bando", "etichetta": "Codice bando", "tipo": "string", "ordine": 1, "obbligatorio": true},
+          {"codice": "numero_posti", "etichetta": "Numero posti", "tipo": "number", "ordine": 2, "obbligatorio": true},
+          {
+            "codice": "articolazioni",
+            "etichetta": "Tematiche",
+            "tipo": "array",
+            "ordine": 3,
+            "obbligatorio": false,
+            "descrizione": "Spec 014: i sottobandi del bando multiplo",
+            "campi": [
+              {"codice": "codice_bando", "etichetta": "Codice sottobando", "tipo": "string", "ordine": 1, "obbligatorio": true},
+              {"codice": "numero_posti", "etichetta": "Posti", "tipo": "number", "ordine": 2, "obbligatorio": true},
+              {"codice": "sede_lavoro", "etichetta": "Sede", "tipo": "string", "ordine": 3, "obbligatorio": false}
+            ]
+          }
+        ]
       }]
     }]
   },
